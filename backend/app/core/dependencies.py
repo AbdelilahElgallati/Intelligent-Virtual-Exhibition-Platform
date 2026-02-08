@@ -11,8 +11,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import verify_token_type
-from app.core.store import get_user_by_id
+from app.core.store import FAKE_ORGANIZATIONS, get_user_by_id
 from app.modules.auth.schemas import Role
+from app.modules.subscriptions.schemas import PLAN_FEATURES, SubscriptionPlan
+from app.modules.subscriptions.service import get_plan
 
 
 # HTTP Bearer token security scheme
@@ -109,3 +111,60 @@ def require_roles(roles: list[Role]) -> Callable:
             )
         return current_user
     return roles_checker
+
+
+def require_feature(feature_name: str) -> Callable:
+    """
+    Dependency factory that requires a specific feature enabled in subscription.
+    
+    Args:
+        feature_name: Feature name to check.
+        
+    Returns:
+        Callable: Dependency function that checks the feature.
+    """
+    async def feature_checker(current_user: dict = Depends(get_current_user)) -> dict:
+        # Only relevant for organizers
+        if current_user["role"] != Role.ORGANIZER:
+            return current_user
+            
+        # Find organization owned by user (mock implementation: assumes 1 org per user for now)
+        # In real app, organization_id would come from request or context
+        org_id = None
+        for org in FAKE_ORGANIZATIONS.values():
+            if org["owner_id"] == current_user["id"]:
+                org_id = org["id"]
+                break
+        
+        if not org_id:
+            # If no org, assume free plan limitations or skip if not relevant
+            return current_user
+            
+        plan = get_plan(org_id)
+        features = PLAN_FEATURES.get(plan, {})
+        
+        # Check numeric limits (special case for max_events)
+        if feature_name == "max_events":
+            limit = features.get("max_events", 1)
+            if limit == -1:  # Unlimited
+                return current_user
+                
+            # Count existing events
+            from app.modules.events.service import list_events
+            events = list_events(organizer_id=current_user["id"])
+            if len(events) >= limit:
+                 raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Feature limit reached: {feature_name}. Upgrade your plan.",
+                )
+            return current_user
+
+        # Check boolean features
+        if not features.get(feature_name, False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Feature access denied: {feature_name}. Upgrade your plan.",
+            )
+            
+        return current_user
+    return feature_checker

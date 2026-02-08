@@ -14,9 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.modules.auth.router import router as auth_router
-from app.modules.users.router import router as users_router
-from app.modules.organizations.router import router as organizations_router
 from app.modules.events.router import router as events_router
+from app.modules.organizations.router import router as organizations_router
+from app.modules.participants.router import router as participants_router
+from app.modules.stands.router import router as stands_router
+from app.modules.subscriptions.router import router as subscriptions_router
+from app.modules.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -91,6 +94,9 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(users_router, prefix=api_prefix)
     app.include_router(organizations_router, prefix=api_prefix)
     app.include_router(events_router, prefix=api_prefix)
+    app.include_router(participants_router, prefix=api_prefix)
+    app.include_router(stands_router, prefix=api_prefix)
+    app.include_router(subscriptions_router, prefix=api_prefix)
 
 
 # Create application instance
