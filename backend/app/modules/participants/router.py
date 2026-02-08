@@ -32,6 +32,10 @@ class InviteRequest(BaseModel):
     user_id: UUID
 
 
+from app.modules.notifications.schemas import NotificationType
+from app.modules.notifications.service import create_notification
+
+
 @router.post("/invite", response_model=ParticipantRead, status_code=status.HTTP_201_CREATED)
 async def invite_user_to_event(
     event_id: UUID,
@@ -57,6 +61,14 @@ async def invite_user_to_event(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already has a participation record")
     
     participant = invite_participant(event_id, request.user_id)
+    
+    # Notify invited user
+    create_notification(
+        user_id=request.user_id,
+        type=NotificationType.INVITATION_SENT,
+        message=f"You have been invited to event '{event['title']}'.",
+    )
+    
     return ParticipantRead(**participant)
 
 
@@ -107,6 +119,14 @@ async def approve_event_participant(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
     
     updated = approve_participant(participant_id)
+    
+    # Notify participant
+    create_notification(
+        user_id=participant["user_id"],
+        type=NotificationType.PARTICIPANT_ACCEPTED,
+        message=f"Your request to join '{event['title']}' has been approved.",
+    )
+    
     return ParticipantRead(**updated)
 
 

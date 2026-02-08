@@ -169,6 +169,10 @@ async def submit_event(
     return EventRead(**updated_event)
 
 
+from app.modules.notifications.schemas import NotificationType
+from app.modules.notifications.service import create_notification
+
+
 @router.post("/{event_id}/approve", response_model=EventRead)
 async def approve_event(
     event_id: UUID,
@@ -195,6 +199,14 @@ async def approve_event(
         )
     
     updated_event = update_event_state(event_id, EventState.APPROVED)
+    
+    # Notify organizer
+    create_notification(
+        user_id=event["organizer_id"],
+        type=NotificationType.EVENT_APPROVED,
+        message=f"Your event '{event['title']}' has been approved.",
+    )
+    
     return EventRead(**updated_event)
 
 
