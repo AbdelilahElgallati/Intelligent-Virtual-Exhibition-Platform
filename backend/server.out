@@ -1,0 +1,7 @@
+2026-02-08 21:11:09 | INFO     | app.main | Starting Intelligent Virtual Exhibition Platform
+2026-02-08 21:11:09 | INFO     | app.main | Environment: dev
+2026-02-08 21:11:09 | INFO     | app.main | Debug mode: True
+DEBUG: Application startup complete.
+DEBUG: Logged event event_view. Store size: 1
+DEBUG: Handling list analytics request. User: 11111111-1111-1111-1111-111111111111
+DEBUG: Listing events. Store has 1 items.
