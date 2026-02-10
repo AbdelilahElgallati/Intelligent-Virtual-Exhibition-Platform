@@ -1,7 +1,10 @@
-<<<<<<< HEAD
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import datetime
+from enum import Enum
+from uuid import UUID
+
+# --- Person B: Dashboard Models ---
 
 class KPIMetric(BaseModel):
     label: str
@@ -23,20 +26,8 @@ class AnalyticsRequest(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     granularity: str = "day" # hour, day, week
-=======
-"""
-Analytics schemas for IVEP.
 
-Defines data models for event logging.
-"""
-
-from datetime import datetime
-from enum import Enum
-from typing import Optional
-from uuid import UUID
-
-from pydantic import BaseModel
-
+# --- Person A: Event Logging Models ---
 
 class AnalyticsEventType(str, Enum):
     """Types of analytics events."""
@@ -69,4 +60,3 @@ class AnalyticsEventRead(AnalyticsEventBase):
     created_at: datetime
     
     model_config = {"from_attributes": True}
->>>>>>> main
