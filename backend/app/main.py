@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.db.mongo import connect_to_mongo, close_mongo_connection
+from app.db.indexes import ensure_indexes
 
 # Routers (new architecture)
 from app.modules.analytics.router import router as analytics_router
@@ -54,6 +55,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Connect to MongoDB
     await connect_to_mongo()
+    await ensure_indexes()
 
     yield
 

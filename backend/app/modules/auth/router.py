@@ -60,9 +60,9 @@ async def login(request: LoginRequest) -> TokenResponse:
             detail="User account is inactive",
         )
     
-    # Create tokens with user ID as subject
+    # Create tokens with user ID and role
     token_data = {"sub": str(user["id"]), "role": user["role"].value}
-    access_token = create_access_token(token_data)
+    access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(token_data)
     
     return TokenResponse(

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
 from typing import List
-from ...core.dependencies import get_current_user
+from ...core.dependencies import get_current_user, get_current_user_ws
 from .schemas import MessageSchema, ChatRoomSchema, MessageCreate
 from .repository import chat_repo
 from .service import manager
 from datetime import datetime
+import json
 
 router = APIRouter()
 
@@ -22,8 +23,12 @@ async def get_room_history(
     return await chat_repo.get_room_messages(room_id, limit, skip)
 
 @router.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    # In production, verify token here
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    client_id: str,
+    current_user: dict = Depends(get_current_user_ws)
+):
+    # Authenticated via query param token
     await manager.connect(client_id, websocket)
     try:
         while True:
@@ -36,7 +41,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             
             # Simple Echo for now, we'll refine this
             await manager.send_personal_message(
-                {"sender": "System", "content": f"Message received: {message_data['content']}"},
+                {"sender": current_user.get("full_name", "System"), "content": f"Message received: {message_data.get('content')}"},
                 client_id
             )
     except WebSocketDisconnect:
