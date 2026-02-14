@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_user, require_roles
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 from app.modules.events.service import get_event_by_id
 from app.modules.participants.schemas import ParticipantRead, ParticipantStatus
 from app.modules.participants.service import (

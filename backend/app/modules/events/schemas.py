@@ -30,6 +30,13 @@ class EventBase(BaseModel):
     description: Optional[str] = None
     organizer_id: UUID
     state: EventState
+    banner_url: Optional[str] = None
+    category: Optional[str] = "Exhibition"
+    start_date: datetime
+    end_date: datetime
+    location: Optional[str] = "Virtual Platform"
+    tags: list[str] = []
+    organizer_name: Optional[str] = None
     created_at: datetime
     
     model_config = {"from_attributes": True}
@@ -53,14 +60,15 @@ class EventUpdate(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class EventRead(BaseModel):
+class EventRead(EventBase):
     """Schema for reading event data."""
+    pass
+
+
+class EventsResponse(BaseModel):
+    """Schema for wrapped events list response."""
     
-    id: UUID
-    title: str
-    description: Optional[str] = None
-    organizer_id: UUID
-    state: EventState
-    created_at: datetime
+    events: list[EventRead]
+    total: int
     
     model_config = {"from_attributes": True}

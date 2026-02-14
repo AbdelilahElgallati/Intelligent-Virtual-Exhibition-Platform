@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from typing import List
 
 from app.core.dependencies import get_current_user, require_roles
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 
 # Schemas
 from .schemas import (

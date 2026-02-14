@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import require_roles
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 from app.modules.events.service import get_event_by_id
 from app.modules.stands.schemas import StandCreate, StandRead
 from app.modules.stands.service import create_stand, get_stand_by_org, list_event_stands

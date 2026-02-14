@@ -1,3 +1,11 @@
+# Environments
 .env
 venv/
-_pycache_/
+.venv/
+env/
+
+# Python Cache
+**/__pycache__/
+*.py[cod]
+*$py.class
+

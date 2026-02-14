@@ -14,7 +14,8 @@ python-dotenv==1.0.0
 bcrypt==3.2.2
 python-jose[cryptography]==3.3.0
 sentence-transformers
-chromadb
+chromadb==0.5.23
+hnswlib==0.8.0
 langchain-text-splitters
 langdetect
 transformers

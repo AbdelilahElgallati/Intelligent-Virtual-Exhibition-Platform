@@ -13,8 +13,9 @@ from pydantic import ValidationError
 
 from app.core.config import settings
 from app.core.security import verify_token_type
-from app.core.store import FAKE_ORGANIZATIONS, get_user_by_id
-from app.modules.auth.schemas import Role
+from app.core.store import FAKE_ORGANIZATIONS
+from app.modules.users.service import get_user_by_id
+from app.modules.auth.enums import Role
 from app.modules.subscriptions.schemas import PLAN_FEATURES
 from app.modules.subscriptions.service import get_plan
 from app.modules.events.service import list_events
@@ -88,17 +89,8 @@ async def verify_jwt_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Try in-memory store (new architecture)
-    user = None
-    try:
-        user = get_user_by_id(UUID(user_id))
-    except Exception:
-        pass
-
-    # Fallback to MongoDB lookup (legacy support)
-    if user is None:
-        db = get_database()
-        user = await db.users.find_one({"_id": user_id})
+    # Try MongoDB-backed user service
+    user = await get_user_by_id(user_id)
 
     if user is None:
         # Synthetic fallback from token payload (development convenience)
@@ -209,7 +201,7 @@ def require_feature(feature_name: str) -> Callable:
             if limit == -1:  # unlimited
                 return current_user
 
-            events = list_events(organizer_id=current_user.get("id"))
+            events = await list_events(organizer_id=current_user.get("id"))
             if len(events) >= limit:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

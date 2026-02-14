@@ -14,8 +14,11 @@ from app.core.security import (
     verify_password,
     verify_token_type,
 )
-from app.core.store import get_user_by_email
-from app.modules.auth.schemas import LoginRequest, Role, TokenResponse
+from app.modules.users.service import get_user_by_email, create_user
+from app.modules.auth.schemas import LoginRequest, Role, TokenResponse, RegisterRequest
+from app.modules.users.schemas import UserRead
+import uuid
+from datetime import datetime, timezone
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -30,18 +33,8 @@ class RefreshRequest(BaseModel):
 async def login(request: LoginRequest) -> TokenResponse:
     """
     Authenticate user and return tokens.
-    
-    Args:
-        request: Login credentials.
-        
-    Returns:
-        TokenResponse: Access and refresh tokens.
-        
-    Raises:
-        HTTPException: If credentials are invalid.
     """
-    user = get_user_by_email(request.email)
-    
+    user = await get_user_by_email(request.email)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -61,7 +54,7 @@ async def login(request: LoginRequest) -> TokenResponse:
         )
     
     # Create tokens with user ID and role
-    token_data = {"sub": str(user["id"]), "role": user["role"].value}
+    token_data = {"sub": str(user["id"]), "role": user["role"]}
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(token_data)
     
@@ -69,40 +62,67 @@ async def login(request: LoginRequest) -> TokenResponse:
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
+        user=UserRead(**user)
     )
 
 
-@router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(request: RefreshRequest) -> TokenResponse:
+@router.post("/register", response_model=TokenResponse)
+async def register(request: RegisterRequest) -> TokenResponse:
     """
-    Refresh access token using refresh token.
-    
-    Args:
-        request: Refresh token request.
-        
-    Returns:
-        TokenResponse: New access and refresh tokens.
-        
-    Raises:
-        HTTPException: If refresh token is invalid.
+    Register a new user and return tokens.
     """
-    payload = verify_token_type(request.refresh_token, "refresh")
-    
-    if payload is None:
+    if await get_user_by_email(request.email):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
         )
     
-    # Create new tokens
-    token_data = {"sub": payload["sub"], "role": payload["role"]}
-    access_token = create_access_token(token_data)
+    # Create new user
+    from app.core.security import hash_password
+    
+    user_id = uuid.uuid4()
+    user = {
+        "id": user_id,
+        "email": request.email,
+        "username": request.username,
+        "full_name": request.full_name,
+        "hashed_password": hash_password(request.password),
+        "role": request.role,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+    }
+    
+    await create_user(user)
+    
+    # Create tokens
+    token_data = {"sub": str(user_id), "role": request.role.value}
+    access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(token_data)
     
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
+        user=UserRead(**user)
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(request: RefreshRequest) -> TokenResponse:
+    payload = verify_token_type(request.refresh_token, "refresh")
+    
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Fetch the user to include in the response
+    user = await get_user_by_id(payload["sub"]) # You need to implement/import this
+    
+    token_data = {"sub": payload["sub"], "role": payload["role"]}
+    return TokenResponse(
+        access_token=create_access_token(token_data),
+        refresh_token=create_refresh_token(token_data),
+        token_type="bearer",
+        user=UserRead(**user) # This field is REQUIRED by your schema
     )
 
 
