@@ -13,7 +13,7 @@ from app.core.config import get_settings
 
 
 # Password hashing (passlib bcrypt)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
