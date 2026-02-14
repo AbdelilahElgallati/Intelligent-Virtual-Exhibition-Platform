@@ -68,6 +68,36 @@ async def track_interaction(
     return {"status": "tracked", "user_id": user_id, "item_id": event.item_id}
 
 
+@router.get("/events", response_model=List[RecommendationItem])
+async def get_recommended_events(
+    top_k: int = 5,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get recommended events for the current user.
+    """
+    # Simple fallback as requested: latest approved events
+    # In production, use the hybrid_recommender
+    from ..events.service import list_events
+    from ..events.schemas import EventState
+    
+    events = await list_events(state=EventState.APPROVED)
+    
+    # Transform to RecommendationItem
+    recommendations = []
+    for event in events[:top_k]:
+        recommendations.append(RecommendationItem(
+            id=event["id"],
+            title=event["title"],
+            description=event["description"],
+            type="event",
+            score=0.9, # Mock score
+            reason="Based on your interests"
+        ))
+        
+    return recommendations
+
+
 @router.get("/user/{user_id}", response_model=List[RecommendationItem])
 async def get_user_recommendations(
     user_id: str,

@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
 
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 
 
 class UserBase(BaseModel):
@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     
     id: UUID
     email: EmailStr
+    username: str
     full_name: str
     role: Role
     is_active: bool = True
@@ -30,6 +31,7 @@ class UserCreate(BaseModel):
     """Schema for creating a new user."""
     
     email: EmailStr
+    username: str
     password: str
     full_name: str
     role: Role = Role.VISITOR
@@ -42,6 +44,7 @@ class UserRead(BaseModel):
     
     id: UUID
     email: EmailStr
+    username: str
     full_name: str
     role: Role
     is_active: bool
@@ -54,6 +57,7 @@ class UserUpdate(BaseModel):
     """Schema for updating user data."""
     
     email: Optional[EmailStr] = None
+    username: Optional[str] = None
     full_name: Optional[str] = None
     role: Optional[Role] = None
     is_active: Optional[bool] = None

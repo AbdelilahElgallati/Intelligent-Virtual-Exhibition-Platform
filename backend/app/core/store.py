@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.security import hash_password
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 
 
 # In-memory user store
@@ -62,3 +62,8 @@ def get_user_by_id(user_id: UUID) -> dict | None:
         if user["id"] == user_id:
             return user
     return None
+def create_user(user_data: dict) -> dict:
+    """Create a new user in the in-memory store."""
+    email = user_data["email"]
+    FAKE_USERS[email] = user_data
+    return user_data

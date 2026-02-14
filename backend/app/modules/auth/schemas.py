@@ -6,16 +6,10 @@ Defines data models for authentication, authorization, and user roles.
 
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-
-class Role(str, Enum):
-    """User roles in the platform."""
-    
-    ADMIN = "admin"
-    ORGANIZER = "organizer"
-    ENTERPRISE = "enterprise"
-    VISITOR = "visitor"
+from app.modules.users.schemas import UserRead
+from app.modules.auth.enums import Role
 
 
 class LoginRequest(BaseModel):
@@ -27,11 +21,24 @@ class LoginRequest(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RegisterRequest(BaseModel):
+    """Schema for user registration request."""
+    
+    email: EmailStr
+    username: str
+    password: str
+    full_name: str
+    role: Role = Role.VISITOR
+    
+    model_config = {"from_attributes": True}
+
+
 class TokenResponse(BaseModel):
     """Schema for authentication token response."""
     
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    user: UserRead
     
     model_config = {"from_attributes": True}

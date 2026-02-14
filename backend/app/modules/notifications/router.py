@@ -13,6 +13,7 @@ from app.modules.notifications.schemas import NotificationRead
 from app.modules.notifications.service import (
     get_notification_by_id,
     list_user_notifications,
+    mark_all_notifications_read,
     mark_as_read,
 )
 
@@ -29,8 +30,19 @@ async def get_my_notifications(
     
     Authenticated users only.
     """
-    notifications = list_user_notifications(current_user["id"])
+    notifications = await list_user_notifications(current_user["id"])
     return [NotificationRead(**n) for n in notifications]
+
+
+@router.post("/mark-all-read")
+async def mark_all_my_notifications_read(
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Mark all notifications as read for current user.
+    """
+    await mark_all_notifications_read(current_user["id"])
+    return {"status": "success"}
 
 
 @router.post("/{notification_id}/read", response_model=NotificationRead)
@@ -43,12 +55,12 @@ async def mark_notification_read(
     
     Authenticated users only.
     """
-    notification = get_notification_by_id(notification_id)
-    if notification is None or notification["user_id"] != current_user["id"]:
+    notification = await get_notification_by_id(notification_id)
+    if notification is None or notification["user_id"] != str(current_user["id"]):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Notification not found",
         )
     
-    updated = mark_as_read(notification_id)
+    updated = await mark_as_read(notification_id)
     return NotificationRead(**updated)

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_current_user, require_role, require_roles
 from app.core.store import FAKE_ORGANIZATIONS
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 from app.modules.subscriptions.schemas import SubscriptionAssign, SubscriptionRead
 from app.modules.subscriptions.service import assign_plan, get_plan
 

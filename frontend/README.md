@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IVEP Frontend - Week 1 Foundation
+
+This is the visitor-facing frontend for the Intelligent Virtual Exhibition Platform (IVEP).
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd frontend
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Configuration
+1. Copy `.env.example` to `.env` (or `.env.local`):
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Ensure `NEXT_PUBLIC_API_URL` points to your running backend (default: `http://127.0.0.1:8000`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Running the Application
+```bash
+npm run dev
+```
+The application will be available at `http://localhost:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Features (Week 2)
+- **Visitor Dashboard**: View joined events, personalized recommendations, and notifications.
+- **Event Details**: Real-time participation status (NOT_JOINED, PENDING, APPROVED, REJECTED) and registration logic.
+- **Notifications**: Panel with mark-as-read functionality and unread counts.
+- **API Client**: Centralized, typed API client with JWT token handling and 401 redirection.
 
-## Learn More
+## Features (Week 1)
+- **Foundation**: Next.js 14 App Router, Tailwind CSS design system, API utilities.
+- **Visitor Pages**: Responsive Landing Page, Events List (with search/filters), and Event Details.
+- **Authentication Base**: Login and Register pages, JWT-enabled AuthContext, and Protected Route helper.
+- **API Integration**: Ready to connect with the FastAPI backend.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+- `src/app`: App Router pages and layouts.
+- `src/components`: UI components, shared layout elements, and feature-specific components.
+- `src/context`: React Context for global state (e.g., Authentication).
+- `src/services`: API service layers for business logic.
+- `src/types`: TypeScript type definitions.
+- `src/lib`: Shared utilities and configuration.

@@ -1,81 +1,72 @@
 """
 Notification service for IVEP.
 
-Provides in-memory notification storage and operations.
+Provides MongoDB-backed notification storage and operations.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Optional, List
 from uuid import UUID, uuid4
-
+from motor.motor_asyncio import AsyncIOMotorCollection
+from app.db.mongo import get_database
 from app.modules.notifications.schemas import NotificationType
 
+def get_notifications_collection() -> AsyncIOMotorCollection:
+    """Get the notifications collection from MongoDB."""
+    db = get_database()
+    return db["notifications"]
 
-# In-memory notification store
-NOTIFICATIONS_STORE: dict[UUID, dict] = {}
-
-
-def create_notification(user_id: UUID, type: NotificationType, message: str) -> dict:
+async def create_notification(user_id: UUID, type: NotificationType, message: str) -> dict:
     """
     Create a new notification.
-    
-    Args:
-        user_id: Recipient user ID.
-        type: Notification type.
-        message: Notification message.
-        
-    Returns:
-        dict: Created notification data.
     """
     notification_id = uuid4()
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     
     notification = {
-        "id": notification_id,
-        "user_id": user_id,
+        "id": str(notification_id),
+        "user_id": str(user_id),
         "type": type,
         "message": message,
         "is_read": False,
         "created_at": now,
     }
     
-    NOTIFICATIONS_STORE[notification_id] = notification
+    collection = get_notifications_collection()
+    await collection.insert_one(notification)
     return notification
 
-
-def list_user_notifications(user_id: UUID) -> list[dict]:
+async def list_user_notifications(user_id: UUID) -> List[dict]:
     """
     List notifications for a user.
-    
-    Args:
-        user_id: User ID.
-        
-    Returns:
-        list[dict]: List of notifications.
     """
-    notifications = [n for n in NOTIFICATIONS_STORE.values() if n["user_id"] == user_id]
-    # Return most recent first
-    return sorted(notifications, key=lambda x: x["created_at"], reverse=True)
+    collection = get_notifications_collection()
+    cursor = collection.find({"user_id": str(user_id)}).sort("created_at", -1)
+    return await cursor.to_list(length=100)
 
-
-def mark_as_read(notification_id: UUID) -> Optional[dict]:
+async def mark_as_read(notification_id: UUID) -> Optional[dict]:
     """
     Mark a notification as read.
-    
-    Args:
-        notification_id: Notification ID.
-        
-    Returns:
-        dict: Updated notification or None.
     """
-    notification = NOTIFICATIONS_STORE.get(notification_id)
-    if notification is None:
-        return None
-    
-    notification["is_read"] = True
-    return notification
+    collection = get_notifications_collection()
+    return await collection.find_one_and_update(
+        {"id": str(notification_id)},
+        {"$set": {"is_read": True}},
+        return_document=True
+    )
 
+async def mark_all_notifications_read(user_id: UUID) -> bool:
+    """
+    Mark all unread notifications as read for a user.
+    """
+    collection = get_notifications_collection()
+    result = await collection.update_many(
+        {"user_id": str(user_id), "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return result.modified_count > 0
 
-def get_notification_by_id(notification_id: UUID) -> Optional[dict]:
+async def get_notification_by_id(notification_id: UUID) -> Optional[dict]:
     """Get notification by ID."""
-    return NOTIFICATIONS_STORE.get(notification_id)
+    collection = get_notifications_collection()
+    return await collection.find_one({"id": str(notification_id)})

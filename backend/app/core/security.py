@@ -66,14 +66,21 @@ def create_access_token(
     1) Legacy: create_access_token(subject="user-id")
     2) New:    create_access_token(data={"sub": "...", "role": "..."})
     """
-    s = get_settings()
     secret, algo = _jwt_secret_and_algorithm()
+    to_encode = data.copy() if data is not None else {}
+    
+    # If subject is provided separately, ensure it goes into 'sub'
+    if subject:
+        to_encode["sub"] = str(subject)
 
-    # Build payload
-    if data is not None:
-        to_encode = data.copy()
-    else:
-        to_encode = {"sub": str(subject)}
+    s = get_settings()
+    # secret, algo = _jwt_secret_and_algorithm()
+
+    # # Build payload
+    # if data is not None:
+    #     to_encode = data.copy()
+    # else:
+    #     to_encode = {"sub": str(subject)}
 
     # Expiration
     if expires_delta:

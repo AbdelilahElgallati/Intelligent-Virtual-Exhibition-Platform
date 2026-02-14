@@ -12,7 +12,7 @@ from pydantic import BaseModel, EmailStr
 
 from app.core.dependencies import get_current_user, require_roles
 from app.core.store import FAKE_ORGANIZATIONS, FAKE_ORG_MEMBERS, get_user_by_email
-from app.modules.auth.schemas import Role
+from app.modules.auth.enums import Role
 from app.modules.organizations.schemas import (
     OrganizationCreate,
     OrganizationMember,
