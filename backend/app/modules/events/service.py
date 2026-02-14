@@ -56,7 +56,28 @@ async def get_event_by_id(event_id: UUID) -> Optional[dict]:
     return await collection.find_one({"id": str(event_id)})
 
 
-async def list_events(organizer_id: Optional[UUID] = None, state: Optional[EventState] = None) -> list[dict]:
+# async def list_events(organizer_id: Optional[UUID] = None, state: Optional[EventState] = None) -> list[dict]:
+#     """
+#     List all events with optional filters.
+#     """
+#     collection = get_events_collection()
+#     query = {}
+    
+#     if organizer_id:
+#         query["organizer_id"] = str(organizer_id)
+    
+#     if state:
+#         query["state"] = state
+    
+#     cursor = collection.find(query)
+#     return await cursor.to_list(length=100)
+
+async def list_events(
+    organizer_id: Optional[UUID] = None, 
+    state: Optional[EventState] = None,
+    category: Optional[str] = None,  # Add this
+    search: Optional[str] = None     # Add this
+) -> list[dict]:
     """
     List all events with optional filters.
     """
@@ -68,6 +89,17 @@ async def list_events(organizer_id: Optional[UUID] = None, state: Optional[Event
     
     if state:
         query["state"] = state
+
+    # Implement filtering logic for the new parameters
+    if category:
+        query["category"] = category
+
+    if search:
+        # Simple case-insensitive regex search on title or description
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}}
+        ]
     
     cursor = collection.find(query)
     return await cursor.to_list(length=100)
