@@ -7,7 +7,7 @@ const getBaseUrl = () => {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${getBaseUrl()}${endpoint}`;
-  
+
   const headers = new Headers(options.headers);
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -54,12 +54,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const apiClient = {
-  get: <T>(endpoint: string, options?: RequestInit) => 
+  get: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
-  post: <T>(endpoint: string, body?: any, options?: RequestInit) => 
+  post: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
-  patch: <T>(endpoint: string, body?: any, options?: RequestInit) => 
+  put: <T>(endpoint: string, body?: any, options?: RequestInit) =>
+    request<T>(endpoint, { ...options, method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
+  patch: <T>(endpoint: string, body?: any, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
-  delete: <T>(endpoint: string, options?: RequestInit) => 
+  delete: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
 };
