@@ -1,4 +1,7 @@
 export const ENDPOINTS = {
+  USERS: {
+    ME: '/users/me',
+  },
   EVENTS: {
     LIST: '/events',
     GET: (id: string) => `/events/${id}`,

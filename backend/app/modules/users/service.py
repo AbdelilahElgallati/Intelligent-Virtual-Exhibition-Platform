@@ -1,6 +1,7 @@
 from typing import Optional
 from uuid import UUID
 from motor.motor_asyncio import AsyncIOMotorCollection
+from pymongo import ReturnDocument
 from app.db.mongo import get_database
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.enums import Role
@@ -30,3 +31,17 @@ async def create_user(user_data: dict) -> dict:
     
     await collection.insert_one(user_data)
     return user_data
+
+async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optional[dict]:
+    """
+    Update user profile fields in MongoDB.
+    
+    Uses $set so only provided fields are changed — existing fields are preserved.
+    """
+    collection = get_users_collection()
+    result = await collection.find_one_and_update(
+        {"id": str(user_id)},
+        {"$set": update_data},
+        return_document=ReturnDocument.AFTER,
+    )
+    return result
