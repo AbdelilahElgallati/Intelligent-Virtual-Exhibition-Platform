@@ -42,8 +42,8 @@ export function StandResources({ standId }: StandResourcesProps) {
 
     return (
         <div className="space-y-4">
-            {resources.map((resource) => (
-                <Card key={resource.id} className="p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+            {resources.map((resource, idx) => (
+                <Card key={resource.id || (resource as any)._id || idx} className="p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                     <div className="flex items-center space-x-4">
                         <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
                             {resource.type === 'video' ? (

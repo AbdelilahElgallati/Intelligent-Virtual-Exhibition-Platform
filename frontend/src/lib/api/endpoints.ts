@@ -24,4 +24,11 @@ export const ENDPOINTS = {
   RESOURCES: {
     LIST: (standId: string) => `/resources/stand/${standId}`,
   },
+  CHAT: {
+    START: (standId: string) => `/chat/rooms/stand/${standId}`,
+    HISTORY: (roomId: string) => `/chat/rooms/${roomId}/messages`,
+  },
+  MEETINGS: {
+    REQUEST: '/meetings/',
+  },
 };

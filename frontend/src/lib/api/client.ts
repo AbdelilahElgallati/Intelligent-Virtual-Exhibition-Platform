@@ -42,8 +42,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
-    throw new Error(error.detail || 'API request failed');
+    const errorData = await response.json().catch(() => ({ detail: 'An error occurred' }));
+    let errorMessage = 'API request failed';
+
+    if (typeof errorData.detail === 'string') {
+      errorMessage = errorData.detail;
+    } else if (Array.isArray(errorData.detail)) {
+      errorMessage = errorData.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+    } else if (errorData.detail && typeof errorData.detail === 'object') {
+      errorMessage = errorData.detail.message || JSON.stringify(errorData.detail);
+    }
+
+    throw new Error(errorMessage);
   }
 
   if (response.status === 204) {
