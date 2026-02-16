@@ -17,4 +17,11 @@ export const ENDPOINTS = {
     MARK_READ: (id: string) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/mark-all-read',
   },
+  STANDS: {
+    LIST: (eventId: string) => `/events/${eventId}/stands`,
+    GET: (eventId: string, standId: string) => `/events/${eventId}/stands/${standId}`,
+  },
+  RESOURCES: {
+    LIST: (standId: string) => `/resources/stand/${standId}`,
+  },
 };

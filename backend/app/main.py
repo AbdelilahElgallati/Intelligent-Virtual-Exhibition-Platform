@@ -91,7 +91,11 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(resources_router, prefix=f"{api_prefix}/resources", tags=["resources"])
     app.include_router(leads_router, prefix=f"{api_prefix}/leads", tags=["leads"])
     app.include_router(recommendations_router, prefix=f"{api_prefix}/recommendations", tags=["recommendations"])
-
+    
+    # Dev / Seeding
+    if settings.ENV == "dev" or settings.DEBUG:
+        from app.modules.dev.router import router as dev_router
+        app.include_router(dev_router, prefix=api_prefix)
 
 def create_application() -> FastAPI:
     """

@@ -4,20 +4,25 @@ Organizations module router for IVEP.
 Handles organization-related endpoints.
 """
 
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from warnings import warn
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
 from app.core.dependencies import get_current_user, require_roles
-from app.core.store import FAKE_ORGANIZATIONS, FAKE_ORG_MEMBERS, get_user_by_email
+from app.modules.users.service import get_user_by_email
 from app.modules.auth.enums import Role
 from app.modules.organizations.schemas import (
     OrganizationCreate,
-    OrganizationMember,
     OrganizationRead,
     OrgMemberRole,
+)
+from app.modules.organizations.service import (
+    create_organization as service_create_org,
+    list_organizations as service_list_orgs,
+    get_organization_by_id,
+    add_organization_member,
 )
 
 
@@ -48,37 +53,9 @@ async def create_organization(
     Create a new organization.
     
     Only admins and organizers can create organizations.
-    
-    Args:
-        request: Organization creation data.
-        current_user: Authenticated user.
-        
-    Returns:
-        OrganizationRead: Created organization data.
     """
-    org_id = uuid4()
-    now = datetime.now(timezone.utc)
-    
-    organization = {
-        "id": org_id,
-        "name": request.name,
-        "description": request.description,
-        "owner_id": current_user["id"],
-        "created_at": now,
-    }
-    
-    # Store organization
-    FAKE_ORGANIZATIONS[org_id] = organization
-    
-    # Add owner as organization member
-    member = {
-        "user_id": current_user["id"],
-        "organization_id": org_id,
-        "role_in_org": OrgMemberRole.OWNER,
-        "joined_at": now,
-    }
-    FAKE_ORG_MEMBERS.append(member)
-    
+    # Create organization
+    organization = await service_create_org(request, current_user["id"])
     return OrganizationRead(**organization)
 
 
@@ -91,20 +68,10 @@ async def invite_to_organization(
     Invite a user to an organization.
     
     Only admins and organizers can invite users.
-    This is a mock implementation - no real invite is sent.
-    
-    Args:
-        request: Invite request data.
-        current_user: Authenticated user.
-        
-    Returns:
-        InviteResponse: Invite confirmation.
-        
-    Raises:
-        HTTPException: If organization not found or user not authorized.
+    This helps populate members for testing.
     """
     # Check if organization exists
-    organization = FAKE_ORGANIZATIONS.get(request.organization_id)
+    organization = await get_organization_by_id(request.organization_id)
     if organization is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -112,7 +79,9 @@ async def invite_to_organization(
         )
     
     # Check if current user is owner or admin
-    is_owner = organization["owner_id"] == current_user["id"]
+    # Note: In a real app we'd check if current_user is a member with ADMIN role in org
+    # Here checking against 'created_by' (which is owner_id in our simplified seed model)
+    is_owner = str(organization.get("owner_id")) == str(current_user["id"])
     is_admin = current_user["role"] == Role.ADMIN
     
     if not (is_owner or is_admin):
@@ -121,19 +90,16 @@ async def invite_to_organization(
             detail="You don't have permission to invite users to this organization",
         )
     
-    # Check if user exists (optional - could allow inviting non-existing users)
-    invited_user = get_user_by_email(request.email)
+    # Check if user exists
+    invited_user = await get_user_by_email(request.email)
     
-    # Mock: Add member if user exists
+    # Real logic: Add member if user exists
     if invited_user:
-        now = datetime.now(timezone.utc)
-        member = {
-            "user_id": invited_user["id"],
-            "organization_id": request.organization_id,
-            "role_in_org": request.role_in_org,
-            "joined_at": now,
-        }
-        FAKE_ORG_MEMBERS.append(member)
+        await add_organization_member(
+            organization_id=request.organization_id,
+            user_id=invited_user["id"],
+            role=request.role_in_org
+        )
     
     return InviteResponse(
         message=f"Invitation sent to {request.email}" if not invited_user else f"User {request.email} added to organization",
@@ -149,8 +115,6 @@ async def list_organizations(
 ) -> list[OrganizationRead]:
     """
     List all organizations (for authenticated users).
-    
-    Returns:
-        list[OrganizationRead]: List of all organizations.
     """
-    return [OrganizationRead(**org) for org in FAKE_ORGANIZATIONS.values()]
+    orgs = await service_list_orgs()
+    return [OrganizationRead(**org) for org in orgs]

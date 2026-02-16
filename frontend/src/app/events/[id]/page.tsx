@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, use, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Event, ParticipantStatus } from '@/lib/api/types';
@@ -9,6 +10,7 @@ import { JoinEventCard } from '@/components/events/JoinEventCard';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Container } from '@/components/common/Container';
 import { SectionTitle } from '@/components/common/SectionTitle';
+import { useAuth } from '@/context/AuthContext';
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
@@ -16,6 +18,10 @@ interface EventPageProps {
 
 export default function EventDetailsPage({ params }: EventPageProps) {
   const { id } = use(params);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
+
   const [event, setEvent] = useState<Event | null>(null);
   const [status, setStatus] = useState<ParticipantStatus>('NOT_JOINED');
   const [loading, setLoading] = useState(true);
@@ -25,21 +31,37 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [eventData, statusData] = await Promise.all([
-        apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id)),
-        apiClient.get<{ status: ParticipantStatus }>(ENDPOINTS.EVENTS.MY_STATUS(id)),
-      ]);
+
+      // Always fetch event details
+      const eventPromise = apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id));
+
+      // Only fetch status if authenticated
+      const statusPromise = isAuthenticated
+        ? apiClient.get<{ status: ParticipantStatus }>(ENDPOINTS.EVENTS.MY_STATUS(id))
+        : Promise.resolve({ status: 'NOT_JOINED' as ParticipantStatus });
+
+      const [eventData, statusData] = await Promise.all([eventPromise, statusPromise]);
+
       setEvent(eventData);
       setStatus(statusData.status);
     } catch (err) {
       console.error('Failed to fetch event details:', err);
+      // If event fetch fails, it's a critical error for the page
+      // If status fetch fails (e.g. 401 despite check), we might still want to show event
       setError('Failed to load event details. Please try again later.');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const handleJoin = async () => {
+    if (!isAuthenticated) {
+      // Save current path to redirect back after login
+      localStorage.setItem('redirectAfterLogin', pathname);
+      router.push('/auth/login');
+      return;
+    }
+
     try {
       setJoinLoading(true);
       await apiClient.post(ENDPOINTS.EVENTS.JOIN(id));
@@ -81,7 +103,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   return (
     <div className="pb-20">
       <EventDetailsHeader event={event} />
-      
+
       <Container className="py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
@@ -111,7 +133,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
                 </section>
               </>
             )}
-            
+
             {status !== 'APPROVED' && (
               <section className="p-8 border rounded-2xl bg-muted/10 text-center border-dashed">
                 <h3 className="text-xl font-semibold mb-2">Exclusive Content</h3>

@@ -18,6 +18,10 @@ class StandBase(BaseModel):
     event_id: UUID
     organization_id: UUID
     name: str
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    tags: Optional[list[str]] = []
+    stand_type: Optional[str] = "standard"  # standard, premium, sponsor
     created_at: datetime
     
     model_config = {"from_attributes": True}
@@ -28,6 +32,10 @@ class StandCreate(BaseModel):
     
     organization_id: UUID
     name: str
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    tags: Optional[list[str]] = []
+    stand_type: Optional[str] = "standard"
     
     model_config = {"from_attributes": True}
 
@@ -39,6 +47,10 @@ class StandRead(BaseModel):
     event_id: UUID
     organization_id: UUID
     name: str
+    description: Optional[str] = None
+    logo_url: Optional[str] = None
+    tags: Optional[list[str]] = []
+    stand_type: Optional[str] = "standard"
     created_at: datetime
     
     model_config = {"from_attributes": True}
