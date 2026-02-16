@@ -11,6 +11,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StandResources } from '@/components/stand/StandResources';
+import { ChatPanel } from '@/components/stand/ChatPanel';
+import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
 import { ArrowLeft, Building2, MessageSquare, CalendarDays, Info } from 'lucide-react';
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
@@ -18,6 +20,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [stand, setStand] = useState<Stand | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'resources' | 'about'>('resources');
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchStand = async () => {
@@ -48,7 +52,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 relative">
             <div className="bg-white border-b border-gray-200">
                 <Container className="py-8">
                     <Link href={`/events/${id}/live?tab=stands`} className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
@@ -88,11 +92,17 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                             </div>
 
                             <div className="flex flex-wrap gap-3">
-                                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                                <Button
+                                    onClick={() => setIsChatOpen(true)}
+                                    className="bg-indigo-600 hover:bg-indigo-700"
+                                >
                                     <MessageSquare className="w-5 h-5 mr-2" />
                                     Chat with Team
                                 </Button>
-                                <Button variant="outline">
+                                <Button
+                                    onClick={() => setIsMeetingModalOpen(true)}
+                                    variant="outline"
+                                >
                                     <CalendarDays className="w-5 h-5 mr-2" />
                                     Request Meeting
                                 </Button>
@@ -157,6 +167,23 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     </Card>
                 )}
             </Container>
+
+            {/* Chat Panel */}
+            {isChatOpen && (
+                <ChatPanel
+                    standId={standId}
+                    standName={stand.name}
+                    onClose={() => setIsChatOpen(false)}
+                />
+            )}
+
+            {/* Meeting Modal */}
+            <MeetingRequestModal
+                isOpen={isMeetingModalOpen}
+                onClose={() => setIsMeetingModalOpen(false)}
+                standId={standId}
+                standName={stand.name}
+            />
         </div>
     );
 }
