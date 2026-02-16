@@ -40,10 +40,10 @@ async def upload_resource(
     return await resource_repo.create_resource(resource_data)
 
 @router.get("/stand/{stand_id}", response_model=List[ResourceSchema])
-async def get_catalog(stand_id: str, current_user: dict = Depends(get_current_user)):
+async def get_catalog(stand_id: str):
     return await resource_repo.get_resources_by_stand(stand_id)
 
 @router.get("/{resource_id}/track")
-async def track_download(resource_id: str, current_user: dict = Depends(get_current_user)):
+async def track_download(resource_id: str):
     await resource_repo.increment_downloads(resource_id)
     return {"status": "tracked"}

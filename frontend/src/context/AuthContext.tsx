@@ -29,7 +29,7 @@ function decodeToken(token: string): any {
                 .join('')
         );
         const decoded = JSON.parse(jsonPayload);
-        
+
         // Security check: ensure the token decoded is actually an access token
         if (decoded.type !== 'access') {
             console.warn("Attempted to use non-access token for session");
@@ -76,7 +76,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(user);
             localStorage.setItem('auth_tokens', JSON.stringify(tokens));
             localStorage.setItem('auth_user', JSON.stringify(response.user));
-            router.push('/');
+
+            // Check for redirect path
+            const redirectPath = localStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                localStorage.removeItem('redirectAfterLogin');
+                router.push(redirectPath);
+            } else {
+                router.push('/');
+            }
         } catch (error) {
             console.error('Login failed', error);
             throw error;
@@ -96,7 +104,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(user);
             localStorage.setItem('auth_tokens', JSON.stringify(tokens));
             localStorage.setItem('auth_user', JSON.stringify(response.user));
-            router.push('/');
+
+            // Check for redirect path
+            const redirectPath = localStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                localStorage.removeItem('redirectAfterLogin');
+                router.push(redirectPath);
+            } else {
+                router.push('/');
+            }
         } catch (error) {
             console.error('Registration failed', error);
             throw error;
@@ -111,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('auth_tokens');
         localStorage.removeItem('auth_user');
         authService.logout();
-        router.push('/auth/login');
+        router.push('/');
     };
 
     return (

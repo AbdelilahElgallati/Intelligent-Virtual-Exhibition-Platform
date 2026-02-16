@@ -30,23 +30,23 @@ async def assign_stand_to_organization(
     Organizer or Admin only.
     One stand per organization per event.
     """
-    event = get_event_by_id(event_id)
+    event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     
     # Check ownership for organizers
-    if current_user["role"] != Role.ADMIN and event["organizer_id"] != current_user["id"]:
+    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["id"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Check if org already has a stand
-    existing = get_stand_by_org(event_id, data.organization_id)
+    existing = await get_stand_by_org(event_id, data.organization_id)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Organization already has a stand at this event",
         )
     
-    stand = create_stand(event_id, data.organization_id, data.name)
+    stand = await create_stand(event_id, data.organization_id, data.name)
     return StandRead(**stand)
 
 
@@ -57,9 +57,25 @@ async def get_event_stands(event_id: UUID) -> list[StandRead]:
     
     Public endpoint.
     """
-    event = get_event_by_id(event_id)
+    event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     
-    stands = list_event_stands(event_id)
+    stands = await list_event_stands(event_id)
     return [StandRead(**s) for s in stands]
+
+
+@router.get("/{stand_id}", response_model=StandRead)
+async def get_stand(stand_id: UUID) -> StandRead:
+    """
+    Get stand details by ID.
+    
+    Public endpoint.
+    """
+    from app.modules.stands.service import get_stand_by_id
+    
+    stand = await get_stand_by_id(stand_id)
+    if stand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
+            
+    return StandRead(**stand)

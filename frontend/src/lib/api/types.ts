@@ -45,3 +45,26 @@ export interface ParticipationStatus {
   status: ParticipantStatus;
   participant_id: string | null;
 }
+
+export interface Stand {
+  id: string;
+  event_id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  logo_url?: string;
+  tags?: string[];
+  stand_type?: string;
+  created_at: string;
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  description?: string;
+  type: string;
+  file_path: string;
+  file_size: number;
+  stand_id: string;
+  downloads: number;
+}
