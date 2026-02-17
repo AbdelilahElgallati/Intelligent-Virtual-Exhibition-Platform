@@ -1,7 +1,8 @@
 import { API_BASE_URL, API_PREFIX } from '../config';
+import { getAccessToken } from '../auth';
 
 const getBaseUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
   return `${baseUrl}${API_PREFIX}`;
 };
 
@@ -9,23 +10,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const url = `${getBaseUrl()}${endpoint}`;
 
   const headers = new Headers(options.headers);
-  if (!headers.has('Content-Type')) {
+  const isFormData = options.body instanceof FormData;
+
+  if (!isFormData && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // Get token from localStorage
-  if (typeof window !== 'undefined') {
-    const storedTokens = localStorage.getItem('auth_tokens');
-    if (storedTokens) {
-      try {
-        const parsed = JSON.parse(storedTokens);
-        if (parsed.access_token) {
-          headers.set('Authorization', `Bearer ${parsed.access_token}`);
-        }
-      } catch (e) {
-        console.error('Failed to parse auth_tokens', e);
-      }
-    }
+  const token = getAccessToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(url, {

@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
+import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
 
 export const metadata: Metadata = {
   title: "IVEP - Intelligent Virtual Exhibition Platform",
@@ -25,6 +26,7 @@ export default function RootLayout({
           <main className="flex-grow">
             {children}
           </main>
+          <FloatingAssistant />
           <Footer />
         </AuthProvider>
       </body>

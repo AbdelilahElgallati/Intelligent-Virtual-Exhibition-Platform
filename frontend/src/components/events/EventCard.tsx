@@ -12,6 +12,7 @@ interface EventCardProps {
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
+  const eventId = (event as any)?.id || (event as any)?._id;
   return (
     <Card className="overflow-hidden flex flex-col h-full group">
       {event.banner_url ? (
@@ -56,7 +57,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
       </CardContent>
       <CardFooter className="pt-0">
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/events/${event.id}`}>View Details</Link>
+          <Link href={`/events/${eventId}`}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>

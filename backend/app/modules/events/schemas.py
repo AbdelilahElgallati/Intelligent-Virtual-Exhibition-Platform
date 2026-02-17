@@ -7,9 +7,8 @@ Defines data models for events and event lifecycle states.
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class EventState(str, Enum):
@@ -25,10 +24,10 @@ class EventState(str, Enum):
 class EventBase(BaseModel):
     """Base schema for event data."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     title: str
     description: Optional[str] = None
-    organizer_id: UUID
+    organizer_id: str
     state: EventState
     banner_url: Optional[str] = None
     category: Optional[str] = "Exhibition"
@@ -39,7 +38,7 @@ class EventBase(BaseModel):
     organizer_name: Optional[str] = None
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class EventCreate(BaseModel):

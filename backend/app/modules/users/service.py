@@ -5,6 +5,7 @@ from pymongo import ReturnDocument
 from app.db.mongo import get_database
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.enums import Role
+from app.db.utils import stringify_object_ids
 
 def get_users_collection() -> AsyncIOMotorCollection:
     """Get the users collection from MongoDB."""
@@ -14,13 +15,15 @@ def get_users_collection() -> AsyncIOMotorCollection:
 async def get_user_by_email(email: str) -> Optional[dict]:
     """Get user by email from MongoDB."""
     collection = get_users_collection()
-    return await collection.find_one({"email": email})
+    doc = await collection.find_one({"email": email})
+    return stringify_object_ids(doc) if doc else None
 
 async def get_user_by_id(user_id: str | UUID) -> Optional[dict]:
     """Get user by ID from MongoDB."""
     collection = get_users_collection()
     # Support both string and UUID for ID if stored as strings
-    return await collection.find_one({"id": str(user_id)})
+    doc = await collection.find_one({"id": str(user_id)})
+    return stringify_object_ids(doc) if doc else None
 
 async def create_user(user_data: dict) -> dict:
     """Create a new user in MongoDB."""
@@ -30,7 +33,7 @@ async def create_user(user_data: dict) -> dict:
         user_data["id"] = str(user_data["id"])
     
     await collection.insert_one(user_data)
-    return user_data
+    return stringify_object_ids(user_data)
 
 async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optional[dict]:
     """
@@ -44,4 +47,4 @@ async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optiona
         {"$set": update_data},
         return_document=ReturnDocument.AFTER,
     )
-    return result
+    return stringify_object_ids(result) if result else None

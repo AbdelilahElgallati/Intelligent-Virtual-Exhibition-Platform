@@ -21,6 +21,25 @@ from app.modules.notifications.service import (
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
+def _normalize_notification(raw: dict) -> dict:
+    """Prepare Mongo notification dict for Pydantic parsing."""
+
+    normalized = {**raw}
+
+    # Ensure we always expose an id as string, preferring explicit id then _id.
+    mongo_id = normalized.get("_id")
+    if mongo_id is not None:
+        normalized["id"] = str(normalized.get("id", mongo_id))
+    elif normalized.get("id") is not None:
+        normalized["id"] = str(normalized["id"])
+
+    # Be tolerant of legacy/unknown types by forcing string casting.
+    if normalized.get("type") is not None:
+        normalized["type"] = str(normalized["type"])
+
+    return normalized
+
+
 @router.get("/", response_model=list[NotificationRead])
 async def get_my_notifications(
     current_user: dict = Depends(get_current_user),
@@ -31,7 +50,7 @@ async def get_my_notifications(
     Authenticated users only.
     """
     notifications = await list_user_notifications(current_user["id"])
-    return [NotificationRead(**n) for n in notifications]
+    return [NotificationRead(**_normalize_notification(n)) for n in notifications]
 
 
 @router.post("/mark-all-read")
@@ -63,4 +82,4 @@ async def mark_notification_read(
         )
     
     updated = await mark_as_read(notification_id)
-    return NotificationRead(**updated)
+    return NotificationRead(**_normalize_notification(updated))

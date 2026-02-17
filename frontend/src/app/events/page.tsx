@@ -44,12 +44,27 @@ export default function EventsPage() {
         fetchEvents();
     }, []);
 
+    const normalizedCategory = category.trim().toLowerCase();
+
     const filteredEvents = events.filter(event => {
-        const matchesSearch = event.title.toLowerCase().includes(search.toLowerCase()) ||
-            event.description.toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = category === '' || event.category === category;
+        const title = event.title || '';
+        const description = event.description || '';
+        const eventCategory = (event.category || '').toLowerCase();
+
+        const matchesSearch = title.toLowerCase().includes(search.toLowerCase()) ||
+            description.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = !normalizedCategory || eventCategory === normalizedCategory;
         return matchesSearch && matchesCategory;
     });
+
+    const categories = Array.from(
+        new Set(
+            events
+                .map((ev) => (ev.category || '').trim())
+                .filter((cat) => cat.length > 0)
+                .map((cat) => cat.toLowerCase())
+        )
+    );
 
     return (
         <div className="py-12 bg-zinc-50 min-h-screen">
@@ -63,6 +78,8 @@ export default function EventsPage() {
                 <EventsFilters
                     onSearchChange={setSearch}
                     onCategoryChange={setCategory}
+                    categories={categories}
+                    selectedCategory={category}
                 />
 
                 {error && (

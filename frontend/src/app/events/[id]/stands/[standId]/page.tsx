@@ -13,6 +13,9 @@ import { Badge } from '@/components/ui/Badge';
 import { StandResources } from '@/components/stand/StandResources';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
+import { ChatShell } from '@/components/assistant/ChatShell';
+import { favoritesService } from '@/services/favorites.service';
+import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, Building2, MessageSquare, CalendarDays, Info } from 'lucide-react';
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
@@ -22,12 +25,26 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [activeTab, setActiveTab] = useState<'resources' | 'about'>('resources');
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+    const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+    const [favoriteId, setFavoriteId] = useState<string | null>(null);
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         const fetchStand = async () => {
             try {
                 const data = await apiClient.get<Stand>(ENDPOINTS.STANDS.GET(id, standId));
                 setStand(data);
+
+                // Fetch favorites state
+                if (isAuthenticated) {
+                    try {
+                        const favs = await favoritesService.list();
+                        const match = favs.find((f) => f.target_type === 'stand' && (f.target_id === (data as any).id || f.target_id === (data as any)._id));
+                        setFavoriteId(match ? match.id : null);
+                    } catch {
+                        /* ignore favorites fetch error */
+                    }
+                }
 
                 // Track visit
                 try {
@@ -46,7 +63,28 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             }
         };
         fetchStand();
-    }, [id, standId]);
+    }, [id, standId, isAuthenticated]);
+
+    const toggleFavorite = async () => {
+        if (!stand) return;
+        if (!isAuthenticated) {
+            localStorage.setItem('redirectAfterLogin', `/events/${id}/stands/${standId}`);
+            // No router here; use location
+            window.location.href = '/auth/login';
+            return;
+        }
+        try {
+            if (favoriteId) {
+                await favoritesService.remove(favoriteId);
+                setFavoriteId(null);
+            } else {
+                const fav = await favoritesService.add('stand', (stand as any).id || (stand as any)._id);
+                setFavoriteId(fav.id);
+            }
+        } catch (error) {
+            console.error('Failed to toggle favorite', error);
+        }
+    };
 
     if (loading) return <LoadingState message="Loading stand..." />;
     if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
@@ -55,7 +93,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
         <div className="min-h-screen bg-gray-50 relative">
             <div className="bg-white border-b border-gray-200">
                 <Container className="py-8">
-                    <Link href={`/events/${id}/live?tab=stands`} className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
+                    <Link href={`/events/${stand.event_id || id}/live?tab=stands`} className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
                         <ArrowLeft className="w-4 h-4 mr-1" />
                         Back to Event
                     </Link>
@@ -106,9 +144,12 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                                     <CalendarDays className="w-5 h-5 mr-2" />
                                     Request Meeting
                                 </Button>
-                                <Button variant="outline">
+                                <Button variant="outline" onClick={() => setIsAssistantOpen(true)}>
                                     <Info className="w-5 h-5 mr-2" />
                                     Ask Assistant
+                                </Button>
+                                <Button variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
+                                    {favoriteId ? 'Favorited' : 'Add to favorites'}
                                 </Button>
                             </div>
                         </div>
@@ -175,6 +216,25 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     standName={stand.name}
                     onClose={() => setIsChatOpen(false)}
                 />
+            )}
+
+            {isAssistantOpen && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm">
+                    <div className="w-full sm:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
+                        <ChatShell
+                            scope={`stand-${standId}`}
+                            title={`${stand.name} Assistant`}
+                            subtitle="Ask anything about this stand and its resources."
+                            suggestedPrompts={[
+                                'Summarize what this stand offers.',
+                                'Show me the key brochures/resources.',
+                                'What makes this company different?',
+                            ]}
+                            onClose={() => setIsAssistantOpen(false)}
+                            className="h-full"
+                        />
+                    </div>
+                </div>
             )}
 
             {/* Meeting Modal */}

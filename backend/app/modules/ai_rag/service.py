@@ -1,11 +1,12 @@
 """
 Enhanced RAG Service with Vector Search and Semantic Retrieval.
-Combines sentence-transformers embeddings, ChromaDB vector store, and LLM generation.
+This implementation does NOT call external LLMs; it answers directly from retrieved context
+or returns an explicit "I don't know" when no context is available.
 """
-import httpx
 import json
+import re
 from typing import AsyncGenerator, List, Dict, Any, Optional
-from ...core.config import settings
+from app.db.mongo import get_database
 from .vector_store import get_vector_store
 from .chunker import chunk_for_ingestion
 
@@ -16,13 +17,56 @@ class RAGService:
     Uses semantic search to retrieve relevant context before LLM generation.
     """
     
-    def __init__(self):
-        self.ollama_url = f"{settings.OLLAMA_BASE_URL}/api/generate"
-        self.default_model = "llama3"
-    
     def get_vector_store(self, scope: str = "platform"):
         """Get the vector store for a specific scope."""
         return get_vector_store(scope)
+
+    async def _retrieve_db_facts(self, query: str, scope: str, top_k: int = 5) -> List[str]:
+        """Lightweight DB lookup to surface factual data when present."""
+        db = get_database()
+        terms = [t for t in re.findall(r"[A-Za-z0-9]+", query) if len(t) > 2]
+        pattern = "|".join(terms) if terms else re.escape(query)
+        regex = {"$regex": pattern, "$options": "i"}
+        facts: List[str] = []
+
+        # Scope-aware searches
+        if scope.startswith("stand-"):
+            stand_id = scope.replace("stand-", "")
+            stand_query = [{"id": stand_id}]
+            from bson import ObjectId
+            if ObjectId.is_valid(stand_id):
+                stand_query.append({"_id": ObjectId(stand_id)})
+            stand = await db.stands.find_one({"$or": stand_query})
+            if stand:
+                facts.append(f"Stand: {stand.get('name', 'Unknown')} (type: {stand.get('stand_type', 'standard')})")
+            # Resources for this stand
+            cursor = db.resources.find({"stand_id": stand_id}).limit(top_k)
+            async for res in cursor:
+                facts.append(f"Resource: {res.get('title', 'Untitled')} [{res.get('type', 'file')}] at {res.get('file_path', '')}")
+
+        elif scope.startswith("event-"):
+            event_id = scope.replace("event-", "")
+            event_query = [{"id": event_id}]
+            from bson import ObjectId
+            if ObjectId.is_valid(event_id):
+                event_query.append({"_id": ObjectId(event_id)})
+            event = await db.events.find_one({"$or": event_query})
+            if event:
+                facts.append(f"Event: {event.get('title', 'Unknown')} (state: {event.get('state', '')}, dates: {event.get('start_date', '')} - {event.get('end_date', '')})")
+            cursor = db.stands.find({"event_id": event_id}).limit(top_k)
+            async for stand in cursor:
+                facts.append(f"Stand: {stand.get('name', 'Unknown')} (org {stand.get('organization_id', '')})")
+
+        else:
+            # Platform-wide quick search on events/stands names (partial match)
+            cursor = db.events.find({"title": regex}).limit(top_k)
+            async for ev in cursor:
+                facts.append(f"Event: {ev.get('title', 'Unknown')} (state: {ev.get('state', '')})")
+            cursor = db.stands.find({"name": regex}).limit(top_k)
+            async for st in cursor:
+                facts.append(f"Stand: {st.get('name', 'Unknown')} (event {st.get('event_id', '')})")
+
+        return facts
     
     async def ingest_document(
         self,
@@ -100,65 +144,33 @@ class RAGService:
         query: str,
         scope: str = "platform",
         use_retrieval: bool = True,
-        model: str = None
+        model: str = None,
+        top_k: int = 3,
     ) -> AsyncGenerator[str, None]:
         """
-        Stream a response to a query with optional RAG retrieval.
-        
-        Args:
-            query: User query
-            scope: Scope for context retrieval
-            use_retrieval: Whether to retrieve context from vector store
-            model: LLM model to use (default: llama3)
-        
-        Yields:
-            Response tokens as they're generated
+        Stream a response using only retrieved context (no external LLM calls).
+        If no context is found, respond with an explicit fallback.
         """
-        # Retrieve context if enabled
-        context = ""
+        context_blocks: List[str] = []
+
         if use_retrieval:
-            context = await self.retrieve_context(query, scope=scope)
-        
-        # Build prompt
-        if context:
-            prompt = f"""You are a helpful AI assistant for a virtual exhibition platform.
-Use the following context to answer the user's question. If the context doesn't contain
-relevant information, say so and answer based on your general knowledge.
+            vector_store = self.get_vector_store(scope)
+            results = vector_store.search(query, top_k=top_k)
+            for i, result in enumerate(results, 1):
+                source = result.get("metadata", {}).get("source", "Unknown")
+                context_blocks.append(f"[Vector {i}: {source}]\n{result['document']}")
 
-Context:
-{context}
+        # Add structured DB facts
+        db_facts = await self._retrieve_db_facts(query, scope, top_k=top_k)
+        for i, fact in enumerate(db_facts, 1):
+            context_blocks.append(f"[DB {i}] {fact}")
 
-User Question: {query}
+        if not context_blocks:
+            yield "I don't have access to that information right now."
+            return
 
-Answer:"""
-        else:
-            prompt = f"""You are a helpful AI assistant for a virtual exhibition platform.
-Answer the user's question helpfully and concisely.
-
-User Question: {query}
-
-Answer:"""
-        
-        # Stream from Ollama
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            async with client.stream(
-                "POST",
-                self.ollama_url,
-                json={
-                    "model": model or self.default_model,
-                    "prompt": prompt,
-                    "stream": True
-                }
-            ) as response:
-                async for line in response.aiter_lines():
-                    if line:
-                        try:
-                            data = json.loads(line)
-                            yield data.get("response", "")
-                            if data.get("done"):
-                                break
-                        except json.JSONDecodeError:
-                            continue
+        answer = "\n\n".join(context_blocks)
+        yield answer
     
     async def query_with_sources(
         self,
@@ -182,21 +194,19 @@ Answer:"""
         # Get context and sources
         vector_store = self.get_vector_store(scope)
         results = vector_store.search(query, top_k=top_k)
-        
-        context = "\n\n".join([r["document"] for r in results])
+
         sources = [
             {
                 "source": r.get("metadata", {}).get("source", "Unknown"),
-                "relevance": 1 - r.get("distance", 0)  # Convert distance to similarity
+                "relevance": 1 - r.get("distance", 0)
             }
             for r in results
         ]
-        
-        # Generate response
+
         response_text = ""
-        async for chunk in self.stream_query(query, scope=scope, model=model):
+        async for chunk in self.stream_query(query, scope=scope, top_k=top_k):
             response_text += chunk
-        
+
         return {
             "answer": response_text,
             "sources": sources,

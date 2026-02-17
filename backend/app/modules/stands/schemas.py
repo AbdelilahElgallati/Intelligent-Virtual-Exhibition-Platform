@@ -6,17 +6,16 @@ Defines data models for exhibition stands.
 
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StandBase(BaseModel):
     """Base schema for stand data."""
     
-    id: UUID
-    event_id: UUID
-    organization_id: UUID
+    id: str = Field(alias="_id")
+    event_id: str
+    organization_id: str
     name: str
     description: Optional[str] = None
     logo_url: Optional[str] = None
@@ -24,13 +23,13 @@ class StandBase(BaseModel):
     stand_type: Optional[str] = "standard"  # standard, premium, sponsor
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class StandCreate(BaseModel):
     """Schema for creating a stand."""
     
-    organization_id: UUID
+    organization_id: str
     name: str
     description: Optional[str] = None
     logo_url: Optional[str] = None
@@ -43,9 +42,9 @@ class StandCreate(BaseModel):
 class StandRead(BaseModel):
     """Schema for reading stand data."""
     
-    id: UUID
-    event_id: UUID
-    organization_id: UUID
+    id: str = Field(alias="_id")
+    event_id: str
+    organization_id: str
     name: str
     description: Optional[str] = None
     logo_url: Optional[str] = None
@@ -53,4 +52,4 @@ class StandRead(BaseModel):
     stand_type: Optional[str] = "standard"
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}

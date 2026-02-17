@@ -14,7 +14,7 @@ from app.core.security import (
     verify_password,
     verify_token_type,
 )
-from app.modules.users.service import get_user_by_email, create_user
+from app.modules.users.service import get_user_by_email, create_user, get_user_by_id
 from app.modules.auth.schemas import LoginRequest, Role, TokenResponse, RegisterRequest
 from app.modules.users.schemas import UserRead
 import uuid

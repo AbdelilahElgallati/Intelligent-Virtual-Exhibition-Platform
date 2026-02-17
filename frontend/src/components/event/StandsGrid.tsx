@@ -60,7 +60,7 @@ export function StandsGrid({ eventId }: StandsGridProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {stands.map((stand) => (
-                <StandCard key={stand.id} stand={stand} />
+                <StandCard key={(stand as any).id || (stand as any)._id} stand={stand} />
             ))}
         </div>
     );

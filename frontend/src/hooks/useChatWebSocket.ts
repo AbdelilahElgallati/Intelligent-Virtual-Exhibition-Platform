@@ -50,8 +50,14 @@ export function useChatWebSocket(roomId: string | null) {
 
             ws.onclose = (event) => {
                 setIsConnected(false);
+                const reason = event.reason || `code ${event.code}`;
+                // Avoid noisy reconnect loops for auth/permission errors (1008)
+                if (event.code === 1008 || event.code === 4401 || event.code === 4403) {
+                    setError('Connection closed: unauthorized or access denied');
+                    return;
+                }
                 if (event.code !== 1000) { // Normal closure
-                    console.log('WS Closed unexpectedly, reconnecting...', event.reason);
+                    console.log('WS Closed unexpectedly, reconnecting...', reason);
                     // Reconnect after 3 seconds
                     reconnectTimeoutRef.current = setTimeout(connect, 3000);
                 }

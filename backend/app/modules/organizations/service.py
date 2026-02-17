@@ -7,6 +7,9 @@ Provides MongoDB storage and CRUD operations for organizations.
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
+from bson import ObjectId
+
+from app.db.utils import stringify_object_ids
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
@@ -59,12 +62,14 @@ async def create_organization(data: OrganizationCreate, owner_id: UUID) -> dict:
     return organization
 
 
-async def get_organization_by_id(organization_id: UUID) -> Optional[dict]:
-    """
-    Get organization by ID.
-    """
+async def get_organization_by_id(organization_id) -> Optional[dict]:
+    """Get organization by ID (accepts uuid string or Mongo ObjectId)."""
     collection = get_organizations_collection()
-    return await collection.find_one({"id": str(organization_id)})
+    query = {"id": str(organization_id)}
+    if ObjectId.is_valid(str(organization_id)):
+        query = {"$or": [{"id": str(organization_id)}, {"_id": ObjectId(str(organization_id))}]}
+    doc = await collection.find_one(query)
+    return stringify_object_ids(doc) if doc else None
 
 
 async def list_organizations() -> list[dict]:

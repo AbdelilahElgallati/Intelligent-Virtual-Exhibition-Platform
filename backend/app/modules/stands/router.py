@@ -4,8 +4,6 @@ Stands module router for IVEP.
 Handles stand assignment for events.
 """
 
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import require_roles
@@ -20,7 +18,7 @@ router = APIRouter(prefix="/events/{event_id}/stands", tags=["Stands"])
 
 @router.post("/", response_model=StandRead, status_code=status.HTTP_201_CREATED)
 async def assign_stand_to_organization(
-    event_id: UUID,
+    event_id: str,
     data: StandCreate,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> StandRead:
@@ -39,19 +37,21 @@ async def assign_stand_to_organization(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Check if org already has a stand
-    existing = await get_stand_by_org(event_id, data.organization_id)
+    base_event_id = event.get("id", str(event_id))
+
+    existing = await get_stand_by_org(base_event_id, data.organization_id)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Organization already has a stand at this event",
         )
     
-    stand = await create_stand(event_id, data.organization_id, data.name)
+    stand = await create_stand(base_event_id, data.organization_id, data.name)
     return StandRead(**stand)
 
 
 @router.get("/", response_model=list[StandRead])
-async def get_event_stands(event_id: UUID) -> list[StandRead]:
+async def get_event_stands(event_id: str) -> list[StandRead]:
     """
     List all stands for an event.
     
@@ -60,13 +60,14 @@ async def get_event_stands(event_id: UUID) -> list[StandRead]:
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    
-    stands = await list_event_stands(event_id)
+
+    base_event_id = event.get("id", str(event_id))
+    stands = await list_event_stands(base_event_id)
     return [StandRead(**s) for s in stands]
 
 
 @router.get("/{stand_id}", response_model=StandRead)
-async def get_stand(stand_id: UUID) -> StandRead:
+async def get_stand(stand_id: str) -> StandRead:
     """
     Get stand details by ID.
     

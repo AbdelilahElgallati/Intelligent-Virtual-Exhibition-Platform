@@ -35,6 +35,7 @@ from app.modules.meetings.router import router as meetings_router
 from app.modules.resources.router import router as resources_router
 from app.modules.leads.router import router as leads_router
 from app.modules.recommendations.router import router as recommendations_router
+from app.modules.favorites.router import router as favorites_router
 
 
 @asynccontextmanager
@@ -81,6 +82,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(subscriptions_router, prefix=api_prefix)
     app.include_router(analytics_router, prefix=api_prefix)
     app.include_router(notifications_router, prefix=api_prefix)
+    app.include_router(favorites_router, prefix=api_prefix)
 
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])

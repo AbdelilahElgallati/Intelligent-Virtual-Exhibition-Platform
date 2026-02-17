@@ -61,7 +61,6 @@ export function ChatPanel({ standId, standName, onClose }: ChatPanelProps) {
     const handleSend = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || !isConnected) return;
-
         sendMessage(input);
         setInput('');
     };
