@@ -7,9 +7,8 @@ Defines data models for organizations and membership.
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class OrgMemberRole(str, Enum):
@@ -23,13 +22,13 @@ class OrgMemberRole(str, Enum):
 class OrganizationBase(BaseModel):
     """Base schema for organization data."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     name: str
     description: Optional[str] = None
-    owner_id: UUID
+    owner_id: str
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class OrganizationCreate(BaseModel):
@@ -44,13 +43,13 @@ class OrganizationCreate(BaseModel):
 class OrganizationRead(BaseModel):
     """Schema for reading organization data."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     name: str
     description: Optional[str] = None
-    owner_id: UUID
+    owner_id: str
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class OrganizationUpdate(BaseModel):
@@ -65,8 +64,8 @@ class OrganizationUpdate(BaseModel):
 class OrganizationMember(BaseModel):
     """Schema for organization membership."""
     
-    user_id: UUID
-    organization_id: UUID
+    user_id: str
+    organization_id: str
     role_in_org: OrgMemberRole = OrgMemberRole.MEMBER
     joined_at: datetime
     

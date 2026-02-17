@@ -6,11 +6,15 @@ import { Input as CustomInput } from '@/components/ui/Input';
 interface EventsFiltersProps {
     onSearchChange: (value: string) => void;
     onCategoryChange: (value: string) => void;
+    categories: string[];
+    selectedCategory: string;
 }
 
 export const EventsFilters: React.FC<EventsFiltersProps> = ({
     onSearchChange,
     onCategoryChange,
+    categories,
+    selectedCategory,
 }) => {
     return (
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
@@ -28,13 +32,15 @@ export const EventsFilters: React.FC<EventsFiltersProps> = ({
                     </label>
                     <select
                         className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={selectedCategory}
                         onChange={(e) => onCategoryChange(e.target.value)}
                     >
                         <option value="">All Categories</option>
-                        <option value="technology">Technology</option>
-                        <option value="business">Business</option>
-                        <option value="education">Education</option>
-                        <option value="art">Art & Culture</option>
+                        {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                                {cat}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>

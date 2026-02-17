@@ -31,4 +31,12 @@ export const ENDPOINTS = {
   MEETINGS: {
     REQUEST: '/meetings/',
   },
+  TRANSCRIPTS: {
+    UPLOAD: '/transcripts/transcribe-file',
+  },
+  FAVORITES: {
+    LIST: '/favorites',
+    ADD: '/favorites',
+    DELETE: (id: string) => `/favorites/${id}`,
+  },
 };

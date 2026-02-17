@@ -5,7 +5,6 @@ Handles event CRUD and lifecycle state transitions.
 """
 
 from typing import Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -46,7 +45,7 @@ async def get_my_joined_events(
 
 @router.get("/{event_id}/my-status")
 async def get_my_event_status(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -60,7 +59,7 @@ async def get_my_event_status(
 
 @router.post("/{event_id}/join", response_model=ParticipantRead)
 async def join_event(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ) -> ParticipantRead:
     """
@@ -119,7 +118,7 @@ async def create_new_event(
 
 @router.get("/", response_model=EventsResponse)
 async def get_all_events(
-    organizer_id: Optional[UUID] = None,
+    organizer_id: Optional[str] = None,
     state: Optional[EventState] = None,
     category: Optional[str] = None,  # Add this
     search: Optional[str] = None,    # Add this
@@ -141,7 +140,7 @@ async def get_all_events(
 
 
 @router.get("/{event_id}", response_model=EventRead)
-async def get_event(event_id: UUID) -> EventRead:
+async def get_event(event_id: str) -> EventRead:
     """
     Get event by ID.
     
@@ -158,7 +157,7 @@ async def get_event(event_id: UUID) -> EventRead:
 
 @router.patch("/{event_id}", response_model=EventRead)
 async def update_existing_event(
-    event_id: UUID,
+    event_id: str,
     data: EventUpdate,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
@@ -187,7 +186,7 @@ async def update_existing_event(
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_event(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
     """
@@ -221,7 +220,7 @@ async def delete_existing_event(
 
 @router.post("/{event_id}/submit", response_model=EventRead)
 async def submit_event_for_approval(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
@@ -243,7 +242,7 @@ async def submit_event_for_approval(
 
 @router.post("/{event_id}/approve", response_model=EventRead)
 async def approve_event(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ) -> EventRead:
     """
@@ -280,7 +279,7 @@ async def approve_event(
 
 @router.post("/{event_id}/start", response_model=EventRead)
 async def start_event(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> EventRead:
     """
@@ -313,7 +312,7 @@ async def start_event(
 
 @router.post("/{event_id}/close", response_model=EventRead)
 async def close_event(
-    event_id: UUID,
+    event_id: str,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> EventRead:
     """

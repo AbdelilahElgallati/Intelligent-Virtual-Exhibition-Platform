@@ -7,6 +7,7 @@ from .service import manager
 from datetime import datetime
 import json
 from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
 
 router = APIRouter()
 
@@ -30,17 +31,22 @@ async def initiate_chat_with_stand(
 ):
     from app.modules.stands.service import get_stand_by_id
     from app.modules.organizations.service import get_organization_by_id
-    from uuid import UUID
-    
-    stand = await get_stand_by_id(UUID(stand_id))
+    from app.modules.events.service import get_event_by_id
+
+    # Accept Mongo ObjectId or UUID string IDs for stands
+    stand = await get_stand_by_id(stand_id)
     if not stand:
         raise HTTPException(status_code=404, detail="Stand not found")
-        
-    org = await get_organization_by_id(UUID(stand["organization_id"]))
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
 
-    owner_id = org["owner_id"]
+    org = await get_organization_by_id(stand["organization_id"])
+    if org:
+        owner_id = org.get("owner_id")
+    else:
+        # Fallback: use event organizer as chat owner when organization doc is missing
+        event = await get_event_by_id(stand.get("event_id")) if stand.get("event_id") else None
+        owner_id = event.get("organizer_id") if event else None
+    if not owner_id:
+        raise HTTPException(status_code=404, detail="Organization not found")
     
     # Optional: Prevent chatting with self
     if owner_id == str(current_user["_id"]):
@@ -67,12 +73,13 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    # Check room membership
-    room_messages = await chat_repo.get_room_messages(room_id, limit=1) # Just check if we can access? No, better check room doc.
-    # For speed, let's assume if they have the room_id they might be allowed, 
-    # BUT strictly we should check:
-    room = await chat_repo.rooms.find_one({"_id": ObjectId(room_id), "members": str(user["_id"])})
-    if not room:
+    # Check room membership (accept ObjectId or string room ids)
+    room = None
+    if ObjectId.is_valid(room_id):
+        room = await chat_repo.rooms.find_one({"_id": ObjectId(room_id), "members": str(user["_id"])})
+    if room is None:
+        room = await chat_repo.rooms.find_one({"id": room_id, "members": str(user["_id"])})
+    if room is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
@@ -95,13 +102,10 @@ async def websocket_endpoint(
             
             # Save
             saved_msg = await chat_repo.create_message(new_msg)
-            
-            # Broadcast
-            # We need room members to broadcast to. 
-            await manager.broadcast_to_room(
-                saved_msg.dict(by_alias=True), 
-                room["members"]
-            )
+
+            # Broadcast with JSON-safe payload (convert datetime/ObjectId)
+            payload = jsonable_encoder(saved_msg, by_alias=True)
+            await manager.broadcast_to_room(payload, room["members"])
             
     except WebSocketDisconnect:
         manager.disconnect(str(user["_id"]), websocket)

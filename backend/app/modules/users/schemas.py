@@ -6,9 +6,9 @@ Defines data models for user operations including profile and preferences.
 
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+
+from pydantic import BaseModel, EmailStr, Field
 
 from app.modules.auth.enums import Role
 
@@ -41,7 +41,7 @@ class EngagementSettings(BaseModel):
 class UserBase(BaseModel):
     """Base schema for user data."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     email: EmailStr
     username: str
     full_name: str
@@ -49,7 +49,7 @@ class UserBase(BaseModel):
     is_active: bool = True
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class UserCreate(BaseModel):
@@ -67,9 +67,9 @@ class UserCreate(BaseModel):
 class UserRead(BaseModel):
     """Schema for reading user data (no password)."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     email: EmailStr
-    username: str
+    username: Optional[str] = None  # Made optional for backward compatibility
     full_name: str
     role: Role
     is_active: bool
@@ -85,7 +85,7 @@ class UserRead(BaseModel):
     networking_goals: Optional[list[str]] = None
     engagement_settings: Optional[EngagementSettings] = None
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class UserUpdate(BaseModel):

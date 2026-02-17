@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, use, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, use } from 'react';
 import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -11,13 +11,16 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { Container } from '@/components/common/Container';
 import { SectionTitle } from '@/components/common/SectionTitle';
 import { useAuth } from '@/context/AuthContext';
+import { favoritesService } from '@/services/favorites.service';
+import { Button } from '@/components/ui/Button';
 
 interface EventPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id?: string }> | { id?: string };
 }
 
 export default function EventDetailsPage({ params }: EventPageProps) {
-  const { id } = use(params);
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const id = resolvedParams?.id;
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
@@ -27,8 +30,14 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const [loading, setLoading] = useState(true);
   const [joinLoading, setJoinLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!id) {
+      setError('Event not found');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
 
@@ -44,6 +53,16 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
       setEvent(eventData);
       setStatus(statusData.status);
+
+      if (isAuthenticated) {
+        try {
+          const favs = await favoritesService.list();
+          const match = favs.find((f) => f.target_type === 'event' && (f.target_id === (eventData as any).id || f.target_id === (eventData as any)._id));
+          setFavoriteId(match ? match.id : null);
+        } catch {
+          /* ignore favorite fetch errors to not block page */
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch event details:', err);
       // If event fetch fails, it's a critical error for the page
@@ -55,6 +74,10 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   }, [id, isAuthenticated]);
 
   const handleJoin = async () => {
+    if (!id) {
+      alert('Event not found.');
+      return;
+    }
     if (!isAuthenticated) {
       // Save current path to redirect back after login
       localStorage.setItem('redirectAfterLogin', pathname);
@@ -75,6 +98,26 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       alert('Failed to join event. Please try again.');
     } finally {
       setJoinLoading(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!id) return;
+    if (!isAuthenticated) {
+      localStorage.setItem('redirectAfterLogin', pathname);
+      router.push('/auth/login');
+      return;
+    }
+    try {
+      if (favoriteId) {
+        await favoritesService.remove(favoriteId);
+        setFavoriteId(null);
+      } else {
+        const fav = await favoritesService.add('event', id);
+        setFavoriteId(fav.id);
+      }
+    } catch (err) {
+      console.error('Favorite toggle failed', err);
     }
   };
 
@@ -107,8 +150,13 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       <Container className="py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
+            <div className="flex items-center justify-between">
+              <SectionTitle title="About this Event" align="left" className="mb-0" />
+              <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
+                {favoriteId ? 'Favorited' : 'Add to favorites'}
+              </Button>
+            </div>
             <section>
-              <SectionTitle title="About this Event" align="left" className="mb-4" />
               <div className="mt-6 prose prose-indigo max-w-none text-muted-foreground">
                 {event.long_description || event.description}
               </div>

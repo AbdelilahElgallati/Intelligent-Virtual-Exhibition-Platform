@@ -37,9 +37,10 @@ export const JoinedEvents: React.FC<JoinedEventsProps> = ({ events, loading }) =
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {events.map((event) => (
-        <EventCard key={event.id} event={event} />
-      ))}
+      {events.map((event, index) => {
+        const key = (event as any).id || (event as any)._id || `${event.title}-${index}`;
+        return <EventCard key={key} event={event} />;
+      })}
     </div>
   );
 };

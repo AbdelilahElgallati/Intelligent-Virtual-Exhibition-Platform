@@ -267,7 +267,7 @@ async def seed_data():
         if not event_id:
             continue
             
-        existing_stands = await list_event_stands(UUID(event_id))
+        existing_stands = await list_event_stands(event_id)
         
         for s_def in stand_defs:
             org_name = s_def["org"]
@@ -282,7 +282,7 @@ async def seed_data():
             if existing:
                 stand_id = existing["id"]
             else:
-                stand = await create_stand(UUID(event_id), UUID(org_id), org_name)
+                stand = await create_stand(event_id, org_id, org_name)
                 stand_id = stand["id"]
                 summary["stands_created"] += 1
                 

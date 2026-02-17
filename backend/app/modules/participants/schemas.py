@@ -6,9 +6,8 @@ Defines data models for event participants.
 
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ParticipantStatus(str, Enum):
@@ -23,22 +22,22 @@ class ParticipantStatus(str, Enum):
 class ParticipantBase(BaseModel):
     """Base schema for participant data."""
     
-    id: UUID
-    event_id: UUID
-    user_id: UUID
+    id: str = Field(alias="_id")
+    event_id: str
+    user_id: str
     status: ParticipantStatus
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class ParticipantRead(BaseModel):
     """Schema for reading participant data."""
     
-    id: UUID
-    event_id: UUID
-    user_id: UUID
+    id: str = Field(alias="_id")
+    event_id: str
+    user_id: str
     status: ParticipantStatus
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}

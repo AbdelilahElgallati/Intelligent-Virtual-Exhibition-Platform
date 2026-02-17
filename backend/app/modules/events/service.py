@@ -6,11 +6,14 @@ Provides in-memory event storage and CRUD operations.
 
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
+
+from bson import ObjectId
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.modules.events.schemas import EventCreate, EventState, EventUpdate
+from app.db.utils import stringify_object_ids
 
 
 def get_events_collection() -> AsyncIOMotorCollection:
@@ -19,7 +22,7 @@ def get_events_collection() -> AsyncIOMotorCollection:
     return db["events"]
 
 
-async def create_event(data: EventCreate, organizer_id: UUID) -> dict:
+async def create_event(data: EventCreate, organizer_id) -> dict:
     """
     Create a new event in DRAFT state.
     """
@@ -45,15 +48,19 @@ async def create_event(data: EventCreate, organizer_id: UUID) -> dict:
     
     collection = get_events_collection()
     await collection.insert_one(event)
-    return event
+    return stringify_object_ids(event)
 
 
-async def get_event_by_id(event_id: UUID) -> Optional[dict]:
+async def get_event_by_id(event_id) -> Optional[dict]:
     """
     Get event by ID.
     """
     collection = get_events_collection()
-    return await collection.find_one({"id": str(event_id)})
+    query = {"id": str(event_id)}
+    if ObjectId.is_valid(str(event_id)):
+        query = {"$or": [{"id": str(event_id)}, {"_id": ObjectId(str(event_id))}]}
+    doc = await collection.find_one(query)
+    return stringify_object_ids(doc) if doc else None
 
 
 # async def list_events(organizer_id: Optional[UUID] = None, state: Optional[EventState] = None) -> list[dict]:
@@ -73,10 +80,10 @@ async def get_event_by_id(event_id: UUID) -> Optional[dict]:
 #     return await cursor.to_list(length=100)
 
 async def list_events(
-    organizer_id: Optional[UUID] = None, 
+    organizer_id: Optional[str] = None,
     state: Optional[EventState] = None,
-    category: Optional[str] = None,  # Add this
-    search: Optional[str] = None     # Add this
+    category: Optional[str] = None,
+    search: Optional[str] = None,
 ) -> list[dict]:
     """
     List all events with optional filters.
@@ -102,10 +109,11 @@ async def list_events(
         ]
     
     cursor = collection.find(query)
-    return await cursor.to_list(length=100)
+    events = await cursor.to_list(length=100)
+    return stringify_object_ids(events)
 
 
-async def update_event(event_id: UUID, data: EventUpdate) -> Optional[dict]:
+async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
     """
     Update an event.
     """
@@ -123,12 +131,12 @@ async def update_event(event_id: UUID, data: EventUpdate) -> Optional[dict]:
     result = await collection.find_one_and_update(
         {"id": str(event_id)},
         {"$set": update_data},
-        return_document=True
+        return_document=True,
     )
-    return result
+    return stringify_object_ids(result) if result else None
 
 
-async def delete_event(event_id: UUID) -> bool:
+async def delete_event(event_id) -> bool:
     """
     Delete an event.
     """
@@ -137,19 +145,20 @@ async def delete_event(event_id: UUID) -> bool:
     return result.deleted_count > 0
 
 
-async def update_event_state(event_id: UUID, state: EventState) -> Optional[dict]:
+async def update_event_state(event_id, state: EventState) -> Optional[dict]:
     """
     Update event state.
     """
     collection = get_events_collection()
-    return await collection.find_one_and_update(
+    updated = await collection.find_one_and_update(
         {"id": str(event_id)},
         {"$set": {"state": state}},
-        return_document=True
+        return_document=True,
     )
+    return stringify_object_ids(updated) if updated else None
 
 
-async def get_joined_events(user_id: UUID) -> list[dict]:
+async def get_joined_events(user_id) -> list[dict]:
     """
     Get events where the user is an APPROVED participant.
     """
@@ -169,4 +178,5 @@ async def get_joined_events(user_id: UUID) -> list[dict]:
         return []
         
     cursor = events_collection.find({"id": {"$in": event_ids}})
-    return await cursor.to_list(length=100)
+    events = await cursor.to_list(length=100)
+    return stringify_object_ids(events)

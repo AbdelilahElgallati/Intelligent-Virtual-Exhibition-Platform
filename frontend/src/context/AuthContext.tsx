@@ -15,7 +15,7 @@ interface AuthContextType {
     logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Simple JWT decode to extract user info (no verification)
 function decodeToken(token: string): any {

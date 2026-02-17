@@ -46,10 +46,15 @@ export const Navbar: React.FC = () => {
                                 Events
                             </Link>
                             {isAuthenticated && (
-                                <Link href="/dashboard" className="text-sm font-medium text-zinc-600 hover:text-indigo-600 transition-colors">
-                                    Dashboard
+                                <Link href="/webinars" className="text-sm font-medium text-zinc-600 hover:text-indigo-600 transition-colors">
+                                    webinars
                                 </Link>
                             )}
+                            {/*{isAuthenticated && (
+                                <Link href="/favorites" className="text-sm font-medium text-zinc-600 hover:text-indigo-600 transition-colors">
+                                    Favorites
+                                </Link>
+                            )} */}
                         </div>
                     </div>
 
@@ -113,6 +118,16 @@ export const Navbar: React.FC = () => {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
                                                 </svg>
                                                 Dashboard
+                                            </Link>
+                                            <Link
+                                                href="/favorites"
+                                                onClick={() => setProfileOpen(false)}
+                                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.499-.866 1.756a1 1 0 0 1-.753.547l-1.94.282a1 1 0 0 0-.554 1.706l1.404 1.369a1 1 0 0 1 .287.885l-.331 1.929a1 1 0 0 0 1.452 1.054l1.732-.91a1 1 0 0 1 .931 0l1.732.91a1 1 0 0 0 1.452-1.054l-.331-1.93a1 1 0 0 1 .287-.884l1.404-1.368a1 1 0 0 0-.554-1.706l-1.94-.282a1 1 0 0 1-.753-.547l-.866-1.756a1 1 0 0 0-1.793 0Z" />
+                                                </svg>
+                                                Favorites
                                             </Link>
                                         </div>
 

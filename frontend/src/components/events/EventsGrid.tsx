@@ -30,9 +30,10 @@ export const EventsGrid: React.FC<EventsGridProps> = ({ events, isLoading }) => 
 
     return (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {events.map((event) => (
-                <EventCard key={event.id} event={event} />
-            ))}
+            {events.map((event, index) => {
+                const key = event.id || (event as any)._id || `${event.title}-${index}`;
+                return <EventCard key={key} event={event} />;
+            })}
         </div>
     );
 };
