@@ -1,12 +1,11 @@
 """
 Event service for IVEP.
 
-Provides in-memory event storage and CRUD operations.
+Provides MongoDB-backed event storage and CRUD operations.
 """
 
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import uuid4
 
 from bson import ObjectId
 
@@ -14,6 +13,12 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.modules.events.schemas import EventCreate, EventState, EventUpdate
 from app.db.utils import stringify_object_ids
+
+
+def _id_query(eid) -> dict:
+    """Build a query dict that matches _id (ObjectId or string)."""
+    s = str(eid)
+    return {"_id": ObjectId(s)} if ObjectId.is_valid(s) else {"_id": s}
 
 
 def get_events_collection() -> AsyncIOMotorCollection:
@@ -26,58 +31,37 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
     """
     Create a new event in DRAFT state.
     """
-    event_id = uuid4()
     now = datetime.now(timezone.utc)
     
-    # extra fields for frontend
     event = {
-        "id": str(event_id),
         "title": data.title,
         "description": data.description,
         "organizer_id": str(organizer_id),
         "state": EventState.DRAFT,
-        "banner_url": None,
-        "category": "Exhibition",
-        "start_date": now,
-        "end_date": now,
-        "location": "Virtual Platform",
-        "tags": [],
-        "organizer_name": "Organizer User", # Mock
+        "banner_url": data.banner_url,
+        "category": data.category or "Exhibition",
+        "start_date": data.start_date or now,
+        "end_date": data.end_date or now,
+        "location": data.location or "Virtual Platform",
+        "tags": data.tags or [],
+        "organizer_name": data.organizer_name,
         "created_at": now,
     }
     
     collection = get_events_collection()
-    await collection.insert_one(event)
+    result = await collection.insert_one(event)
+    event["_id"] = result.inserted_id
     return stringify_object_ids(event)
 
 
 async def get_event_by_id(event_id) -> Optional[dict]:
     """
-    Get event by ID.
+    Get event by ID (_id).
     """
     collection = get_events_collection()
-    query = {"id": str(event_id)}
-    if ObjectId.is_valid(str(event_id)):
-        query = {"$or": [{"id": str(event_id)}, {"_id": ObjectId(str(event_id))}]}
-    doc = await collection.find_one(query)
+    doc = await collection.find_one(_id_query(event_id))
     return stringify_object_ids(doc) if doc else None
 
-
-# async def list_events(organizer_id: Optional[UUID] = None, state: Optional[EventState] = None) -> list[dict]:
-#     """
-#     List all events with optional filters.
-#     """
-#     collection = get_events_collection()
-#     query = {}
-    
-#     if organizer_id:
-#         query["organizer_id"] = str(organizer_id)
-    
-#     if state:
-#         query["state"] = state
-    
-#     cursor = collection.find(query)
-#     return await cursor.to_list(length=100)
 
 async def list_events(
     organizer_id: Optional[str] = None,
@@ -97,12 +81,10 @@ async def list_events(
     if state:
         query["state"] = state
 
-    # Implement filtering logic for the new parameters
     if category:
         query["category"] = category
 
     if search:
-        # Simple case-insensitive regex search on title or description
         query["$or"] = [
             {"title": {"$regex": search, "$options": "i"}},
             {"description": {"$regex": search, "$options": "i"}}
@@ -115,21 +97,17 @@ async def list_events(
 
 async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
     """
-    Update an event.
+    Update an event's fields.
+    Only non-None values from the payload are applied.
     """
     collection = get_events_collection()
-    update_data = {}
-    
-    if data.title is not None:
-        update_data["title"] = data.title
-    if data.description is not None:
-        update_data["description"] = data.description
+    update_data = {k: v for k, v in data.model_dump(exclude_none=True).items()}
     
     if not update_data:
         return await get_event_by_id(event_id)
     
     result = await collection.find_one_and_update(
-        {"id": str(event_id)},
+        _id_query(event_id),
         {"$set": update_data},
         return_document=True,
     )
@@ -141,7 +119,7 @@ async def delete_event(event_id) -> bool:
     Delete an event.
     """
     collection = get_events_collection()
-    result = await collection.delete_one({"id": str(event_id)})
+    result = await collection.delete_one(_id_query(event_id))
     return result.deleted_count > 0
 
 
@@ -151,7 +129,7 @@ async def update_event_state(event_id, state: EventState) -> Optional[dict]:
     """
     collection = get_events_collection()
     updated = await collection.find_one_and_update(
-        {"id": str(event_id)},
+        _id_query(event_id),
         {"$set": {"state": state}},
         return_document=True,
     )
@@ -172,11 +150,18 @@ async def get_joined_events(user_id) -> list[dict]:
         "status": "approved"
     }).to_list(length=100)
     
-    event_ids = [p["event_id"] for p in participations]
+    # event_id stored are now stringified _id values
+    event_ids = []
+    for p in participations:
+        eid = p["event_id"]
+        if ObjectId.is_valid(eid):
+            event_ids.append(ObjectId(eid))
+        else:
+            event_ids.append(eid)
     
     if not event_ids:
         return []
         
-    cursor = events_collection.find({"id": {"$in": event_ids}})
+    cursor = events_collection.find({"_id": {"$in": event_ids}})
     events = await cursor.to_list(length=100)
     return stringify_object_ids(events)

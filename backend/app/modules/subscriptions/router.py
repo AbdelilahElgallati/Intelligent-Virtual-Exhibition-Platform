@@ -62,7 +62,7 @@ async def get_organization_plan(
         )
     
     # Check ownership
-    if current_user["role"] != Role.ADMIN and org["owner_id"] != current_user["id"]:
+    if current_user["role"] != Role.ADMIN and org["owner_id"] != current_user["_id"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this organization's plan",

@@ -1,12 +1,16 @@
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import uuid4
 
 from bson import ObjectId
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
+
+
+def _id_query(sid) -> dict:
+    s = str(sid)
+    return {"_id": ObjectId(s)} if ObjectId.is_valid(s) else {"_id": s}
 
 
 def get_stands_collection() -> AsyncIOMotorCollection:
@@ -19,11 +23,9 @@ async def create_stand(event_id, organization_id, name: str) -> dict:
     """
     Create a new stand for an organization at an event.
     """
-    stand_id = uuid4()
     now = datetime.now(timezone.utc)
     
     stand = {
-        "id": str(stand_id),
         "event_id": str(event_id),
         "organization_id": str(organization_id),
         "name": name,
@@ -35,17 +37,15 @@ async def create_stand(event_id, organization_id, name: str) -> dict:
     }
     
     collection = get_stands_collection()
-    await collection.insert_one(stand)
+    result = await collection.insert_one(stand)
+    stand["_id"] = result.inserted_id
     return stringify_object_ids(stand)
 
 
 async def get_stand_by_id(stand_id) -> Optional[dict]:
-    """Get stand by ID (accepts id or _id)."""
+    """Get stand by _id."""
     collection = get_stands_collection()
-    query = {"id": str(stand_id)}
-    if ObjectId.is_valid(str(stand_id)):
-        query = {"$or": [{"id": str(stand_id)}, {"_id": ObjectId(str(stand_id))}]}
-    doc = await collection.find_one(query)
+    doc = await collection.find_one(_id_query(stand_id))
     return stringify_object_ids(doc) if doc else None
 
 

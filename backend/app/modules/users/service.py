@@ -1,5 +1,6 @@
 from typing import Optional
 from uuid import UUID
+from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument
 from app.db.mongo import get_database
@@ -19,20 +20,24 @@ async def get_user_by_email(email: str) -> Optional[dict]:
     return stringify_object_ids(doc) if doc else None
 
 async def get_user_by_id(user_id: str | UUID) -> Optional[dict]:
-    """Get user by ID from MongoDB."""
+    """Get user by ID from MongoDB (uses _id)."""
     collection = get_users_collection()
-    # Support both string and UUID for ID if stored as strings
-    doc = await collection.find_one({"id": str(user_id)})
+    uid = str(user_id)
+    # Try as ObjectId first, fall back to string match
+    if ObjectId.is_valid(uid):
+        doc = await collection.find_one({"_id": ObjectId(uid)})
+    else:
+        doc = await collection.find_one({"_id": uid})
     return stringify_object_ids(doc) if doc else None
 
 async def create_user(user_data: dict) -> dict:
     """Create a new user in MongoDB."""
     collection = get_users_collection()
-    # Convert UUID to string for storage if needed, or keep as is if driver handles it
-    if "id" in user_data and isinstance(user_data["id"], UUID):
-        user_data["id"] = str(user_data["id"])
+    # Remove any manually set id — let MongoDB generate _id
+    user_data.pop("id", None)
     
-    await collection.insert_one(user_data)
+    result = await collection.insert_one(user_data)
+    user_data["_id"] = result.inserted_id
     return stringify_object_ids(user_data)
 
 async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optional[dict]:
@@ -42,8 +47,11 @@ async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optiona
     Uses $set so only provided fields are changed — existing fields are preserved.
     """
     collection = get_users_collection()
+    uid = str(user_id)
+    # Build query for _id
+    query = {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
     result = await collection.find_one_and_update(
-        {"id": str(user_id)},
+        query,
         {"$set": update_data},
         return_document=ReturnDocument.AFTER,
     )

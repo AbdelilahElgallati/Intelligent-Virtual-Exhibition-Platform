@@ -4,7 +4,6 @@ Provides authentication and authorization dependencies for FastAPI routes.
 """
 
 from typing import Callable
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -13,7 +12,6 @@ from pydantic import ValidationError
 
 from app.core.config import settings
 from app.core.security import verify_token_type
-from app.core.store import FAKE_ORGANIZATIONS
 from app.modules.users.service import get_user_by_id
 from app.modules.auth.enums import Role
 from app.modules.subscriptions.schemas import PLAN_FEATURES
@@ -57,6 +55,7 @@ async def verify_jwt_token(token: str) -> dict:
     if token == "test-token":
         return {
             "_id": "visitor-456",
+            "id": "visitor-456",
             "full_name": "Test User",
             "role": Role.VISITOR,
             "is_active": True,
@@ -99,7 +98,6 @@ async def verify_jwt_token(token: str) -> dict:
             role_enum = Role(role_val) if role_val in [r.value for r in Role] else Role.VISITOR
             user = {
                 "_id": user_id,
-                "id": UUID(user_id) if len(user_id) == 36 else user_id,
                 "full_name": "Authenticated User",
                 "role": role_enum,
                 "is_active": True,
@@ -111,19 +109,18 @@ async def verify_jwt_token(token: str) -> dict:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    # Normalize role and id if coming from Mongo
+    # Normalize role if coming from Mongo
     if isinstance(user.get("role"), str):
         try:
             user["role"] = Role(user["role"])
         except Exception:
             user["role"] = Role.VISITOR
-    if "id" not in user and user.get("_id") is not None:
-        try:
-            user["id"] = UUID(str(user["_id"]))
-        except Exception:
-            user["id"] = user["_id"]
+    # Ensure _id is always present as a string
     if "_id" not in user and user.get("id") is not None:
         user["_id"] = str(user["id"])
+    if "_id" in user:
+        user["_id"] = str(user["_id"])
+        user["id"] = user["_id"]
 
     if not user.get("is_active", False):
         raise HTTPException(
@@ -180,12 +177,17 @@ def require_feature(feature_name: str) -> Callable:
         if current_user["role"] != Role.ORGANIZER:
             return current_user
 
-        # Find organization owned by user (mock logic)
+        # Find organization owned by user from live MongoDB data
+        from app.modules.organizations.service import list_organizations
         org_id = None
-        for org in FAKE_ORGANIZATIONS.values():
-            if org["owner_id"] == current_user.get("id"):
-                org_id = org["id"]
-                break
+        try:
+            orgs = await list_organizations()
+            for org in orgs:
+                if str(org.get("owner_id")) == str(current_user.get("_id")):
+                    org_id = org.get("_id")
+                    break
+        except Exception:
+            pass
 
         if not org_id:
             return current_user
@@ -201,7 +203,7 @@ def require_feature(feature_name: str) -> Callable:
             if limit == -1:  # unlimited
                 return current_user
 
-            events = await list_events(organizer_id=current_user.get("id"))
+            events = await list_events(organizer_id=current_user.get("_id"))
             if len(events) >= limit:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

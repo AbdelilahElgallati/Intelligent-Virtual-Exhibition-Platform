@@ -1,12 +1,11 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
+import { Send, Square } from 'lucide-react';
 
 interface ChatComposerProps {
     value: string;
     onChange: (value: string) => void;
     onSend: () => void;
     onStop?: () => void;
-    onClear?: () => void;
     isStreaming?: boolean;
     disabled?: boolean;
 }
@@ -16,62 +15,57 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     onChange,
     onSend,
     onStop,
-    onClear,
     isStreaming,
     disabled,
 }) => {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            if (!disabled && !isStreaming) {
-                onSend();
-            }
+            if (!disabled && !isStreaming) onSend();
         }
     };
 
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Press Enter to send, Shift+Enter for a new line</span>
-                {onClear && (
-                    <button
-                        type="button"
-                        onClick={onClear}
-                        className="text-indigo-600 hover:underline"
-                    >
-                        Clear chat
-                    </button>
-                )}
-            </div>
-            <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
+        <div className="px-3 pt-2 pb-3">
+            <div className="flex items-end gap-2 rounded-xl border border-gray-200 bg-white shadow-sm px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-300 transition-all">
                 <textarea
-                    className="w-full resize-none rounded-t-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    rows={3}
+                    className="flex-1 resize-none bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none min-h-[36px] max-h-[120px] py-1 leading-relaxed"
+                    rows={1}
                     value={value}
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={(e) => {
+                        onChange(e.target.value);
+                        // auto-grow
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask the assistant..."
                     disabled={disabled}
                 />
-                <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-                    <div className="text-xs text-gray-400">AI may produce incorrect answers. Verify important info.</div>
-                    <div className="flex items-center gap-2">
-                        {isStreaming && onStop && (
-                            <Button variant="outline" size="sm" onClick={onStop}>
-                                Stop
-                            </Button>
-                        )}
-                        <Button
-                            size="sm"
-                            className="bg-indigo-600 hover:bg-indigo-700"
-                            onClick={onSend}
-                            disabled={disabled || !value.trim() || !!isStreaming}
-                        >
-                            Send
-                        </Button>
-                    </div>
-                </div>
+                {isStreaming && onStop ? (
+                    <button
+                        type="button"
+                        onClick={onStop}
+                        className="flex-shrink-0 mb-0.5 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                        aria-label="Stop"
+                    >
+                        <Square className="w-4 h-4" />
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={onSend}
+                        disabled={disabled || !value.trim() || !!isStreaming}
+                        className="flex-shrink-0 mb-0.5 p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Send"
+                    >
+                        <Send className="w-4 h-4" />
+                    </button>
+                )}
             </div>
+            <p className="text-[10px] text-gray-400 mt-1.5 text-center">
+                Enter to send · Shift+Enter for new line
+            </p>
         </div>
     );
 };

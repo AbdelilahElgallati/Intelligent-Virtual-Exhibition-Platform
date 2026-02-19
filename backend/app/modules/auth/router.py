@@ -17,7 +17,6 @@ from app.core.security import (
 from app.modules.users.service import get_user_by_email, create_user, get_user_by_id
 from app.modules.auth.schemas import LoginRequest, Role, TokenResponse, RegisterRequest
 from app.modules.users.schemas import UserRead
-import uuid
 from datetime import datetime, timezone
 
 
@@ -53,8 +52,8 @@ async def login(request: LoginRequest) -> TokenResponse:
             detail="User account is inactive",
         )
     
-    # Create tokens with user ID and role
-    token_data = {"sub": str(user["id"]), "role": user["role"]}
+    # Create tokens with user _id and role
+    token_data = {"sub": str(user["_id"]), "role": user["role"]}
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(token_data)
     
@@ -77,12 +76,10 @@ async def register(request: RegisterRequest) -> TokenResponse:
             detail="Email already registered",
         )
     
-    # Create new user
+    # Create new user — let MongoDB generate _id
     from app.core.security import hash_password
     
-    user_id = uuid.uuid4()
-    user = {
-        "id": user_id,
+    user_data = {
         "email": request.email,
         "username": request.username,
         "full_name": request.full_name,
@@ -92,10 +89,10 @@ async def register(request: RegisterRequest) -> TokenResponse:
         "created_at": datetime.now(timezone.utc),
     }
     
-    await create_user(user)
+    user = await create_user(user_data)
     
-    # Create tokens
-    token_data = {"sub": str(user_id), "role": request.role.value}
+    # Create tokens using the MongoDB-generated _id
+    token_data = {"sub": str(user["_id"]), "role": request.role.value}
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(token_data)
     
@@ -115,14 +112,17 @@ async def refresh_token(request: RefreshRequest) -> TokenResponse:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     # Fetch the user to include in the response
-    user = await get_user_by_id(payload["sub"]) # You need to implement/import this
+    user = await get_user_by_id(payload["sub"])
+    
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
     
     token_data = {"sub": payload["sub"], "role": payload["role"]}
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
         token_type="bearer",
-        user=UserRead(**user) # This field is REQUIRED by your schema
+        user=UserRead(**user)
     )
 
 
@@ -132,15 +132,9 @@ async def refresh_token(request: RefreshRequest) -> TokenResponse:
 async def admin_only_route(
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ) -> dict:
-    """
-    Admin-only protected route.
-    
-    Returns:
-        dict: Success message with user info.
-    """
     return {
         "message": "Welcome, Admin!",
-        "user_id": str(current_user["id"]),
+        "user_id": str(current_user["_id"]),
         "role": current_user["role"].value,
     }
 
@@ -149,14 +143,8 @@ async def admin_only_route(
 async def organizer_only_route(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> dict:
-    """
-    Organizer-only protected route.
-    
-    Returns:
-        dict: Success message with user info.
-    """
     return {
         "message": "Welcome, Organizer!",
-        "user_id": str(current_user["id"]),
+        "user_id": str(current_user["_id"]),
         "role": current_user["role"].value,
     }

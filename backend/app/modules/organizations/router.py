@@ -4,9 +4,6 @@ Organizations module router for IVEP.
 Handles organization-related endpoints.
 """
 
-from warnings import warn
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
@@ -31,7 +28,7 @@ router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
 class InviteRequest(BaseModel):
     """Schema for organization invite request."""
-    organization_id: UUID
+    organization_id: str
     email: EmailStr
     role_in_org: OrgMemberRole = OrgMemberRole.MEMBER
 
@@ -39,7 +36,7 @@ class InviteRequest(BaseModel):
 class InviteResponse(BaseModel):
     """Schema for organization invite response."""
     message: str
-    organization_id: UUID
+    organization_id: str
     invited_email: str
     role_in_org: str
 
@@ -55,7 +52,7 @@ async def create_organization(
     Only admins and organizers can create organizations.
     """
     # Create organization
-    organization = await service_create_org(request, current_user["id"])
+    organization = await service_create_org(request, current_user["_id"])
     return OrganizationRead(**organization)
 
 
@@ -81,7 +78,7 @@ async def invite_to_organization(
     # Check if current user is owner or admin
     # Note: In a real app we'd check if current_user is a member with ADMIN role in org
     # Here checking against 'created_by' (which is owner_id in our simplified seed model)
-    is_owner = str(organization.get("owner_id")) == str(current_user["id"])
+    is_owner = str(organization.get("owner_id")) == str(current_user["_id"])
     is_admin = current_user["role"] == Role.ADMIN
     
     if not (is_owner or is_admin):
@@ -97,7 +94,7 @@ async def invite_to_organization(
     if invited_user:
         await add_organization_member(
             organization_id=request.organization_id,
-            user_id=invited_user["id"],
+            user_id=invited_user["_id"],
             role=request.role_in_org
         )
     

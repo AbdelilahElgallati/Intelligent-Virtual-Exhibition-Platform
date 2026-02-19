@@ -1,7 +1,7 @@
 export const ENDPOINTS = {
   USERS: {
     ME: '/users/me',
-    PROFILE: '/users/profile',
+    PROFILE: '/users/me',
   },
   ORGANIZER: {
     MY_EVENTS: '/events/organizer/my-events',
@@ -12,6 +12,18 @@ export const ENDPOINTS = {
     JOINED: '/events/joined',
     MY_STATUS: (id: string) => `/events/${id}/my-status`,
     JOIN: (id: string) => `/events/${id}/join`,
+    SUBMIT: (id: string) => `/events/${id}/submit`,
+    APPROVE: (id: string) => `/events/${id}/approve`,
+    START: (id: string) => `/events/${id}/start`,
+    CLOSE: (id: string) => `/events/${id}/close`,
+    DELETE: (id: string) => `/events/${id}`,
+  },
+  PARTICIPANTS: {
+    LIST: (eventId: string) => `/events/${eventId}/participants`,
+    INVITE: (eventId: string) => `/events/${eventId}/participants/invite`,
+    REQUEST: (eventId: string) => `/events/${eventId}/participants/request`,
+    APPROVE: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/approve`,
+    REJECT: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/reject`,
   },
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',
@@ -24,11 +36,19 @@ export const ENDPOINTS = {
   STANDS: {
     LIST: (eventId: string) => `/events/${eventId}/stands`,
     GET: (eventId: string, standId: string) => `/events/${eventId}/stands/${standId}`,
+    CREATE: (eventId: string) => `/events/${eventId}/stands`,
+  },
+  ORGANIZATIONS: {
+    LIST: '/organizations',
+    CREATE: '/organizations/create',
+    INVITE: '/organizations/invite',
   },
   RESOURCES: {
     LIST: (standId: string) => `/resources/stand/${standId}`,
+    UPLOAD: '/resources/upload',
   },
   CHAT: {
+    ROOMS: '/chat/rooms',
     START: (standId: string) => `/chat/rooms/stand/${standId}`,
     HISTORY: (roomId: string) => `/chat/rooms/${roomId}/messages`,
   },
