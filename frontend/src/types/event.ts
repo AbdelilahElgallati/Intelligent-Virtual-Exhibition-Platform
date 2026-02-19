@@ -1,25 +1,28 @@
 export type EventStatus = 'draft' | 'pending_approval' | 'approved' | 'live' | 'closed';
 
-export interface Event {
+export interface OrganizerEvent {
     id: string;
     title: string;
-    description: string;
+    description?: string;
+    organizer_id: string;
+    state: EventStatus;
     banner_url?: string;
+    category?: string;
     start_date: string;
     end_date: string;
-    state: EventStatus;
-    organizer_id: string;
-    organizer_name?: string;
-    category?: string;
     location?: string;
+    tags: string[];
     created_at: string;
-    updated_at: string;
-    tags?: string[];
+    organizer_name?: string;
 }
 
-export interface EventsResponse {
-    events: Event[];
-    total: number;
-    page: number;
-    size: number;
+export interface EventCreatePayload {
+    title: string;
+    description?: string;
+}
+
+export interface EventUpdatePayload {
+    title?: string;
+    description?: string;
+    state?: EventStatus;
 }

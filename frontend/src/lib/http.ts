@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_PREFIX } from './config';
+import { getApiUrl } from './config';
 
 type RequestOptions = {
     method?: string;
@@ -9,7 +9,7 @@ type RequestOptions = {
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { method = 'GET', headers = {}, body, token } = options;
-    const url = `${API_BASE_URL}${API_PREFIX}${endpoint}`;
+    const url = getApiUrl(endpoint);
 
     const defaultHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -40,6 +40,13 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         headers: defaultHeaders,
         body: body ? JSON.stringify(body) : undefined,
     });
+
+    if (response.status === 401) {
+        if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+        }
+        throw new Error('Unauthorized');
+    }
 
     if (!response.ok) {
         let errorData;

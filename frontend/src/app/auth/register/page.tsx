@@ -14,7 +14,8 @@ export default function RegisterPage() {
         username: '',
         email: '',
         password: '',
-        full_name: ''
+        full_name: '',
+        role: 'visitor'
     });
     const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +81,32 @@ export default function RegisterPage() {
                                 onChange={handleChange}
                                 required
                             />
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-zinc-700">I am a:</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, role: 'visitor' }))}
+                                        className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${formData.role === 'visitor'
+                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300'
+                                            }`}
+                                    >
+                                        Visitor
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, role: 'organizer' }))}
+                                        className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${formData.role === 'organizer'
+                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300'
+                                            }`}
+                                    >
+                                        Organizer
+                                    </button>
+                                </div>
+                            </div>
 
                             <Input
                                 label="Password *"
