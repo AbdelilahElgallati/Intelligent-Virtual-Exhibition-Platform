@@ -15,10 +15,11 @@ def stringify_object_ids(obj: Any) -> Any:
         for key, value in obj.items():
             if key == "_id" and isinstance(value, ObjectId):
                 normalized[key] = str(value)
-                # Preserve an "id" mirror so schemas that expect id can still populate
-                normalized.setdefault("id", str(value))
             else:
                 normalized[key] = stringify_object_ids(value)
+        # Always set "id" mirror from "_id" (override any stale UUID-based "id")
+        if "_id" in normalized:
+            normalized["id"] = normalized["_id"]
         return normalized
 
     if isinstance(obj, ObjectId):

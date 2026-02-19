@@ -21,9 +21,8 @@ class NotificationType(str, Enum):
 class NotificationBase(BaseModel):
     """Base schema for notification data."""
     
-    id: str
+    id: str = Field(alias="_id")
     user_id: str
-    # Use str to stay backward-compatible with legacy notification types in DB.
     type: str
     message: str
     is_read: bool
@@ -35,9 +34,8 @@ class NotificationBase(BaseModel):
 class NotificationRead(BaseModel):
     """Schema for reading notification data."""
     
-    id: str
+    id: str = Field(alias="_id")
     user_id: str
-    # Use str to avoid validation errors on older/unknown notification types.
     type: str
     message: str
     is_read: bool

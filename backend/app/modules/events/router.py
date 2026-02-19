@@ -22,6 +22,8 @@ from app.modules.events.service import (
 )
 from app.modules.participants.service import get_user_participation, request_to_join
 from app.modules.participants.schemas import ParticipantRead
+from app.modules.notifications.service import create_notification
+from app.modules.notifications.schemas import NotificationType
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
@@ -36,7 +38,7 @@ async def get_my_joined_events(
     """
     Get events where the current user is an APPROVED participant.
     """
-    events = await get_joined_events(current_user["id"])
+    events = await get_joined_events(current_user["_id"])
     return EventsResponse(
         events=[EventRead(**e) for e in events],
         total=len(events)
@@ -51,9 +53,9 @@ async def get_my_event_status(
     """
     Get current user's participation status for an event.
     """
-    participation = await get_user_participation(event_id, current_user["id"])
+    participation = await get_user_participation(event_id, current_user["_id"])
     if participation:
-        return {"status": participation["status"].upper(), "participant_id": participation["id"]}
+        return {"status": participation["status"].upper(), "participant_id": participation.get("_id")}
     return {"status": "NOT_JOINED", "participant_id": None}
 
 
@@ -69,22 +71,31 @@ async def join_event(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
         
-    existing = await get_user_participation(event_id, current_user["id"])
+    existing = await get_user_participation(event_id, current_user["_id"])
     if existing:
         return ParticipantRead(**existing)
-        
-    # For now, simple logic: if it's a public event, request_to_join sets status
-    # In a real app, we'd check event.requires_approval
-    # Since event schema doesn't have requires_approval yet, let's assume it doesn't
-    # or add it to schemas if needed.
     
-    # Minimal implementation: all visitors can join, but status is REQUESTED by default in service
-    # Let's adjust service or just use it.
-    participant = await request_to_join(event_id, current_user["id"])
+    participant = await request_to_join(event_id, current_user["_id"])
     return ParticipantRead(**participant)
 
 
 # ============== CRUD Endpoints ==============
+
+@router.get("/organizer/my-events", response_model=EventsResponse)
+async def get_my_events_as_organizer(
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+) -> EventsResponse:
+    """
+    Get all events created by the currently authenticated organizer.
+    
+    Requires ORGANIZER role.
+    """
+    events = await list_events(organizer_id=current_user["_id"])
+    return EventsResponse(
+        events=[EventRead(**e) for e in events],
+        total=len(events)
+    )
+
 
 @router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)
 async def create_new_event(
@@ -96,41 +107,26 @@ async def create_new_event(
     
     Requires ORGANIZER role.
     """
-    event = await create_event(data, current_user["id"])
+    event = await create_event(data, current_user["_id"])
     return EventRead(**event)
 
-
-# @router.get("/", response_model=EventsResponse)
-# async def get_all_events(
-#     organizer_id: Optional[UUID] = None,
-#     state: Optional[EventState] = None,
-# ) -> EventsResponse:
-#     """
-#     List all events with optional filters.
-    
-#     Public endpoint - no authentication required.
-#     """
-#     events = await list_events(organizer_id=organizer_id, state=state)
-#     return EventsResponse(
-#         events=[EventRead(**e) for e in events],
-#         total=len(events)
-#     )
 
 @router.get("/", response_model=EventsResponse)
 async def get_all_events(
     organizer_id: Optional[str] = None,
     state: Optional[EventState] = None,
-    category: Optional[str] = None,  # Add this
-    search: Optional[str] = None,    # Add this
+    category: Optional[str] = None,
+    search: Optional[str] = None,
 ) -> EventsResponse:
     """
     List all events with optional filters.
+
+    Public endpoint - no authentication required.
     """
-    # Pass the new parameters to the service layer
     events = await list_events(
-        organizer_id=organizer_id, 
-        state=state, 
-        category=category, 
+        organizer_id=organizer_id,
+        state=state,
+        category=category,
         search=search
     )
     return EventsResponse(
@@ -174,7 +170,7 @@ async def update_existing_event(
             detail="Event not found",
         )
     
-    if event["organizer_id"] != str(current_user["id"]):
+    if event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this event",
@@ -202,7 +198,7 @@ async def delete_existing_event(
             detail="Event not found",
         )
     
-    if event["organizer_id"] != str(current_user["id"]):
+    if event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this event",
@@ -230,7 +226,7 @@ async def submit_event_for_approval(
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    if event["organizer_id"] != str(current_user["id"]):
+    if event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not authorized")
         
     if event["state"] != EventState.DRAFT:
@@ -293,7 +289,7 @@ async def start_event(
         )
     
     # Check ownership
-    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["id"]):
+    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only start your own events",
@@ -326,7 +322,7 @@ async def close_event(
         )
     
     # Check ownership
-    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["id"]):
+    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only close your own events",

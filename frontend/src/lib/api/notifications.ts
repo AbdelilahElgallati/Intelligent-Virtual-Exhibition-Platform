@@ -7,5 +7,8 @@ export const notificationsApi = {
         apiClient.get<Notification[]>(ENDPOINTS.NOTIFICATIONS.LIST),
 
     markAsRead: (id: string) =>
-        apiClient.post(`${ENDPOINTS.NOTIFICATIONS.LIST}/${id}/read`),
+        apiClient.post(ENDPOINTS.NOTIFICATIONS.MARK_READ(id)),
+
+    markAllRead: () =>
+        apiClient.post(ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ),
 };

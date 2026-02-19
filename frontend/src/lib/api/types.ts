@@ -1,27 +1,11 @@
+// Canonical type re-exports (single source of truth)
+export type { User } from '@/types/user';
+export type { OrganizerEvent } from '@/types/event';
+export type { Stand } from '@/types/stand';
+
+// Types not yet elevated to types/ — defined here
+
 export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING';
-
-export interface User {
-  id: string;
-  email: string;
-  full_name?: string;
-  role: string;
-}
-
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  organizer_id: string;
-  organizer_name?: string;
-  state: string;
-  banner_url?: string;
-  category?: string;
-  start_date: string;
-  end_date: string;
-  location?: string;
-  tags?: string[];
-  created_at: string;
-}
 
 export interface Notification {
   id: string;
@@ -44,18 +28,6 @@ export interface Recommendation {
 export interface ParticipationStatus {
   status: ParticipantStatus;
   participant_id: string | null;
-}
-
-export interface Stand {
-  id: string;
-  event_id: string;
-  organization_id: string;
-  name: string;
-  description?: string;
-  logo_url?: string;
-  tags?: string[];
-  stand_type?: string;
-  created_at: string;
 }
 
 export interface Resource {

@@ -19,10 +19,23 @@ export interface OrganizerEvent {
 export interface EventCreatePayload {
     title: string;
     description?: string;
+    category?: string;
+    start_date?: string;   // ISO datetime string
+    end_date?: string;     // ISO datetime string
+    location?: string;
+    banner_url?: string;
+    tags?: string[];
+    organizer_name?: string;
 }
 
 export interface EventUpdatePayload {
     title?: string;
     description?: string;
-    state?: EventStatus;
+    category?: string;
+    start_date?: string;
+    end_date?: string;
+    location?: string;
+    banner_url?: string;
+    tags?: string[];
+    organizer_name?: string;
 }

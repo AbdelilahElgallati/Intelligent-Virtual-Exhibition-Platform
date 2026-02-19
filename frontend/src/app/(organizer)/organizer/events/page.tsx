@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { DataTable } from '@/components/ui/DataTable';
 import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent } from '@/types/event';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 export default function OrganizerEvents() {
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -24,6 +26,12 @@ export default function OrganizerEvents() {
         };
         fetchEvents();
     }, []);
+
+    const filtered = events.filter(
+        (e) =>
+            e.title.toLowerCase().includes(search.toLowerCase()) ||
+            (e.state && e.state.toLowerCase().includes(search.toLowerCase()))
+    );
 
     const columns = [
         {
@@ -61,10 +69,12 @@ export default function OrganizerEvents() {
                     <h1 className="text-2xl font-bold text-gray-900">My Events</h1>
                     <p className="text-gray-500">Manage and track your organized exhibitions.</p>
                 </div>
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Event
-                </Button>
+                <Link href="/organizer/events/new">
+                    <Button className="bg-indigo-600 hover:bg-indigo-700">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Event
+                    </Button>
+                </Link>
             </div>
 
             <div className="flex items-center gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm text-sm">
@@ -73,6 +83,8 @@ export default function OrganizerEvents() {
                     <input
                         type="text"
                         placeholder="Search events..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                 </div>
@@ -80,7 +92,7 @@ export default function OrganizerEvents() {
 
             <DataTable
                 columns={columns}
-                data={events}
+                data={filtered}
                 isLoading={loading}
                 emptyMessage="You haven't created any events yet."
             />

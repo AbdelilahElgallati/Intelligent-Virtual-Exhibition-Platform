@@ -44,6 +44,9 @@ async def create_favorite(user_id: str, data: FavoriteCreate) -> dict:
 
 async def delete_favorite(favorite_id: str, user_id: str) -> bool:
     col = get_favorites_collection()
-    query = {"_id": ObjectId(favorite_id), "user_id": str(user_id)} if ObjectId.is_valid(favorite_id) else {"id": favorite_id, "user_id": str(user_id)}
+    if ObjectId.is_valid(favorite_id):
+        query = {"_id": ObjectId(favorite_id), "user_id": str(user_id)}
+    else:
+        query = {"_id": favorite_id, "user_id": str(user_id)}
     result = await col.delete_one(query)
     return result.deleted_count > 0

@@ -46,8 +46,8 @@ export const FloatingAssistant: React.FC = () => {
             </button>
 
             {open && (
-                <div className="fixed right-4 bottom-20 z-40 w-full max-w-md h-[600px] md:h-[560px]">
-                    <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 h-full overflow-hidden">
+                <div className="fixed right-4 bottom-20 z-40 w-[calc(100vw-2rem)] max-w-sm h-[600px] md:h-[560px]">
+                    <div className="h-full rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
                         <ChatShell
                             scope={scope}
                             title="Virtual Assistant"

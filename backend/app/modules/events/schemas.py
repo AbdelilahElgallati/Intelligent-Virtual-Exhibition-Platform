@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class EventState(str, Enum):
@@ -23,8 +23,8 @@ class EventState(str, Enum):
 
 class EventBase(BaseModel):
     """Base schema for event data."""
-    
-    id: str = Field(alias="_id")
+
+    id: str = Field(validation_alias=AliasChoices("_id", "id"))
     title: str
     description: Optional[str] = None
     organizer_id: str
@@ -46,6 +46,13 @@ class EventCreate(BaseModel):
     
     title: str
     description: Optional[str] = None
+    category: Optional[str] = "Exhibition"
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    location: Optional[str] = "Virtual Platform"
+    banner_url: Optional[str] = None
+    tags: Optional[list[str]] = []
+    organizer_name: Optional[str] = None
     
     model_config = {"from_attributes": True}
 
@@ -55,6 +62,13 @@ class EventUpdate(BaseModel):
     
     title: Optional[str] = None
     description: Optional[str] = None
+    category: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    location: Optional[str] = None
+    banner_url: Optional[str] = None
+    tags: Optional[list[str]] = None
+    organizer_name: Optional[str] = None
     
     model_config = {"from_attributes": True}
 

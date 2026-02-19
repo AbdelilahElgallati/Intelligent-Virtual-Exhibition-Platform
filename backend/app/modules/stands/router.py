@@ -33,11 +33,11 @@ async def assign_stand_to_organization(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     
     # Check ownership for organizers
-    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["id"]):
+    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Check if org already has a stand
-    base_event_id = event.get("id", str(event_id))
+    base_event_id = event.get("_id", str(event_id))
 
     existing = await get_stand_by_org(base_event_id, data.organization_id)
     if existing:
@@ -61,7 +61,7 @@ async def get_event_stands(event_id: str) -> list[StandRead]:
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    base_event_id = event.get("id", str(event_id))
+    base_event_id = event.get("_id", str(event_id))
     stands = await list_event_stands(base_event_id)
     return [StandRead(**s) for s in stands]
 

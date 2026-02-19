@@ -41,7 +41,7 @@ async def log_analytics_event(
     
     event = log_event(
         type=data.type,
-        user_id=current_user.get("id"),
+        user_id=current_user.get("_id"),
         event_id=data.event_id,
         stand_id=data.stand_id,
     )
