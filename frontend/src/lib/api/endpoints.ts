@@ -1,6 +1,10 @@
 export const ENDPOINTS = {
   USERS: {
     ME: '/users/me',
+    PROFILE: '/users/profile',
+  },
+  ORGANIZER: {
+    MY_EVENTS: '/events/organizer/my-events',
   },
   EVENTS: {
     LIST: '/events',

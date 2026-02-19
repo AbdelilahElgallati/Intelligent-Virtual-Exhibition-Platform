@@ -83,7 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.removeItem('redirectAfterLogin');
                 router.push(redirectPath);
             } else {
-                router.push('/');
+                // Role-based default redirect
+                if (user.role === 'organizer') {
+                    router.push('/organizer');
+                } else {
+                    router.push('/');
+                }
             }
         } catch (error) {
             console.error('Login failed', error);
@@ -111,7 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.removeItem('redirectAfterLogin');
                 router.push(redirectPath);
             } else {
-                router.push('/');
+                // Role-based default redirect
+                if (user.role === 'organizer') {
+                    router.push('/organizer');
+                } else {
+                    router.push('/');
+                }
             }
         } catch (error) {
             console.error('Registration failed', error);

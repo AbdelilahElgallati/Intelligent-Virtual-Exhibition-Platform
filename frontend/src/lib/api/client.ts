@@ -1,13 +1,8 @@
-import { API_BASE_URL, API_PREFIX } from '../config';
+import { getApiUrl } from '../config';
 import { getAccessToken } from '../auth';
 
-const getBaseUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
-  return `${baseUrl}${API_PREFIX}`;
-};
-
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${getBaseUrl()}${endpoint}`;
+  const url = getApiUrl(endpoint);
 
   const headers = new Headers(options.headers);
   const isFormData = options.body instanceof FormData;
@@ -27,9 +22,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
 
   if (response.status === 401) {
-    // Handle unauthorized - could redirect to login
+    // Handle unauthorized - redirect to login
     if (typeof window !== 'undefined') {
-      // window.location.href = '/auth/login';
+      window.location.href = '/auth/login';
     }
     throw new Error('Unauthorized');
   }
