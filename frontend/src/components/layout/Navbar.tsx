@@ -24,9 +24,9 @@ const VISITOR_NAV: NavLink[] = [
 ];
 
 const ORGANIZER_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
-    { label: 'Organizer Panel', href: '/organizer' },
+    // { label: 'Home', href: '/' },
+    // { label: 'Events', href: '/events' },
+    // { label: 'Organizer Panel', href: '/organizer' },
 ];
 
 const ADMIN_NAV: NavLink[] = [

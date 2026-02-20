@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/Button';
 const NAV_ITEMS = [
     { label: 'Dashboard', href: '/organizer', icon: LayoutDashboard },
     { label: 'My Events', href: '/organizer/events', icon: Calendar },
-    { label: 'Subscription', href: '/organizer/subscription', icon: CreditCard },
+    // { label: 'Subscription', href: '/organizer/subscription', icon: CreditCard },
     { label: 'Profile', href: '/organizer/profile', icon: User },
 ];
 
@@ -109,7 +109,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Topbar */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8">
+                {/* <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8">
                     <div className="flex items-center gap-4">
                         <button
                             className="p-2 -ml-2 text-gray-400 lg:hidden"
@@ -138,7 +138,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                             </div>
                         </div>
                     </div>
-                </header>
+                </header> */}
 
                 {/* Page Content */}
                 <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-gray-50/50">
