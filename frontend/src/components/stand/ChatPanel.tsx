@@ -11,6 +11,7 @@ interface ChatPanelProps {
     standId: string;
     standName: string;
     onClose: () => void;
+    avatarBg?: string;
 }
 
 interface ChatRoom {
@@ -18,7 +19,7 @@ interface ChatRoom {
     members: string[];
 }
 
-export function ChatPanel({ standId, standName, onClose }: ChatPanelProps) {
+export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelProps) {
     const { user, isAuthenticated } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(null);
     const [input, setInput] = useState('');
@@ -103,16 +104,26 @@ export function ChatPanel({ standId, standName, onClose }: ChatPanelProps) {
                     messages.map((msg, idx) => {
                         const isMe = msg.sender_id === (user?.id || (user as any)?._id);
                         return (
-                            <div key={idx} className={clsx("flex flex-col", isMe ? "items-end" : "items-start")}>
-                                <div className={clsx(
-                                    "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
-                                    isMe ? "bg-indigo-600 text-white rounded-br-none" : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-                                )}>
-                                    {msg.content}
+                            <div key={idx} className={clsx("flex", isMe ? "justify-end" : "justify-start gap-2")}>
+                                {!isMe && (
+                                    <div
+                                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1"
+                                        style={{ backgroundColor: avatarBg ?? '#ffffff', border: '1px solid #e5e7eb' }}
+                                    >
+                                        <User size={14} className="text-gray-500" />
+                                    </div>
+                                )}
+                                <div className="flex flex-col">
+                                    <div className={clsx(
+                                        "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                                        isMe ? "bg-indigo-600 text-white rounded-br-none" : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
+                                    )}>
+                                        {msg.content}
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 mt-1 px-1">
+                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                 </div>
-                                <span className="text-[10px] text-gray-400 mt-1 px-1">
-                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
                             </div>
                         );
                     })

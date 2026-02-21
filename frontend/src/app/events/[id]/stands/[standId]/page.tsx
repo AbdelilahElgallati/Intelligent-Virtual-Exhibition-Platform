@@ -89,9 +89,22 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     if (loading) return <LoadingState message="Loading stand..." />;
     if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
 
+    const themeColor = stand.theme_color ?? '#1e293b';
+    const avatarBg = stand.presenter_avatar_bg ?? '#ffffff';
+
     return (
         <div className="min-h-screen bg-gray-50 relative">
-            <div className="bg-white border-b border-gray-200">
+            {/* Hero section with optional background image */}
+            <div
+                className="border-b border-gray-200 bg-cover bg-center"
+                style={{
+                    backgroundColor: themeColor,
+                    backgroundImage: stand.stand_background_url
+                        ? `url(${stand.stand_background_url})`
+                        : 'none',
+                }}
+            >
+                <div className="bg-white/90 backdrop-blur-sm">
                 <Container className="py-8">
                     <Link href={`/events/${stand.event_id || id}/live?tab=stands`} className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
                         <ArrowLeft className="w-4 h-4 mr-1" />
@@ -132,7 +145,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                             <div className="flex flex-wrap gap-3">
                                 <Button
                                     onClick={() => setIsChatOpen(true)}
-                                    className="bg-indigo-600 hover:bg-indigo-700"
+                                    style={{ backgroundColor: themeColor }}
+                                    className="hover:opacity-90 text-white"
                                 >
                                     <MessageSquare className="w-5 h-5 mr-2" />
                                     Chat with Team
@@ -155,25 +169,78 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                         </div>
                     </div>
                 </Container>
+                </div>
+            </div>
 
-                {/* Tabs */}
+            {/* Stand Showcase & Presenter Section */}
+            {stand.stand_background_url && (
+                <div className="w-full relative" style={{ minHeight: '480px' }}>
+                    {/* Full-width background image */}
+                    <div
+                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                        style={{ backgroundImage: `url(${stand.stand_background_url})` }}
+                    >
+                        {/* Dark overlay for contrast */}
+                        <div className="absolute inset-0 bg-black/20" />
+                    </div>
+
+                    {/* Presenter — full-body image anchored at bottom-right */}
+                    {stand.presenter_avatar_url && (
+                        <div className="absolute bottom-0 right-8 sm:right-16 md:right-24 lg:right-32 z-10 flex flex-col items-center">
+                            <div
+                                className="relative"
+                                style={{ backgroundColor: avatarBg }}
+                            >
+                                <img
+                                    src={stand.presenter_avatar_url}
+                                    alt={stand.presenter_name ?? 'Presenter'}
+                                    className="h-72 sm:h-80 md:h-96 w-auto object-contain drop-shadow-2xl"
+                                />
+                            </div>
+                            {stand.presenter_name && (
+                                <div
+                                    className="absolute -bottom-0 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-t-lg shadow-md text-center whitespace-nowrap"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    <p className="text-sm font-semibold text-white">{stand.presenter_name}</p>
+                                    <p className="text-xs text-white/80">Stand Presenter</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Stand name overlay at bottom-left */}
+                    <div className="absolute bottom-6 left-6 sm:left-12 z-10">
+                        <div className="px-5 py-3 rounded-xl backdrop-blur-md bg-white/20 border border-white/30 shadow-lg">
+                            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-md">
+                                {stand.name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tabs */}
+            <div className="bg-white border-b border-gray-200">
                 <Container>
-                    <div className="flex space-x-8 mt-8 -mb-px">
+                    <div className="flex space-x-8 -mb-px">
                         <button
                             onClick={() => setActiveTab('resources')}
-                            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'resources'
-                                ? 'border-indigo-600 text-indigo-600'
+                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'resources'
+                                ? 'text-gray-900'
                                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                 }`}
+                            style={activeTab === 'resources' ? { borderColor: themeColor, color: themeColor } : undefined}
                         >
                             Resources
                         </button>
                         <button
                             onClick={() => setActiveTab('about')}
-                            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'about'
-                                ? 'border-indigo-600 text-indigo-600'
+                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'about'
+                                ? 'text-gray-900'
                                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                 }`}
+                            style={activeTab === 'about' ? { borderColor: themeColor, color: themeColor } : undefined}
                         >
                             About
                         </button>
@@ -215,6 +282,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     standId={standId}
                     standName={stand.name}
                     onClose={() => setIsChatOpen(false)}
+                    avatarBg={avatarBg}
                 />
             )}
 
