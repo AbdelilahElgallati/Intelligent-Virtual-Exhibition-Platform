@@ -19,7 +19,7 @@ def get_stands_collection() -> AsyncIOMotorCollection:
     return db["stands"]
 
 
-async def create_stand(event_id, organization_id, name: str) -> dict:
+async def create_stand(event_id, organization_id, name: str, **kwargs) -> dict:
     """
     Create a new stand for an organization at an event.
     """
@@ -29,10 +29,15 @@ async def create_stand(event_id, organization_id, name: str) -> dict:
         "event_id": str(event_id),
         "organization_id": str(organization_id),
         "name": name,
-        "description": None,
-        "logo_url": None,
-        "tags": [],
-        "stand_type": "standard",
+        "description": kwargs.get("description"),
+        "logo_url": kwargs.get("logo_url"),
+        "tags": kwargs.get("tags", []),
+        "stand_type": kwargs.get("stand_type", "standard"),
+        "theme_color": kwargs.get("theme_color", "#1e293b"),
+        "stand_background_url": kwargs.get("stand_background_url"),
+        "presenter_avatar_bg": kwargs.get("presenter_avatar_bg", "#ffffff"),
+        "presenter_name": kwargs.get("presenter_name"),
+        "presenter_avatar_url": kwargs.get("presenter_avatar_url"),
         "created_at": now,
     }
     
@@ -40,6 +45,19 @@ async def create_stand(event_id, organization_id, name: str) -> dict:
     result = await collection.insert_one(stand)
     stand["_id"] = result.inserted_id
     return stringify_object_ids(stand)
+
+
+async def update_stand(stand_id, update_data: dict) -> Optional[dict]:
+    """
+    Update an existing stand.
+    """
+    collection = get_stands_collection()
+    # Remove None values so we only update provided fields
+    fields = {k: v for k, v in update_data.items() if v is not None}
+    if not fields:
+        return await get_stand_by_id(stand_id)
+    await collection.update_one(_id_query(stand_id), {"$set": fields})
+    return await get_stand_by_id(stand_id)
 
 
 async def get_stand_by_id(stand_id) -> Optional[dict]:

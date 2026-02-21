@@ -33,10 +33,23 @@ from app.modules.stands.service import create_stand, get_stands_collection
 from app.modules.users.service import create_user, get_user_by_email
 
 
+def _normalize_id(doc: dict) -> dict:
+    """Ensure doc has both 'id' and '_id' keys as strings so either access pattern works."""
+    if doc is None:
+        return doc
+    if "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    if "id" not in doc and "_id" in doc:
+        doc["id"] = doc["_id"]
+    if "_id" not in doc and "id" in doc:
+        doc["_id"] = str(doc["id"])
+    return doc
+
+
 async def ensure_user(email: str, password: str, role: Role, full_name: str, username: str) -> dict:
     existing = await get_user_by_email(email)
     if existing:
-        return existing
+        return _normalize_id(existing)
 
     user_id = uuid4()
     user = {
@@ -50,13 +63,14 @@ async def ensure_user(email: str, password: str, role: Role, full_name: str, use
         "created_at": datetime.now(timezone.utc),
     }
     await create_user(user)
-    return user
+    return _normalize_id(user)
 
 
 async def ensure_event(title: str, description: str, organizer_id: str, target_state: EventState) -> dict:
     events_col = get_events_collection()
     existing = await events_col.find_one({"title": title})
     if existing:
+        existing = _normalize_id(existing)
         # Optionally bump state to target_state if lower
         if existing.get("state") != target_state:
             await update_event_state(existing["id"], target_state)
@@ -65,6 +79,7 @@ async def ensure_event(title: str, description: str, organizer_id: str, target_s
 
     data = EventCreate(title=title, description=description)
     event = await create_event(data, organizer_id)
+    event = _normalize_id(event)
     # Move through approval to target_state
     if target_state != EventState.DRAFT:
         await update_event_state(event["id"], target_state)
@@ -76,12 +91,9 @@ async def ensure_stand(event_id: str, name: str, organization_id: str, descripti
     stands_col = get_stands_collection()
     existing = await stands_col.find_one({"event_id": str(event_id), "name": name})
     if existing:
-        return existing
-    stand = await create_stand(event_id, organization_id, name)
-    await stands_col.update_one({"id": stand["id"]}, {"$set": {"description": description, "tags": tags}})
-    stand["description"] = description
-    stand["tags"] = tags
-    return stand
+        return _normalize_id(existing)
+    stand = await create_stand(event_id, organization_id, name, description=description, tags=tags)
+    return _normalize_id(stand)
 
 
 async def ensure_resource(stand_id: str, title: str, file_path: str, mime_type: str, rtype: str) -> dict:
@@ -165,14 +177,14 @@ async def main():
     live_event = await ensure_event(
         title="Future Tech Expo",
         description="Experience AI, cloud, and XR demos across virtual stands.",
-        organizer_id=organizer["id"],
+        organizer_id=organizer["_id"],
         target_state=EventState.LIVE,
     )
 
     approved_event = await ensure_event(
         title="Healthcare Innovations Summit",
         description="Talks and booths focused on digital health and biotech.",
-        organizer_id=organizer["id"],
+        organizer_id=organizer["_id"],
         target_state=EventState.APPROVED,
     )
 
@@ -181,7 +193,7 @@ async def main():
     org_b = str(uuid4())
 
     stand_ai = await ensure_stand(
-        event_id=live_event["id"],
+        event_id=live_event["_id"],
         name="AI Innovations",
         organization_id=org_a,
         description="Showcasing applied AI products for enterprises.",
@@ -189,24 +201,52 @@ async def main():
     )
 
     stand_cloud = await ensure_stand(
-        event_id=live_event["id"],
+        event_id=live_event["_id"],
         name="Cloud Native Hub",
         organization_id=org_b,
         description="Kubernetes, observability, and platform engineering demos.",
         tags=["Cloud", "DevOps", "Kubernetes"],
     )
 
+    # Demo stand with full visual customization
+    org_demo = str(uuid4())
+    stand_demo = await ensure_stand(
+        event_id=live_event["_id"],
+        name="Hello Jobs Virtual Booth",
+        organization_id=org_demo,
+        description="Welcome to Hello Jobs. Explore opportunities and connect with recruiters.",
+        tags=["Recruitment", "Careers", "HR Tech"],
+    )
+    # Apply visual customization fields directly
+    demo_visual_fields = {
+        "theme_color": "#f97316",
+        "stand_background_url": "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=1200",
+        "presenter_avatar_bg": "#ffffff",
+        "presenter_name": "Sarah Johnson",
+        "presenter_avatar_url": "https://randomuser.me/api/portraits/women/44.jpg",
+        "stand_type": "sponsor",
+        "logo_url": "https://ui-avatars.com/api/?name=Hello+Jobs&background=f97316&color=fff&size=256",
+    }
+    stands_col = get_stands_collection()
+    from bson import ObjectId as _OID
+    demo_id = stand_demo["_id"]
+    demo_filter = {"_id": _OID(demo_id)} if _OID.is_valid(demo_id) else {"_id": demo_id}
+    await stands_col.update_one(
+        demo_filter,
+        {"$set": demo_visual_fields},
+    )
+
     # Resources for stands
-    await ensure_resource(stand_ai["id"], "AI Playbook.pdf", "/uploads/resources/ai-playbook.pdf", "application/pdf", "pdf")
-    await ensure_resource(stand_ai["id"], "Product Demo.mp4", "/uploads/resources/ai-demo.mp4", "video/mp4", "video")
-    await ensure_resource(stand_cloud["id"], "Cloud Native Guide.pdf", "/uploads/resources/cloud-guide.pdf", "application/pdf", "pdf")
+    await ensure_resource(stand_ai["_id"], "AI Playbook.pdf", "/uploads/resources/ai-playbook.pdf", "application/pdf", "pdf")
+    await ensure_resource(stand_ai["_id"], "Product Demo.mp4", "/uploads/resources/ai-demo.mp4", "video/mp4", "video")
+    await ensure_resource(stand_cloud["_id"], "Cloud Native Guide.pdf", "/uploads/resources/cloud-guide.pdf", "application/pdf", "pdf")
 
     # Visitor participation approved for the live event
     await ensure_participation(live_event["id"], visitor["id"])
 
     # Favorites and notifications for visitor
-    await ensure_favorite(visitor["id"], "event", live_event["id"])
-    await ensure_favorite(visitor["id"], "stand", stand_ai["id"])
+    await ensure_favorite(visitor["_id"], "event", live_event["id"])
+    await ensure_favorite(visitor["_id"], "stand", stand_ai["id"])
     await ensure_notification(visitor["id"], f"You're in! {live_event['title']} is live now.", "event")
     await ensure_notification(visitor["id"], "New resource added to AI Innovations stand.", "stand")
 

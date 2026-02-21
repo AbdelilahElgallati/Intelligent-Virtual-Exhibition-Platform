@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.dependencies import require_roles
 from app.modules.auth.enums import Role
 from app.modules.events.service import get_event_by_id
-from app.modules.stands.schemas import StandCreate, StandRead
-from app.modules.stands.service import create_stand, get_stand_by_org, list_event_stands
+from app.modules.stands.schemas import StandCreate, StandRead, StandUpdate
+from app.modules.stands.service import create_stand, get_stand_by_org, list_event_stands, update_stand
 
 
 router = APIRouter(prefix="/events/{event_id}/stands", tags=["Stands"])
@@ -46,7 +46,18 @@ async def assign_stand_to_organization(
             detail="Organization already has a stand at this event",
         )
     
-    stand = await create_stand(base_event_id, data.organization_id, data.name)
+    stand = await create_stand(
+        base_event_id, data.organization_id, data.name,
+        description=data.description,
+        logo_url=data.logo_url,
+        tags=data.tags,
+        stand_type=data.stand_type,
+        theme_color=data.theme_color,
+        stand_background_url=data.stand_background_url,
+        presenter_avatar_bg=data.presenter_avatar_bg,
+        presenter_name=data.presenter_name,
+        presenter_avatar_url=data.presenter_avatar_url,
+    )
     return StandRead(**stand)
 
 
@@ -80,3 +91,24 @@ async def get_stand(stand_id: str) -> StandRead:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
             
     return StandRead(**stand)
+
+
+@router.patch("/{stand_id}", response_model=StandRead)
+async def update_stand_endpoint(
+    stand_id: str,
+    data: StandUpdate,
+    current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
+) -> StandRead:
+    """
+    Update stand details.
+    
+    Organizer or Admin only.
+    """
+    from app.modules.stands.service import get_stand_by_id
+    
+    stand = await get_stand_by_id(stand_id)
+    if stand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
+    
+    updated = await update_stand(stand_id, data.model_dump(exclude_unset=True))
+    return StandRead(**updated)
