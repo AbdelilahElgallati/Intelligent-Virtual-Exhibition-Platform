@@ -4,7 +4,7 @@ Stands module router for IVEP.
 Handles stand assignment for events.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import require_roles
 from app.modules.auth.enums import Role
@@ -52,6 +52,7 @@ async def assign_stand_to_organization(
         logo_url=data.logo_url,
         tags=data.tags,
         stand_type=data.stand_type,
+        category=data.category,
         theme_color=data.theme_color,
         stand_background_url=data.stand_background_url,
         presenter_avatar_bg=data.presenter_avatar_bg,
@@ -62,18 +63,22 @@ async def assign_stand_to_organization(
 
 
 @router.get("/", response_model=list[StandRead])
-async def get_event_stands(event_id: str) -> list[StandRead]:
+async def get_event_stands(
+    event_id: str,
+    category: str | None = Query(None, description="Filter by category"),
+    search: str | None = Query(None, description="Search stands by name"),
+) -> list[StandRead]:
     """
     List all stands for an event.
     
-    Public endpoint.
+    Public endpoint. Supports optional ?category= and ?search= filters.
     """
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
     base_event_id = event.get("_id", str(event_id))
-    stands = await list_event_stands(base_event_id)
+    stands = await list_event_stands(base_event_id, category=category, search=search)
     return [StandRead(**s) for s in stands]
 
 

@@ -1,67 +1,317 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Stand } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { StandCard } from '@/components/stand/StandCard';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Store } from 'lucide-react';
+import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
+import { Search, SlidersHorizontal, X, Building2 } from 'lucide-react';
+
+/* ── Stand categories available for filtering ── */
+const STAND_CATEGORIES = [
+    'Technology',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Recruitment',
+    'Marketing',
+    'Design',
+    'Engineering',
+    'Sustainability',
+    'Other',
+] as const;
 
 interface StandsGridProps {
     eventId: string;
+    /** When true, shows the persistent filter bar above the grid */
+    showFilters?: boolean;
 }
 
-export function StandsGrid({ eventId }: StandsGridProps) {
+export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchStands = async () => {
-            try {
-                const data = await apiClient.get<Stand[]>(ENDPOINTS.STANDS.LIST(eventId));
-                setStands(data);
-            } catch (err) {
-                console.error('Failed to fetch stands', err);
-                setError('Failed to load stands. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStands();
+    /* ── filter state ── */
+    const [category, setCategory] = useState<string>('');
+    const [search, setSearch] = useState<string>('');
+
+    /* ── first-entry modal state ── */
+    const [showModal, setShowModal] = useState(showFilters);
+    const [modalDismissed, setModalDismissed] = useState(false);
+
+    const fetchStands = useCallback(async (cat?: string, q?: string) => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams();
+            if (cat) params.set('category', cat);
+            if (q) params.set('search', q);
+            const qs = params.toString();
+            const url = ENDPOINTS.STANDS.LIST(eventId) + (qs ? `?${qs}` : '');
+            const data = await apiClient.get<Stand[]>(url);
+            setStands(data);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch stands', err);
+            setError('Failed to load stands. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
     }, [eventId]);
 
-    if (loading) {
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[...Array(8)].map((_, i) => (
-                    <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
-                ))}
-            </div>
-        )
-    }
+    /* Do NOT fetch until modal is dismissed */
+    useEffect(() => {
+        if (modalDismissed || !showFilters) {
+            fetchStands(category, search);
+        }
+        // For non-filter mode (overview tab), fetch immediately
+        if (!showFilters) {
+            fetchStands();
+        }
+    }, [modalDismissed, showFilters, fetchStands]);
 
-    if (error) {
-        return <div className="text-red-500 text-center py-10">{error}</div>;
-    }
+    /* refetch when filters change (debounced), only after modal dismissed */
+    useEffect(() => {
+        if (!modalDismissed && showFilters) return;
+        const timer = setTimeout(() => {
+            fetchStands(category, search);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [category, search, fetchStands, modalDismissed, showFilters]);
 
-    if (stands.length === 0) {
-        return (
-            <EmptyState
-                title="No stands yet"
-                description="The exhibition hall is currently empty. Check back later!"
-                icon={<Store className="w-12 h-12 text-gray-400" />}
-            />
-        );
-    }
+    /* ── Modal handlers ── */
+    const handleModalApply = (filters: FilterValues) => {
+        setCategory(filters.category);
+        setSearch(filters.search);
+        setShowModal(false);
+        setModalDismissed(true);
+    };
+
+    const handleModalSkip = () => {
+        setShowModal(false);
+        setModalDismissed(true);
+    };
+
+    const resetFilters = () => {
+        setCategory('');
+        setSearch('');
+    };
+
+    const hasActiveFilters = category !== '' || search !== '';
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {stands.map((stand) => (
-                <StandCard key={(stand as any).id || (stand as any)._id} stand={stand} />
-            ))}
+        <div className="space-y-6">
+            {/* ── First-Entry Filter Modal ── */}
+            {showModal && !modalDismissed && (
+                <StandFilterModal onApply={handleModalApply} onSkip={handleModalSkip} />
+            )}
+
+            {/* ── Persistent Filter Bar ── */}
+            {showFilters && modalDismissed && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                        {/* Search input */}
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search stands by name..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Category dropdown */}
+                        <div className="relative min-w-[180px]">
+                            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full appearance-none pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition cursor-pointer"
+                            >
+                                <option value="">All Categories</option>
+                                {STAND_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Reset button */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={resetFilters}
+                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition whitespace-nowrap"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                                Reset
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Active filter pills */}
+                    {hasActiveFilters && (
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                            <span className="text-xs text-gray-500 font-medium">Active:</span>
+                            {category && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                    {category}
+                                    <button onClick={() => setCategory('')} className="hover:text-indigo-900">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            )}
+                            {search && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                    &quot;{search}&quot;
+                                    <button onClick={() => setSearch('')} className="hover:text-amber-900">
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── Results count ── */}
+            {!loading && stands.length > 0 && (modalDismissed || !showFilters) && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                        {stands.length} stand{stands.length !== 1 ? 's' : ''} found
+                    </p>
+                </div>
+            )}
+
+            {/* ── Grid / States ── */}
+            {(modalDismissed || !showFilters) && (
+                <>
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="h-56 bg-gray-100 rounded-xl animate-pulse" />
+                            ))}
+                        </div>
+                    ) : error ? (
+                        <div className="text-red-500 text-center py-10">{error}</div>
+                    ) : stands.length === 0 ? (
+                        <EmptyState
+                            title={hasActiveFilters ? 'No matching stands' : 'No stands yet'}
+                            message={
+                                hasActiveFilters
+                                    ? 'Try adjusting your filters or search to find what you\'re looking for.'
+                                    : 'The exhibition hall is currently empty. Check back later!'
+                            }
+                        />
+                    ) : (
+                        /* ── 2D Salon-style Visual Grid ── */
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {stands.map((stand) => {
+                                const standId = (stand as any).id || (stand as any)._id;
+                                const bgImage = stand.stand_background_url || stand.logo_url;
+                                const themeColor = stand.theme_color || '#6366f1';
+
+                                return (
+                                    <Link
+                                        key={standId}
+                                        href={`/events/${stand.event_id}/stands/${standId}`}
+                                        className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                        style={{ aspectRatio: '4 / 3' }}
+                                    >
+                                        {/* Background image or gradient fallback */}
+                                        {bgImage ? (
+                                            <img
+                                                src={bgImage}
+                                                alt={stand.name}
+                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <div
+                                                className="absolute inset-0 flex items-center justify-center"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${themeColor}22 0%, ${themeColor}44 100%)`,
+                                                }}
+                                            >
+                                                <Building2
+                                                    className="w-16 h-16 opacity-30"
+                                                    style={{ color: themeColor }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Top-right badges */}
+                                        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+                                            {stand.stand_type === 'sponsor' && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-amber-900 shadow">
+                                                    Sponsor
+                                                </span>
+                                            )}
+                                            {stand.category && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 text-gray-700 shadow backdrop-blur-sm">
+                                                    {stand.category}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Top-left logo pill */}
+                                        {stand.logo_url && stand.stand_background_url && (
+                                            <div className="absolute top-3 left-3 z-10">
+                                                <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
+                                                    <img
+                                                        src={stand.logo_url}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Bottom overlay — stand name + description */}
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 pt-12 transition-all duration-300">
+                                            <h3 className="text-white font-bold text-lg leading-tight drop-shadow-sm line-clamp-1">
+                                                {stand.name}
+                                            </h3>
+                                            {stand.description && (
+                                                <p className="text-white/70 text-xs mt-1 line-clamp-2 group-hover:text-white/90 transition-colors">
+                                                    {stand.description}
+                                                </p>
+                                            )}
+                                            {/* Tags row */}
+                                            {stand.tags && stand.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {stand.tags.slice(0, 3).map((tag, i) => (
+                                                        <span
+                                                            key={i}
+                                                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/20 text-white/80 backdrop-blur-sm"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Hover border glow */}
+                                        <div
+                                            className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-white/40 transition-colors duration-300 pointer-events-none"
+                                        />
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }

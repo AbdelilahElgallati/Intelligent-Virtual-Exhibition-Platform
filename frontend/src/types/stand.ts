@@ -9,6 +9,7 @@ export interface Stand {
     website_url?: string;
     tags?: string[];
     stand_type?: string;
+    category?: string;
     theme_color?: string;
     stand_background_url?: string;
     presenter_avatar_bg?: string;
@@ -25,6 +26,7 @@ export interface StandCreatePayload {
     website_url?: string;
     tags?: string[];
     stand_type?: string;
+    category?: string;
     theme_color?: string;
     stand_background_url?: string;
     presenter_avatar_bg?: string;

@@ -25,7 +25,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
 
                     <div className="mt-8">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Featured Stands</h3>
-                        <StandsGrid eventId={eventId} />
+                        <StandsGrid eventId={eventId} showFilters={false} />
                     </div>
                 </div>
             )}
@@ -33,7 +33,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
             {tab === 'stands' && (
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Exhibition Hall</h2>
-                    <StandsGrid eventId={eventId} />
+                    <StandsGrid eventId={eventId} showFilters={true} />
                 </div>
             )}
 
