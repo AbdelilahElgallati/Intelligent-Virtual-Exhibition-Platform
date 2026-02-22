@@ -21,6 +21,7 @@ class StandBase(BaseModel):
     logo_url: Optional[str] = None
     tags: Optional[list[str]] = []
     stand_type: Optional[str] = "standard"  # standard, premium, sponsor
+    category: Optional[str] = None
     theme_color: Optional[str] = "#1e293b"
     stand_background_url: Optional[str] = None
     presenter_avatar_bg: Optional[str] = "#ffffff"
@@ -40,6 +41,7 @@ class StandCreate(BaseModel):
     logo_url: Optional[str] = None
     tags: Optional[list[str]] = []
     stand_type: Optional[str] = "standard"
+    category: Optional[str] = None
     theme_color: Optional[str] = "#1e293b"
     stand_background_url: Optional[str] = None
     presenter_avatar_bg: Optional[str] = "#ffffff"
@@ -60,6 +62,7 @@ class StandRead(BaseModel):
     logo_url: Optional[str] = None
     tags: Optional[list[str]] = []
     stand_type: Optional[str] = "standard"
+    category: Optional[str] = None
     theme_color: Optional[str] = "#1e293b"
     stand_background_url: Optional[str] = None
     presenter_avatar_bg: Optional[str] = "#ffffff"
@@ -78,6 +81,7 @@ class StandUpdate(BaseModel):
     logo_url: Optional[str] = None
     tags: Optional[list[str]] = None
     stand_type: Optional[str] = None
+    category: Optional[str] = None
     theme_color: Optional[str] = None
     stand_background_url: Optional[str] = None
     presenter_avatar_bg: Optional[str] = None

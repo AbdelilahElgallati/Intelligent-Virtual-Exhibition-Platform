@@ -87,12 +87,12 @@ async def ensure_event(title: str, description: str, organizer_id: str, target_s
     return event
 
 
-async def ensure_stand(event_id: str, name: str, organization_id: str, description: str, tags: list[str]) -> dict:
+async def ensure_stand(event_id: str, name: str, organization_id: str, description: str, tags: list[str], category: str | None = None) -> dict:
     stands_col = get_stands_collection()
     existing = await stands_col.find_one({"event_id": str(event_id), "name": name})
     if existing:
         return _normalize_id(existing)
-    stand = await create_stand(event_id, organization_id, name, description=description, tags=tags)
+    stand = await create_stand(event_id, organization_id, name, description=description, tags=tags, category=category)
     return _normalize_id(stand)
 
 
@@ -198,6 +198,7 @@ async def main():
         organization_id=org_a,
         description="Showcasing applied AI products for enterprises.",
         tags=["AI", "ML", "Enterprise"],
+        category="Technology",
     )
 
     stand_cloud = await ensure_stand(
@@ -206,6 +207,7 @@ async def main():
         organization_id=org_b,
         description="Kubernetes, observability, and platform engineering demos.",
         tags=["Cloud", "DevOps", "Kubernetes"],
+        category="Engineering",
     )
 
     # Demo stand with full visual customization
@@ -216,6 +218,7 @@ async def main():
         organization_id=org_demo,
         description="Welcome to Hello Jobs. Explore opportunities and connect with recruiters.",
         tags=["Recruitment", "Careers", "HR Tech"],
+        category="Recruitment",
     )
     # Apply visual customization fields directly
     demo_visual_fields = {
@@ -226,6 +229,7 @@ async def main():
         "presenter_avatar_url": "https://randomuser.me/api/portraits/women/44.jpg",
         "stand_type": "sponsor",
         "logo_url": "https://ui-avatars.com/api/?name=Hello+Jobs&background=f97316&color=fff&size=256",
+        "category": "Recruitment",
     }
     stands_col = get_stands_collection()
     from bson import ObjectId as _OID

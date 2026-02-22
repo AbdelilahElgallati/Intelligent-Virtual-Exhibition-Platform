@@ -36,6 +36,13 @@ export function StandCard({ stand }: StandCardProps) {
                     )}
                 </div>
 
+                {/* Category badge */}
+                {stand.category && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 mb-2">
+                        {stand.category}
+                    </span>
+                )}
+
                 {/* Content */}
                 <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-1">

@@ -33,6 +33,7 @@ async def create_stand(event_id, organization_id, name: str, **kwargs) -> dict:
         "logo_url": kwargs.get("logo_url"),
         "tags": kwargs.get("tags", []),
         "stand_type": kwargs.get("stand_type", "standard"),
+        "category": kwargs.get("category"),
         "theme_color": kwargs.get("theme_color", "#1e293b"),
         "stand_background_url": kwargs.get("stand_background_url"),
         "presenter_avatar_bg": kwargs.get("presenter_avatar_bg", "#ffffff"),
@@ -79,11 +80,20 @@ async def get_stand_by_org(event_id, organization_id) -> Optional[dict]:
     return stringify_object_ids(doc) if doc else None
 
 
-async def list_event_stands(event_id) -> list[dict]:
+async def list_event_stands(
+    event_id,
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+) -> list[dict]:
     """
-    List all stands for an event.
+    List all stands for an event, with optional filtering.
     """
     collection = get_stands_collection()
-    cursor = collection.find({"event_id": str(event_id)})
+    query: dict = {"event_id": str(event_id)}
+    if category:
+        query["category"] = category
+    if search:
+        query["name"] = {"$regex": search, "$options": "i"}
+    cursor = collection.find(query)
     docs = await cursor.to_list(length=100)
     return stringify_object_ids(docs)
