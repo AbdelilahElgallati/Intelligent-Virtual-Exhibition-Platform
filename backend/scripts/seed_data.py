@@ -77,9 +77,14 @@ async def ensure_event(title: str, description: str, organizer_id: str, target_s
             existing["state"] = target_state
         return existing
 
-    data = EventCreate(title=title, description=description)
+    data = EventCreate(
+        title=title,
+        description=description,
+        num_enterprises=5,
+        event_timeline="Day 1: Opening ceremony and keynotes. Day 2: Workshop sessions. Day 3: Closing and networking.",
+        extended_details="This is a seeded demo event with sample exhibitors and sessions.",
+    )
     event = await create_event(data, organizer_id)
-    event = _normalize_id(event)
     # Move through approval to target_state
     if target_state != EventState.DRAFT:
         await update_event_state(event["id"], target_state)
@@ -184,7 +189,7 @@ async def main():
     approved_event = await ensure_event(
         title="Healthcare Innovations Summit",
         description="Talks and booths focused on digital health and biotech.",
-        organizer_id=organizer["_id"],
+        organizer_id=organizer["id"],
         target_state=EventState.APPROVED,
     )
 

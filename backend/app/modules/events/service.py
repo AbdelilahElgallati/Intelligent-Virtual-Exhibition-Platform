@@ -4,6 +4,7 @@ Event service for IVEP.
 Provides MongoDB-backed event storage and CRUD operations.
 """
 
+import secrets
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -13,6 +14,9 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.modules.events.schemas import EventCreate, EventState, EventUpdate
 from app.db.utils import stringify_object_ids
+
+# Price per enterprise per event day (configurable)
+PRICE_PER_ENTERPRISE_PER_DAY: float = 50.0
 
 
 def _id_query(eid) -> dict:
@@ -27,17 +31,24 @@ def get_events_collection() -> AsyncIOMotorCollection:
     return db["events"]
 
 
+def _calculate_payment(num_enterprises: int, start_date: datetime, end_date: datetime) -> float:
+    """Auto-calculate payment: enterprises × days × rate."""
+    delta = end_date - start_date
+    days = max(1, delta.days + (1 if delta.seconds > 0 else 0))
+    return round(num_enterprises * days * PRICE_PER_ENTERPRISE_PER_DAY, 2)
+
+
 async def create_event(data: EventCreate, organizer_id) -> dict:
     """
-    Create a new event in DRAFT state.
+    Submit a new event request — goes directly to PENDING_APPROVAL state.
     """
     now = datetime.now(timezone.utc)
-    
+
     event = {
         "title": data.title,
         "description": data.description,
         "organizer_id": str(organizer_id),
-        "state": EventState.DRAFT,
+        "state": EventState.PENDING_APPROVAL,
         "banner_url": data.banner_url,
         "category": data.category or "Exhibition",
         "start_date": data.start_date or now,
@@ -46,8 +57,18 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "tags": data.tags or [],
         "organizer_name": data.organizer_name,
         "created_at": now,
+        # New required request fields
+        "num_enterprises": data.num_enterprises,
+        "event_timeline": data.event_timeline,
+        "extended_details": data.extended_details,
+        "additional_info": data.additional_info,
+        # Payment & links (set later)
+        "payment_amount": None,
+        "enterprise_link": None,
+        "visitor_link": None,
+        "rejection_reason": None,
     }
-    
+
     collection = get_events_collection()
     result = await collection.insert_one(event)
     event["_id"] = result.inserted_id
@@ -131,6 +152,67 @@ async def update_event_state(event_id, state: EventState) -> Optional[dict]:
     updated = await collection.find_one_and_update(
         _id_query(event_id),
         {"$set": {"state": state}},
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
+async def approve_event(event_id, payment_amount: Optional[float] = None) -> Optional[dict]:
+    """
+    Approve event request → WAITING_FOR_PAYMENT.
+    Auto-calculates payment if not provided.
+    """
+    collection = get_events_collection()
+    event = await collection.find_one(_id_query(event_id))
+    if not event:
+        return None
+
+    if payment_amount is None:
+        payment_amount = _calculate_payment(
+            event.get("num_enterprises", 1),
+            event.get("start_date", datetime.now(timezone.utc)),
+            event.get("end_date", datetime.now(timezone.utc)),
+        )
+
+    updated = await collection.find_one_and_update(
+        _id_query(event_id),
+        {"$set": {"state": EventState.WAITING_FOR_PAYMENT, "payment_amount": payment_amount}},
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
+async def reject_event(event_id, reason: Optional[str] = None) -> Optional[dict]:
+    """
+    Reject event request → REJECTED.
+    """
+    collection = get_events_collection()
+    updated = await collection.find_one_and_update(
+        _id_query(event_id),
+        {"$set": {"state": EventState.REJECTED, "rejection_reason": reason}},
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
+async def confirm_event_payment(event_id) -> Optional[dict]:
+    """
+    Mark payment as done → PAYMENT_DONE.
+    Generates unique enterprise and visitor access links.
+    """
+    collection = get_events_collection()
+    enterprise_token = secrets.token_urlsafe(24)
+    visitor_token = secrets.token_urlsafe(24)
+
+    updated = await collection.find_one_and_update(
+        _id_query(event_id),
+        {
+            "$set": {
+                "state": EventState.PAYMENT_DONE,
+                "enterprise_link": f"/join/enterprise/{event_id}?token={enterprise_token}",
+                "visitor_link": f"/join/visitor/{event_id}?token={visitor_token}",
+            }
+        },
         return_document=True,
     )
     return stringify_object_ids(updated) if updated else None
