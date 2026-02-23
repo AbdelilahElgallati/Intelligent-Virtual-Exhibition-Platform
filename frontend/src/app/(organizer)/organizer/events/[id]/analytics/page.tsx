@@ -112,9 +112,10 @@ export default function EventAnalyticsPage() {
     )?.value ??
     "—";
 
-  const maxDist = analytics?.distribution
-    ? Math.max(...analytics.distribution.map((d) => d.value))
-    : 1;
+  const maxDist =
+    Array.isArray(analytics?.distribution) && analytics.distribution.length > 0
+      ? Math.max(...analytics.distribution.map((d) => d.value))
+      : 1;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -215,7 +216,7 @@ export default function EventAnalyticsPage() {
           )}
 
           {/* Distribution chart */}
-          {analytics.distribution?.length > 0 && (
+          {Array.isArray(analytics.distribution) && analytics.distribution.length > 0 && (
             <Card className="p-5">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4" /> Engagement Distribution

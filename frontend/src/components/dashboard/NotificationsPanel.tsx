@@ -54,9 +54,9 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           </div>
         ) : (
           <div className="divide-y">
-            {notifications.map((notification) => (
+            {notifications.map((notification, index) => (
               <div
-                key={notification.id}
+                key={notification.id ?? index}
                 className={`p-4 transition-colors ${
                   !notification.is_read ? 'bg-primary/5' : ''
                 }`}
