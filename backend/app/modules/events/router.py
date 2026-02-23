@@ -1,7 +1,7 @@
 """
 Events module router for IVEP.
 
-Handles event CRUD and lifecycle state transitions.
+Handles event request submission, admin review, payment confirmation, and lifecycle transitions.
 """
 
 from typing import Optional
@@ -10,13 +10,24 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_current_user, require_feature, require_role, require_roles
 from app.modules.auth.enums import Role
-from app.modules.events.schemas import EventCreate, EventRead, EventState, EventUpdate, EventsResponse
+from app.modules.events.schemas import (
+    EventApproveRequest,
+    EventCreate,
+    EventRead,
+    EventRejectRequest,
+    EventState,
+    EventUpdate,
+    EventsResponse,
+)
 from app.modules.events.service import (
+    approve_event,
+    confirm_event_payment,
     create_event,
     delete_event,
     get_event_by_id,
     get_joined_events,
     list_events,
+    reject_event,
     update_event,
     update_event_state,
 )
@@ -26,23 +37,19 @@ from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
 
 
+
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-# ============== Visitor Endpoints ==============
+# ============== Visitor / Public Endpoints ==============
 
 @router.get("/joined", response_model=EventsResponse)
 async def get_my_joined_events(
     current_user: dict = Depends(get_current_user),
 ) -> EventsResponse:
-    """
-    Get events where the current user is an APPROVED participant.
-    """
+    """Get events where the current user is an APPROVED participant."""
     events = await get_joined_events(current_user["_id"])
-    return EventsResponse(
-        events=[EventRead(**e) for e in events],
-        total=len(events)
-    )
+    return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
 @router.get("/{event_id}/my-status")
@@ -50,9 +57,7 @@ async def get_my_event_status(
     event_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Get current user's participation status for an event.
-    """
+    """Get current user's participation status for an event."""
     participation = await get_user_participation(event_id, current_user["_id"])
     if participation:
         return {"status": participation["status"].upper(), "participant_id": participation.get("_id")}
@@ -64,47 +69,39 @@ async def join_event(
     event_id: str,
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ) -> ParticipantRead:
-    """
-    Join or request to join an event.
-    """
+    """Join or request to join an event."""
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-        
+
     existing = await get_user_participation(event_id, current_user["_id"])
     if existing:
         return ParticipantRead(**existing)
-    
+
     participant = await request_to_join(event_id, current_user["_id"])
     return ParticipantRead(**participant)
 
 
-# ============== CRUD Endpoints ==============
+# ============== Organizer Endpoints ==============
 
 @router.get("/organizer/my-events", response_model=EventsResponse)
 async def get_my_events_as_organizer(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventsResponse:
-    """
-    Get all events created by the currently authenticated organizer.
-    
-    Requires ORGANIZER role.
-    """
+    """Get all event requests submitted by the currently authenticated organizer."""
     events = await list_events(organizer_id=current_user["_id"])
-    return EventsResponse(
-        events=[EventRead(**e) for e in events],
-        total=len(events)
-    )
+    return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
 @router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-async def create_new_event(
+async def submit_event_request(
     data: EventCreate,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
-    Create a new event in DRAFT state.
-    
+    Submit a new event request for admin review.
+
+    The event is created directly in PENDING_APPROVAL state — no DRAFT step.
     Requires ORGANIZER role.
     """
     event = await create_event(data, current_user["_id"])
@@ -118,36 +115,19 @@ async def get_all_events(
     category: Optional[str] = None,
     search: Optional[str] = None,
 ) -> EventsResponse:
-    """
-    List all events with optional filters.
-
-    Public endpoint - no authentication required.
-    """
+    """List all events with optional filters. Public endpoint."""
     events = await list_events(
-        organizer_id=organizer_id,
-        state=state,
-        category=category,
-        search=search
+        organizer_id=organizer_id, state=state, category=category, search=search
     )
-    return EventsResponse(
-        events=[EventRead(**e) for e in events],
-        total=len(events)
-    )
+    return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
 @router.get("/{event_id}", response_model=EventRead)
 async def get_event(event_id: str) -> EventRead:
-    """
-    Get event by ID.
-    
-    Public endpoint - no authentication required.
-    """
+    """Get event by ID. Public endpoint."""
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return EventRead(**event)
 
 
@@ -158,24 +138,24 @@ async def update_existing_event(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
-    Update an event.
-    
-    Requires ORGANIZER role.
-    Only the organizer who created the event can update it.
+    Update a pending event request.
+
+    Only allowed when state is PENDING_APPROVAL.
+    Requires ORGANIZER role and ownership.
     """
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
     if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this event")
+
+    if event["state"] != EventState.PENDING_APPROVAL:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this event",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Event can only be edited while in PENDING_APPROVAL state.",
         )
-    
+
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)
 
@@ -186,92 +166,147 @@ async def delete_existing_event(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
     """
-    Delete an event.
-    
-    Requires ORGANIZER role.
-    Only the organizer who created the event can delete it.
+    Delete a pending event request.
+
+    Only allowed when state is PENDING_APPROVAL or REJECTED.
+    Requires ORGANIZER role and ownership.
     """
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
     if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this event")
+
+    if event["state"] not in (EventState.PENDING_APPROVAL, EventState.REJECTED):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this event",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PENDING_APPROVAL or REJECTED events can be deleted.",
         )
-    
+
     deleted = await delete_event(event_id)
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete event",
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete event")
 
 
-# ============== State Transition Endpoints ==============
-
-@router.post("/{event_id}/submit", response_model=EventRead)
-async def submit_event_for_approval(
-    event_id: str,
-    current_user: dict = Depends(require_role(Role.ORGANIZER)),
-) -> EventRead:
-    """
-    Submit an event for approval.
-    """
-    event = await get_event_by_id(event_id)
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    
-    if event["organizer_id"] != str(current_user["_id"]):
-        raise HTTPException(status_code=403, detail="Not authorized")
-        
-    if event["state"] != EventState.DRAFT:
-        raise HTTPException(status_code=400, detail="Only DRAFT events can be submitted")
-        
-    updated = await update_event_state(event_id, EventState.PENDING_APPROVAL)
-    return EventRead(**updated)
-
+# ============== Admin Review Endpoints ==============
 
 @router.post("/{event_id}/approve", response_model=EventRead)
-async def approve_event(
+async def approve_event_request(
     event_id: str,
+    body: EventApproveRequest = EventApproveRequest(),
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ) -> EventRead:
     """
-    Approve event.
-    
-    Transition: PENDING_APPROVAL → APPROVED
+    Approve an event request.
+
+    Transition: PENDING_APPROVAL → WAITING_FOR_PAYMENT
+    Calculates payment amount (enterprises × days × rate) unless overridden.
     Admin only.
     """
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
-    
-    # Validate current state
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
     if event["state"] != EventState.PENDING_APPROVAL:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot approve event. Current state: {event['state'].value}. Required: pending_approval",
+            detail=f"Cannot approve event. Current state: {event['state']}. Required: pending_approval",
         )
-    
-    updated_event = await update_event_state(event_id, EventState.APPROVED)
-    
+
+    updated_event = await approve_event(event_id, payment_amount=body.payment_amount)
+
     # Notify organizer
     await create_notification(
         user_id=event["organizer_id"],
-        type=NotificationType.EVENT_APPROVED,
-        message=f"Your event '{event['title']}' has been approved.",
+        type=NotificationType.PAYMENT_REQUIRED,
+        message=(
+            f"Your event '{event['title']}' has been approved! "
+            f"Please complete the payment of ${updated_event['payment_amount']:.2f} to activate it."
+        ),
     )
-    
+
     return EventRead(**updated_event)
 
+
+@router.post("/{event_id}/reject", response_model=EventRead)
+async def reject_event_request(
+    event_id: str,
+    body: EventRejectRequest = EventRejectRequest(),
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+) -> EventRead:
+    """
+    Reject an event request.
+
+    Transition: PENDING_APPROVAL → REJECTED
+    Admin only.
+    """
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    if event["state"] != EventState.PENDING_APPROVAL:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot reject event. Current state: {event['state']}. Required: pending_approval",
+        )
+
+    updated_event = await reject_event(event_id, reason=body.reason)
+
+    # Notify organizer
+    reason_msg = f" Reason: {body.reason}" if body.reason else ""
+    await create_notification(
+        user_id=event["organizer_id"],
+        type=NotificationType.EVENT_REJECTED,
+        message=f"Your event request '{event['title']}' has been rejected.{reason_msg}",
+    )
+
+    return EventRead(**updated_event)
+
+
+# ============== Payment Endpoint ==============
+
+@router.post("/{event_id}/confirm-payment", response_model=EventRead)
+async def confirm_payment(
+    event_id: str,
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+) -> EventRead:
+    """
+    Confirm payment for an approved event.
+
+    Transition: WAITING_FOR_PAYMENT → PAYMENT_DONE
+    Generates enterprise and visitor access links.
+    Requires ORGANIZER role and ownership.
+    """
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    if event["state"] != EventState.WAITING_FOR_PAYMENT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot confirm payment. Current state: {event['state']}. Required: waiting_for_payment",
+        )
+
+    updated_event = await confirm_event_payment(event_id)
+
+    # Notify organizer
+    await create_notification(
+        user_id=event["organizer_id"],
+        type=NotificationType.LINKS_GENERATED,
+        message=(
+            f"Payment confirmed for '{event['title']}'! "
+            "Your enterprise and visitor access links are now available."
+        ),
+    )
+
+    return EventRead(**updated_event)
+
+
+# ============== Lifecycle Transition Endpoints ==============
 
 @router.post("/{event_id}/start", response_model=EventRead)
 async def start_event(
@@ -280,28 +315,22 @@ async def start_event(
 ) -> EventRead:
     """
     Start event (go live).
+
+    Transition: PAYMENT_DONE → LIVE
     """
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
-    
-    # Check ownership
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
     if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only start your own events",
-        )
-    
-    # Validate current state
-    if event["state"] != EventState.APPROVED:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only start your own events")
+
+    if event["state"] != EventState.PAYMENT_DONE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot start event. Current state: {event['state'].value}. Required: approved",
+            detail=f"Cannot start event. Current state: {event['state']}. Required: payment_done",
         )
-    
+
     updated_event = await update_event_state(event_id, EventState.LIVE)
     return EventRead(**updated_event)
 
@@ -313,27 +342,22 @@ async def close_event(
 ) -> EventRead:
     """
     Close event.
+
+    Transition: LIVE → CLOSED
     """
     event = await get_event_by_id(event_id)
     if event is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Event not found",
-        )
-    
-    # Check ownership
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
     if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only close your own events",
-        )
-    
-    # Validate current state
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only close your own events")
+
     if event["state"] != EventState.LIVE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot close event. Current state: {event['state'].value}. Required: live",
+            detail=f"Cannot close event. Current state: {event['state']}. Required: live",
         )
-    
+
     updated_event = await update_event_state(event_id, EventState.CLOSED)
     return EventRead(**updated_event)
+
