@@ -12,11 +12,16 @@ export const ENDPOINTS = {
     JOINED: '/events/joined',
     MY_STATUS: (id: string) => `/events/${id}/my-status`,
     JOIN: (id: string) => `/events/${id}/join`,
-    SUBMIT: (id: string) => `/events/${id}/submit`,
     APPROVE: (id: string) => `/events/${id}/approve`,
+    REJECT: (id: string) => `/events/${id}/reject`,
+    CONFIRM_PAYMENT: (id: string) => `/events/${id}/confirm-payment`,
     START: (id: string) => `/events/${id}/start`,
     CLOSE: (id: string) => `/events/${id}/close`,
     DELETE: (id: string) => `/events/${id}`,
+    ANALYTICS: (id: string) => `/analytics/event/${id}`,
+  },
+  ADMIN: {
+    PENDING_EVENTS: '/events?state=pending_approval',
   },
   PARTICIPANTS: {
     LIST: (eventId: string) => `/events/${eventId}/participants`,

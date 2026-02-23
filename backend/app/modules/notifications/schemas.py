@@ -14,6 +14,10 @@ class NotificationType(str, Enum):
     """Types of notifications used when creating new entries."""
 
     EVENT_APPROVED = "event_approved"
+    EVENT_REJECTED = "event_rejected"
+    PAYMENT_REQUIRED = "payment_required"
+    PAYMENT_CONFIRMED = "payment_confirmed"
+    LINKS_GENERATED = "links_generated"
     INVITATION_SENT = "invitation_sent"
     PARTICIPANT_ACCEPTED = "participant_accepted"
 
