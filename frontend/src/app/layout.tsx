@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 
 const inter = Inter({ subsets: ["latin"] });
-import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
 
 export const metadata: Metadata = {
   title: "IVEP - Intelligent Virtual Exhibition Platform",
@@ -22,15 +20,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} min-h-screen flex flex-col antialiased`}>
         <AuthProvider>
-          <Navbar />
-          <main className="flex-grow">
+          <ClientLayout>
             {children}
-          </main>
-          <FloatingAssistant />
-          <Footer />
+          </ClientLayout>
         </AuthProvider>
       </body>
     </html>
   );
 }
-

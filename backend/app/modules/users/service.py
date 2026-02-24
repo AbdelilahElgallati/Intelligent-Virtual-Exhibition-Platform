@@ -7,6 +7,7 @@ from app.db.mongo import get_database
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.enums import Role
 from app.db.utils import stringify_object_ids
+import re
 
 def get_users_collection() -> AsyncIOMotorCollection:
     """Get the users collection from MongoDB."""
@@ -53,6 +54,48 @@ async def update_user_profile(user_id: str | UUID, update_data: dict) -> Optiona
     result = await collection.find_one_and_update(
         query,
         {"$set": update_data},
+        return_document=ReturnDocument.AFTER,
+    )
+    return stringify_object_ids(result) if result else None
+
+
+async def list_all_users(
+    role: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 200,
+) -> list[dict]:
+    """
+    Admin: List all users, optionally filtered by role or name/email search.
+    """
+    collection = get_users_collection()
+    query: dict = {}
+
+    if role:
+        query["role"] = role
+
+    if search:
+        # Case-insensitive match on full_name or email
+        pattern = re.compile(re.escape(search), re.IGNORECASE)
+        query["$or"] = [
+            {"full_name": {"$regex": pattern}},
+            {"email": {"$regex": pattern}},
+        ]
+
+    cursor = collection.find(query).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    return stringify_object_ids(docs)
+
+
+async def set_user_active(user_id: str, is_active: bool) -> Optional[dict]:
+    """
+    Admin: Activate or suspend a user by setting is_active.
+    """
+    collection = get_users_collection()
+    uid = str(user_id)
+    query = {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
+    result = await collection.find_one_and_update(
+        query,
+        {"$set": {"is_active": is_active}},
         return_document=ReturnDocument.AFTER,
     )
     return stringify_object_ids(result) if result else None

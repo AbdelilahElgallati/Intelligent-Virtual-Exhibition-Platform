@@ -19,6 +19,7 @@ The script is idempotent: it upserts by unique fields.
 """
 
 import asyncio
+import json
 import random
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -28,8 +29,10 @@ from bson import ObjectId
 from app.core.security import hash_password
 from app.db.mongo import close_mongo_connection, connect_to_mongo, get_database
 from app.modules.auth.enums import Role
-from app.modules.events.schemas import EventCreate, EventState
+from app.modules.events.schemas import EventCreate, EventState, ScheduleDay, ScheduleSlot
 from app.modules.events.service import (
+    approve_event,
+    confirm_event_payment,
     create_event,
     get_events_collection,
     update_event_state,
@@ -168,6 +171,9 @@ async def ensure_event(
     category: str = "Exhibition", tags: list = None,
     start_date: datetime = None, end_date: datetime = None,
     num_enterprises: int = 5,
+    stand_price: float = 300.0,
+    is_paid: bool = False,
+    ticket_price: float = None,
 ) -> dict:
     events_col = get_events_collection()
     existing = await events_col.find_one({"title": title})
@@ -178,22 +184,80 @@ async def ensure_event(
             existing["state"] = target_state
         return existing
 
+    # Build schedule from actual dates (one day per calendar day)
+    sd = start_date or NOW
+    ed = end_date or (NOW + timedelta(days=3))
+    delta_days = max(1, (ed - sd).days + 1)
+
+    _SLOT_TEMPLATES = [
+        ("09:00", "12:00", "Opening ceremony & keynotes"),
+        ("14:00", "17:00", "Workshop sessions & demos"),
+        ("10:00", "13:00", "Networking & enterprise tours"),
+        ("15:00", "18:00", "Closing presentations & awards"),
+    ]
+    sample_schedule = []
+    for i in range(delta_days):
+        day_date = sd + timedelta(days=i)
+        label = day_date.strftime("%a %d %b")  # e.g. "Mon 24 Feb"
+        t1, t2 = _SLOT_TEMPLATES[(i * 2) % len(_SLOT_TEMPLATES)], _SLOT_TEMPLATES[(i * 2 + 1) % len(_SLOT_TEMPLATES)]
+        sample_schedule.append(
+            ScheduleDay(
+                day_number=i + 1,
+                date_label=label,
+                slots=[
+                    ScheduleSlot(start_time=t1[0], end_time=t1[1], label=t1[2]),
+                    ScheduleSlot(start_time=t2[0], end_time=t2[1], label=t2[2]),
+                ],
+            )
+        )
+    schedule_days_dict = [day.model_dump() for day in sample_schedule]
+    timeline_json = json.dumps(schedule_days_dict)
+
     data = EventCreate(
         title=title,
         description=description,
         num_enterprises=num_enterprises,
-        event_timeline="Day 1: Opening ceremony and keynotes. Day 2: Workshop sessions. Day 3: Closing and networking.",
+        event_timeline=timeline_json,
+        schedule_days=sample_schedule,
         extended_details=f"Comprehensive {category.lower()} event with demo exhibitors, workshops and networking sessions.",
         category=category,
         tags=tags or [],
-        start_date=start_date or NOW,
-        end_date=end_date or (NOW + timedelta(days=3)),
+        start_date=sd,
+        end_date=ed,
+        stand_price=stand_price,
+        is_paid=is_paid,
+        ticket_price=ticket_price if is_paid else None,
     )
     event = await create_event(data, organizer_id)
     event = _normalize_id(event)
-    if target_state != EventState.PENDING_APPROVAL:
-        await update_event_state(event["id"], target_state)
-        event["state"] = target_state
+
+    # Walk the state machine properly to populate all fields
+    STATES_NEEDING_APPROVAL = {
+        EventState.WAITING_FOR_PAYMENT,
+        EventState.PAYMENT_DONE,
+        EventState.APPROVED,
+        EventState.LIVE,
+        EventState.CLOSED,
+    }
+    STATES_NEEDING_PAYMENT = {
+        EventState.PAYMENT_DONE,
+        EventState.APPROVED,
+        EventState.LIVE,
+        EventState.CLOSED,
+    }
+
+    if target_state in STATES_NEEDING_APPROVAL:
+        # approve_event → sets payment_amount, state=WAITING_FOR_PAYMENT
+        event = _normalize_id(await approve_event(event["id"]))
+
+    if target_state in STATES_NEEDING_PAYMENT:
+        # confirm_event_payment → sets enterprise_link + visitor_link, state=PAYMENT_DONE
+        event = _normalize_id(await confirm_event_payment(event["id"]))
+
+    # If the final target differs from what the service left us at, force it
+    if event.get("state") != target_state:
+        event = _normalize_id(await update_event_state(event["id"], target_state))
+
     return event
 
 
@@ -460,61 +524,61 @@ async def main():
     print("\n[3/10] Creating events...")
 
     event_definitions = [
-        # (title, description, organizer_idx, state, category, tags, num_enterprises, start_offset_days, duration_days)
+        # (title, desc, org_idx, state, category, tags, num_ent, start_off, dur, stand_price, is_paid, ticket_price)
         (
             "Future Tech Expo 2026",
             "Experience AI, cloud, and XR demos across virtual stands. The premier tech exhibition of the year.",
-            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5,
+            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5, 500.0, True, 30.0,
         ),
         (
             "Healthcare Innovations Summit",
             "Cutting-edge digital health, biotech, and telemedicine innovations.",
-            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4,
+            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4, 450.0, True, 20.0,
         ),
         (
             "Global Education Expo",
             "Transforming education through technology — from K12 to lifelong learning.",
-            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3,
+            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3, 300.0, False, None,
         ),
         (
             "FinTech World Forum",
             "Blockchain, DeFi, and next-gen banking solutions showcase.",
-            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4,
+            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4, 600.0, True, 50.0,
         ),
         (
             "Green Energy Conference",
             "Sustainability, smart grids, and renewable energy technologies.",
-            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3,
+            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3, 350.0, False, None,
         ),
         (
             "Cybersecurity Defense Summit",
             "Zero trust, threat intelligence, and SOC modernization.",
-            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3,
+            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3, 550.0, True, 40.0,
         ),
         (
             "Digital Marketing Masterclass",
             "SEO, content strategy, and marketing automation tools exhibition.",
-            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2,
+            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2, 250.0, False, None,
         ),
         (
             "AI & Data Science Conference",
             "Deep learning, NLP, computer vision, and MLOps — the data revolution.",
-            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6,
+            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6, 700.0, True, 60.0,
         ),
         (
             "Startup Innovation Hackathon",
             "48-hour hackathon with pitches, demos, and investor networking.",
-            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2,
+            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2, 200.0, False, None,
         ),
         (
             "Enterprise Cloud Summit",
             "Multi-cloud strategies, containerization, and serverless architectures.",
-            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4,
+            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4, 480.0, True, 35.0,
         ),
     ]
 
     events = []
-    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur in event_definitions:
+    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur, sp, paid, tp in event_definitions:
         ev = await ensure_event(
             title=title,
             description=desc,
@@ -525,9 +589,12 @@ async def main():
             start_date=NOW + timedelta(days=start_off),
             end_date=NOW + timedelta(days=start_off + dur),
             num_enterprises=num_ent,
+            stand_price=sp,
+            is_paid=paid,
+            ticket_price=tp,
         )
         events.append(ev)
-        print(f"  + Event: {title} [{state.value}]")
+        print(f"  + Event: {title} [{state.value}] | stand ${sp} | {'paid $' + str(tp) if paid else 'free'}")
 
     # Identify live / approved events for stand and participation seeding
     live_events = [e for e in events if e.get("state") == EventState.LIVE]

@@ -48,6 +48,11 @@ class OrganizationRead(BaseModel):
     description: Optional[str] = None
     owner_id: str
     created_at: datetime
+
+    # Moderation fields (admin-controlled)
+    is_verified: bool = False
+    is_flagged: bool = False
+    is_suspended: bool = False
     
     model_config = {"from_attributes": True, "populate_by_name": True}
 

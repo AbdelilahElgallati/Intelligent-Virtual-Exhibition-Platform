@@ -35,6 +35,7 @@ from app.modules.participants.service import get_user_participation, request_to_
 from app.modules.participants.schemas import ParticipantRead
 from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
+from app.modules.audit.service import log_audit
 
 
 
@@ -226,6 +227,15 @@ async def approve_event_request(
         ),
     )
 
+    # Audit log
+    await log_audit(
+        actor_id=str(current_user["_id"]),
+        action="event.approve",
+        entity="event",
+        entity_id=event_id,
+        metadata={"title": event["title"], "payment_amount": updated_event.get("payment_amount")},
+    )
+
     return EventRead(**updated_event)
 
 
@@ -259,6 +269,15 @@ async def reject_event_request(
         user_id=event["organizer_id"],
         type=NotificationType.EVENT_REJECTED,
         message=f"Your event request '{event['title']}' has been rejected.{reason_msg}",
+    )
+
+    # Audit log
+    await log_audit(
+        actor_id=str(current_user["_id"]),
+        action="event.reject",
+        entity="event",
+        entity_id=event_id,
+        metadata={"title": event["title"], "reason": body.reason},
     )
 
     return EventRead(**updated_event)

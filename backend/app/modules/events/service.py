@@ -62,11 +62,17 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "event_timeline": data.event_timeline,
         "extended_details": data.extended_details,
         "additional_info": data.additional_info,
+        # Pricing fields (set by organizer)
+        "stand_price": data.stand_price,
+        "is_paid": data.is_paid,
+        "ticket_price": data.ticket_price if data.is_paid else None,
         # Payment & links (set later)
         "payment_amount": None,
         "enterprise_link": None,
         "visitor_link": None,
         "rejection_reason": None,
+        # Structured schedule
+        "schedule_days": [d.model_dump() for d in data.schedule_days] if data.schedule_days else None,
     }
 
     collection = get_events_collection()
