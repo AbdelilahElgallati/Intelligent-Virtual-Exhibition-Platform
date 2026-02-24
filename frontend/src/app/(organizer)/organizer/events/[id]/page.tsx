@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { eventsApi } from "@/lib/api/events";
-import { OrganizerEvent, EventStatus } from "@/types/event";
+import { OrganizerEvent, EventStatus, EventScheduleDay } from "@/types/event";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
@@ -18,6 +18,8 @@ import {
   Check,
   AlertTriangle,
   XCircle,
+  DollarSign,
+  Tag,
 } from "lucide-react";
 
 const STATE_LABELS: Record<EventStatus, string> = {
@@ -39,6 +41,57 @@ const STATE_COLORS: Record<EventStatus, string> = {
   live: "bg-green-100 text-green-700 border-green-200",
   closed: "bg-gray-100 text-gray-600 border-gray-200",
 };
+
+// ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
+function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
+  let days: EventScheduleDay[] | null = event.schedule_days ?? null;
+
+  if (!days && event.event_timeline) {
+    try {
+      const parsed = JSON.parse(event.event_timeline);
+      if (Array.isArray(parsed)) days = parsed as EventScheduleDay[];
+    } catch {/* legacy text */ }
+  }
+
+  if (days && days.length > 0) {
+    return (
+      <div className="space-y-3">
+        {days.map((day) => (
+          <div key={day.day_number} className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
+            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-50 border-b border-zinc-200">
+              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                {day.day_number}
+              </span>
+              <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
+              {day.date_label && <span className="text-xs text-zinc-500 ml-1">— {day.date_label}</span>}
+            </div>
+            <div className="p-3 space-y-2">
+              {day.slots.map((slot, si) => (
+                <div key={si} className="flex items-start gap-3 p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
+                  <span className="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-1 whitespace-nowrap tabular-nums">
+                    {slot.start_time} → {slot.end_time}
+                  </span>
+                  <p className="text-sm text-zinc-700 leading-snug pt-0.5">
+                    {slot.label || <em className="text-zinc-400">No description</em>}
+                  </p>
+                </div>
+              ))}
+              {day.slots.length === 0 && (
+                <p className="text-xs text-zinc-400 italic px-1">No slots defined</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Legacy plain-text fallback
+  if (event.event_timeline) {
+    return <p className="text-sm text-gray-700 whitespace-pre-wrap">{event.event_timeline}</p>;
+  }
+  return <p className="text-xs text-zinc-400 italic">No schedule provided</p>;
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -339,7 +392,6 @@ export default function EventDetailPage() {
         </Card>
       )}
 
-      {/* Event details */}
       <Card className="p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
           Event Details
@@ -375,48 +427,76 @@ export default function EventDetailPage() {
         </div>
       </Card>
 
+      {/* Pricing */}
+      {(event.stand_price != null || event.is_paid != null) && (
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <DollarSign className="w-4 h-4" /> Pricing
+          </h2>
+          <div className="space-y-1">
+            {event.stand_price != null && (
+              <InfoRow
+                label="Stand Price"
+                value={`$${event.stand_price.toFixed(2)} per enterprise`}
+              />
+            )}
+            <InfoRow
+              label="Visitor Access"
+              value={
+                event.is_paid ? (
+                  <span className="inline-flex items-center gap-1 text-orange-700 font-medium">
+                    <Tag className="w-3.5 h-3.5" /> Paid event
+                    {event.ticket_price != null && ` — $${event.ticket_price.toFixed(2)} per ticket`}
+                  </span>
+                ) : (
+                  <span className="text-green-700 font-medium">Free — no ticket required</span>
+                )
+              }
+            />
+          </div>
+        </Card>
+      )}
+
       {/* Request details */}
       {(event.extended_details ||
         event.event_timeline ||
         event.additional_info) && (
-        <Card className="p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-            <CalendarDays className="w-4 h-4" /> Request Details
-          </h2>
-          <div className="space-y-4">
-            {event.extended_details && (
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-400 mb-1">
-                  Extended Details
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+              <CalendarDays className="w-4 h-4" /> Request Details
+            </h2>
+            <div className="space-y-4">
+              {event.extended_details && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-400 mb-1">
+                    Extended Details
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {event.extended_details}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {event.extended_details}
-                </p>
-              </div>
-            )}
-            {event.event_timeline && (
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-400 mb-1">
-                  Event Timeline
+              )}
+              {(event.schedule_days?.length || event.event_timeline) && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-400 mb-2">
+                    Event Schedule
+                  </div>
+                  <ScheduleDisplay event={event} />
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {event.event_timeline}
-                </p>
-              </div>
-            )}
-            {event.additional_info && (
-              <div>
-                <div className="text-xs font-semibold uppercase text-gray-400 mb-1">
-                  Additional Information
+              )}
+              {event.additional_info && (
+                <div>
+                  <div className="text-xs font-semibold uppercase text-gray-400 mb-1">
+                    Additional Information
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {event.additional_info}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {event.additional_info}
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+              )}
+            </div>
+          </Card>
+        )}
     </div>
   );
 }

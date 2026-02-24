@@ -20,6 +20,7 @@ from app.modules.organizations.service import (
     list_organizations as service_list_orgs,
     get_organization_by_id,
     add_organization_member,
+    update_organization_moderation,
 )
 
 
@@ -115,3 +116,53 @@ async def list_organizations(
     """
     orgs = await service_list_orgs()
     return [OrganizationRead(**org) for org in orgs]
+
+
+# ============== Admin Moderation Endpoints ==============
+
+@router.patch("/{organization_id}/verify", response_model=OrganizationRead)
+async def admin_verify_organization(
+    organization_id: str,
+    current_user: dict = Depends(require_roles([Role.ADMIN])),
+) -> OrganizationRead:
+    """
+    Admin: Mark an organization as verified.
+    """
+    updated = await update_organization_moderation(organization_id, is_verified=True)
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    return OrganizationRead(**updated)
+
+
+@router.patch("/{organization_id}/flag", response_model=OrganizationRead)
+async def admin_flag_organization(
+    organization_id: str,
+    current_user: dict = Depends(require_roles([Role.ADMIN])),
+) -> OrganizationRead:
+    """
+    Admin: Toggle flagged status on an organization.
+    """
+    org = await get_organization_by_id(organization_id)
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    updated = await update_organization_moderation(organization_id, is_flagged=not org.get("is_flagged", False))
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    return OrganizationRead(**updated)
+
+
+@router.patch("/{organization_id}/suspend", response_model=OrganizationRead)
+async def admin_suspend_organization(
+    organization_id: str,
+    current_user: dict = Depends(require_roles([Role.ADMIN])),
+) -> OrganizationRead:
+    """
+    Admin: Toggle suspended status on an organization.
+    """
+    org = await get_organization_by_id(organization_id)
+    if org is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    updated = await update_organization_moderation(organization_id, is_suspended=not org.get("is_suspended", False))
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    return OrganizationRead(**updated)

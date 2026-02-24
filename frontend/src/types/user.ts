@@ -19,7 +19,8 @@ export interface EngagementSettings {
 }
 
 export interface User {
-    id: string;
+    _id: string;         // MongoDB id (admin endpoints use this)
+    id: string;          // alias used by some endpoints
     email: string;
     full_name?: string;
     username: string;

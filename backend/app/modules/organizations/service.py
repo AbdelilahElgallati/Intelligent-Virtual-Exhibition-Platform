@@ -120,3 +120,20 @@ async def get_organization_members(organization_id) -> list[dict]:
     docs = await cursor.to_list(length=100)
     return stringify_object_ids(docs)
 
+
+async def update_organization_moderation(organization_id, **flags) -> Optional[dict]:
+    """
+    Admin: Set moderation flags on an organization.
+
+    Accepted flags: is_verified, is_flagged, is_suspended (all bool).
+    Only provided flags are updated; others are left unchanged.
+    """
+    from pymongo import ReturnDocument
+    collection = get_organizations_collection()
+    doc = await collection.find_one_and_update(
+        _id_query(organization_id),
+        {"$set": flags},
+        return_document=ReturnDocument.AFTER,
+    )
+    return stringify_object_ids(doc) if doc else None
+

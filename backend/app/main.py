@@ -25,6 +25,10 @@ from app.modules.participants.router import router as participants_router
 from app.modules.stands.router import router as stands_router
 from app.modules.subscriptions.router import router as subscriptions_router
 from app.modules.users.router import router as users_router
+# Week 2 additions
+from app.modules.admin.router import router as admin_router
+from app.modules.audit.router import router as audit_router
+from app.modules.incidents.router import router as incidents_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
@@ -83,6 +87,10 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(analytics_router, prefix=api_prefix)
     app.include_router(notifications_router, prefix=api_prefix)
     app.include_router(favorites_router, prefix=api_prefix)
+    # Week 2: Governance & Monitoring
+    app.include_router(admin_router, prefix=api_prefix)
+    app.include_router(audit_router, prefix=api_prefix)
+    app.include_router(incidents_router, prefix=api_prefix)
 
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
