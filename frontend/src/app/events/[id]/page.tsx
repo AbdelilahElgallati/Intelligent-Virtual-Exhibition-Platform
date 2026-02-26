@@ -166,7 +166,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
             </div>
             <section>
               <div className="mt-6 prose prose-indigo max-w-none text-muted-foreground">
-                {event.long_description || event.description}
+                {event.description}
               </div>
             </section>
 
@@ -202,7 +202,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
           <div className="lg:col-span-1">
             <JoinEventCard
-              eventId={id}
+              eventId={id!}
               status={status}
               onJoin={handleJoin}
               loading={joinLoading}
