@@ -13,7 +13,7 @@ import clsx from 'clsx';
 
 interface EventLiveLayoutProps {
     eventId: string;
-    children: React.ReactNode;
+    children: React.ReactNode | ((event: Event | null) => React.ReactNode);
 }
 
 export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
@@ -52,8 +52,8 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
     const tabs = [
         { name: 'Recommended', id: 'overview', href: `/events/${eventId}/live` },
         { name: 'All Stands', id: 'stands', href: `/events/${eventId}/live?tab=stands` },
-        { name: 'Schedule', id: 'schedule', href: '#' }, // Placeholder
-        { name: 'Networking', id: 'networking', href: '#' }, // Placeholder
+        { name: 'Schedule', id: 'schedule', href: `/events/${eventId}/live?tab=schedule` },
+        { name: 'Networking', id: 'networking', href: `/events/${eventId}/live?tab=networking` },
     ];
 
     return (
@@ -140,7 +140,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
             {/* Content Area */}
             <div className="flex-1 py-8">
                 <Container>
-                    {children}
+                    {typeof children === 'function' ? children(event) : children}
                 </Container>
             </div>
         </div>
