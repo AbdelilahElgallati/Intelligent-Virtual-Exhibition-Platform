@@ -5,7 +5,33 @@ export type { Stand } from '@/types/stand';
 
 // Types not yet elevated to types/ — defined here
 
-export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING';
+export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING' | 'PAYMENT_REQUIRED' | 'PAYMENT_PENDING';
+
+export type PaymentStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
+export interface JoinEventResponse {
+  requires_payment?: boolean;
+  payment_status?: PaymentStatus;
+  ticket_price?: number;
+  // Standard participant response fields (for free events)
+  id?: string;
+  event_id?: string;
+  user_id?: string;
+  status?: string;
+}
+
+export interface EventPayment {
+  id: string;
+  _id: string;
+  event_id: string;
+  user_id: string;
+  amount: number;
+  proof_file_path: string;
+  status: PaymentStatus;
+  admin_note?: string;
+  created_at: string;
+  reviewed_at?: string;
+}
 
 export interface Notification {
   id: string;

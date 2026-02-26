@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Stand } from '@/lib/api/types';
+import { Stand, StandsListResponse } from '@/types/stand';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
-import { Search, SlidersHorizontal, X, Building2 } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /* ── Stand categories available for filtering ── */
 const STAND_CATEGORIES = [
@@ -23,13 +23,19 @@ const STAND_CATEGORIES = [
     'Other',
 ] as const;
 
+const DEFAULT_PAGE_SIZE = 9;
+
 interface StandsGridProps {
     eventId: string;
     /** When true, shows the persistent filter bar above the grid */
     showFilters?: boolean;
+    /** Override the number of items per page (default: 9) */
+    pageSize?: number;
+    /** When true, hides pagination controls (useful for overview mode) */
+    showPagination?: boolean;
 }
 
-export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
+export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAGE_SIZE, showPagination = true }: StandsGridProps) {
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -38,20 +44,27 @@ export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
     const [category, setCategory] = useState<string>('');
     const [search, setSearch] = useState<string>('');
 
+    /* ── pagination state ── */
+    const [currentPage, setCurrentPage] = useState(1);
+    const [total, setTotal] = useState(0);
+
     /* ── first-entry modal state ── */
     const [showModal, setShowModal] = useState(showFilters);
     const [modalDismissed, setModalDismissed] = useState(false);
 
-    const fetchStands = useCallback(async (cat?: string, q?: string) => {
+    const fetchStands = useCallback(async (cat?: string, q?: string, page: number = 1) => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
             if (cat) params.set('category', cat);
             if (q) params.set('search', q);
+            params.set('limit', String(pageSize));
+            params.set('skip', String((page - 1) * pageSize));
             const qs = params.toString();
             const url = ENDPOINTS.STANDS.LIST(eventId) + (qs ? `?${qs}` : '');
-            const data = await apiClient.get<Stand[]>(url);
-            setStands(data);
+            const data = await apiClient.get<StandsListResponse>(url);
+            setStands(data.items);
+            setTotal(data.total);
             setError(null);
         } catch (err) {
             console.error('Failed to fetch stands', err);
@@ -59,24 +72,29 @@ export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
         } finally {
             setLoading(false);
         }
-    }, [eventId]);
+    }, [eventId, pageSize]);
+
+    /* Total pages calculation */
+    const totalPages = Math.ceil(total / pageSize);
 
     /* Do NOT fetch until modal is dismissed */
     useEffect(() => {
         if (modalDismissed || !showFilters) {
-            fetchStands(category, search);
+            fetchStands(category, search, currentPage);
         }
         // For non-filter mode (overview tab), fetch immediately
         if (!showFilters) {
-            fetchStands();
+            fetchStands('', '', 1);
         }
-    }, [modalDismissed, showFilters, fetchStands]);
+    }, [modalDismissed, showFilters, fetchStands, currentPage]);
 
     /* refetch when filters change (debounced), only after modal dismissed */
     useEffect(() => {
         if (!modalDismissed && showFilters) return;
+        // Reset to page 1 when filters change
+        setCurrentPage(1);
         const timer = setTimeout(() => {
-            fetchStands(category, search);
+            fetchStands(category, search, 1);
         }, 300);
         return () => clearTimeout(timer);
     }, [category, search, fetchStands, modalDismissed, showFilters]);
@@ -85,6 +103,7 @@ export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
     const handleModalApply = (filters: FilterValues) => {
         setCategory(filters.category);
         setSearch(filters.search);
+        setCurrentPage(1);
         setShowModal(false);
         setModalDismissed(true);
     };
@@ -97,6 +116,20 @@ export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
     const resetFilters = () => {
         setCategory('');
         setSearch('');
+        setCurrentPage(1);
+    };
+
+    /* ── Pagination handlers ── */
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
     };
 
     const hasActiveFilters = category !== '' || search !== '';
@@ -188,7 +221,8 @@ export function StandsGrid({ eventId, showFilters = true }: StandsGridProps) {
             {!loading && stands.length > 0 && (modalDismissed || !showFilters) && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
-                        {stands.length} stand{stands.length !== 1 ? 's' : ''} found
+                        Showing {stands.length} of {total} stand{total !== 1 ? 's' : ''}
+                        {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
                     </p>
                 </div>
             )}

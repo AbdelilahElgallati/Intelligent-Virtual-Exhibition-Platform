@@ -32,7 +32,7 @@ from app.modules.events.service import (
     update_event_state,
 )
 from app.modules.participants.service import get_user_participation, request_to_join
-from app.modules.participants.schemas import ParticipantRead
+from app.modules.participants.schemas import ParticipantRead, ParticipantStatus
 from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.service import log_audit
@@ -65,22 +65,56 @@ async def get_my_event_status(
     return {"status": "NOT_JOINED", "participant_id": None}
 
 
-@router.post("/{event_id}/join", response_model=ParticipantRead)
+@router.post("/{event_id}/join")
 async def join_event(
     event_id: str,
     current_user: dict = Depends(require_role(Role.VISITOR)),
-) -> ParticipantRead:
-    """Join or request to join an event."""
+):
+    """Join or request to join an event.
+
+    - Free events: instant APPROVED participant.
+    - Paid events: gated by payment proof status.
+    """
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
     existing = await get_user_participation(event_id, current_user["_id"])
-    if existing:
-        return ParticipantRead(**existing)
 
-    participant = await request_to_join(event_id, current_user["_id"])
-    return ParticipantRead(**participant)
+    # ── Free event: instant access ──────────────────────────────────────
+    if not event.get("is_paid"):
+        if existing:
+            return ParticipantRead(**existing)
+        # Create participant and immediately approve
+        participant = await request_to_join(event_id, current_user["_id"])
+        from app.modules.participants.service import approve_participant
+        approved = await approve_participant(participant["_id"])
+        return ParticipantRead(**approved)
+
+    # ── Paid event: check payment status ────────────────────────────────
+    from app.modules.payments.service import get_user_payment
+    payment = await get_user_payment(event_id, current_user["_id"])
+
+    if payment and payment["status"] == "approved":
+        # Payment approved → ensure participant exists and is approved
+        if existing:
+            if existing["status"] == ParticipantStatus.APPROVED:
+                return ParticipantRead(**existing)
+            from app.modules.participants.service import approve_participant
+            approved = await approve_participant(existing["_id"])
+            return ParticipantRead(**approved)
+        participant = await request_to_join(event_id, current_user["_id"])
+        from app.modules.participants.service import approve_participant
+        approved = await approve_participant(participant["_id"])
+        return ParticipantRead(**approved)
+
+    # Payment missing, pending, or rejected → deny entry
+    payment_status = payment["status"] if payment else "none"
+    return {
+        "requires_payment": True,
+        "payment_status": payment_status,
+        "ticket_price": event.get("ticket_price"),
+    }
 
 
 # ============== Organizer Endpoints ==============
@@ -129,6 +163,9 @@ async def get_event(event_id: str) -> EventRead:
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    # Only expose payment_details when the event is paid
+    if not event.get("is_paid"):
+        event["payment_details"] = None
     return EventRead(**event)
 
 
@@ -159,6 +196,38 @@ async def update_existing_event(
 
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)
+
+
+@router.patch("/{event_id}/payment-details", response_model=EventRead)
+async def update_event_payment_details(
+    event_id: str,
+    body: dict,
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+) -> EventRead:
+    """
+    Update organizer bank / payment details for a paid event.
+
+    Allowed in ANY event state (so organizer can configure bank info
+    even after the event is approved or live).
+    Requires ORGANIZER role and ownership.
+    """
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    # Persist only the payment_details sub-document
+    from app.db.mongo import get_database
+    db = get_database()
+    await db["events"].update_one(
+        {"_id": __import__("bson").ObjectId(event_id) if __import__("bson").ObjectId.is_valid(event_id) else event_id},
+        {"$set": {"payment_details": body}},
+    )
+
+    updated = await get_event_by_id(event_id)
+    return EventRead(**updated)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)

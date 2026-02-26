@@ -35,3 +35,11 @@ export interface StandCreatePayload {
 }
 
 export interface StandUpdatePayload extends Partial<StandCreatePayload> {}
+
+// Paginated response for stands list
+export interface StandsListResponse {
+    items: Stand[];
+    total: number;
+    limit: number;
+    skip: number;
+}

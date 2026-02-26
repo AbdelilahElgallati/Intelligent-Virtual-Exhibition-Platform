@@ -62,24 +62,48 @@ async def assign_stand_to_organization(
     return StandRead(**stand)
 
 
-@router.get("/", response_model=list[StandRead])
+@router.get("/")
 async def get_event_stands(
     event_id: str,
     category: str | None = Query(None, description="Filter by category"),
     search: str | None = Query(None, description="Search stands by name"),
-) -> list[StandRead]:
+    tags: str | None = Query(None, description="Comma-separated tags to filter by"),
+    limit: int = Query(9, ge=1, le=50, description="Number of stands to return"),
+    skip: int = Query(0, ge=0, description="Number of stands to skip"),
+):
     """
     List all stands for an event.
     
-    Public endpoint. Supports optional ?category= and ?search= filters.
+    Public endpoint. Supports optional filtering and pagination.
+    Query params: ?category=, ?search=, ?tags=, ?limit=, ?skip=
+    
+    Returns: {items: [...], total: int, limit: int, skip: int}
     """
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
     base_event_id = event.get("_id", str(event_id))
-    stands = await list_event_stands(base_event_id, category=category, search=search)
-    return [StandRead(**s) for s in stands]
+    
+    # Parse tags if provided
+    tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+    
+    result = await list_event_stands(
+        base_event_id,
+        category=category,
+        search=search,
+        tags=tags_list,
+        limit=limit,
+        skip=skip,
+    )
+    
+    # Convert items to StandRead
+    return {
+        "items": [StandRead(**s) for s in result["items"]],
+        "total": result["total"],
+        "limit": result["limit"],
+        "skip": result["skip"],
+    }
 
 
 @router.get("/{stand_id}", response_model=StandRead)

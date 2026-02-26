@@ -20,6 +20,8 @@ import {
   XCircle,
   DollarSign,
   Tag,
+  Building2,
+  Save,
 } from "lucide-react";
 
 const STATE_LABELS: Record<EventStatus, string> = {
@@ -164,10 +166,31 @@ export default function EventDetailPage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Bank details form state
+  const [bankDetails, setBankDetails] = useState({
+    bank_name: "",
+    account_holder: "",
+    iban: "",
+    swift: "",
+    reference_note: "",
+  });
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankSaveSuccess, setBankSaveSuccess] = useState(false);
+
   const fetchEvent = async () => {
     try {
       const data = await eventsApi.getEventById(eventId);
       setEvent(data);
+      // Populate bank details form if exists
+      if (data.payment_details) {
+        setBankDetails({
+          bank_name: data.payment_details.bank_name || "",
+          account_holder: data.payment_details.account_holder || "",
+          iban: data.payment_details.iban || "",
+          swift: data.payment_details.swift || "",
+          reference_note: data.payment_details.reference_note || "",
+        });
+      }
     } catch {
       setError("Could not load event details.");
     } finally {
@@ -195,6 +218,22 @@ export default function EventDetailPage() {
       setError(err.message || "Payment confirmation failed.");
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleSaveBankDetails = async () => {
+    setBankSaving(true);
+    setBankSaveSuccess(false);
+    setError(null);
+    try {
+      const updated = await eventsApi.updatePaymentDetails(eventId, bankDetails);
+      setEvent(updated);
+      setBankSaveSuccess(true);
+      setTimeout(() => setBankSaveSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to save bank details.");
+    } finally {
+      setBankSaving(false);
     }
   };
 
@@ -453,6 +492,85 @@ export default function EventDetailPage() {
                 )
               }
             />
+          </div>
+        </Card>
+      )}
+
+      {/* Bank Details for Paid Events */}
+      {event.is_paid && (
+        <Card className="p-5 border-emerald-200">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <Building2 className="w-4 h-4" /> Bank Details for Visitor Payments
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Provide your bank information so visitors can make ticket payments. This will be displayed on the payment page.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Bank Name</label>
+              <input
+                type="text"
+                value={bankDetails.bank_name}
+                onChange={(e) => setBankDetails({ ...bankDetails, bank_name: e.target.value })}
+                placeholder="e.g. BNP Paribas"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Account Holder</label>
+              <input
+                type="text"
+                value={bankDetails.account_holder}
+                onChange={(e) => setBankDetails({ ...bankDetails, account_holder: e.target.value })}
+                placeholder="e.g. Company Name SARL"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">IBAN</label>
+              <input
+                type="text"
+                value={bankDetails.iban}
+                onChange={(e) => setBankDetails({ ...bankDetails, iban: e.target.value })}
+                placeholder="e.g. FR76 3000 4028 3700 0101 2345 678"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">SWIFT/BIC</label>
+              <input
+                type="text"
+                value={bankDetails.swift}
+                onChange={(e) => setBankDetails({ ...bankDetails, swift: e.target.value })}
+                placeholder="e.g. BNPAFRPP"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Reference Note</label>
+              <input
+                type="text"
+                value={bankDetails.reference_note}
+                onChange={(e) => setBankDetails({ ...bankDetails, reference_note: e.target.value })}
+                placeholder="e.g. EVENT-ABC123"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <Button
+              onClick={handleSaveBankDetails}
+              isLoading={bankSaving}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Bank Details
+            </Button>
+            {bankSaveSuccess && (
+              <span className="text-sm text-emerald-600 flex items-center gap-1">
+                <Check className="w-4 h-4" /> Saved successfully
+              </span>
+            )}
           </div>
         </Card>
       )}

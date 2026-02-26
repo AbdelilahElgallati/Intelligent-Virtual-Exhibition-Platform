@@ -71,6 +71,8 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "enterprise_link": None,
         "visitor_link": None,
         "rejection_reason": None,
+        # Organizer bank details
+        "payment_details": data.payment_details if hasattr(data, "payment_details") else None,
         # Structured schedule
         "schedule_days": [d.model_dump() for d in data.schedule_days] if data.schedule_days else None,
     }

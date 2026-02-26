@@ -84,9 +84,14 @@ async def list_event_stands(
     event_id,
     category: Optional[str] = None,
     search: Optional[str] = None,
-) -> list[dict]:
+    tags: Optional[list[str]] = None,
+    limit: int = 9,
+    skip: int = 0,
+) -> dict:
     """
-    List all stands for an event, with optional filtering.
+    List all stands for an event, with optional filtering and pagination.
+    
+    Returns dict with items, total, limit, skip.
     """
     collection = get_stands_collection()
     query: dict = {"event_id": str(event_id)}
@@ -94,6 +99,19 @@ async def list_event_stands(
         query["category"] = category
     if search:
         query["name"] = {"$regex": search, "$options": "i"}
-    cursor = collection.find(query)
-    docs = await cursor.to_list(length=100)
-    return stringify_object_ids(docs)
+    if tags:
+        query["tags"] = {"$in": tags}
+    
+    # Get total count for pagination
+    total = await collection.count_documents(query)
+    
+    # Apply pagination
+    cursor = collection.find(query).skip(skip).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    
+    return {
+        "items": stringify_object_ids(docs),
+        "total": total,
+        "limit": limit,
+        "skip": skip,
+    }

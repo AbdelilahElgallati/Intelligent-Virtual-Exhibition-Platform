@@ -10,6 +10,7 @@ interface JoinEventCardProps {
   onJoin: () => void;
   loading: boolean;
   eventId: string;
+  event?: { is_paid?: boolean; ticket_price?: number } | null;
 }
 
 export const JoinEventCard: React.FC<JoinEventCardProps> = ({
@@ -17,6 +18,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
   onJoin,
   loading,
   eventId,
+  event,
 }) => {
   const renderContent = () => {
     switch (status) {
@@ -28,6 +30,33 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
             </div>
             <Button asChild className="w-full h-12 text-lg">
               <Link href={`/events/${eventId}/live`}>Enter Event</Link>
+            </Button>
+          </>
+        );
+      case 'PAYMENT_REQUIRED':
+        return (
+          <>
+            <div className="bg-orange-50 text-orange-700 p-4 rounded-lg mb-4 text-sm font-medium">
+              This event requires payment.
+              {event?.ticket_price != null && (
+                <span className="block mt-1 font-bold">
+                  Ticket Price: {event.ticket_price.toFixed(2)} MAD
+                </span>
+              )}
+            </div>
+            <Button asChild className="w-full h-12 text-lg">
+              <Link href={`/events/${eventId}/payment`}>Submit Payment Proof</Link>
+            </Button>
+          </>
+        );
+      case 'PAYMENT_PENDING':
+        return (
+          <>
+            <div className="bg-amber-50 text-amber-700 p-4 rounded-lg mb-4 text-sm font-medium">
+              Your payment proof has been submitted and is being reviewed. You&apos;ll be notified once it&apos;s approved.
+            </div>
+            <Button disabled className="w-full h-12 text-lg">
+              Payment Under Review
             </Button>
           </>
         );
@@ -59,13 +88,18 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
           <>
             <p className="text-muted-foreground mb-6">
               Join this event to access stands, schedule, and resources.
+              {event?.is_paid && event?.ticket_price != null && (
+                <span className="block mt-2 text-sm font-semibold text-primary">
+                  Ticket Price: {event.ticket_price.toFixed(2)} MAD
+                </span>
+              )}
             </p>
             <Button
               onClick={onJoin}
               isLoading={loading}
               className="w-full h-12 text-lg"
             >
-              Register Now
+              {event?.is_paid ? 'Register & Pay' : 'Register Now'}
             </Button>
           </>
         );
@@ -76,6 +110,10 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
     switch (status) {
       case 'APPROVED':
         return <Badge className="bg-green-500">APPROVED</Badge>;
+      case 'PAYMENT_REQUIRED':
+        return <Badge className="bg-orange-500 text-white">PAYMENT REQUIRED</Badge>;
+      case 'PAYMENT_PENDING':
+        return <Badge className="bg-amber-500 text-amber-900">PAYMENT PENDING</Badge>;
       case 'PENDING':
       case 'REQUESTED':
         return <Badge className="bg-yellow-500 text-yellow-900">PENDING</Badge>;
