@@ -50,8 +50,8 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
     if (!event) return <div className="text-center py-20 text-gray-500">Event not found</div>;
 
     const tabs = [
-        { name: 'Overview', id: 'overview', href: `/events/${eventId}/live` },
-        { name: 'Stands', id: 'stands', href: `/events/${eventId}/live?tab=stands` },
+        { name: 'Recommended', id: 'overview', href: `/events/${eventId}/live` },
+        { name: 'All Stands', id: 'stands', href: `/events/${eventId}/live?tab=stands` },
         { name: 'Schedule', id: 'schedule', href: '#' }, // Placeholder
         { name: 'Networking', id: 'networking', href: '#' }, // Placeholder
     ];

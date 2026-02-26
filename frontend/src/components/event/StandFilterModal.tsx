@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, SlidersHorizontal, Tag, X, ArrowRight } from 'lucide-react';
+import { Search, SlidersHorizontal, Tag, X, ArrowRight, Sparkles } from 'lucide-react';
 
 /* ── Category list (mirrors StandsGrid) ── */
 const STAND_CATEGORIES = [
@@ -39,21 +39,30 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-                {/* ── Header ── */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8 text-center text-white">
-                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur">
-                        <SlidersHorizontal className="h-7 w-7" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
+
+            {/* Modal Card */}
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 transform transition-all">
+                {/* ── Header with Pattern ── */}
+                <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 px-8 py-10 text-center text-white overflow-hidden">
+                    {/* Decorative pattern */}
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[length:20px_20px]" />
+                    
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-inner ring-1 ring-white/20">
+                            <Sparkles className="h-8 w-8 text-indigo-100" />
+                        </div>
+                        <h2 className="text-3xl font-bold tracking-tight">Personalize Your Experience</h2>
+                        <p className="mt-2 text-indigo-100 max-w-sm mx-auto text-sm leading-relaxed">
+                            Complete your profile preferences to see the most relevant stands tailored just for you.
+                        </p>
                     </div>
-                    <h2 className="text-2xl font-bold">What are you looking for?</h2>
-                    <p className="mt-1 text-sm text-indigo-100">
-                        Tell us your interests so we can show you the most relevant stands.
-                    </p>
                 </div>
 
                 {/* ── Form ── */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     {/* Category */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">

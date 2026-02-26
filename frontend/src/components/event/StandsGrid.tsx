@@ -25,32 +25,48 @@ const STAND_CATEGORIES = [
 
 const DEFAULT_PAGE_SIZE = 9;
 
+export interface StandsGridRef {
+    refetch: () => void;
+}
+
 interface StandsGridProps {
     eventId: string;
     /** When true, shows the persistent filter bar above the grid */
     showFilters?: boolean;
+    /** Initial filter values (e.g. from onboarding) */
+    initialFilters?: { category?: string; search?: string };
     /** Override the number of items per page (default: 9) */
     pageSize?: number;
-    /** When true, hides pagination controls (useful for overview mode) */
+    /** When true, hides pagination controls */
     showPagination?: boolean;
 }
 
-export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAGE_SIZE, showPagination = true }: StandsGridProps) {
+export function StandsGrid({ 
+    eventId, 
+    showFilters = true, 
+    initialFilters, 
+    pageSize = DEFAULT_PAGE_SIZE, 
+    showPagination = true 
+}: StandsGridProps) {
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     /* ── filter state ── */
-    const [category, setCategory] = useState<string>('');
-    const [search, setSearch] = useState<string>('');
+    const [category, setCategory] = useState<string>(initialFilters?.category || '');
+    const [search, setSearch] = useState<string>(initialFilters?.search || '');
+
+    /* ── sync with initialFilters if they change (e.g. from parent modal) ── */
+    useEffect(() => {
+        if (initialFilters) {
+            if (initialFilters.category !== undefined) setCategory(initialFilters.category);
+            if (initialFilters.search !== undefined) setSearch(initialFilters.search);
+        }
+    }, [initialFilters]);
 
     /* ── pagination state ── */
     const [currentPage, setCurrentPage] = useState(1);
     const [total, setTotal] = useState(0);
-
-    /* ── first-entry modal state ── */
-    const [showModal, setShowModal] = useState(showFilters);
-    const [modalDismissed, setModalDismissed] = useState(false);
 
     const fetchStands = useCallback(async (cat?: string, q?: string, page: number = 1) => {
         try {
@@ -77,41 +93,19 @@ export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAG
     /* Total pages calculation */
     const totalPages = Math.ceil(total / pageSize);
 
-    /* Do NOT fetch until modal is dismissed */
+    /* Fetch on mount & when filters/page change */
     useEffect(() => {
-        if (modalDismissed || !showFilters) {
-            fetchStands(category, search, currentPage);
-        }
-        // For non-filter mode (overview tab), fetch immediately
-        if (!showFilters) {
-            fetchStands('', '', 1);
-        }
-    }, [modalDismissed, showFilters, fetchStands, currentPage]);
-
-    /* refetch when filters change (debounced), only after modal dismissed */
-    useEffect(() => {
-        if (!modalDismissed && showFilters) return;
-        // Reset to page 1 when filters change
-        setCurrentPage(1);
+        /* simple debounce for search/category changes */
         const timer = setTimeout(() => {
-            fetchStands(category, search, 1);
+            fetchStands(category, search, currentPage);
         }, 300);
         return () => clearTimeout(timer);
-    }, [category, search, fetchStands, modalDismissed, showFilters]);
+    }, [category, search, currentPage, fetchStands]);
 
-    /* ── Modal handlers ── */
-    const handleModalApply = (filters: FilterValues) => {
-        setCategory(filters.category);
-        setSearch(filters.search);
+    /* Reset to page 1 if filters change */
+    useEffect(() => {
         setCurrentPage(1);
-        setShowModal(false);
-        setModalDismissed(true);
-    };
-
-    const handleModalSkip = () => {
-        setShowModal(false);
-        setModalDismissed(true);
-    };
+    }, [category, search]);
 
     const resetFilters = () => {
         setCategory('');
@@ -132,17 +126,13 @@ export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAG
         }
     };
 
+    /* ── Filter Helpers ── */
     const hasActiveFilters = category !== '' || search !== '';
 
     return (
         <div className="space-y-6">
-            {/* ── First-Entry Filter Modal ── */}
-            {showModal && !modalDismissed && (
-                <StandFilterModal onApply={handleModalApply} onSkip={handleModalSkip} />
-            )}
-
             {/* ── Persistent Filter Bar ── */}
-            {showFilters && modalDismissed && (
+            {showFilters && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
                     <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                         {/* Search input */}
@@ -218,7 +208,7 @@ export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAG
             )}
 
             {/* ── Results count ── */}
-            {!loading && stands.length > 0 && (modalDismissed || !showFilters) && (
+            {!loading && stands.length > 0 && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
                         Showing {stands.length} of {total} stand{total !== 1 ? 's' : ''}
@@ -228,28 +218,27 @@ export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAG
             )}
 
             {/* ── Grid / States ── */}
-            {(modalDismissed || !showFilters) && (
-                <>
-                    {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[...Array(6)].map((_, i) => (
-                                <div key={i} className="h-56 bg-gray-100 rounded-xl animate-pulse" />
-                            ))}
-                        </div>
-                    ) : error ? (
-                        <div className="text-red-500 text-center py-10">{error}</div>
-                    ) : stands.length === 0 ? (
-                        <EmptyState
-                            title={hasActiveFilters ? 'No matching stands' : 'No stands yet'}
-                            message={
-                                hasActiveFilters
-                                    ? 'Try adjusting your filters or search to find what you\'re looking for.'
-                                    : 'The exhibition hall is currently empty. Check back later!'
-                            }
-                        />
-                    ) : (
-                        /* ── 2D Salon-style Visual Grid ── */
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <>
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="h-56 bg-gray-100 rounded-xl animate-pulse" />
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="text-red-500 text-center py-10">{error}</div>
+                ) : stands.length === 0 ? (
+                    <EmptyState
+                        title={hasActiveFilters ? 'No matching stands' : 'No stands yet'}
+                        message={
+                            hasActiveFilters
+                                ? 'Try adjusting your filters or search to find what you\'re looking for.'
+                                : 'The exhibition hall is currently empty. Check back later!'
+                        }
+                    />
+                ) : (
+                    /* ── 2D Salon-style Visual Grid ── */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {stands.map((stand) => {
                                 const standId = (stand as any).id || (stand as any)._id;
                                 const bgImage = stand.stand_background_url || stand.logo_url;
@@ -344,8 +333,58 @@ export function StandsGrid({ eventId, showFilters = true, pageSize = DEFAULT_PAG
                             })}
                         </div>
                     )}
+
+                    {/* ── Pagination Controls ── */}
+                    {showPagination && totalPages > 1 && !loading && (
+                        <div className="flex items-center justify-center gap-4 pt-6">
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={currentPage <= 1}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                Previous
+                            </button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                    let pageNum: number;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                                                currentPage === pageNum
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage >= totalPages}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
                 </>
-            )}
         </div>
     );
 }

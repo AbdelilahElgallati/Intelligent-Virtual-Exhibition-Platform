@@ -1,7 +1,7 @@
 // Canonical type re-exports (single source of truth)
 export type { User } from '@/types/user';
-export type { OrganizerEvent } from '@/types/event';
-export type { Stand } from '@/types/stand';
+export type { OrganizerEvent, OrganizerEvent as Event } from '@/types/event';
+export type { Stand, StandsListResponse } from '@/types/stand';
 
 // Types not yet elevated to types/ — defined here
 
