@@ -32,6 +32,7 @@ const NAV_ITEMS = [
     { label: 'Monitoring', href: '/admin/monitoring', icon: Activity },
     { label: 'Audit Logs', href: '/admin/audit', icon: ScrollText },
     { label: 'Incidents', href: '/admin/incidents', icon: AlertTriangle },
+    { label: 'Payments', href: '/admin/payments', icon: CreditCard },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

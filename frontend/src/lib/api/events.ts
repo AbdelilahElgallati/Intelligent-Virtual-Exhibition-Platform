@@ -67,4 +67,16 @@ export const eventsApi = {
     /** Get analytics for an event */
     getEventAnalytics: (id: string) =>
         apiClient.get<any>(ENDPOINTS.EVENTS.ANALYTICS(id)),
+
+    // ── Payment Details ────────────────────────────────────────────────────────
+
+    /** Update organizer bank info for visitor payments (for paid events) */
+    updatePaymentDetails: (id: string, details: {
+        bank_name?: string;
+        account_holder?: string;
+        iban?: string;
+        swift?: string;
+        reference_note?: string;
+    }) =>
+        apiClient.patch<OrganizerEvent>(ENDPOINTS.PAYMENTS.UPDATE_DETAILS(id), details),
 };

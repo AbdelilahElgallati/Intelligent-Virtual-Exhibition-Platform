@@ -87,8 +87,16 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
     try {
       setJoinLoading(true);
-      await apiClient.post(ENDPOINTS.EVENTS.JOIN(id));
-      // Refetch status after joining
+      const result = await apiClient.post<any>(ENDPOINTS.EVENTS.JOIN(id));
+
+      // Check if the event requires payment
+      if (result?.requires_payment) {
+        // Redirect to payment page
+        router.push(`/events/${id}/payment`);
+        return;
+      }
+
+      // Refetch status after joining (free event — instant APPROVED)
       const statusData = await apiClient.get<{ status: ParticipantStatus }>(
         ENDPOINTS.EVENTS.MY_STATUS(id)
       );
@@ -198,6 +206,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
               status={status}
               onJoin={handleJoin}
               loading={joinLoading}
+              event={event}
             />
           </div>
         </div>

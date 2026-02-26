@@ -121,3 +121,12 @@ async def ensure_indexes() -> None:
         await db.analytics_events.create_index("timestamp")
     except Exception:
         pass
+
+    # Event Payments (visitor proof-based payments)
+    try:
+        await db.event_payments.create_index("event_id")
+        await db.event_payments.create_index("user_id")
+        await db.event_payments.create_index("status")
+        await db.event_payments.create_index([("event_id", 1), ("user_id", 1)])
+    except Exception:
+        pass

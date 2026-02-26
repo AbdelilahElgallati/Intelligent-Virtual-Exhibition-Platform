@@ -20,6 +20,9 @@ class NotificationType(str, Enum):
     LINKS_GENERATED = "links_generated"
     INVITATION_SENT = "invitation_sent"
     PARTICIPANT_ACCEPTED = "participant_accepted"
+    PAYMENT_PROOF_SUBMITTED = "payment_proof_submitted"
+    VISITOR_PAYMENT_APPROVED = "visitor_payment_approved"
+    VISITOR_PAYMENT_REJECTED = "visitor_payment_rejected"
 
 
 class NotificationBase(BaseModel):
