@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Stand, StandsListResponse } from '@/types/stand';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
-import { Search, SlidersHorizontal, X, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
+
+/* Lazy-load the 3D hall to keep initial bundle light */
+const HallScene = lazy(() => import('@/components/hall3d/HallScene').then(m => ({ default: m.HallScene })));
 
 /* ── Stand categories available for filtering ── */
 const STAND_CATEGORIES = [
@@ -39,18 +43,25 @@ interface StandsGridProps {
     pageSize?: number;
     /** When true, hides pagination controls */
     showPagination?: boolean;
+    /** Event title displayed inside the 3D hall */
+    eventTitle?: string;
 }
 
-export function StandsGrid({ 
-    eventId, 
-    showFilters = true, 
-    initialFilters, 
-    pageSize = DEFAULT_PAGE_SIZE, 
-    showPagination = true 
+export function StandsGrid({
+    eventId,
+    showFilters = true,
+    initialFilters,
+    pageSize = DEFAULT_PAGE_SIZE,
+    showPagination = true,
+    eventTitle
 }: StandsGridProps) {
+    const router = useRouter();
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    /* ── view mode: 'grid' or 'hall' ── */
+    const [viewMode, setViewMode] = useState<'grid' | 'hall'>('hall');
 
     /* ── filter state ── */
     const [category, setCategory] = useState<string>(initialFilters?.category || '');
@@ -207,13 +218,39 @@ export function StandsGrid({
                 </div>
             )}
 
-            {/* ── Results count ── */}
+            {/* ── Results count + View Toggle ── */}
             {!loading && stands.length > 0 && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
                         Showing {stands.length} of {total} stand{total !== 1 ? 's' : ''}
                         {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
                     </p>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+                        <button
+                            onClick={() => setViewMode('hall')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                                viewMode === 'hall'
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                            title="3D Exhibition Hall"
+                        >
+                            <Landmark className="h-3.5 w-3.5" />
+                            Hall View
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                                viewMode === 'grid'
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                            title="Grid View"
+                        >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            Grid View
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -236,155 +273,170 @@ export function StandsGrid({
                                 : 'The exhibition hall is currently empty. Check back later!'
                         }
                     />
+                ) : viewMode === 'hall' ? (
+                    /* ── 3D Isometric Hall View ── */
+                    <Suspense fallback={
+                        <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center" style={{ height: '85vh', minHeight: 600 }}>
+                            <div className="text-center">
+                                <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                                <p className="text-gray-400 text-sm">Loading Exhibition Hall...</p>
+                            </div>
+                        </div>
+                    }>
+                        <HallScene
+                            stands={stands}
+                            onStandClick={(standId) => router.push(`/events/${eventId}/stands/${standId}`)}
+                            eventTitle={eventTitle}
+                        />
+                    </Suspense>
                 ) : (
                     /* ── 2D Salon-style Visual Grid ── */
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {stands.map((stand) => {
-                                const standId = (stand as any).id || (stand as any)._id;
-                                const bgImage = stand.stand_background_url || stand.logo_url;
-                                const themeColor = stand.theme_color || '#6366f1';
+                        {stands.map((stand) => {
+                            const standId = (stand as any).id || (stand as any)._id;
+                            const bgImage = stand.stand_background_url || stand.logo_url;
+                            const themeColor = stand.theme_color || '#6366f1';
 
-                                return (
-                                    <Link
-                                        key={standId}
-                                        href={`/events/${stand.event_id}/stands/${standId}`}
-                                        className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                        style={{ aspectRatio: '4 / 3' }}
-                                    >
-                                        {/* Background image or gradient fallback */}
-                                        {bgImage ? (
-                                            <img
-                                                src={bgImage}
-                                                alt={stand.name}
-                                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            return (
+                                <Link
+                                    key={standId}
+                                    href={`/events/${stand.event_id}/stands/${standId}`}
+                                    className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    style={{ aspectRatio: '4 / 3' }}
+                                >
+                                    {/* Background image or gradient fallback */}
+                                    {bgImage ? (
+                                        <img
+                                            src={bgImage}
+                                            alt={stand.name}
+                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${themeColor}22 0%, ${themeColor}44 100%)`,
+                                            }}
+                                        >
+                                            <Building2
+                                                className="w-16 h-16 opacity-30"
+                                                style={{ color: themeColor }}
                                             />
-                                        ) : (
-                                            <div
-                                                className="absolute inset-0 flex items-center justify-center"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${themeColor}22 0%, ${themeColor}44 100%)`,
-                                                }}
-                                            >
-                                                <Building2
-                                                    className="w-16 h-16 opacity-30"
-                                                    style={{ color: themeColor }}
+                                        </div>
+                                    )}
+
+                                    {/* Top-right badges */}
+                                    <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+                                        {stand.stand_type === 'sponsor' && (
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-amber-900 shadow">
+                                                Sponsor
+                                            </span>
+                                        )}
+                                        {stand.category && (
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 text-gray-700 shadow backdrop-blur-sm">
+                                                {stand.category}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Top-left logo pill */}
+                                    {stand.logo_url && stand.stand_background_url && (
+                                        <div className="absolute top-3 left-3 z-10">
+                                            <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
+                                                <img
+                                                    src={stand.logo_url}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
                                                 />
                                             </div>
-                                        )}
-
-                                        {/* Top-right badges */}
-                                        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-                                            {stand.stand_type === 'sponsor' && (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-amber-900 shadow">
-                                                    Sponsor
-                                                </span>
-                                            )}
-                                            {stand.category && (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 text-gray-700 shadow backdrop-blur-sm">
-                                                    {stand.category}
-                                                </span>
-                                            )}
                                         </div>
+                                    )}
 
-                                        {/* Top-left logo pill */}
-                                        {stand.logo_url && stand.stand_background_url && (
-                                            <div className="absolute top-3 left-3 z-10">
-                                                <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
-                                                    <img
-                                                        src={stand.logo_url}
-                                                        alt=""
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
+                                    {/* Bottom overlay — stand name + description */}
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 pt-12 transition-all duration-300">
+                                        <h3 className="text-white font-bold text-lg leading-tight drop-shadow-sm line-clamp-1">
+                                            {stand.name}
+                                        </h3>
+                                        {stand.description && (
+                                            <p className="text-white/70 text-xs mt-1 line-clamp-2 group-hover:text-white/90 transition-colors">
+                                                {stand.description}
+                                            </p>
+                                        )}
+                                        {/* Tags row */}
+                                        {stand.tags && stand.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {stand.tags.slice(0, 3).map((tag, i) => (
+                                                    <span
+                                                        key={i}
+                                                        className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/20 text-white/80 backdrop-blur-sm"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                         )}
+                                    </div>
 
-                                        {/* Bottom overlay — stand name + description */}
-                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 pt-12 transition-all duration-300">
-                                            <h3 className="text-white font-bold text-lg leading-tight drop-shadow-sm line-clamp-1">
-                                                {stand.name}
-                                            </h3>
-                                            {stand.description && (
-                                                <p className="text-white/70 text-xs mt-1 line-clamp-2 group-hover:text-white/90 transition-colors">
-                                                    {stand.description}
-                                                </p>
-                                            )}
-                                            {/* Tags row */}
-                                            {stand.tags && stand.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                    {stand.tags.slice(0, 3).map((tag, i) => (
-                                                        <span
-                                                            key={i}
-                                                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-white/20 text-white/80 backdrop-blur-sm"
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* Hover border glow */}
+                                    <div
+                                        className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-white/40 transition-colors duration-300 pointer-events-none"
+                                    />
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
 
-                                        {/* Hover border glow */}
-                                        <div
-                                            className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-white/40 transition-colors duration-300 pointer-events-none"
-                                        />
-                                    </Link>
+                {/* ── Pagination Controls ── */}
+                {showPagination && totalPages > 1 && !loading && (
+                    <div className="flex items-center justify-center gap-4 pt-6">
+                        <button
+                            onClick={handlePrevPage}
+                            disabled={currentPage <= 1}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                let pageNum: number;
+                                if (totalPages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNum = i + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    pageNum = totalPages - 4 + i;
+                                } else {
+                                    pageNum = currentPage - 2 + i;
+                                }
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`w-9 h-9 rounded-lg text-sm font-medium transition ${currentPage === pageNum
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
                                 );
                             })}
                         </div>
-                    )}
 
-                    {/* ── Pagination Controls ── */}
-                    {showPagination && totalPages > 1 && !loading && (
-                        <div className="flex items-center justify-center gap-4 pt-6">
-                            <button
-                                onClick={handlePrevPage}
-                                disabled={currentPage <= 1}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Previous
-                            </button>
-                            
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                    let pageNum: number;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = currentPage - 2 + i;
-                                    }
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
-                                                currentPage === pageNum
-                                                    ? 'bg-indigo-600 text-white'
-                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            <button
-                                onClick={handleNextPage}
-                                disabled={currentPage >= totalPages}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    )}
-                </>
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage >= totalPages}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                )}
+            </>
         </div>
     );
 }
