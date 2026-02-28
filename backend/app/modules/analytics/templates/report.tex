@@ -1,0 +1,146 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in, headheight=14.5pt}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{lastpage}
+\usepackage{colortbl}
+
+% Color Palette
+\definecolor{primary}{HTML}{6D28D9}   % Purple
+\definecolor{secondary}{HTML}{059669} % Green
+\definecolor{accent}{HTML}{DC2626}    % Red
+\definecolor{graybg}{HTML}{F9FAFB}
+\definecolor{bordergray}{HTML}{E5E7EB}
+
+% TColorBox Styles
+\tcbset{
+    kpicard/.style={
+        colback=graybg,
+        colframe=bordergray,
+        boxrule=0.5pt,
+        sharp corners,
+        fontupper=\small,
+        width=0.3\textwidth,
+        nobeforeafter,
+        boxsep=2pt,
+        left=4pt,
+        right=4pt,
+        top=4pt,
+        bottom=4pt,
+        equal height group=kpis
+    }
+}
+
+% Page Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\color{gray}\small IVEP - Intelligent Virtual Exhibition Platform}
+\rhead{\color{gray}\small \today}
+\lfoot{\color{gray}\small Confidential - Generated: {{ generated_at }}}
+\rfoot{\color{gray}\small Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Section Styles
+\titleformat{\section}{\color{primary}\normalfont\Large\bfseries}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\color{secondary}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% --- Cover Page ---
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge \color{primary} \bfseries IVEP Analysis Report \par}
+    \vspace{1cm}
+    {\Large \color{secondary} {{ report_title }} \par}
+    \vspace{2cm}
+    \begin{tcolorbox}[colback=primary, colhead=primary, colframe=primary, fontupper=\color{white}, center, width=0.8\textwidth, arc=5pt]
+        \centering
+        \vspace{0.5cm}
+        \textbf{\large Intelligent Virtual Exhibition Platform} \\
+        System Performance and Engagement Metrics
+        \vspace{0.5cm}
+    \end{tcolorbox}
+    \vfill
+    {\large \textbf{Generated On:} \\ {{ generated_at }} \par}
+    \vspace{1cm}
+    {\small \color{gray} This report contains proprietary and confidential information. \par}
+\end{titlepage}
+
+% --- Table of Contents ---
+\newpage
+\tableofcontents
+\newpage
+
+% --- Overview Section ---
+\section{Platform Overview}
+{{ overview_description }}
+
+\vspace{1cm}
+
+\subsection{Key Performance Indicators}
+\begin{center}
+    {% for kpi in kpis %}
+    \begin{tcolorbox}[kpicard]
+        \textbf{ {{ kpi.label }} } \\
+        \LARGE \color{primary} {{ kpi.value }} \small {{ kpi.unit if kpi.unit else "" }}
+    \end{tcolorbox}
+    {% if loop.index % 3 == 0 %}\\[0.5cm]{% else %}\hspace{0.2cm}{% endif %}
+    {% endfor %}
+\end{center}
+
+% --- Business Metrics Section ---
+\section{Business \& Revenue Metrics}
+This section provides a summary of financial performance across different revenue streams.
+
+\subsection{Revenue Distribution}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{X r}
+        \rowcolor{primary!10}
+        \textbf{Category} & \textbf{Amount (USD)} \\
+        \midrule
+        Ticket Sales & \${{ revenue.ticket_revenue }} \\
+        Stand Rentals & \${{ revenue.stand_revenue }} \\
+        \midrule
+        \rowcolor{secondary!10}
+        \textbf{Total Gross Revenue} & \textbf{\${{ revenue.total_revenue }} } \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Summary of revenue generated during the reporting period.}
+\end{table}
+
+% --- Engagement & Safety Section ---
+\section{Engagement \& Safety}
+Analysis of user engagement and platform safety interventions.
+
+\begin{tcolorbox}[colback=graybg, colframe=bordergray, title=Moderation Summary]
+    \begin{itemize}
+        \item \textbf{Total Safety Flags}: {{ safety.total_flags }}
+        \item \textbf{Resolved Incidents}: {{ safety.resolved_flags }}
+        \item \textbf{Action Rate}: \color{secondary} {{ safety.resolution_rate }}\%
+    \end{itemize}
+\end{tcolorbox}
+
+% --- Conclusion ---
+\section{Conclusion}
+The data presented in this report indicates the current health and growth trajectory of the IVEP ecosystem. The platform continues to show strong engagement and reliable revenue generation.
+
+\vspace{1cm}
+\begin{center}
+    \small \color{gray} --- End of Report ---
+\end{center}
+
+\end{document}

@@ -20,13 +20,19 @@ import {
   XCircle,
   DollarSign,
   Tag,
+  Download,
+  FileText,
+  Upload,
+  ExternalLink,
 } from "lucide-react";
+import { organizerService } from "@/services/organizer.service";
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
   approved: "Approved",
   rejected: "Rejected",
   waiting_for_payment: "Waiting for Payment",
+  payment_proof_submitted: "Payment Reviewing",
   payment_done: "Payment Done",
   live: "Live",
   closed: "Closed",
@@ -37,6 +43,7 @@ const STATE_COLORS: Record<EventStatus, string> = {
   approved: "bg-blue-100 text-blue-700 border-blue-200",
   rejected: "bg-red-100 text-red-700 border-red-200",
   waiting_for_payment: "bg-orange-100 text-orange-700 border-orange-200",
+  payment_proof_submitted: "bg-blue-100 text-blue-700 border-blue-200",
   payment_done: "bg-indigo-100 text-indigo-700 border-indigo-200",
   live: "bg-green-100 text-green-700 border-green-200",
   closed: "bg-gray-100 text-gray-600 border-gray-200",
@@ -162,7 +169,9 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<OrganizerEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
   const fetchEvent = async () => {
     try {
@@ -180,21 +189,67 @@ export default function EventDetailPage() {
   }, [eventId]);
 
   const handleConfirmPayment = async () => {
+    if (!proofFile) {
+      setError("Please select a payment proof file first.");
+      return;
+    }
+
     if (
       !confirm(
-        "Confirm that payment has been made? This will generate the access links for your event."
+        "Confirm that you have sent the payment to the displayed RIB and wish to submit this proof?"
       )
     )
       return;
+
     setPaymentLoading(true);
     setError(null);
     try {
-      const updated = await eventsApi.confirmPayment(eventId);
-      setEvent(updated);
+      await organizerService.submitPaymentProof(eventId, proofFile);
+      // Re-fetch event to show the new state
+      await fetchEvent();
+      setProofFile(null);
     } catch (err: any) {
-      setError(err.message || "Payment confirmation failed.");
+      setError(err.message || "Payment proof submission failed.");
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    setReportLoading(true);
+    setError(null);
+    try {
+      await organizerService.exportEventReportPDF(eventId);
+    } catch (err: any) {
+      setError(err.message || "Failed to download report.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleStartEvent = async () => {
+    if (!confirm("Are you sure you want to start this event? It will go LIVE and be visible to visitors.")) return;
+    setLoading(true);
+    try {
+      await organizerService.startEvent(eventId);
+      await fetchEvent();
+    } catch (err: any) {
+      setError(err.message || "Failed to start event.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseEvent = async () => {
+    if (!confirm("Are you sure you want to close this event? This action is permanent.")) return;
+    setLoading(true);
+    try {
+      await organizerService.closeEvent(eventId);
+      await fetchEvent();
+    } catch (err: any) {
+      setError(err.message || "Failed to close event.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,15 +292,45 @@ export default function EventDetailPage() {
         >
           {STATE_LABELS[event.state]}
         </span>
-        {(event.state === "live" || event.state === "closed") && (
-          <Link
-            href={`/organizer/events/${event.id}/analytics`}
-            className="ml-auto"
-          >
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <BarChart2 className="w-4 h-4" /> View Analytics
+        {(event.state === "live" || event.state === "closed" || event.state === "payment_done") && (
+          <div className="flex gap-2 ml-auto">
+            {event.state !== "payment_done" && (
+              <Link href={`/organizer/events/${event.id}/analytics`}>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <BarChart2 className="w-4 h-4" /> View Analytics
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleDownloadReport}
+              isLoading={reportLoading}
+            >
+              <Download className="w-4 h-4" /> Download Report
             </Button>
-          </Link>
+            {event.state === "payment_done" && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="gap-1.5 bg-green-600 hover:bg-green-700"
+                onClick={handleStartEvent}
+              >
+                <Check className="w-4 h-4" /> Start Event (Go Live)
+              </Button>
+            )}
+            {event.state === "live" && (
+              <Button
+                variant="danger"
+                size="sm"
+                className="gap-1.5"
+                onClick={handleCloseEvent}
+              >
+                <XCircle className="w-4 h-4" /> Close Event
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -315,36 +400,106 @@ export default function EventDetailPage() {
         </ol>
       </Card>
 
-      {/* Payment banner */}
+      {/* Payment Banner */}
       {event.state === "waiting_for_payment" && (
-        <Card className="p-5 border-orange-200 bg-orange-50">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="font-semibold text-orange-800 flex items-center gap-2">
-                <CreditCard className="w-5 h-5" /> Payment Required
-              </div>
-              <p className="text-sm text-orange-700 mt-1">
-                Your event has been approved. Please complete payment of{" "}
-                <span className="font-bold text-orange-900">
-                  ${event.payment_amount?.toFixed(2)}
-                </span>{" "}
-                to receive your access links.
-              </p>
-              {event.num_enterprises && (
-                <p className="text-xs text-orange-600 mt-1">
-                  Amount calculated from {event.num_enterprises} enterprises
-                  across the event duration.
+        <Card className="p-5 border-orange-200 bg-orange-50 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <div>
+                <div className="font-semibold text-orange-800 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" /> Payment Required
+                </div>
+                <p className="text-sm text-orange-700 mt-1">
+                  Your event has been approved. To activate it, please send{" "}
+                  <span className="font-bold text-orange-900">${event.payment_amount?.toFixed(2)}</span>{" "}
+                  to the following RIB and upload a proof of payment.
                 </p>
-              )}
+              </div>
+
+              {/* RIB Box */}
+              <div className="bg-white border border-orange-200 rounded-lg p-3 space-y-2">
+                <div className="text-[10px] font-bold uppercase text-orange-400 tracking-wider">
+                  Platform RIB
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm font-bold text-zinc-800 tracking-tighter">
+                    {event.rib_code || "007 999 000123456789 01"}
+                  </span>
+                  <CopyButton text={event.rib_code || "007 999 000123456789 01"} />
+                </div>
+              </div>
+
+              {/* File Upload */}
+              <div className="space-y-2">
+                <div className="text-[10px] font-bold uppercase text-orange-400 tracking-wider">
+                  Upload Payment Proof
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex-1 cursor-pointer">
+                    <div className={`border-2 border-dashed rounded-lg px-4 py-3 flex items-center gap-3 transition-colors ${proofFile ? 'border-orange-500 bg-orange-100/50' : 'border-orange-200 bg-white hover:border-orange-300'}`}>
+                      <Upload className={`w-4 h-4 ${proofFile ? 'text-orange-600' : 'text-orange-400'}`} />
+                      <span className={`text-sm ${proofFile ? 'text-orange-900 font-medium' : 'text-zinc-500'}`}>
+                        {proofFile ? proofFile.name : 'Select image or PDF proof'}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,application/pdf"
+                        onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                  </label>
+                  {proofFile && (
+                    <button
+                      onClick={() => setProofFile(null)}
+                      className="p-2 text-orange-400 hover:text-orange-600 transition-colors"
+                      title="Clear file"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+
             <Button
-              className="bg-orange-500 hover:bg-orange-600 shrink-0"
+              className="bg-orange-500 hover:bg-orange-600 shrink-0 self-end"
               isLoading={paymentLoading}
+              disabled={!proofFile}
               onClick={handleConfirmPayment}
             >
-              <CreditCard className="w-4 h-4 mr-2" />
-              Confirm Payment
+              <FileText className="w-4 h-4 mr-2" />
+              Submit Proof
             </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Proof Reviewing Banner */}
+      {event.state === "payment_proof_submitted" && (
+        <Card className="p-5 border-blue-200 bg-blue-50">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900">Payment Proof Submitted</h3>
+              <p className="text-sm text-blue-700">
+                Our administration is currently reviewing your payment proof. Your event will be activated shortly.
+              </p>
+              {event.payment_proof_url && (
+                <div className="mt-3">
+                  <a
+                    href={event.payment_proof_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" /> View Submitted Proof
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       )}

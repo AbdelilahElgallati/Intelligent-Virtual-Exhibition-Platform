@@ -112,12 +112,56 @@ async def ensure_indexes() -> None:
     except Exception:
         pass
 
-    # Analytics events (optional)
+    # Analytics events
     try:
         await db.analytics_events.create_index("event_id")
         await db.analytics_events.create_index("stand_id")
         await db.analytics_events.create_index("user_id")
         await db.analytics_events.create_index("type")
         await db.analytics_events.create_index("timestamp")
+        # Compound for live-metrics download query
+        await db.analytics_events.create_index([("event_id", 1), ("type", 1), ("timestamp", 1)])
+    except Exception:
+        pass
+
+    # Chat messages — compound for messages-per-minute query
+    try:
+        await db.chat_messages.create_index([("event_id", 1), ("timestamp", 1)])
+        await db.chat_messages.create_index([("room_id", 1), ("timestamp", 1)])
+    except Exception:
+        pass
+
+    # Meetings — compound for ongoing meetings query
+    try:
+        await db.meetings.create_index([("stand_id", 1), ("status", 1), ("start_time", 1), ("end_time", 1)])
+    except Exception:
+        pass
+
+    # Content flags
+    try:
+        await db.content_flags.create_index("entity_id")
+        await db.content_flags.create_index("entity_type")
+        await db.content_flags.create_index("created_at")
+        await db.content_flags.create_index([("entity_id", 1), ("resolved", 1)])
+    except Exception:
+        pass
+
+    # Event Sessions (Week 5)
+    try:
+        await db.event_sessions.create_index("event_id")
+        await db.event_sessions.create_index("status")
+        await db.event_sessions.create_index([("event_id", 1), ("start_time", 1)])
+        await db.event_sessions.create_index([("status", 1), ("start_time", 1)])
+        await db.event_sessions.create_index([("status", 1), ("end_time", 1)])
+    except Exception:
+        pass
+
+    # Organizer Report (Week 6)
+    try:
+        await db.content_flags.create_index([("event_id", 1), ("status", 1)])
+        await db.stands.create_index("event_id")
+        await db.participants.create_index([("event_id", 1), ("role", 1), ("status", 1)])
+        await db.meetings.create_index([("stand_id", 1), ("status", 1)])
+        await db.leads.create_index([("stand_id", 1), ("last_interaction", 1)])
     except Exception:
         pass

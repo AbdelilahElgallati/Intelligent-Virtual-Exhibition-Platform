@@ -163,6 +163,31 @@ async def update_event_state(event_id, state: EventState) -> Optional[dict]:
     return stringify_object_ids(updated) if updated else None
 
 
+async def atomic_transition(
+    event_id,
+    from_state: EventState,
+    to_state: EventState,
+) -> Optional[dict]:
+    """
+    Atomically transition an event from *from_state* → *to_state*.
+
+    The update filter includes the expected current state so that:
+    - If the event is already in a different state, returns None (no double-transition).
+    - Safe to call from concurrent workers.
+
+    Returns the updated event doc or None if the transition was not applied.
+    """
+    collection = get_events_collection()
+    id_q = _id_query(event_id)
+    filter_q = {**id_q, "state": from_state}
+    updated = await collection.find_one_and_update(
+        filter_q,
+        {"$set": {"state": to_state}},
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
 async def approve_event(event_id, payment_amount: Optional[float] = None) -> Optional[dict]:
     """
     Approve event request → WAITING_FOR_PAYMENT.
@@ -180,9 +205,36 @@ async def approve_event(event_id, payment_amount: Optional[float] = None) -> Opt
             event.get("end_date", datetime.now(timezone.utc)),
         )
 
+    # Fixed RIB for the platform (per request)
+    rib_code = "007 999 000123456789 01"
+
     updated = await collection.find_one_and_update(
         _id_query(event_id),
-        {"$set": {"state": EventState.WAITING_FOR_PAYMENT, "payment_amount": payment_amount}},
+        {
+            "$set": {
+                "state": EventState.WAITING_FOR_PAYMENT,
+                "payment_amount": payment_amount,
+                "rib_code": rib_code,
+            }
+        },
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
+async def submit_payment_proof(event_id, proof_url: str) -> Optional[dict]:
+    """
+    Organizer submits payment proof -> PAYMENT_PROOF_SUBMITTED.
+    """
+    collection = get_events_collection()
+    updated = await collection.find_one_and_update(
+        _id_query(event_id),
+        {
+            "$set": {
+                "state": EventState.PAYMENT_PROOF_SUBMITTED,
+                "payment_proof_url": proof_url,
+            }
+        },
         return_document=True,
     )
     return stringify_object_ids(updated) if updated else None

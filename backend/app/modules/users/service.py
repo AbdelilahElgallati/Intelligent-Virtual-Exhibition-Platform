@@ -15,9 +15,11 @@ def get_users_collection() -> AsyncIOMotorCollection:
     return db["users"]
 
 async def get_user_by_email(email: str) -> Optional[dict]:
-    """Get user by email from MongoDB."""
+    """Get user by email from MongoDB (case-insensitive)."""
     collection = get_users_collection()
-    doc = await collection.find_one({"email": email})
+    # Use case-insensitive regex for email lookup
+    pattern = re.compile(f"^{re.escape(email)}$", re.IGNORECASE)
+    doc = await collection.find_one({"email": pattern})
     return stringify_object_ids(doc) if doc else None
 
 async def get_user_by_id(user_id: str | UUID) -> Optional[dict]:

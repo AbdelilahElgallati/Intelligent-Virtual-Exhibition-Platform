@@ -5,6 +5,10 @@ import { AdminOrganization, AdminSubscription } from '@/types/admin';
 import { DashboardData } from '@/types/analytics';
 import { AuditLog } from '@/types/audit';
 import { PlatformHealth, Incident, IncidentCreate, IncidentUpdate, ContentFlag } from '@/types/incident';
+import { EnterpriseRequestsResponse, RejectBody } from '@/types/participant';
+import { LiveMetrics } from '@/types/monitoring';
+import { OrganizerSummary } from '@/types/organizer';
+import { getApiUrl } from '@/lib/config';
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
 
@@ -139,6 +143,175 @@ export const adminService = {
     async getFlags(): Promise<ContentFlag[]> {
         return http.get('/incidents/flags');
     },
+
+    // ── Enterprise Join Requests ──────────────────────────────────────────
+
+    async getEnterpriseRequests(
+        eventId: string,
+        params: { status?: string; search?: string; skip?: number; limit?: number } = {},
+    ): Promise<EnterpriseRequestsResponse> {
+        const query = new URLSearchParams();
+        if (params.status) query.set('status', params.status);
+        if (params.search) query.set('search', params.search);
+        if (params.skip !== undefined) query.set('skip', String(params.skip));
+        if (params.limit !== undefined) query.set('limit', String(params.limit));
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        return http.get(`/admin/events/${eventId}/enterprise-requests${qs}`);
+    },
+
+    async approveEnterpriseRequest(eventId: string, participantId: string): Promise<unknown> {
+        return http.post(`/events/${eventId}/participants/${participantId}/approve`, {});
+    },
+
+    async rejectEnterpriseRequest(eventId: string, participantId: string, body: RejectBody = {}): Promise<unknown> {
+        return http.post(`/events/${eventId}/participants/${participantId}/reject`, body);
+    },
+
+    // ── Event Lifecycle (Week 2) ──────────────────────────────────────────────
+
+    async getEventById(id: string): Promise<OrganizerEvent> {
+        return http.get(`/events/${id}`);
+    },
+
+    async forceStartEvent(id: string): Promise<OrganizerEvent> {
+        return http.post(`/admin/events/${id}/force-start`, {});
+    },
+
+    async forceCloseEvent(id: string): Promise<OrganizerEvent> {
+        return http.post(`/admin/events/${id}/force-close`, {});
+    },
+
+    // ── Week 3: Live Monitoring ───────────────────────────────────────────────
+
+    async getLiveMetrics(eventId: string): Promise<LiveMetrics> {
+        return http.get(`/admin/events/${eventId}/live-metrics`);
+    },
+
+    // ── Sessions (Week 5) ──────────────────────────────────────────────
+
+    async getSessions(eventId: string): Promise<import('@/types/sessions').Session[]> {
+        return http.get(`/admin/events/${eventId}/sessions`);
+    },
+
+    async createSession(eventId: string, data: import('@/types/sessions').CreateSessionPayload): Promise<import('@/types/sessions').Session> {
+        return http.post(`/admin/events/${eventId}/sessions`, data);
+    },
+
+    /** Import conference/keynote/workshop slots from the event's schedule_days */
+    async syncSessionsFromSchedule(eventId: string): Promise<import('@/types/sessions').Session[]> {
+        return http.post(`/admin/events/${eventId}/sessions/sync`, {});
+    },
+
+    async startSession(sessionId: string): Promise<import('@/types/sessions').Session> {
+        return http.patch(`/admin/sessions/${sessionId}/start`, {});
+    },
+
+    async endSession(sessionId: string): Promise<import('@/types/sessions').Session> {
+        return http.patch(`/admin/sessions/${sessionId}/end`, {});
+    },
+
+    // ── Organizer Report (Week 6) ──────────────────────────────────────────
+
+    async getOrganizerSummary(eventId: string): Promise<OrganizerSummary> {
+        return http.get(`/admin/events/${eventId}/organizer-summary`);
+    },
+
+    /**
+     * Trigger a PDF download of the organizer report for the given event.
+     * Opens the PDF URL in a new tab — the browser will prompt for download.
+     */
+    async exportOrganizerSummaryPDF(eventId: string): Promise<void> {
+        await this._downloadPDF(
+            `/admin/events/${eventId}/organizer-summary/pdf`,
+            `organizer_report_${eventId}.pdf`
+        );
+    },
+
+    /**
+     * Trigger a PDF download of the platform-wide report.
+     */
+    async exportPlatformReportPDF(): Promise<void> {
+        await this._downloadPDF(
+            '/analytics/report/export?format=pdf',
+            `platform_report_${new Date().toISOString().split('T')[0]}.pdf`
+        );
+    },
+
+    /**
+     * Internal helper to handle PDF downloads with authentication consistently.
+     */
+    async _downloadPDF(endpoint: string, filename: string): Promise<void> {
+        let token = null;
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('auth_tokens');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    token = parsed.access_token;
+                }
+            } catch (e) {
+                console.error('Failed to extract token for PDF export', e);
+            }
+        }
+
+        const url = getApiUrl(endpoint);
+
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'omit',
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    'Accept': 'application/pdf',
+                },
+            });
+
+            if (!res.ok) {
+                let errorMsg = `Export failed (${res.status})`;
+                try {
+                    const errorData = await res.json();
+                    errorMsg = errorData.detail || errorData.message || errorMsg;
+                } catch { /* not json */ }
+                throw new Error(errorMsg);
+            }
+
+            const blob = await res.blob();
+            if (blob.size < 100) {
+                throw new Error('Received an empty or invalid document.');
+            }
+
+            const href = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = href;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(href), 1000);
+        } catch (error: any) {
+            console.error('PDF Export Error:', error);
+            throw new Error(error.message === 'Failed to fetch'
+                ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
+                : error.message);
+        }
+    },
+    /**
+     * Confirm payment for an event (Admin action).
+     */
+    async confirmEventPayment(eventId: string): Promise<OrganizerEvent> {
+        return http.post(`/events/${eventId}/confirm-payment`, {});
+    },
+
+    async startEvent(eventId: string): Promise<OrganizerEvent> {
+        return http.post(`/events/${eventId}/start`, {});
+    },
+
+    async closeEvent(eventId: string): Promise<OrganizerEvent> {
+        return http.post(`/events/${eventId}/close`, {});
+    },
 };
+
+
+
 
 

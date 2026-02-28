@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md — Intelligent Virtual Exhibition Platform (IVEP)
 
-> **Generated**: 2026-02-21  
+> **Generated**: 2026-02-24 (updated)  
 > **Purpose**: Comprehensive project context document for development reference.
 
 ---
@@ -34,6 +34,7 @@
 12. [MongoDB Collections](#12-mongodb-collections)
 13. [Event Lifecycle State Machine](#13-event-lifecycle-state-machine)
 14. [Directory Structure](#14-directory-structure)
+15. [Admin Panel](#15-admin-panel)
 
 ---
 
@@ -209,6 +210,9 @@ class Settings(BaseSettings):
 | resources_router | `/resources` | resources |
 | leads_router | `/leads` | leads |
 | recommendations_router | `/recommendations` | recommendations |
+| **admin_router** *(new)* | `/admin` | Admin |
+| **audit_router** *(new)* | `/audit` | Audit |
+| **incidents_router** *(new)* | `/incidents` | Incidents |
 | dev_router (dev only) | `/dev` | Development |
 
 **Root endpoints**:
@@ -231,13 +235,17 @@ class Role(str, Enum):
 
 ### Event States (`app/modules/events/schemas.py`)
 
+> **Updated** — `DRAFT` removed; `REJECTED`, `WAITING_FOR_PAYMENT`, `PAYMENT_DONE` added. `"draft"` values are coerced to `"pending_approval"` by a field validator.
+
 ```python
 class EventState(str, Enum):
-    DRAFT = "draft"
-    PENDING_APPROVAL = "pending_approval"
-    APPROVED = "approved"
-    LIVE = "live"
-    CLOSED = "closed"
+    PENDING_APPROVAL = "pending_approval"   # initial state on creation
+    APPROVED = "approved"                   # legacy alias (now resolves to WAITING_FOR_PAYMENT)
+    REJECTED = "rejected"                   # admin rejection
+    WAITING_FOR_PAYMENT = "waiting_for_payment"  # approved, awaiting payment
+    PAYMENT_DONE = "payment_done"           # payment confirmed, access links generated
+    LIVE = "live"                           # event is live
+    CLOSED = "closed"                       # event has ended
 ```
 
 ### Participant Status (`app/modules/participants/schemas.py`)
@@ -263,9 +271,15 @@ class MeetingStatus(str, Enum):
 
 ### Notification Types (`app/modules/notifications/schemas.py`)
 
+> **Updated** — Additional types for payment flow and event rejection.
+
 ```python
 class NotificationType(str, Enum):
-    EVENT_APPROVED = "event_approved"
+    EVENT_APPROVED = "event_approved"           # legacy
+    EVENT_REJECTED = "event_rejected"           # NEW
+    PAYMENT_REQUIRED = "payment_required"       # NEW — sent when admin approves
+    PAYMENT_CONFIRMED = "payment_confirmed"     # NEW
+    LINKS_GENERATED = "links_generated"         # NEW — sent after payment confirmed
     INVITATION_SENT = "invitation_sent"
     PARTICIPANT_ACCEPTED = "participant_accepted"
 ```
@@ -336,12 +350,22 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 5.3 Event Schemas (`events/schemas.py`)
 
+> **Updated** — Schemas now include structured schedule, enterprise count, pricing, payment, and access-link fields.
+
+**Sub-models**:
 | Schema | Fields |
 |--------|--------|
-| **EventBase** | `id: str (alias _id or id)`, `title: str`, `description?: str`, `organizer_id: str`, `state: EventState`, `banner_url?: str`, `category?: str = "Exhibition"`, `start_date: datetime`, `end_date: datetime`, `location?: str = "Virtual Platform"`, `tags: list[str] = []`, `organizer_name?: str`, `created_at: datetime` |
-| **EventCreate** | `title: str`, `description?`, `category? = "Exhibition"`, `start_date?`, `end_date?`, `location? = "Virtual Platform"`, `banner_url?`, `tags? = []`, `organizer_name?` |
-| **EventUpdate** | All fields optional: `title?`, `description?`, `category?`, `start_date?`, `end_date?`, `location?`, `banner_url?`, `tags?`, `organizer_name?` |
-| **EventRead** | Extends `EventBase` (no additional fields) |
+| **ScheduleSlot** | `start_time: str` (HH:MM), `end_time: str`, `label: str = ""` |
+| **ScheduleDay** | `day_number: int`, `date_label?: str`, `slots: list[ScheduleSlot] = []` |
+
+| Schema | Fields |
+|--------|--------|
+| **EventBase** | `id, title, description?, organizer_id, state: EventState`, `banner_url?, category?, start_date, end_date, location?, tags, organizer_name?, created_at` + **NEW**: `num_enterprises?: int`, `event_timeline?: str`, `schedule_days?: list[ScheduleDay]`, `extended_details?: str`, `additional_info?: str`, `stand_price?: float`, `is_paid: bool = False`, `ticket_price?: float`, `payment_amount?: float`, `enterprise_link?: str`, `visitor_link?: str`, `rejection_reason?: str` |
+| **EventCreate** | `title, description?, category?, start_date?, end_date?, location?, banner_url?, tags?, organizer_name?` + **NEW (required)**: `num_enterprises: int (≥1)`, `event_timeline: str`, `extended_details: str (min 10)` + **NEW (optional)**: `schedule_days?`, `additional_info?`, `stand_price: float (≥0)`, `is_paid: bool = False`, `ticket_price?: float` |
+| **EventUpdate** | All EventCreate fields optional |
+| **EventApproveRequest** | `payment_amount?: float` — admin can override calculated amount |
+| **EventRejectRequest** | `reason?: str` |
+| **EventRead** | Extends `EventBase` |
 | **EventsResponse** | `events: list[EventRead]`, `total: int` |
 
 ### 5.4 Stand Schemas (`stands/schemas.py`)
@@ -429,6 +453,30 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | **AnalyticsEventCreate** | `type: AnalyticsEventType`, `user_id?: UUID`, `event_id?: UUID`, `stand_id?: UUID` |
 | **AnalyticsEventRead** | extends AnalyticsEventCreate + `id: UUID`, `created_at: datetime` |
 
+> **Updated repository** — `get_platform_metrics()` now returns real MongoDB aggregation data (user/event counts, 30-day event creation trend, category distribution, 10 recent events). `get_event_analytics()` returns real visitor/stand-visit/chat/lead counts per event.
+
+### 5.18 Audit Schemas (`audit/schemas.py`) *(new)*
+
+| Schema | Fields |
+|--------|--------|
+| **AuditLogCreate** | `actor_id: str`, `action: str` (e.g. `"event.approve"`), `entity: str`, `entity_id?: str`, `metadata?: dict` |
+| **AuditLogRead** | `id: str`, `actor_id`, `action`, `entity`, `entity_id?`, `timestamp: datetime`, `metadata?` |
+
+### 5.19 Incident Schemas (`incidents/schemas.py`) *(new)*
+
+| Enum | Values |
+|------|--------|
+| **IncidentSeverity** | `low`, `medium`, `high`, `critical` |
+| **IncidentStatus** | `open`, `investigating`, `mitigating`, `resolved` |
+
+| Schema | Fields |
+|--------|--------|
+| **IncidentCreate** | `title: str`, `description?: str`, `severity: IncidentSeverity = medium` |
+| **IncidentUpdate** | `status?: IncidentStatus`, `notes?: str`, `title?`, `description?`, `severity?` |
+| **IncidentRead** | `id, title, description?, severity, status, notes?, created_at, updated_at` |
+| **ContentFlagCreate** | `entity_type: str` (event/stand/user/org), `entity_id: str`, `reason: str`, `details?: str` |
+| **ContentFlagRead** | `id, entity_type, entity_id, reason, details?, created_at, reporter_id?` |
+
 ### 5.14 Recommendation Schemas (`recommendations/schemas.py`)
 
 | Schema | Fields |
@@ -479,8 +527,13 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 |--------|------|------|-------------|
 | GET | `/users/me` | Any authenticated | Get current user profile |
 | PUT | `/users/me` | Any authenticated | Update current user profile (ProfileUpdate) |
+| GET | `/users/` | ADMIN | **NEW** List all users (params: `is_active`, `role`, `limit`, `skip`) |
+| PATCH | `/users/{user_id}/activate` | ADMIN | **NEW** Activate a user account + audit log |
+| PATCH | `/users/{user_id}/suspend` | ADMIN | **NEW** Suspend a user account + audit log |
 
 ### 6.3 Events (`/api/v1/events`)
+
+> **Updated** — DRAFT state removed; new `reject`, `confirm-payment` endpoints added. `approve` now transitions to `WAITING_FOR_PAYMENT`. `start` now requires `PAYMENT_DONE` state.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -488,14 +541,15 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | GET | `/events/{event_id}/my-status` | Any authenticated | Get user's participation status for an event |
 | POST | `/events/{event_id}/join` | VISITOR | Join/request to join an event |
 | GET | `/events/organizer/my-events` | ORGANIZER | Get organizer's own events |
-| POST | `/events/` | ORGANIZER | Create new event (DRAFT state) |
+| POST | `/events/` | ORGANIZER | Create new event (→ PENDING_APPROVAL, no DRAFT step) |
 | GET | `/events/` | None (public) | List all events with filters (organizer_id, state, category, search) |
 | GET | `/events/{event_id}` | None (public) | Get event by ID |
-| PATCH | `/events/{event_id}` | ORGANIZER (owner) | Update event fields |
-| DELETE | `/events/{event_id}` | ORGANIZER (owner) | Delete event |
-| POST | `/events/{event_id}/submit` | ORGANIZER (owner) | Submit for approval (DRAFT → PENDING_APPROVAL) |
-| POST | `/events/{event_id}/approve` | ADMIN | Approve event (PENDING_APPROVAL → APPROVED) + notification |
-| POST | `/events/{event_id}/start` | ADMIN / ORGANIZER (owner) | Start event (APPROVED → LIVE) |
+| PATCH | `/events/{event_id}` | ORGANIZER (owner) | Update event (only allowed in PENDING_APPROVAL state) |
+| DELETE | `/events/{event_id}` | ORGANIZER (owner) | Delete event (only in PENDING_APPROVAL or REJECTED state) |
+| POST | `/events/{event_id}/approve` | ADMIN | Approve event (PENDING_APPROVAL → WAITING_FOR_PAYMENT) + sends payment notification + audit log |
+| POST | `/events/{event_id}/reject` | ADMIN | **NEW** Reject event (PENDING_APPROVAL → REJECTED) + sends rejection notification + audit log |
+| POST | `/events/{event_id}/confirm-payment` | ORGANIZER (owner) | **NEW** Confirm payment (WAITING_FOR_PAYMENT → PAYMENT_DONE) + generates enterprise_link & visitor_link |
+| POST | `/events/{event_id}/start` | ADMIN / ORGANIZER (owner) | Start event (PAYMENT_DONE → LIVE) |
 | POST | `/events/{event_id}/close` | ADMIN / ORGANIZER (owner) | Close event (LIVE → CLOSED) |
 
 ### 6.4 Participants (`/api/v1/events/{event_id}/participants`)
@@ -640,6 +694,31 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 |--------|------|------|-------------|
 | POST | `/dev/seed-data` | None | Seed database with test data (users, orgs, events, stands, resources) |
 
+### 6.20 Admin Health (`/api/v1/admin`) *(new)*
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/admin/health` | ADMIN | Platform health: MongoDB ping latency, Redis status, API process PID, uptime. Returns `{ status: "healthy"|"degraded", mongodb, redis, api, uptime }` |
+
+### 6.21 Audit Logs (`/api/v1/audit`) *(new)*
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/audit/` | ADMIN | List audit logs. Params: `actor_id?`, `action?`, `entity?`, `from_date?`, `to_date?`, `skip`, `limit` |
+| GET | `/audit/actions` | ADMIN | List distinct action strings for filter dropdown |
+
+> **Internal helper**: `log_audit(actor_id, action, entity, entity_id?, metadata?)` — called directly from other routers (events approve/reject, users activate/suspend).
+
+### 6.22 Incidents (`/api/v1/incidents`) *(new)*
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/incidents/` | ADMIN | Create a new incident |
+| GET | `/incidents/` | ADMIN | List incidents. Params: `status?`, `limit` |
+| PATCH | `/incidents/{id}` | ADMIN | Update incident status/notes/title/severity |
+| POST | `/incidents/flag` | Any authenticated | Flag a piece of content (entity_type, entity_id, reason) |
+| GET | `/incidents/flags` | ADMIN | List all content flags |
+
 ---
 
 ## 7. Frontend Architecture
@@ -657,12 +736,15 @@ FavoriteTarget = Literal["event", "stand", "organization"]
   "radix-ui": "^1.4.3",
   "react": "19.2.3",
   "react-dom": "19.2.3",
+  "recharts": "^2.x",
   "socket.io-client": "^4.8.3",
   "tailwind-merge": "^3.4.0"
 }
 ```
 
 Dev: `tailwindcss@4`, `shadcn@3.8.4`, `typescript@5`, `eslint-config-next`
+
+> **New**: `recharts` added for admin analytics charts.
 
 ### 7.2 Pages & Routing
 
@@ -693,6 +775,17 @@ Dev: `tailwindcss@4`, `shadcn@3.8.4`, `typescript@5`, `eslint-config-next`
 | `/(organizer)/organizer/events/new` | Create new event |
 | `/(organizer)/organizer/profile` | Organizer profile |
 | `/(organizer)/organizer/subscription` | Subscription management |
+| `/(organizer)/organizer/notifications` | **NEW** Organizer notification bell + list |
+| `/(admin)/admin` | **NEW** Admin home dashboard (8 section cards) |
+| `/(admin)/admin/events` | **NEW** Admin event review (approve/reject) |
+| `/(admin)/admin/users` | **NEW** Admin user management (activate/suspend) |
+| `/(admin)/admin/organizations` | **NEW** Admin organisations overview |
+| `/(admin)/admin/subscriptions` | **NEW** Admin subscription management |
+| `/(admin)/admin/analytics` | **NEW** Platform analytics: KPIs, trend chart, pie chart, events table |
+| `/(admin)/admin/analytics/[id]` | **NEW** Per-event deep-dive analytics |
+| `/(admin)/admin/monitoring` | **NEW** Platform health (MongoDB/Redis/API) + incident alerts |
+| `/(admin)/admin/audit` | **NEW** Audit log table with filters |
+| `/(admin)/admin/incidents` | **NEW** Incident management (create, investigate, mitigate, resolve) |
 
 ### 7.3 Auth Context
 
@@ -782,6 +875,22 @@ ENDPOINTS = {
 
 **`src/types/chat.ts`**: Empty file
 
+**`src/types/analytics.ts`** *(new)*:
+- `KPIMetric` — `label, value, unit?, trend?`
+- `TimeSeriesPoint` — `timestamp: string, value: number`
+- `DashboardData` — `kpis: KPIMetric[], main_chart: TimeSeriesPoint[], distribution: Record<string,number>, recent_activity: RecentActivity[]`
+- `RecentActivity` — `id, title, state, created_at, organizer_name?`
+
+**`src/types/audit.ts`** *(new)*:
+- `AuditLog` — `id, actor_id, action, entity, entity_id?, timestamp, metadata?`
+
+**`src/types/incident.ts`** *(new)*:
+- `IncidentSeverity = 'low'|'medium'|'high'|'critical'`
+- `IncidentStatus = 'open'|'investigating'|'mitigating'|'resolved'`
+- `Incident` — `id, title, description?, severity, status, notes?, created_at, updated_at`
+- `IncidentCreate`, `IncidentUpdate`, `ContentFlag`, `PlatformHealth`
+- `PlatformHealth` — `status: 'healthy'|'degraded', mongodb: {status, latency_ms?}, redis: {status}, api: {status, pid?}, uptime: string`
+
 **`src/lib/api/types.ts`** (additional types):
 - `ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING'`
 - `Notification` — `id, user_id, type, message, is_read, created_at`
@@ -810,9 +919,16 @@ ENDPOINTS = {
 | `assistantService` | `src/services/assistant.service.ts` | `streamAssistantQuery({scope, query, token, signal, onTokenChunk})` — SSE streaming, `queryWithSources({scope, query, ...})` — non-streaming |
 | `chatService` | `src/services/chat.service.ts` | Empty |
 | `standsService` | `src/services/stands.service.ts` | Empty |
+| `adminService` | `src/services/admin.service.ts` | **Updated/New** — Week 1 + Week 2 admin operations |
+
+**`adminService` methods** (`src/services/admin.service.ts`):
+
+*Week 1 (CRUD)*: `getEvents(params)`, `approveEvent(id, body)`, `rejectEvent(id, body)`, `getUsers(params)`, `activateUser(id)`, `suspendUser(id)`, `getOrganizations()`, `getSubscription(orgId)`, `assignSubscription(data)`
+
+*Week 2 (Intelligence & Governance)*: `getPlatformAnalytics()`, `getEventAnalytics(eventId)`, `getHealth()`, `getAuditLogs(params)`, `getAuditActions()`, `getIncidents(params)`, `createIncident(data)`, `updateIncident(id, data)`, `flagContent(data)`, `getFlags()`
 
 **API layer** (`src/lib/api/`):
-- `eventsApi` — `getOrganizerEvents()`, `getEventById(id)`, `createEvent(data)`, `updateEvent(id, data)`, `deleteEvent(id)`, `submitEvent(id)`, `startEvent(id)`, `closeEvent(id)` — uses `apiClient`
+- `eventsApi` — `getOrganizerEvents()`, `getEventById(id)`, `createEvent(data)`, `updateEvent(id, data)`, `deleteEvent(id)`, `submitEvent(id)`, `confirmPayment(id)`, `startEvent(id)`, `closeEvent(id)` — uses `apiClient`
 - `notificationsApi` — `getNotifications()`, `markAsRead(id)`, `markAllRead()` — uses `apiClient`
 - `organizerApi` — `getProfile()`, `updateProfile(data)` — uses `apiClient`
 
@@ -931,6 +1047,9 @@ Test credentials: `admin@ivep.com`/`admin123`, `organizer@ivep.com`/`organizer12
 | `assistant_sessions` | `scope`, `user_id` |
 | `assistant_messages` | `session_id`, `timestamp` |
 | `analytics_events` | `event_id`, `stand_id`, `user_id`, `type`, `timestamp` |
+| `audit_logs` *(new)* | `actor_id`, `action`, `entity`, `timestamp` |
+| `incidents` *(new)* | `status`, `severity`, `created_at` |
+| `content_flags` *(new)* | `entity_type`, `entity_id`, `created_at` |
 
 ---
 
@@ -956,23 +1075,33 @@ Based on indexes and code analysis, the following collections are used:
 16. `assistant_sessions`
 17. `assistant_messages`
 18. `analytics_events`
+19. `audit_logs` *(new)*
+20. `incidents` *(new)*
+21. `content_flags` *(new)*
 
 ---
 
 ## 13. Event Lifecycle State Machine
 
+> **Updated** — Payment step added between approval and going live.
+
 ```
-DRAFT → PENDING_APPROVAL → APPROVED → LIVE → CLOSED
+PENDING_APPROVAL → WAITING_FOR_PAYMENT → PAYMENT_DONE → LIVE → CLOSED
+                 ↘ REJECTED (terminal)
 ```
 
-| Transition | Required Role | Endpoint |
-|------------|---------------|----------|
-| DRAFT → PENDING_APPROVAL | ORGANIZER (owner) | `POST /events/{id}/submit` |
-| PENDING_APPROVAL → APPROVED | ADMIN | `POST /events/{id}/approve` |
-| APPROVED → LIVE | ADMIN or ORGANIZER (owner) | `POST /events/{id}/start` |
-| LIVE → CLOSED | ADMIN or ORGANIZER (owner) | `POST /events/{id}/close` |
+| Transition | Required Role | Trigger | Side Effects |
+|------------|---------------|---------|------|
+| *(creation)* → PENDING_APPROVAL | ORGANIZER | `POST /events/` | — |
+| PENDING_APPROVAL → WAITING_FOR_PAYMENT | ADMIN | `POST /events/{id}/approve` | Sends `PAYMENT_REQUIRED` notification; writes `payment_amount`; audit log `event.approve` |
+| PENDING_APPROVAL → REJECTED | ADMIN | `POST /events/{id}/reject` | Sends `EVENT_REJECTED` notification; writes `rejection_reason`; audit log `event.reject` |
+| WAITING_FOR_PAYMENT → PAYMENT_DONE | ORGANIZER (owner) | `POST /events/{id}/confirm-payment` | Generates `enterprise_link` + `visitor_link`; sends `LINKS_GENERATED` notification |
+| PAYMENT_DONE → LIVE | ADMIN or ORGANIZER (owner) | `POST /events/{id}/start` | — |
+| LIVE → CLOSED | ADMIN or ORGANIZER (owner) | `POST /events/{id}/close` | — |
 
-On approval, a notification is created for the organizer.
+**Notes**:
+- Legacy `"draft"` state values in the DB are coerced to `"pending_approval"` by a field validator in `EventBase`.
+- Organizers can only edit or delete events in `PENDING_APPROVAL` or `REJECTED` state.
 
 ---
 
@@ -1095,7 +1224,20 @@ frontend/
 │   │   ├── favorites/             # /favorites
 │   │   ├── assistant/             # /assistant
 │   │   ├── webinars/              # /webinars
-│   │   └── (organizer)/           # /organizer, /organizer/events, /organizer/events/new, /organizer/profile, /organizer/subscription
+│   │   │   ├── (organizer)/           # /organizer, /organizer/events, /organizer/events/new, /organizer/profile, /organizer/subscription, /organizer/notifications (NEW)
+│   │   └── (admin)/               # NEW — Admin panel (protected, requires ADMIN role)
+│   │       └── admin/
+│   │           ├── page.tsx               # Admin home (8 section cards)
+│   │           ├── layout.tsx             # Admin sidebar nav
+│   │           ├── events/                # Event review (approve/reject)
+│   │           ├── users/                 # User management (activate/suspend)
+│   │           ├── organizations/         # Org overview
+│   │           ├── subscriptions/         # Subscription management
+│   │           ├── analytics/             # Platform KPI dashboard
+│   │           │   └── [id]/              # Per-event deep-dive analytics
+│   │           ├── monitoring/            # Health + incidents
+│   │           ├── audit/                 # Audit log table
+│   │           └── incidents/             # Incident management
 │   ├── components/                # UI components
 │   │   ├── assistant/             # FloatingAssistant
 │   │   ├── auth/                  # Auth forms
@@ -1113,7 +1255,42 @@ frontend/
 │   ├── hooks/                     # React hooks
 │   ├── lib/                       # HTTP clients, config, auth helpers
 │   │   └── api/                   # apiClient, endpoints, typed API functions
-│   ├── services/                  # Service layer (auth, events, favorites, assistant, chat, stands)
-│   └── types/                     # TypeScript type definitions
+│   ├── services/                  # Service layer (auth, events, favorites, assistant, chat, stands, admin)
+│   └── types/                     # TypeScript type definitions (user, event, stand, organizer, analytics, audit, incident)
 └── package.json
 ```
+
+---
+
+## 15. Admin Panel
+
+The admin section (`/(admin)/admin`) is a dedicated route group requiring `ADMIN` role. It provides full platform governance.
+
+### Layout
+`(admin)/admin/layout.tsx` — sidebar nav with 8 items: Dashboard, Events, Users, Organizations, Subscriptions, Analytics, Monitoring, Audit Logs, Incidents. Uses `lucide-react` icons.
+
+### Auth Context
+Admin role is already part of `AuthContext`. The admin layout reads `user.role` and redirects non-admins.
+
+### Backend modules powering the admin panel
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| `admin` | `app/modules/admin/router.py` | `GET /admin/health` |
+| `audit` | `app/modules/audit/` | Governance audit trail |
+| `incidents` | `app/modules/incidents/` | Incident + content flag management |
+
+### Page Summary
+
+| Page | Key Features |
+|------|--------------|
+| `/admin` | 8 cards linking to all sections |
+| `/admin/events` | Table of all events; inline approve/reject modals with reason/payment fields |
+| `/admin/users` | Table of all users; activate/suspend toggles; search + role filter |
+| `/admin/organizations` | Organisation list (read-only overview) |
+| `/admin/subscriptions` | View and assign subscription plans |
+| `/admin/analytics` | 6 KPI cards, 30-day line chart, category pie chart, clickable events table |
+| `/admin/analytics/[id]` | Per-event: 6 KPIs, 14-day activity bar chart, interaction breakdown pie chart |
+| `/admin/monitoring` | Health cards (Overall/MongoDB/Redis/API), degraded alert banner, recent incidents |
+| `/admin/audit` | Filterable table: action, entity type, actor ID, from/to date |
+| `/admin/incidents` | Status filter tabs, incidents list, create modal, Investigate→Mitigate→Resolve flow + notes |

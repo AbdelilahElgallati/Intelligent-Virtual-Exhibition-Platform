@@ -3,6 +3,7 @@ Transcription Router - Whisper-Powered Speech-to-Text.
 Provides endpoints for audio transcription with real-time streaming support.
 """
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, HTTPException
+from fastapi import status as http_status
 from typing import List, Dict, Optional
 from pydantic import BaseModel
 from ...core.dependencies import get_current_user
@@ -174,13 +175,27 @@ async def get_supported_languages(
 async def live_transcription_ws(websocket: WebSocket, room_id: str):
     """
     WebSocket endpoint for live transcription.
-    
+
+    When room_id matches a session_id in event_sessions, the session MUST be
+    'live' — otherwise the connection is rejected with 1008 (policy violation).
+
     Clients can:
     1. Subscribe to receive transcripts (just connect)
     2. Send audio chunks for transcription
-    
+
     Audio should be sent as base64-encoded chunks.
     """
+    # Session-live guard: if room_id is a known session, require status == live
+    try:
+        from app.modules.sessions.service import get_session_by_id
+        session_doc = await get_session_by_id(room_id)
+        if session_doc is not None:
+            if session_doc.get("status") != "live":
+                await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION)
+                return
+    except Exception:
+        pass  # If lookup fails, allow connection (non-session rooms)
+
     await manager.connect(room_id, websocket)
     whisper_service = get_whisper_service()
     line_counter = 0

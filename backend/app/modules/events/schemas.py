@@ -35,6 +35,7 @@ class EventState(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     WAITING_FOR_PAYMENT = "waiting_for_payment"
+    PAYMENT_PROOF_SUBMITTED = "payment_proof_submitted"
     PAYMENT_DONE = "payment_done"
     LIVE = "live"
     CLOSED = "closed"
@@ -79,6 +80,8 @@ class EventBase(BaseModel):
 
     # Payment & access links (set by admin on approval/payment)
     payment_amount: Optional[float] = None
+    rib_code: Optional[str] = None
+    payment_proof_url: Optional[str] = None
     enterprise_link: Optional[str] = None
     visitor_link: Optional[str] = None
     rejection_reason: Optional[str] = None

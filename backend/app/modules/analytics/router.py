@@ -61,6 +61,54 @@ async def get_event_metrics(
     return await analytics_repo.get_event_analytics(id)
 
 
+@router.get("/report/export")
+async def export_platform_report(
+    format: str = Query("pdf", enum=["pdf", "tex"]),
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+):
+    """Export platform-wide analysis report (Admin only)."""
+    metrics = await analytics_repo.get_platform_metrics()
+    
+    # Prepare data for LaTeX
+    data = {
+        "report_title": "Platform-Wide KPI Analysis",
+        "overview_description": "Comprehensive analysis of platform performance, including user growth, event activity, and category distribution.",
+        "kpis": [
+            {"label": k["label"], "value": k["value"], "unit": k.get("unit", "")}
+            for k in metrics.get("kpis", [])
+        ],
+        "revenue": {
+            "ticket_revenue": 0.0,
+            "stand_revenue": 0.0,
+            "total_revenue": 0.0,
+        },
+        "safety": {
+            "total_flags": 0,
+            "resolved_flags": 0,
+            "resolution_rate": 0.0,
+        }
+    }
+
+    from .latex_service import latex_service
+    from fastapi.responses import Response, StreamingResponse
+    import io
+
+    if format == "tex":
+        tex_content = latex_service.generate_tex(data)
+        return Response(
+            content=tex_content,
+            media_type="application/x-tex",
+            headers={"Content-Disposition": 'attachment; filename="platform_report.tex"'}
+        )
+    
+    pdf_bytes = latex_service.generate_report_pdf(data)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="platform_report.pdf"'}
+    )
+
+
 @router.get("/platform", response_model=DashboardData)
 async def get_platform_metrics(
     current_user: dict = Depends(require_role(Role.ADMIN)),
