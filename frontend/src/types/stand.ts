@@ -34,7 +34,7 @@ export interface StandCreatePayload {
     presenter_avatar_url?: string;
 }
 
-export interface StandUpdatePayload extends Partial<StandCreatePayload> {}
+export interface StandUpdatePayload extends Partial<StandCreatePayload> { }
 
 // Paginated response for stands list
 export interface StandsListResponse {
