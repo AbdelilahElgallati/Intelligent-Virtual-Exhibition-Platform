@@ -6,7 +6,7 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import get_current_user, require_feature, require_role, require_roles
 from app.modules.auth.enums import Role
@@ -285,29 +285,52 @@ async def reject_event_request(
 
 # ============== Payment Endpoint ==============
 
-@router.post("/{event_id}/confirm-payment", response_model=EventRead)
-async def confirm_payment(
+@router.post("/{event_id}/submit-proof", response_model=EventRead)
+async def submit_proof(
     event_id: str,
+    proof_url: str = Query(..., description="URL or file path to payment proof"),
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
-    Confirm payment for an approved event.
+    Submit payment proof for an approved event.
+    Transition: WAITING_FOR_PAYMENT → PAYMENT_PROOF_SUBMITTED
+    """
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if event["state"] != EventState.WAITING_FOR_PAYMENT:
+        raise HTTPException(status_code=400, detail="Must be in waiting_for_payment state")
 
-    Transition: WAITING_FOR_PAYMENT → PAYMENT_DONE
+    from app.modules.events.service import submit_payment_proof
+    updated_event = await submit_payment_proof(event_id, proof_url)
+    
+    return EventRead(**updated_event)
+
+
+# ============== Admin Payment Confirmation ==============
+
+@router.post("/{event_id}/confirm-payment", response_model=EventRead)
+async def confirm_payment(
+    event_id: str,
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+) -> EventRead:
+    """
+    Confirm payment for an event (Admin only).
+    Transition: PAYMENT_PROOF_SUBMITTED → PAYMENT_DONE
     Generates enterprise and visitor access links.
-    Requires ORGANIZER role and ownership.
     """
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    if event["organizer_id"] != str(current_user["_id"]):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    if event["state"] != EventState.WAITING_FOR_PAYMENT:
+    if event["state"] != EventState.PAYMENT_PROOF_SUBMITTED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot confirm payment. Current state: {event['state']}. Required: waiting_for_payment",
+            detail=f"Cannot confirm payment. Current state: {event['state']}. Required: payment_proof_submitted",
         )
 
     updated_event = await confirm_event_payment(event_id)
@@ -318,8 +341,17 @@ async def confirm_payment(
         type=NotificationType.LINKS_GENERATED,
         message=(
             f"Payment confirmed for '{event['title']}'! "
-            "Your enterprise and visitor access links are now available."
+            "Your event is now activated and links are available."
         ),
+    )
+
+    # Audit log
+    await log_audit(
+        actor_id=str(current_user["_id"]),
+        action="event.payment_confirmed",
+        entity="event",
+        entity_id=event_id,
+        metadata={"title": event["title"], "payment_amount": event.get("payment_amount")}
     )
 
     return EventRead(**updated_event)

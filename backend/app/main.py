@@ -3,6 +3,7 @@ IVEP Backend Application.
 Main FastAPI application entry point for the Intelligent Virtual Exhibition Platform.
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -14,6 +15,7 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.db.mongo import connect_to_mongo, close_mongo_connection
 from app.db.indexes import ensure_indexes
+from app.workers.lifecycle import lifecycle_loop
 
 # Routers (new architecture)
 from app.modules.analytics.router import router as analytics_router
@@ -23,12 +25,18 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.participants.router import router as participants_router
 from app.modules.stands.router import router as stands_router
-from app.modules.subscriptions.router import router as subscriptions_router
+# from app.modules.subscriptions.router import router as subscriptions_router  # disabled
 from app.modules.users.router import router as users_router
 # Week 2 additions
 from app.modules.admin.router import router as admin_router
 from app.modules.audit.router import router as audit_router
 from app.modules.incidents.router import router as incidents_router
+# Week 3 additions
+from app.modules.monitoring.router import router as monitoring_router
+# Week 5 additions
+from app.modules.sessions.router import router as sessions_router
+# Week 6 additions
+from app.modules.organizer_report.router import router as organizer_report_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
@@ -62,9 +70,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await connect_to_mongo()
     await ensure_indexes()
 
+    # Start lifecycle background task
+    _lifecycle_task = asyncio.create_task(lifecycle_loop())
+    logger.info("Lifecycle scheduler task started")
+
     yield
 
     # Shutdown
+    _lifecycle_task.cancel()
     await close_mongo_connection()
     logger.info(f"Shutting down {settings.APP_NAME}")
 
@@ -83,7 +96,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(events_router, prefix=api_prefix)
     app.include_router(participants_router, prefix=api_prefix)
     app.include_router(stands_router, prefix=api_prefix)
-    app.include_router(subscriptions_router, prefix=api_prefix)
+    # app.include_router(subscriptions_router, prefix=api_prefix)  # disabled
     app.include_router(analytics_router, prefix=api_prefix)
     app.include_router(notifications_router, prefix=api_prefix)
     app.include_router(favorites_router, prefix=api_prefix)
@@ -91,6 +104,12 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_router, prefix=api_prefix)
     app.include_router(audit_router, prefix=api_prefix)
     app.include_router(incidents_router, prefix=api_prefix)
+    # Week 3: Live Monitoring
+    app.include_router(monitoring_router, prefix=api_prefix)
+    # Week 5: Conference Session Orchestration
+    app.include_router(sessions_router, prefix=api_prefix)
+    # Week 6: Organizer Value Dashboard
+    app.include_router(organizer_report_router, prefix=api_prefix)
 
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
@@ -125,7 +144,12 @@ def create_application() -> FastAPI:
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -5,40 +5,74 @@ import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent } from '@/types/event';
-import { Calendar, Users, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, Users, CheckCircle2, Clock, Download, FileText } from 'lucide-react';
+import { organizerService } from '@/services/organizer.service';
+import { Button } from '@/components/ui/Button';
+import { OrganizerSummary } from '@/types/organizer';
 
 export default function OrganizerDashboard() {
     const { user } = useAuth();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [summary, setSummary] = useState<OrganizerSummary | null>(null);
+    const [exportLoading, setExportLoading] = useState(false);
+
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchDashboard = async () => {
             try {
-                const data = await eventsApi.getOrganizerEvents();
-                setEvents(data || []);
+                const [eventsData, summaryData] = await Promise.all([
+                    eventsApi.getOrganizerEvents(),
+                    organizerService.getOverallSummary()
+                ]);
+                setEvents(eventsData || []);
+                setSummary(summaryData);
             } catch (err) {
-                console.error('Failed to fetch events', err);
+                console.error('Failed to fetch dashboard data', err);
                 setEvents([]);
             } finally {
                 setLoading(false);
             }
         };
-        fetchStats();
+        fetchDashboard();
     }, []);
+
+    const handleExportOverall = async () => {
+        setExportLoading(true);
+        try {
+            await organizerService.exportOverallReportPDF();
+        } catch (err) {
+            console.error('Export failed', err);
+        } finally {
+            setExportLoading(false);
+        }
+    };
 
     const stats = [
         { label: 'Total Events', value: events.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Active Events', value: Array.isArray(events) ? events.filter(e => e.state === 'approved' || e.state === 'live').length : 0, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-        { label: 'Pending Approval', value: Array.isArray(events) ? events.filter(e => e.state === 'pending_approval').length : 0, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        { label: 'Total Visitors', value: '---', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: 'Active Events', value: Array.isArray(events) ? events.filter(e => e.state === 'approved' || e.state === 'live' || e.state === 'payment_done' || e.state === 'payment_proof_submitted').length : 0, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'Pending Approval', value: Array.isArray(events) ? events.filter(e => e.state === 'pending_approval' || e.state === 'waiting_for_payment').length : 0, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+        { label: 'Total Visitors', value: summary?.overview.total_visitors ?? '---', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     ];
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name?.split(' ')[0]}</h1>
-                <p className="text-gray-500">Here's what's happening with your events today.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name?.split(' ')[0]}</h1>
+                    <p className="text-gray-500">Here's what's happening with your events today.</p>
+                </div>
+                {!loading && events.length > 0 && (
+                    <Button
+                        variant="primary"
+                        onClick={handleExportOverall}
+                        isLoading={exportLoading}
+                        className="gap-2 shadow-sm"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export Overall Performance (PDF)
+                    </Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -79,8 +113,8 @@ export default function OrganizerDashboard() {
                                         </div>
                                     </div>
                                     <div className={`text-xs px-2 py-1 rounded-full font-medium ${event.state === 'approved' ? 'bg-green-100 text-green-700' :
-                                            event.state === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-gray-100 text-gray-700'
+                                        event.state === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
                                         {event.state}
                                     </div>
