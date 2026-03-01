@@ -1,22 +1,17 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import Link from 'next/link';
 import { Stand } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { Container } from '@/components/common/Container';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { StandResources } from '@/components/stand/StandResources';
+import { VirtualStandLayout } from '@/components/stand/VirtualStandLayout';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
 import { ChatShell } from '@/components/assistant/ChatShell';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, Building2, MessageSquare, CalendarDays, Info } from 'lucide-react';
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
     const { id, standId } = use(params);
@@ -93,188 +88,43 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const avatarBg = stand.presenter_avatar_bg ?? '#ffffff';
 
     return (
-        <div className="min-h-screen bg-gray-50 relative">
-            {/* Hero section with optional background image */}
-            <div
-                className="border-b border-gray-200 bg-cover bg-center"
-                style={{
-                    backgroundColor: themeColor,
-                    backgroundImage: stand.stand_background_url
-                        ? `url(${stand.stand_background_url})`
-                        : 'none',
-                }}
+        <>
+            {/* ===== Immersive 2D Showroom ===== */}
+            <VirtualStandLayout
+                stand={stand}
+                themeColor={themeColor}
+                avatarBg={avatarBg}
+                backHref={`/events/${stand.event_id || id}/live?tab=stands`}
+                onChatOpen={() => setIsChatOpen(true)}
+                onMeetingOpen={() => setIsMeetingModalOpen(true)}
+                onAssistantOpen={() => setIsAssistantOpen(true)}
+                onFavoriteToggle={toggleFavorite}
+                favoriteId={favoriteId}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
             >
-                <div className="bg-white/90 backdrop-blur-sm">
-                <Container className="py-8">
-                    <Link href={`/events/${stand.event_id || id}/live?tab=stands`} className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-6">
-                        <ArrowLeft className="w-4 h-4 mr-1" />
-                        Back to Event
-                    </Link>
-
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                        {/* Logo / Image */}
-                        <div className="w-32 h-32 md:w-48 md:h-48 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center border border-indigo-100 text-indigo-400 shrink-0">
-                            {stand.logo_url ? (
-                                <img src={stand.logo_url} alt={stand.name} className="w-full h-full object-cover rounded-xl" />
-                            ) : (
-                                <Building2 className="w-16 h-16" />
-                            )}
-                        </div>
-
-                        {/* Stand Info */}
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                                <h1 className="text-3xl font-bold text-gray-900">{stand.name}</h1>
-                                {stand.stand_type === 'sponsor' && (
-                                    <Badge variant="warning">SPONSOR</Badge>
-                                )}
-                            </div>
-
-                            <p className="text-lg text-gray-600 mb-4 max-w-2xl">
-                                {stand.description || "Welcome to our virtual stand. Explore our resources and connect with our team."}
-                            </p>
-
-                            <div className="flex flex-wrap gap-2 mb-6">
-                                {stand.tags?.map((tag, idx) => (
-                                    <Badge key={idx} variant="default" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
-
-                            <div className="flex flex-wrap gap-3">
-                                <Button
-                                    onClick={() => setIsChatOpen(true)}
-                                    style={{ backgroundColor: themeColor }}
-                                    className="hover:opacity-90 text-white"
-                                >
-                                    <MessageSquare className="w-5 h-5 mr-2" />
-                                    Chat with Team
-                                </Button>
-                                <Button
-                                    onClick={() => setIsMeetingModalOpen(true)}
-                                    variant="outline"
-                                >
-                                    <CalendarDays className="w-5 h-5 mr-2" />
-                                    Request Meeting
-                                </Button>
-                                <Button variant="outline" onClick={() => setIsAssistantOpen(true)}>
-                                    <Info className="w-5 h-5 mr-2" />
-                                    Ask Assistant
-                                </Button>
-                                <Button variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
-                                    {favoriteId ? 'Favorited' : 'Add to favorites'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </Container>
-                </div>
-            </div>
-
-            {/* Stand Showcase & Presenter Section */}
-            {stand.stand_background_url && (
-                <div className="w-full relative" style={{ minHeight: '480px' }}>
-                    {/* Full-width background image */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{ backgroundImage: `url(${stand.stand_background_url})` }}
-                    >
-                        {/* Dark overlay for contrast */}
-                        <div className="absolute inset-0 bg-black/20" />
-                    </div>
-
-                    {/* Presenter — full-body image anchored at bottom-right */}
-                    {stand.presenter_avatar_url && (
-                        <div className="absolute bottom-0 right-8 sm:right-16 md:right-24 lg:right-32 z-10 flex flex-col items-center">
-                            <div
-                                className="relative"
-                                style={{ backgroundColor: avatarBg }}
-                            >
-                                <img
-                                    src={stand.presenter_avatar_url}
-                                    alt={stand.presenter_name ?? 'Presenter'}
-                                    className="h-72 sm:h-80 md:h-96 w-auto object-contain drop-shadow-2xl"
-                                />
-                            </div>
-                            {stand.presenter_name && (
-                                <div
-                                    className="absolute -bottom-0 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-t-lg shadow-md text-center whitespace-nowrap"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    <p className="text-sm font-semibold text-white">{stand.presenter_name}</p>
-                                    <p className="text-xs text-white/80">Stand Presenter</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Stand name overlay at bottom-left */}
-                    <div className="absolute bottom-6 left-6 sm:left-12 z-10">
-                        <div className="px-5 py-3 rounded-xl backdrop-blur-md bg-white/20 border border-white/30 shadow-lg">
-                            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-md">
-                                {stand.name}
+                {/* ----- Tab content passed as children ----- */}
+                {activeTab === 'resources' ? (
+                    <div className="space-y-5">
+                        <StandResources standId={standId} />
+                        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                            <h4 className="font-bold text-indigo-900 mb-1 text-sm">Recommended for You</h4>
+                            <p className="text-xs text-indigo-700">
+                                Based on your profile, this stand matches your interest in <strong>AI Technology</strong>.
                             </p>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Tabs */}
-            <div className="bg-white border-b border-gray-200">
-                <Container>
-                    <div className="flex space-x-8 -mb-px">
-                        <button
-                            onClick={() => setActiveTab('resources')}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'resources'
-                                ? 'text-gray-900'
-                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                }`}
-                            style={activeTab === 'resources' ? { borderColor: themeColor, color: themeColor } : undefined}
-                        >
-                            Resources
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('about')}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'about'
-                                ? 'text-gray-900'
-                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                }`}
-                            style={activeTab === 'about' ? { borderColor: themeColor, color: themeColor } : undefined}
-                        >
-                            About
-                        </button>
-                    </div>
-                </Container>
-            </div>
-
-            <Container className="py-8">
-                {activeTab === 'resources' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-6">
-                            <h3 className="text-lg font-bold text-gray-900">Documents & Videos</h3>
-                            <StandResources standId={standId} />
-                        </div>
-                        <div>
-                            <Card className="p-6 bg-indigo-50 border-indigo-100">
-                                <h4 className="font-bold text-indigo-900 mb-2">Recommended for You</h4>
-                                <p className="text-sm text-indigo-700 mb-4">
-                                    Based on your profile, this stand matches your interest in <strong>AI Technology</strong>.
-                                </p>
-                            </Card>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'about' && (
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">About Us</h3>
-                        <p className="text-gray-600 leading-relaxed">
-                            {stand.description || "Company description coming soon."}
+                ) : (
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-3">About Us</h3>
+                        <p className="text-gray-600 leading-relaxed text-sm">
+                            {stand.description || 'Company description coming soon.'}
                         </p>
-                    </Card>
+                    </div>
                 )}
-            </Container>
+            </VirtualStandLayout>
+
+            {/* ===== Overlays (same as before, outside layout) ===== */}
 
             {/* Chat Panel */}
             {isChatOpen && (
@@ -286,6 +136,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 />
             )}
 
+            {/* Assistant */}
             {isAssistantOpen && (
                 <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm">
                     <div className="w-full sm:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
@@ -312,6 +163,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 standId={standId}
                 standName={stand.name}
             />
-        </div>
+        </>
     );
 }
