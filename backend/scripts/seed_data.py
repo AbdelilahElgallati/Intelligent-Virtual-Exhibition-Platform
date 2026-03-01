@@ -106,6 +106,20 @@ TAGS_POOL = [
 
 INTERACTION_TYPES = ["visit", "resource_download", "chat", "meeting"]
 
+# Event banner images (high-quality conference / expo imagery)
+EVENT_BANNERS = [
+    f"{UNSPLASH}1540575467063-178a50c2c397?w=1400&h=400&fit=crop",   # conference hall
+    f"{UNSPLASH}1576085898323-218337e3e43c?w=1400&h=400&fit=crop",   # medical conference
+    f"{UNSPLASH}1524178232363-1fb2b075b655?w=1400&h=400&fit=crop",   # education
+    f"{UNSPLASH}1559136555-9303baea8ebd?w=1400&h=400&fit=crop",     # finance
+    f"{UNSPLASH}1473341304170-971dccb5ac1e?w=1400&h=400&fit=crop",   # green energy
+    f"{UNSPLASH}1550751827-4bd374c3f58b?w=1400&h=400&fit=crop",     # cybersecurity
+    f"{UNSPLASH}1460925895917-afdab827c52f?w=1400&h=400&fit=crop",   # marketing
+    f"{UNSPLASH}1485827404703-89b55fcc595e?w=1400&h=400&fit=crop",   # data science
+    f"{UNSPLASH}1519389950473-47ba0277781c?w=1400&h=400&fit=crop",   # innovation
+    f"{UNSPLASH}1451187580459-43490279c0fa?w=1400&h=400&fit=crop",   # cloud summit
+]
+
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -174,6 +188,7 @@ async def ensure_event(
     stand_price: float = 300.0,
     is_paid: bool = False,
     ticket_price: float = None,
+    banner_url: str = None,
 ) -> dict:
     events_col = get_events_collection()
     existing = await events_col.find_one({"title": title})
@@ -227,6 +242,7 @@ async def ensure_event(
         stand_price=stand_price,
         is_paid=is_paid,
         ticket_price=ticket_price if is_paid else None,
+        banner_url=banner_url,
     )
     event = await create_event(data, organizer_id)
     event = _normalize_id(event)
@@ -524,61 +540,61 @@ async def main():
     print("\n[3/10] Creating events...")
 
     event_definitions = [
-        # (title, desc, org_idx, state, category, tags, num_ent, start_off, dur, stand_price, is_paid, ticket_price)
+        # (title, desc, org_idx, state, category, tags, num_ent, start_off, dur, stand_price, is_paid, ticket_price, banner_url)
         (
             "Future Tech Expo 2026",
             "Experience AI, cloud, and XR demos across virtual stands. The premier tech exhibition of the year.",
-            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5, 500.0, True, 30.0,
+            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5, 500.0, True, 30.0, EVENT_BANNERS[0],
         ),
         (
             "Healthcare Innovations Summit",
             "Cutting-edge digital health, biotech, and telemedicine innovations.",
-            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4, 450.0, True, 20.0,
+            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4, 450.0, True, 20.0, EVENT_BANNERS[1],
         ),
         (
             "Global Education Expo",
             "Transforming education through technology — from K12 to lifelong learning.",
-            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3, 300.0, False, None,
+            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3, 300.0, False, None, EVENT_BANNERS[2],
         ),
         (
             "FinTech World Forum",
             "Blockchain, DeFi, and next-gen banking solutions showcase.",
-            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4, 600.0, True, 50.0,
+            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4, 600.0, True, 50.0, EVENT_BANNERS[3],
         ),
         (
             "Green Energy Conference",
             "Sustainability, smart grids, and renewable energy technologies.",
-            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3, 350.0, False, None,
+            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3, 350.0, False, None, EVENT_BANNERS[4],
         ),
         (
             "Cybersecurity Defense Summit",
             "Zero trust, threat intelligence, and SOC modernization.",
-            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3, 550.0, True, 40.0,
+            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3, 550.0, True, 40.0, EVENT_BANNERS[5],
         ),
         (
             "Digital Marketing Masterclass",
             "SEO, content strategy, and marketing automation tools exhibition.",
-            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2, 250.0, False, None,
+            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2, 250.0, False, None, EVENT_BANNERS[6],
         ),
         (
             "AI & Data Science Conference",
             "Deep learning, NLP, computer vision, and MLOps — the data revolution.",
-            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6, 700.0, True, 60.0,
+            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6, 700.0, True, 60.0, EVENT_BANNERS[7],
         ),
         (
             "Startup Innovation Hackathon",
             "48-hour hackathon with pitches, demos, and investor networking.",
-            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2, 200.0, False, None,
+            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2, 200.0, False, None, EVENT_BANNERS[8],
         ),
         (
             "Enterprise Cloud Summit",
             "Multi-cloud strategies, containerization, and serverless architectures.",
-            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4, 480.0, True, 35.0,
+            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4, 480.0, True, 35.0, EVENT_BANNERS[9],
         ),
     ]
 
     events = []
-    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur, sp, paid, tp in event_definitions:
+    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur, sp, paid, tp, banner in event_definitions:
         ev = await ensure_event(
             title=title,
             description=desc,
@@ -592,6 +608,7 @@ async def main():
             stand_price=sp,
             is_paid=paid,
             ticket_price=tp,
+            banner_url=banner,
         )
         events.append(ev)
         print(f"  + Event: {title} [{state.value}] | stand ${sp} | {'paid $' + str(tp) if paid else 'free'}")
@@ -654,6 +671,40 @@ async def main():
         # Event 5: Cybersecurity Defense Summit (WAITING_FOR_PAYMENT)
         (5, 4, "Zero Trust Architecture", "Zero trust security implementation demos.", ["Cybersecurity", "Cloud"], "Cybersecurity", "sponsor", "Mark Stevens", "m", 37),
         (5, 0, "Threat Intelligence Lab", "Real-time threat detection and response.", ["Cybersecurity", "AI"], "Cybersecurity", "premium", "Julia Lee", "f", 38),
+
+        # ── Additional stands for LIVE events (pagination testing) ──────────
+
+        # Event 0: Future Tech Expo 2026 (LIVE) — 7 more
+        (0, 2, "HealthTech Crossover", "Where healthcare meets consumer technology.", ["HealthTech", "IoT", "Wearables"], "Healthcare", "standard", "Dr. Mia Torres", "f", 39),
+        (0, 3, "EdTech Pioneers Lab", "Gamified learning and adaptive education tools.", ["EdTech", "AI", "Gamification"], "Education", "standard", "Prof. Noah Kim", "m", 40),
+        (0, 4, "FinTech Frontiers", "Next-generation payment and lending platforms.", ["FinTech", "Blockchain", "Mobile"], "Finance", "premium", "Layla Ahmed", "f", 41),
+        (0, 5, "GreenTech Pavilion", "Sustainable technology showcases and demos.", ["GreenTech", "IoT", "Sustainability"], "Green Energy", "standard", "Tom Green", "m", 42),
+        (0, 8, "Quantum Computing Lab", "Hands-on quantum computing demonstrations.", ["Quantum", "AI", "Research"], "Technology", "sponsor", "Dr. Wei Zhang", "m", 43),
+
+        # Event 1: Healthcare Innovations Summit (LIVE) — 7 more
+        (1, 3, "Digital Therapeutics Lab", "Software-based treatments and wellness apps.", ["HealthTech", "SaaS", "Wellness"], "Healthcare", "standard", "Dr. Emma Liu", "f", 46),
+        (1, 4, "PharmaTech Solutions", "Drug discovery AI and clinical trial platforms.", ["Biotech", "AI", "Pharma"], "Healthcare", "premium", "Dr. James Park", "m", 47),
+        (1, 5, "MedDevice Innovations", "Connected medical device demonstrations.", ["IoT", "Healthcare", "Wearables"], "Healthcare", "standard", "Nurse Sarah Bell", "f", 48),
+        (1, 7, "TeleMed Connect", "Remote patient monitoring and video consultation.", ["HealthTech", "Cloud", "Telehealth"], "Healthcare", "premium", "Dr. Raj Gupta", "m", 49),
+        (1, 8, "BioAI Research Hub", "Genomics, proteomics, and AI-driven research.", ["Biotech", "AI", "Genomics"], "Healthcare", "sponsor", "Dr. Nina Yoshida", "f", 50),
+        (1, 9, "Mental Health Tech", "Digital mental health tools and AI therapy bots.", ["HealthTech", "AI", "Wellness"], "Healthcare", "standard", "Dr. Liam O'Brien", "m", 51),
+        (1, 1, "Cloud Health Platform", "HIPAA-compliant cloud infrastructure for health.", ["Cloud", "Healthcare", "Security"], "Healthcare", "standard", "Amy Schneider", "f", 52),
+
+        # Event 7: AI & Data Science Conference (LIVE) — 6 more
+        (7, 1, "Cloud ML Ops Center", "End-to-end ML pipelines on multi-cloud.", ["Cloud", "ML", "MLOps"], "AI & Data", "standard", "Ryan Peters", "m", 53),
+        (7, 3, "AI in Education", "Personalized learning through AI and analytics.", ["AI", "EdTech", "Analytics"], "Education", "standard", "Dr. Laura Chen", "f", 54),
+        (7, 4, "Fraud Detection AI", "Real-time financial fraud detection models.", ["AI", "FinTech", "Cybersecurity"], "Finance", "premium", "Ahmed Karim", "m", 55),
+        (7, 5, "Green AI Lab", "Energy-efficient model training and inference.", ["AI", "GreenTech", "Sustainability"], "Green Energy", "standard", "Mika Tanaka", "f", 56),
+        (7, 8, "Conversational AI Hub", "Chatbots, voice assistants, and dialog systems.", ["AI", "NLP", "SaaS"], "AI & Data", "premium", "Chris Rodriguez", "m", 57),
+        (7, 9, "Computer Vision Arena", "Real-time object detection and video analytics.", ["AI", "Computer Vision", "IoT"], "AI & Data", "sponsor", "Priya Sharma", "f", 58),
+
+        # Event 9: Enterprise Cloud Summit (LIVE) — 6 more
+        (9, 2, "Health Cloud Infra", "HIPAA-compliant cloud for healthcare workloads.", ["Cloud", "Healthcare", "Security"], "Engineering", "standard", "Dr. Kevin Park", "m", 59),
+        (9, 3, "EduCloud Platform", "Scalable cloud infrastructure for ed-tech.", ["Cloud", "EdTech", "SaaS"], "Engineering", "standard", "Sara Martinez", "f", 60),
+        (9, 5, "Green Cloud Initiative", "Carbon-neutral data center strategies.", ["Cloud", "GreenTech", "Sustainability"], "Engineering", "standard", "Oliver Hansen", "m", 61),
+        (9, 6, "Observability Suite", "Full-stack monitoring, tracing, and logging.", ["DevOps", "Cloud", "Analytics"], "Engineering", "premium", "Tina Nguyen", "f", 62),
+        (9, 8, "Edge Computing Hub", "Edge deployment, IoT gateways, and 5G infra.", ["Cloud", "IoT", "5G"], "Engineering", "sponsor", "Marco Silva", "m", 63),
+        (9, 9, "Cloud Migration Lab", "Lift-and-shift to cloud-native transformation.", ["Cloud", "DevOps", "Migration"], "Engineering", "standard", "Kate Williams", "f", 64),
     ]
 
     all_stands = []
