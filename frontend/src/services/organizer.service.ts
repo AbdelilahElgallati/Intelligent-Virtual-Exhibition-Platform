@@ -48,43 +48,15 @@ export const organizerService = {
      * Internal helper to handle PDF downloads with authentication.
      */
     async _downloadPDF(endpoint: string, filename: string): Promise<void> {
-        let token = null;
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem('auth_tokens');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    token = parsed.access_token;
-                }
-            } catch (e) {
-                console.error('Failed to extract token for PDF export', e);
-            }
-        }
-
-        const url = getApiUrl(endpoint);
-        console.log(`[DEBUG] PDF Export URL: ${url}`);
-
         try {
-            const res = await fetch(url, {
-                method: 'GET',
-                credentials: 'omit', // Standard for Bearer token auth in dev
+            const blob = await http.get<Blob>(endpoint, {
+                responseType: 'blob',
                 headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                     'Accept': 'application/pdf',
                 },
             });
 
-            if (!res.ok) {
-                let errorMsg = `Export failed (${res.status})`;
-                try {
-                    const errorData = await res.json();
-                    errorMsg = errorData.detail || errorData.message || errorMsg;
-                } catch { /* not json */ }
-                throw new Error(errorMsg);
-            }
-
-            const blob = await res.blob();
-            if (blob.size < 100) {
+            if (!blob || blob.size < 100) {
                 throw new Error('Received an empty or invalid document.');
             }
 
@@ -98,7 +70,7 @@ export const organizerService = {
             setTimeout(() => URL.revokeObjectURL(href), 1000);
         } catch (error: any) {
             console.error('PDF Export Error:', error);
-            throw new Error(error.message === 'Failed to fetch'
+            throw new Error(error.message.includes('fetch') || error.message.includes('reach')
                 ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
                 : error.message);
         }
