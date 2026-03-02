@@ -7,12 +7,14 @@ async def main():
     admin = await db.users.find_one({"role": "admin"})
     if admin:
         print(f"Admin Email: {admin['email']}")
+        print(f"Admin Hash: {admin.get('hashed_password')}")
     else:
         print("No admin user found")
     
     organizer = await db.users.find_one({"role": "organizer"})
     if organizer:
         print(f"Organizer Email: {organizer['email']}")
+        print(f"Organizer Hash: {organizer.get('hashed_password')}")
     else:
         print("No organizer user found")
 

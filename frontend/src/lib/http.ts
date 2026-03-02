@@ -5,10 +5,11 @@ type RequestOptions = {
     headers?: Record<string, string>;
     body?: any;
     token?: string | null;
+    responseType?: 'json' | 'blob';
 };
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', headers = {}, body, token } = options;
+    const { method = 'GET', headers = {}, body, token, responseType = 'json' } = options;
     const url = getApiUrl(endpoint);
 
     const defaultHeaders: Record<string, string> = {
@@ -61,6 +62,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     // Handle empty responses (like 204 No Content)
     if (response.status === 204) {
         return {} as T;
+    }
+
+    if (responseType === 'blob') {
+        return response.blob() as any;
     }
 
     return response.json();
