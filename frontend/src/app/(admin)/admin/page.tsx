@@ -158,7 +158,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     BarChart3, Users, CalendarCheck, TrendingUp,
-    ArrowRight, RefreshCw,
+    ArrowRight, RefreshCw, Download, FileText,
 } from 'lucide-react';
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -202,6 +202,7 @@ export default function AdminAnalyticsPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exportLoading, setExportLoading] = useState(false);
     const [error, setError] = useState('');
 
     const load = async () => {
@@ -218,6 +219,17 @@ export default function AdminAnalyticsPage() {
             setError(e instanceof Error ? e.message : 'Failed to load analytics');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExportReport = async () => {
+        setExportLoading(true);
+        try {
+            await adminService.exportPlatformReportPDF();
+        } catch (e: unknown) {
+            console.error('Platform export failed', e);
+        } finally {
+            setExportLoading(false);
         }
     };
 
@@ -255,12 +267,22 @@ export default function AdminAnalyticsPage() {
                         <p className="text-zinc-500 text-sm mt-0.5">Platform-level metrics and engagement trends.</p>
                     </div>
                 </div>
-                <button
-                    onClick={load}
-                    className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
-                >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExportReport}
+                        disabled={exportLoading}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-zinc-900 border border-zinc-900 text-white hover:bg-black transition-colors disabled:opacity-50"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        {exportLoading ? 'Generating...' : 'Platform Report'}
+                    </button>
+                    <button
+                        onClick={load}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                    </button>
+                </div>
             </div>
 
             {error && (

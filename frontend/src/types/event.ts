@@ -3,6 +3,7 @@ export type EventStatus =
     | 'approved'
     | 'rejected'
     | 'waiting_for_payment'
+    | 'payment_proof_submitted'
     | 'payment_done'
     | 'live'
     | 'closed';
@@ -46,6 +47,8 @@ export interface OrganizerEvent {
     ticket_price?: number;         // visitor ticket price
     // Payment & links
     payment_amount?: number;
+    rib_code?: string;
+    payment_proof_url?: string;
     enterprise_link?: string;
     visitor_link?: string;
     rejection_reason?: string;

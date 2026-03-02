@@ -1294,3 +1294,4 @@ Admin role is already part of `AuthContext`. The admin layout reads `user.role` 
 | `/admin/monitoring` | Health cards (Overall/MongoDB/Redis/API), degraded alert banner, recent incidents |
 | `/admin/audit` | Filterable table: action, entity type, actor ID, from/to date |
 | `/admin/incidents` | Status filter tabs, incidents list, create modal, Investigate→Mitigate→Resolve flow + notes |
+
