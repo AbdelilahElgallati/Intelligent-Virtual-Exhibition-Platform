@@ -75,6 +75,37 @@ AVATAR_BASE = "https://randomuser.me/api/portraits"
 UNSPLASH = "https://images.unsplash.com/photo-"
 UI_AVATARS = "https://ui-avatars.com/api/?name={name}&background={bg}&color=fff&size=256"
 
+# Full-body transparent PNG presenter images (standing professionals, no background)
+# These blend naturally with the booth-scene background in VirtualStandLayout
+PRESENTER_FULL_BODY = {
+    "m": [
+        "https://pngimg.com/d/businessman_PNG6557.png",
+        "https://pngimg.com/d/businessman_PNG6559.png",
+        "https://pngimg.com/d/businessman_PNG6563.png",
+        "https://pngimg.com/d/businessman_PNG6567.png",
+        "https://pngimg.com/d/businessman_PNG6571.png",
+        "https://pngimg.com/d/businessman_PNG6575.png",
+        "https://pngimg.com/d/businessman_PNG6579.png",
+        "https://pngimg.com/d/businessman_PNG6583.png",
+        "https://pngimg.com/d/businessman_PNG6587.png",
+        "https://pngimg.com/d/businessman_PNG6591.png",
+        "https://pngimg.com/d/businessman_PNG6595.png",
+        "https://pngimg.com/d/businessman_PNG6599.png",
+    ],
+    "f": [
+        "https://pngimg.com/d/businesswoman_PNG57.png",
+        "https://pngimg.com/d/businesswoman_PNG48.png",
+        "https://pngimg.com/d/businesswoman_PNG43.png",
+        "https://pngimg.com/d/businesswoman_PNG39.png",
+        "https://pngimg.com/d/businesswoman_PNG35.png",
+        "https://pngimg.com/d/businesswoman_PNG31.png",
+        "https://pngimg.com/d/businesswoman_PNG27.png",
+        "https://pngimg.com/d/businesswoman_PNG23.png",
+        "https://pngimg.com/d/businesswoman_PNG19.png",
+        "https://pngimg.com/d/businesswoman_PNG15.png",
+    ],
+}
+
 THEME_COLORS = [
     "#1e293b", "#f97316", "#3b82f6", "#10b981", "#8b5cf6",
     "#ef4444", "#06b6d4", "#f59e0b", "#ec4899", "#6366f1",
@@ -106,18 +137,80 @@ TAGS_POOL = [
 
 INTERACTION_TYPES = ["visit", "resource_download", "chat", "meeting"]
 
-# Event banner images (high-quality conference / expo imagery)
+# Marketplace product templates by stand category
+# (name, description, price_usd, image_url, initial_stock)
+PRODUCT_CATALOG = {
+    "Technology": [
+        ("Enterprise Platform License", "Annual license for our full-featured platform. Unlimited users, API access, custom integrations, and 24/7 priority support.", 2499.99, f"{UNSPLASH}1451187580459-43490279c0fa?w=400&h=300&fit=crop", 50),
+        ("Developer SDK Pro", "Professional SDK with REST & GraphQL APIs, sandbox environment, code samples, and integration templates.", 899.99, f"{UNSPLASH}1461749280684-dccba630e2f6?w=400&h=300&fit=crop", 120),
+        ("IoT Starter Kit", "Complete hardware + software bundle: 5 sensors, gateway, cloud dashboard, and 90-day data plan.", 349.99, f"{UNSPLASH}1518770660439-4636190af475?w=400&h=300&fit=crop", 200),
+        ("Technical Workshop Pass", "2-hour hands-on workshop with our senior engineers. Includes lab access and certification.", 149.99, f"{UNSPLASH}1540575467063-178a50c2c397?w=400&h=300&fit=crop", 30),
+        ("Branded Merchandise Pack", "Premium tech swag: t-shirt, notebook, stickers, USB drive, and wireless charger.", 49.99, f"{UNSPLASH}1607082349566-187342175e2f?w=400&h=300&fit=crop", 500),
+    ],
+    "Healthcare": [
+        ("Clinical AI Module License", "12-month license for AI-assisted diagnostics. HIPAA-compliant, integrates with major EHR systems.", 4999.99, f"{UNSPLASH}1576091160399-112ba8d25d1d?w=400&h=300&fit=crop", 25),
+        ("Telemedicine Starter Plan", "6-month subscription: HD video consultations, e-prescriptions, and patient portal.", 1299.99, f"{UNSPLASH}1576091160550-2173dba999ef?w=400&h=300&fit=crop", 100),
+        ("Health Analytics Dashboard", "Real-time population health insights with customizable KPIs and export tools.", 799.99, f"{UNSPLASH}1551288049-bebda4e38f71?w=400&h=300&fit=crop", 80),
+        ("Medical Device Demo Unit", "Evaluation unit of our connected wellness monitor. Includes 30-day cloud access.", 599.99, f"{UNSPLASH}1559757175-5700dde675bc?w=400&h=300&fit=crop", 15),
+    ],
+    "Education": [
+        ("LMS Enterprise License", "Campus-wide learning management system. Unlimited courses, students, and SCORM support.", 3499.99, f"{UNSPLASH}1501504905252-473c47e087f8?w=400&h=300&fit=crop", 40),
+        ("Virtual Classroom Suite", "Live video lectures, breakout rooms, quizzes, whiteboard, and recording.", 699.99, f"{UNSPLASH}1588702547923-7093a6c3ba33?w=400&h=300&fit=crop", 150),
+        ("Student Analytics Module", "Track engagement, predict at-risk students, and generate automated reports.", 499.99, f"{UNSPLASH}1460925895917-afdab827c52f?w=400&h=300&fit=crop", 100),
+    ],
+    "Finance": [
+        ("Fraud Detection Engine", "AI-powered real-time transaction monitoring. Catches 99.7 percent of fraudulent activity.", 5999.99, f"{UNSPLASH}1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop", 30),
+        ("Blockchain Node License", "Enterprise node for our permissioned blockchain. 10K TPS, smart contract support.", 3999.99, f"{UNSPLASH}1639762681485-074b7f938ba0?w=400&h=300&fit=crop", 20),
+        ("Risk Analytics Platform", "Portfolio risk modeling, stress testing, and regulatory compliance reporting.", 1999.99, f"{UNSPLASH}1642790106117-e829e14a795f?w=400&h=300&fit=crop", 50),
+        ("Compliance Audit Toolkit", "Automated SOX/PCI-DSS audit trails, policy builder, and evidence collection.", 899.99, f"{UNSPLASH}1554224155-6726b3ff858f?w=400&h=300&fit=crop", 75),
+    ],
+    "Green Energy": [
+        ("Solar Monitoring System", "IoT-based solar panel performance monitoring with predictive maintenance.", 1499.99, f"{UNSPLASH}1509391366360-2e959784a276?w=400&h=300&fit=crop", 60),
+        ("Smart Grid Controller", "AI-optimized energy distribution controller for micro-grids and campuses.", 2999.99, f"{UNSPLASH}1473341304170-971dccb5ac1e?w=400&h=300&fit=crop", 25),
+        ("Carbon Footprint Dashboard", "Track, report, and offset your organization carbon emissions in real-time.", 599.99, f"{UNSPLASH}1532601224476-15c79f2f7a51?w=400&h=300&fit=crop", 200),
+    ],
+    "AI & Data": [
+        ("MLOps Platform License", "End-to-end ML lifecycle: training, versioning, deployment, and monitoring.", 3499.99, f"{UNSPLASH}1677442136019-21780ecad995?w=400&h=300&fit=crop", 40),
+        ("GPU Training Credits (500 h)", "500 GPU-hours on our cloud cluster. Supports PyTorch, TensorFlow, and JAX.", 999.99, f"{UNSPLASH}1558494949-ef010cbdcc31?w=400&h=300&fit=crop", 300),
+        ("Data Labeling Service Pack", "10,000 human-verified annotations for your CV/NLP datasets.", 499.99, f"{UNSPLASH}1504868584819-f8e8b4b6d7e3?w=400&h=300&fit=crop", 100),
+        ("AI Ethics Certification Course", "Online certification in responsible AI. 20 hours of content plus exam.", 299.99, f"{UNSPLASH}1516321318423-f06f85e504b3?w=400&h=300&fit=crop", 500),
+    ],
+    "Engineering": [
+        ("Kubernetes Enterprise Suite", "Multi-cluster management, GitOps, service mesh, and full observability stack.", 2999.99, f"{UNSPLASH}1667372393119-3d4c48d07fc9?w=400&h=300&fit=crop", 35),
+        ("CI/CD Pipeline Template Pack", "20 production-ready pipeline templates for GitHub Actions, GitLab CI, and Jenkins.", 199.99, f"{UNSPLASH}1618401471353-b98afee0b2eb?w=400&h=300&fit=crop", 500),
+        ("Cloud Migration Assessment", "Comprehensive audit of your infra with a migration roadmap and cost projection.", 1499.99, f"{UNSPLASH}1451187580459-43490279c0fa?w=400&h=300&fit=crop", 50),
+        ("DevOps Bootcamp (5-day)", "Intensive bootcamp: containers, K8s, Terraform, monitoring. Remote or on-site.", 799.99, f"{UNSPLASH}1531482615713-2afd69097998?w=400&h=300&fit=crop", 40),
+    ],
+    "Cybersecurity": [
+        ("Zero Trust Security Platform", "Identity-aware proxy, microsegmentation, and continuous verification engine.", 4999.99, f"{UNSPLASH}1555949963-ff9fe0c870eb?w=400&h=300&fit=crop", 20),
+        ("Penetration Testing Package", "OWASP-compliant pentest for web, API, and mobile. Detailed report with remediation.", 2999.99, f"{UNSPLASH}1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop", 30),
+        ("SIEM Starter License", "Cloud-native SIEM with 90-day log retention, alerting, and threat intel feeds.", 1499.99, f"{UNSPLASH}1550751827-4bd374c3f58b?w=400&h=300&fit=crop", 50),
+        ("Security Awareness Training", "Interactive e-learning for employees. Phishing simulations included.", 299.99, f"{UNSPLASH}1563986768609-322da13575f2?w=400&h=300&fit=crop", 1000),
+    ],
+}
+
+# Enterprise-style event banners — strong thematic imagery per event
 EVENT_BANNERS = [
-    f"{UNSPLASH}1540575467063-178a50c2c397?w=1400&h=400&fit=crop",   # conference hall
-    f"{UNSPLASH}1576085898323-218337e3e43c?w=1400&h=400&fit=crop",   # medical conference
-    f"{UNSPLASH}1524178232363-1fb2b075b655?w=1400&h=400&fit=crop",   # education
-    f"{UNSPLASH}1559136555-9303baea8ebd?w=1400&h=400&fit=crop",     # finance
-    f"{UNSPLASH}1473341304170-971dccb5ac1e?w=1400&h=400&fit=crop",   # green energy
-    f"{UNSPLASH}1550751827-4bd374c3f58b?w=1400&h=400&fit=crop",     # cybersecurity
-    f"{UNSPLASH}1460925895917-afdab827c52f?w=1400&h=400&fit=crop",   # marketing
-    f"{UNSPLASH}1485827404703-89b55fcc595e?w=1400&h=400&fit=crop",   # data science
-    f"{UNSPLASH}1519389950473-47ba0277781c?w=1400&h=400&fit=crop",   # innovation
-    f"{UNSPLASH}1451187580459-43490279c0fa?w=1400&h=400&fit=crop",   # cloud summit
+    # 0 — Future Tech Expo: futuristic neon / digital grid
+    f"{UNSPLASH}1535223289827-42f1e9919769?w=1400&h=400&fit=crop",
+    # 1 — Healthcare Summit: medical lab / stethoscope
+    f"{UNSPLASH}1579684385127-1ef15d508118?w=1400&h=400&fit=crop",
+    # 2 — Education Expo: laptops in lecture hall
+    f"{UNSPLASH}1523050854058-8df90110c476?w=1400&h=400&fit=crop",
+    # 3 — FinTech Forum: stock trading screens
+    f"{UNSPLASH}1611974789855-9c2a0a7236a3?w=1400&h=400&fit=crop",
+    # 4 — Green Energy: solar panels at sunset
+    f"{UNSPLASH}1509391366360-2e959784a276?w=1400&h=400&fit=crop",
+    # 5 — Cybersecurity: code on dark screen
+    f"{UNSPLASH}1555949963-ff9fe0c870eb?w=1400&h=400&fit=crop",
+    # 6 — Digital Marketing: creative workspace
+    f"{UNSPLASH}1533750349088-cd871a92f312?w=1400&h=400&fit=crop",
+    # 7 — AI & Data Science: neural-network visualization
+    f"{UNSPLASH}1677442136019-21780ecad995?w=1400&h=400&fit=crop",
+    # 8 — Startup Hackathon: collaborative workspace
+    f"{UNSPLASH}1504384764586-bb4cdc1707b0?w=1400&h=400&fit=crop",
+    # 9 — Cloud Summit: glowing earth from space
+    f"{UNSPLASH}1451187580459-43490279c0fa?w=1400&h=400&fit=crop",
 ]
 
 
@@ -149,8 +242,9 @@ def _random_bg():
 
 
 def _avatar_url(gender, idx):
-    g = "women" if gender == "f" else "men"
-    return f"{AVATAR_BASE}/{g}/{idx}.jpg"
+    """Return a full-body transparent PNG of a standing business professional."""
+    pool = PRESENTER_FULL_BODY.get(gender, PRESENTER_FULL_BODY["m"])
+    return pool[idx % len(pool)]
 
 
 # ─── Ensure functions (idempotent) ───────────────────────────────────────────
@@ -288,6 +382,17 @@ async def ensure_stand(
     stands_col = get_stands_collection()
     existing = await stands_col.find_one({"event_id": str(event_id), "name": name})
     if existing:
+        # Patch avatar / background / logo when re-seeding with new URLs
+        updates = {}
+        if presenter_avatar_url and existing.get("presenter_avatar_url") != presenter_avatar_url:
+            updates["presenter_avatar_url"] = presenter_avatar_url
+        if stand_background_url and existing.get("stand_background_url") != stand_background_url:
+            updates["stand_background_url"] = stand_background_url
+        if logo_url and existing.get("logo_url") != logo_url:
+            updates["logo_url"] = logo_url
+        if updates:
+            await stands_col.update_one({"_id": existing["_id"]}, {"$set": updates})
+            existing.update(updates)
         return _normalize_id(existing)
     stand = await create_stand(
         event_id, organization_id, name,
@@ -427,6 +532,29 @@ async def ensure_lead_interaction(
         timestamp=NOW - timedelta(minutes=random.randint(1, 1440)),
     )
     await lead_repo.log_interaction(interaction)
+
+
+async def ensure_product(
+    stand_id: str, name: str, description: str, price: float,
+    image_url: str = "", stock: int = 50, currency: str = "usd",
+) -> dict:
+    """Idempotent: create a marketplace product for a stand."""
+    db = get_database()
+    sid = ObjectId(stand_id) if ObjectId.is_valid(str(stand_id)) else stand_id
+    existing = await db.stand_products.find_one({"stand_id": sid, "name": name})
+    if existing:
+        existing["_id"] = str(existing["_id"])
+        return existing
+    from app.modules.marketplace.service import create_product as _mkt_create
+    data = {
+        "name": name,
+        "description": description,
+        "price": price,
+        "currency": currency,
+        "image_url": image_url,
+        "stock": stock,
+    }
+    return await _mkt_create(str(stand_id), data)
 
 
 # ─── Main seed function ──────────────────────────────────────────────────────
@@ -727,6 +855,34 @@ async def main():
         print(f"  + Stand: {name} @ {events[ev_idx]['title'][:35]}")
 
     print(f"  Total stands: {len(all_stands)}")
+
+    # ──────────────────────────────────────────────────────────
+    # 4b. MARKETPLACE PRODUCTS (for stands in live/approved events)
+    # ──────────────────────────────────────────────────────────
+    print("\n[4b] Seeding marketplace products...")
+
+    product_count = 0
+    for ev_idx, stand in all_stands:
+        ev_state = events[ev_idx].get("state")
+        # Only seed products for live & approved events
+        if ev_state not in (EventState.LIVE, EventState.APPROVED):
+            continue
+        # ~30% of eligible stands don't sell anything (more realistic)
+        if random.random() < 0.30:
+            continue
+
+        cat = stand.get("category", "Technology")
+        templates = PRODUCT_CATALOG.get(cat, PRODUCT_CATALOG.get("Technology", []))
+        if not templates:
+            continue
+        num = random.randint(2, min(4, len(templates)))
+        chosen = random.sample(templates, num)
+
+        for pname, pdesc, pprice, pimg, pstock in chosen:
+            await ensure_product(stand["_id"], pname, pdesc, pprice, pimg, pstock)
+            product_count += 1
+
+    print(f"  Marketplace products: {product_count}")
 
     # ──────────────────────────────────────────────────────────
     # 5. RESOURCES (2-4 per stand)
@@ -1097,6 +1253,7 @@ async def main():
   Chat rooms:     {chat_count}
   Lead interact.: {lead_count}
   Analytics:      {analytics_count}
+  Mkt products:   {product_count}
 
   Login credentials (all users share the same password):
   --------------------------------------------------------

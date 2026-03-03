@@ -12,6 +12,7 @@ import {
     Heart,
     Sparkles,
     FileText,
+    ShoppingBag,
     X,
 } from 'lucide-react';
 
@@ -29,6 +30,9 @@ interface VirtualStandLayoutProps {
     onAssistantOpen: () => void;
     onFavoriteToggle: () => void;
     favoriteId: string | null;
+    /* marketplace */
+    onProductsOpen?: () => void;
+    hasProducts?: boolean;
     /* tab state (owned by parent) */
     activeTab: 'resources' | 'about';
     onTabChange: (tab: 'resources' | 'about') => void;
@@ -78,6 +82,8 @@ export function VirtualStandLayout({
     onAssistantOpen,
     onFavoriteToggle,
     favoriteId,
+    onProductsOpen,
+    hasProducts,
     activeTab,
     onTabChange,
     children,
@@ -345,6 +351,16 @@ export function VirtualStandLayout({
                         icon={<Info className="w-4 h-4" />}
                         label="About"
                     />
+
+                    {/* Shop (only visible when stand has products) */}
+                    {hasProducts && onProductsOpen && (
+                        <ActionBarBtn
+                            themeColor={themeColor}
+                            onClick={onProductsOpen}
+                            icon={<ShoppingBag className="w-4 h-4" />}
+                            label="Shop"
+                        />
+                    )}
 
                     {/* Divider */}
                     <div className="w-px h-7 bg-gray-200 mx-0.5 sm:mx-1 shrink-0" />

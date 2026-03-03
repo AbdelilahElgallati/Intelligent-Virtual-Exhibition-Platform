@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     EMBEDDING_MODEL: str = "multilingual-e5-small"
 
+    # Stripe (stand marketplace — isolated from event payments)
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
 
     # Pydantic Config
     class Config:
