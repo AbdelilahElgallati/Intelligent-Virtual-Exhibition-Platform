@@ -174,3 +174,18 @@ async def ensure_indexes() -> None:
         await db.event_payments.create_index([("event_id", 1), ("user_id", 1)])
     except Exception:
         pass
+
+    # Stand Marketplace — products & orders (isolated from event payments)
+    try:
+        await db.stand_products.create_index("stand_id")
+        await db.stand_products.create_index("created_at")
+    except Exception:
+        pass
+
+    try:
+        await db.stand_orders.create_index("stand_id")
+        await db.stand_orders.create_index("buyer_id")
+        await db.stand_orders.create_index("stripe_session_id", unique=True, sparse=True)
+        await db.stand_orders.create_index([("stand_id", 1), ("created_at", -1)])
+    except Exception:
+        pass
