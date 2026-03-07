@@ -11,3 +11,9 @@ env/
 
 data/
 uploads/
+
+*.sqlite3
+*.bin
+*.jpg
+*.png
+*.pdf
