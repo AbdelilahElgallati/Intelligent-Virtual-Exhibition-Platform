@@ -86,9 +86,6 @@ class EventBase(BaseModel):
     visitor_link: Optional[str] = None
     rejection_reason: Optional[str] = None
 
-    # Organizer bank details for visitor payments
-    payment_details: Optional[dict] = None
-
     model_config = {"from_attributes": True, "populate_by_name": True}
 
 
@@ -117,9 +114,6 @@ class EventCreate(BaseModel):
     is_paid: bool = Field(False, description="Whether the event requires visitor ticket payment")
     ticket_price: Optional[float] = Field(None, ge=0, description="Visitor ticket price (required when is_paid=True)")
 
-    # Organizer bank details (optional, only relevant when is_paid=True)
-    payment_details: Optional[dict] = None
-
     model_config = {"from_attributes": True}
 
 
@@ -143,9 +137,6 @@ class EventUpdate(BaseModel):
     stand_price: Optional[float] = None
     is_paid: Optional[bool] = None
     ticket_price: Optional[float] = None
-
-    # Organizer bank details
-    payment_details: Optional[dict] = None
 
     model_config = {"from_attributes": True}
 

@@ -7,7 +7,7 @@ export type { Stand, StandsListResponse } from '@/types/stand';
 
 export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING' | 'PAYMENT_REQUIRED' | 'PAYMENT_PENDING';
 
-export type PaymentStatus = 'none' | 'pending' | 'approved' | 'rejected';
+export type PaymentStatus = 'none' | 'pending' | 'paid' | 'failed';
 
 export interface JoinEventResponse {
   requires_payment?: boolean;
@@ -26,11 +26,12 @@ export interface EventPayment {
   event_id: string;
   user_id: string;
   amount: number;
-  proof_file_path: string;
   status: PaymentStatus;
-  admin_note?: string;
+  stripe_session_id?: string;
+  stripe_payment_intent?: string;
+  currency?: string;
+  paid_at?: string;
   created_at: string;
-  reviewed_at?: string;
 }
 
 export interface Notification {

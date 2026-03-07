@@ -52,14 +52,6 @@ export interface OrganizerEvent {
     enterprise_link?: string;
     visitor_link?: string;
     rejection_reason?: string;
-    // Organizer bank details for visitor payments
-    payment_details?: {
-        bank_name?: string;
-        account_holder?: string;
-        iban?: string;
-        swift?: string;
-        reference_note?: string;
-    } | null;
 }
 
 export type Event = OrganizerEvent;
@@ -103,13 +95,6 @@ export interface EventUpdatePayload {
     stand_price?: number;
     is_paid?: boolean;
     ticket_price?: number;
-    payment_details?: {
-        bank_name?: string;
-        account_holder?: string;
-        iban?: string;
-        swift?: string;
-        reference_note?: string;
-    } | null;
 }
 
 export interface EventApprovePayload {

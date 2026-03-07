@@ -45,7 +45,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
               )}
             </div>
             <Button asChild className="w-full h-12 text-lg">
-              <Link href={`/events/${eventId}/payment`}>Submit Payment Proof</Link>
+              <Link href={`/events/${eventId}/payment`}>Pay Now</Link>
             </Button>
           </>
         );
@@ -53,10 +53,10 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
         return (
           <>
             <div className="bg-amber-50 text-amber-700 p-4 rounded-lg mb-4 text-sm font-medium">
-              Your payment proof has been submitted and is being reviewed. You&apos;ll be notified once it&apos;s approved.
+              Your payment is being processed. You&apos;ll be granted access shortly.
             </div>
-            <Button disabled className="w-full h-12 text-lg">
-              Payment Under Review
+            <Button asChild className="w-full h-12 text-lg">
+              <Link href={`/events/${eventId}/payment`}>Check Payment Status</Link>
             </Button>
           </>
         );

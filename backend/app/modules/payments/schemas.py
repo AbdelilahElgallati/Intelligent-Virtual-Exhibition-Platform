@@ -1,7 +1,7 @@
 """
 Payment schemas for IVEP.
 
-Defines data models for event payment proofs and admin review.
+Stripe-based event ticket payments.
 """
 
 from datetime import datetime
@@ -12,11 +12,11 @@ from pydantic import BaseModel, Field
 
 
 class PaymentStatus(str, Enum):
-    """Status of a payment proof submission."""
+    """Status of an event payment."""
 
     PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    PAID = "paid"
+    FAILED = "failed"
 
 
 class EventPaymentRead(BaseModel):
@@ -26,11 +26,12 @@ class EventPaymentRead(BaseModel):
     event_id: str
     user_id: str
     amount: float
-    proof_file_path: str
+    currency: str = "mad"
+    stripe_session_id: Optional[str] = None
+    stripe_payment_intent: Optional[str] = None
     status: PaymentStatus
-    admin_note: Optional[str] = None
     created_at: datetime
-    reviewed_at: Optional[datetime] = None
+    paid_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 
@@ -38,11 +39,5 @@ class EventPaymentRead(BaseModel):
 class PaymentStatusResponse(BaseModel):
     """Lightweight response for visitor payment status check."""
 
-    status: str  # "none" | "pending" | "approved" | "rejected"
-    admin_note: Optional[str] = None
-
-
-class PaymentRejectRequest(BaseModel):
-    """Body for admin rejection."""
-
-    admin_note: Optional[str] = None
+    status: str  # "none" | "pending" | "paid"
+    stripe_session_id: Optional[str] = None

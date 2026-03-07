@@ -95,8 +95,8 @@ async def join_event(
     from app.modules.payments.service import get_user_payment
     payment = await get_user_payment(event_id, current_user["_id"])
 
-    if payment and payment["status"] == "approved":
-        # Payment approved → ensure participant exists and is approved
+    if payment and payment["status"] == "paid":
+        # Payment completed via Stripe → ensure participant exists and is approved
         if existing:
             if existing["status"] == ParticipantStatus.APPROVED:
                 return ParticipantRead(**existing)
@@ -108,7 +108,7 @@ async def join_event(
         approved = await approve_participant(participant["_id"])
         return ParticipantRead(**approved)
 
-    # Payment missing, pending, or rejected → deny entry
+    # Payment missing or pending → tell frontend to redirect to payment
     payment_status = payment["status"] if payment else "none"
     return {
         "requires_payment": True,
@@ -163,9 +163,6 @@ async def get_event(event_id: str) -> EventRead:
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    # Only expose payment_details when the event is paid
-    if not event.get("is_paid"):
-        event["payment_details"] = None
     return EventRead(**event)
 
 
@@ -196,38 +193,6 @@ async def update_existing_event(
 
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)
-
-
-@router.patch("/{event_id}/payment-details", response_model=EventRead)
-async def update_event_payment_details(
-    event_id: str,
-    body: dict,
-    current_user: dict = Depends(require_role(Role.ORGANIZER)),
-) -> EventRead:
-    """
-    Update organizer bank / payment details for a paid event.
-
-    Allowed in ANY event state (so organizer can configure bank info
-    even after the event is approved or live).
-    Requires ORGANIZER role and ownership.
-    """
-    event = await get_event_by_id(event_id)
-    if event is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-
-    if event["organizer_id"] != str(current_user["_id"]):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    # Persist only the payment_details sub-document
-    from app.db.mongo import get_database
-    db = get_database()
-    await db["events"].update_one(
-        {"_id": __import__("bson").ObjectId(event_id) if __import__("bson").ObjectId.is_valid(event_id) else event_id},
-        {"$set": {"payment_details": body}},
-    )
-
-    updated = await get_event_by_id(event_id)
-    return EventRead(**updated)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)

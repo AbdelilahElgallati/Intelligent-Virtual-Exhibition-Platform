@@ -22,10 +22,7 @@ export const ENDPOINTS = {
   },
   ADMIN: {
     PENDING_EVENTS: '/events?state=pending_approval',
-    PAYMENTS: '/admin/payments',
-    APPROVE_PAYMENT: (id: string) => `/admin/payments/${id}/approve`,
-    REJECT_PAYMENT: (id: string) => `/admin/payments/${id}/reject`,
-    VIEW_PAYMENT_PROOF: (id: string) => `/admin/payments/${id}/proof`,
+    EVENT_PAYMENTS: '/admin/event-payments',
   },
   PARTICIPANTS: {
     LIST: (eventId: string) => `/events/${eventId}/participants`,
@@ -73,9 +70,10 @@ export const ENDPOINTS = {
     DELETE: (id: string) => `/favorites/${id}`,
   },
   PAYMENTS: {
-    SUBMIT_PROOF: (eventId: string) => `/events/${eventId}/payment-proof`,
+    CHECKOUT: (eventId: string) => `/events/${eventId}/checkout`,
+    VERIFY: (eventId: string) => `/events/${eventId}/verify-payment`,
     MY_STATUS: (eventId: string) => `/events/${eventId}/my-payment-status`,
-    UPDATE_DETAILS: (eventId: string) => `/events/${eventId}/payment-details`,
+    RECEIPT: (eventId: string) => `/events/${eventId}/my-receipt`,
   },
   MARKETPLACE: {
     PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
