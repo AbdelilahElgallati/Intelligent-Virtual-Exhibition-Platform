@@ -12,6 +12,8 @@ from app.core.dependencies import get_current_user
 from app.db.mongo import get_database
 from app.modules.marketplace import service as mkt_svc
 from app.modules.marketplace.schemas import (
+    CartCheckoutRequest,
+    CartCheckoutResponse,
     CheckoutRequest,
     CheckoutResponse,
     OrderOut,
@@ -20,6 +22,7 @@ from app.modules.marketplace.schemas import (
     ProductUpdate,
 )
 from app.modules.marketplace.stripe_service import (
+    create_cart_checkout_session,
     create_checkout_session,
     verify_webhook_signature,
 )
@@ -167,16 +170,20 @@ async def checkout_product(
 
     unit_price_cents = int(math.ceil(product["price"] * 100))
 
-    session = create_checkout_session(
-        product_name=product["name"],
-        unit_price_cents=unit_price_cents,
-        currency=product.get("currency", "usd"),
-        quantity=body.quantity,
-        order_id=order["id"],
-        success_url=success_url,
-        cancel_url=cancel_url,
-        buyer_email=user.get("email"),
-    )
+    try:
+        session = create_checkout_session(
+            product_name=product["name"],
+            unit_price_cents=unit_price_cents,
+            currency=product.get("currency", "usd"),
+            quantity=body.quantity,
+            order_id=order["id"],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            buyer_email=user.get("email"),
+        )
+    except Exception as exc:
+        logger.error("Stripe checkout failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
     # Update order with stripe session id
     from app.db.mongo import get_database as _gdb
@@ -188,6 +195,90 @@ async def checkout_product(
     )
 
     return CheckoutResponse(session_url=session.url, order_id=order["id"])
+
+
+# ── Cart Checkout (multiple products) ───────────────────────────────
+
+@router.post(
+    "/stands/{stand_id}/cart/checkout",
+    response_model=CartCheckoutResponse,
+)
+async def cart_checkout(
+    stand_id: str,
+    body: CartCheckoutRequest,
+    request: Request,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Authenticated visitor — checkout multiple products from the same stand at once.
+    Creates one Stripe Checkout Session with multiple line items.
+    """
+    await _get_stand(stand_id)  # validate stand exists
+
+    # Resolve and validate all items
+    stripe_items: list[dict] = []
+    order_ids: list[str] = []
+
+    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
+    origin = origin.rstrip("/")
+    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/marketplace/cancel"
+
+    for cart_item in body.items:
+        product = await mkt_svc.get_product(cart_item.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product {cart_item.product_id} not found")
+        if product["stand_id"] != stand_id:
+            raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
+        if product["stock"] < cart_item.quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
+
+        total = round(product["price"] * cart_item.quantity, 2)
+        order = await mkt_svc.create_order(
+            product_id=cart_item.product_id,
+            stand_id=stand_id,
+            buyer_id=str(user["_id"]),
+            product_name=product["name"],
+            quantity=cart_item.quantity,
+            total_amount=total,
+            stripe_session_id="",
+        )
+        order_ids.append(order["id"])
+        stripe_items.append({
+            "product_name": product["name"],
+            "unit_price_cents": int(math.ceil(product["price"] * 100)),
+            "currency": product.get("currency", "usd"),
+            "quantity": cart_item.quantity,
+        })
+
+    try:
+        session = create_cart_checkout_session(
+            items=stripe_items,
+            order_ids=order_ids,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            buyer_email=user.get("email"),
+        )
+    except Exception as exc:
+        logger.error("Stripe cart checkout failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
+
+    # Update all orders with stripe session id
+    try:
+        from app.db.mongo import get_database as _gdb
+        from bson import ObjectId as _OID
+
+        for oid in order_ids:
+            await _gdb().stand_orders.update_one(
+                {"_id": _OID(oid)},
+                {"$set": {"stripe_session_id": session.id}},
+            )
+    except Exception as exc:
+        logger.error("Failed to update orders with session id: %s", exc)
+        # Orders created but session link may be incomplete — still return the URL
+        # so the visitor can complete payment
+
+    return CartCheckoutResponse(session_url=session.url, order_ids=order_ids)
 
 
 # ── Stripe Webhook ──────────────────────────────────────────────────
@@ -215,19 +306,25 @@ async def stripe_webhook(request: Request):
         payment_intent = (
             session_data.get("payment_intent") if isinstance(session_data, dict) else session_data.payment_intent
         )
-        order_id_meta = (
-            session_data.get("metadata", {}).get("order_id")
-            if isinstance(session_data, dict)
-            else session_data.metadata.get("order_id")
-        )
+        metadata = session_data.get("metadata", {}) if isinstance(session_data, dict) else session_data.metadata
 
-        if order_id_meta:
-            order = await mkt_svc.mark_order_paid(order_id_meta, payment_intent or "")
+        # Cart checkout stores comma-separated order_ids
+        order_ids_str = metadata.get("order_ids", "")
+        single_order_id = metadata.get("order_id", "")
+
+        ids_to_process = []
+        if order_ids_str:
+            ids_to_process = [oid.strip() for oid in order_ids_str.split(",") if oid.strip()]
+        elif single_order_id:
+            ids_to_process = [single_order_id]
+
+        for oid in ids_to_process:
+            order = await mkt_svc.mark_order_paid(oid, payment_intent or "")
             if order:
-                # Decrement stock
                 await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
-                logger.info("Order %s paid via Stripe session %s", order_id_meta, session_id)
-        else:
+                logger.info("Order %s paid via Stripe session %s", oid, session_id)
+
+        if not ids_to_process:
             # Fallback: try to find order by session id
             order = await mkt_svc.get_order_by_stripe_session(session_id)
             if order and order["status"] != "paid":

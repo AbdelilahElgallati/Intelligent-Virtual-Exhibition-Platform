@@ -63,6 +63,20 @@ class CheckoutRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
 
 
+class CartItem(BaseModel):
+    product_id: str
+    quantity: int = Field(1, ge=1, le=100)
+
+
+class CartCheckoutRequest(BaseModel):
+    items: list[CartItem] = Field(..., min_length=1, max_length=50)
+
+
 class CheckoutResponse(BaseModel):
     session_url: str
     order_id: str
+
+
+class CartCheckoutResponse(BaseModel):
+    session_url: str
+    order_ids: list[str]

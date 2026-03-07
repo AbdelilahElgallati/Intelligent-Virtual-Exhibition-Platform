@@ -91,7 +91,7 @@ async def create_order(
     product_name: str,
     quantity: int,
     total_amount: float,
-    stripe_session_id: str,
+    stripe_session_id: str = "",
 ) -> dict:
     doc = {
         "product_id": _oid(product_id),
@@ -100,12 +100,15 @@ async def create_order(
         "product_name": product_name,
         "quantity": quantity,
         "total_amount": total_amount,
-        "stripe_session_id": stripe_session_id,
         "stripe_payment_intent": "",
         "status": "pending",
         "created_at": datetime.now(timezone.utc),
         "paid_at": None,
     }
+    # Only include stripe_session_id if it has a real value;
+    # sparse unique index skips documents where the field is absent.
+    if stripe_session_id:
+        doc["stripe_session_id"] = stripe_session_id
     result = await _db().stand_orders.insert_one(doc)
     doc["_id"] = result.inserted_id
     return _serialize(doc)
@@ -116,7 +119,7 @@ async def get_order_by_stripe_session(session_id: str) -> Optional[dict]:
     return _serialize(doc) if doc else None
 
 
-async def mark_order_paid(order_id: str, payment_intent: str) -> None:
+async def mark_order_paid(order_id: str, payment_intent: str) -> Optional[dict]:
     await _db().stand_orders.update_one(
         {"_id": _oid(order_id)},
         {
@@ -127,6 +130,8 @@ async def mark_order_paid(order_id: str, payment_intent: str) -> None:
             }
         },
     )
+    doc = await _db().stand_orders.find_one({"_id": _oid(order_id)})
+    return _serialize(doc) if doc else None
 
 
 async def list_orders_for_stand(stand_id: str) -> list[dict]:

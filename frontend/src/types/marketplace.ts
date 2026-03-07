@@ -49,3 +49,13 @@ export interface CheckoutResponse {
   session_url: string;
   order_id: string;
 }
+
+export interface CartItem {
+  product_id: string;
+  quantity: number;
+}
+
+export interface CartCheckoutResponse {
+  session_url: string;
+  order_ids: string[];
+}

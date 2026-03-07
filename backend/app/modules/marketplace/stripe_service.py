@@ -34,7 +34,7 @@ def create_checkout_session(
     buyer_email: Optional[str] = None,
 ) -> stripe.checkout.Session:
     """
-    Create a Stripe Checkout Session for a stand product purchase.
+    Create a Stripe Checkout Session for a single stand product purchase.
     Returns the full Session object (caller reads .url and .id).
     """
     _configure()
@@ -56,6 +56,46 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
         "metadata": {"order_id": order_id},
+    }
+    if buyer_email:
+        params["customer_email"] = buyer_email
+
+    session = stripe.checkout.Session.create(**params)
+    return session
+
+
+def create_cart_checkout_session(
+    *,
+    items: list[dict],
+    order_ids: list[str],
+    success_url: str,
+    cancel_url: str,
+    buyer_email: Optional[str] = None,
+) -> stripe.checkout.Session:
+    """
+    Create a Stripe Checkout Session for multiple products (cart).
+    items: list of {product_name, unit_price_cents, currency, quantity}
+    """
+    _configure()
+
+    line_items = [
+        {
+            "price_data": {
+                "currency": item["currency"].lower(),
+                "unit_amount": item["unit_price_cents"],
+                "product_data": {"name": item["product_name"]},
+            },
+            "quantity": item["quantity"],
+        }
+        for item in items
+    ]
+
+    params: dict = {
+        "mode": "payment",
+        "line_items": line_items,
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "metadata": {"order_ids": ",".join(order_ids)},
     }
     if buyer_email:
         params["customer_email"] = buyer_email
