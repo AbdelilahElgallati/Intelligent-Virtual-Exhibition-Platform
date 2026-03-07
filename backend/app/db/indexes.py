@@ -195,3 +195,28 @@ async def ensure_indexes() -> None:
         await db.organizations.create_index("industry")
     except Exception:
         pass
+
+    # Stand Marketplace — products & orders (isolated from event payments)
+    try:
+        await db.stand_products.create_index("stand_id")
+        await db.stand_products.create_index("created_at")
+    except Exception:
+        pass
+
+    try:
+        await db.stand_orders.create_index("stand_id")
+        await db.stand_orders.create_index("buyer_id")
+        # Drop old unique indexes — cart orders share a stripe_session_id
+        for old_name in ("stripe_session_id_1", "stripe_session_id_unique_sparse"):
+            try:
+                await db.stand_orders.drop_index(old_name)
+            except Exception:
+                pass
+        # Non-unique sparse index for fast lookup by session id
+        await db.stand_orders.create_index(
+            "stripe_session_id", sparse=True,
+            name="stripe_session_id_sparse",
+        )
+        await db.stand_orders.create_index([("stand_id", 1), ("created_at", -1)])
+    except Exception:
+        pass

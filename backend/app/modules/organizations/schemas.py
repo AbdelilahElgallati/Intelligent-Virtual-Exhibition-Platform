@@ -53,7 +53,6 @@ class OrganizationRead(BaseModel):
     is_verified: bool = False
     is_flagged: bool = False
     is_suspended: bool = False
-
     # Additional details
     industry: Optional[str] = "General"
     website: Optional[str] = None

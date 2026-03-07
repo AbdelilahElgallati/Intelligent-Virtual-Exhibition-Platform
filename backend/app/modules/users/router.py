@@ -146,3 +146,4 @@ async def admin_create_user(
     )
     
     return UserRead(**new_user)
+

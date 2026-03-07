@@ -207,7 +207,6 @@ export default function EnterpriseRequestsPage() {
             } catch { /* ignore */ }
         })();
     }, [eventId]);
-
     const handleSearch = () => setSearch(searchInput.trim());
 
     const handleApprove = async (item: EnterpriseRequestItem) => {

@@ -28,7 +28,6 @@ export default function Home() {
 
   // Show nothing while checking auth / redirecting
   if (!ready) return null;
-
   return (
     <div className="flex flex-col gap-20 pb-20">
       {/* Hero Section */}
@@ -107,3 +106,4 @@ export default function Home() {
     </div>
   );
 }
+

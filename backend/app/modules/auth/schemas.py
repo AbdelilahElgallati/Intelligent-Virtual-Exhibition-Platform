@@ -51,7 +51,6 @@ class RegisterRequest(BaseModel):
     org_phone: Optional[str] = None
     org_website: Optional[str] = None
     org_professional_email: Optional[EmailStr] = None
-
     model_config = {"from_attributes": True}
 
 

@@ -122,8 +122,6 @@ async def get_organization(
             detail="Organization not found",
         )
     return OrganizationRead(**organization)
-
-
 @router.get("/", response_model=list[OrganizationRead])
 async def list_organizations(
     current_user: dict = Depends(get_current_user),

@@ -39,7 +39,6 @@ export default function AuditPage() {
 
     const paginatedLogs = logs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE);
-
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -68,7 +67,6 @@ export default function AuditPage() {
     useEffect(() => {
         setCurrentPage(1);
     }, [logs]);
-
     useEffect(() => { load(); }, []);
 
     const applyFilters = (e: React.FormEvent) => { e.preventDefault(); load(); };

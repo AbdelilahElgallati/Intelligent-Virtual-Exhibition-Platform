@@ -542,7 +542,6 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | **RecentFlagRead** | `id: str`, `entity_type: str`, `entity_id: str`, `reason: str`, `created_at: datetime` |
 | **KPIs** | `active_visitors: int`, `active_stands: int`, `ongoing_meetings: int`, `incident_flags_open: int` |
 | **LiveMetricsResponse** | `kpis: KPIs`, `active_users: list[ActiveUserRead]`, `recent_flags: list[RecentFlagRead]`, `timestamp: str` |
-
 ---
 
 ## 6. Backend Modules — API Endpoints

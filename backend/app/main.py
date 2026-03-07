@@ -37,7 +37,9 @@ from app.modules.incidents.router import router as incidents_router
 from app.modules.monitoring.router import router as monitoring_router
 # Week 5 additions
 from app.modules.sessions.router import router as sessions_router
+# Week 6 additions
 from app.modules.organizer_report.router import router as organizer_report_router
+# Week 7 additions
 from app.modules.enterprise.router import router as enterprise_router
 
 # Routers (legacy/extra modules)
@@ -51,6 +53,7 @@ from app.modules.leads.router import router as leads_router
 from app.modules.recommendations.router import router as recommendations_router
 from app.modules.favorites.router import router as favorites_router
 from app.modules.payments.router import router as payments_router
+from app.modules.marketplace.router import router as marketplace_router
 
 
 @asynccontextmanager
@@ -108,6 +111,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(audit_router, prefix=api_prefix)
     app.include_router(incidents_router, prefix=api_prefix)
     app.include_router(payments_router, prefix=api_prefix)
+    # Stand Marketplace (isolated from event payments)
+    app.include_router(marketplace_router, prefix=api_prefix)
     # Week 3: Live Monitoring
     app.include_router(monitoring_router, prefix=api_prefix)
     # Week 5: Conference Session Orchestration
@@ -171,7 +176,6 @@ def create_application() -> FastAPI:
     uploads_dir = os.path.join(backend_dir, "uploads")
     os.makedirs(uploads_dir, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-
     return app
 
 
