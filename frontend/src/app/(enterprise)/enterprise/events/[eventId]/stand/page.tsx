@@ -97,12 +97,25 @@ export default function StandConfigPage() {
     };
 
     const addResource = async () => {
-        if (!newResource.title) return;
-        if ((newResource.resource_type === 'video_url' || newResource.resource_type === 'link') && !newResource.url) return;
-        if ((newResource.resource_type === 'pdf' || newResource.resource_type === 'image') && !newResource.file && !newResource.url) return;
+        setMessage(null);
+        if (!newResource.title) {
+            setMessage({ type: 'error', text: 'Please provide a title for the resource.' });
+            return;
+        }
+        if ((newResource.resource_type === 'video_url' || newResource.resource_type === 'link') && !newResource.url) {
+            setMessage({ type: 'error', text: 'Please provide a valid URL for this resource tape.' });
+            return;
+        }
+        if ((newResource.resource_type === 'pdf' || newResource.resource_type === 'image') && !newResource.file) {
+            setMessage({ type: 'error', text: 'Please select a file to upload.' });
+            return;
+        }
 
         const standId = stand?.id || stand?._id;
-        if (!standId) return;
+        if (!standId) {
+            setMessage({ type: 'error', text: 'Stand configuration not fully loaded yet.' });
+            return;
+        }
         setIsSaving(true);
         try {
             const formData = new FormData();
@@ -153,11 +166,11 @@ export default function StandConfigPage() {
     );
 
     return (
-        <div className="space-y-6 max-w-4xl animate-in fade-in duration-500">
+        <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-20 mt-4">
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white">
-                <h2 className="text-2xl font-bold mb-1">Configure Your Stand</h2>
-                <p className="text-indigo-100">Stand: <span className="font-semibold">{stand.name}</span></p>
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white text-center shadow-lg">
+                <h2 className="text-3xl font-extrabold mb-2">Configure Your Stand</h2>
+                <p className="text-indigo-100">Managing: <span className="font-semibold text-white">{stand.name}</span></p>
             </div>
 
             {/* Message Banner */}
@@ -262,7 +275,11 @@ export default function StandConfigPage() {
                                 <Input label="Title" value={newResource.title} onChange={(e) => setNewResource(p => ({ ...p, title: e.target.value }))} placeholder="Product Brochure" />
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700">Type</label>
-                                    <select value={newResource.resource_type} onChange={(e) => setNewResource(p => ({ ...p, resource_type: e.target.value, file: null, url: '' }))}
+                                    <select value={newResource.resource_type} onChange={(e) => {
+                                        const val = e.target.value;
+                                        const isFile = val === 'pdf' || val === 'image';
+                                        setNewResource(p => ({ ...p, resource_type: val, file: isFile ? p.file : null, url: !isFile ? p.url : '' }));
+                                    }}
                                         className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm h-[46px]">
                                         <option value="pdf">PDF</option>
                                         <option value="image">Image</option>
@@ -275,7 +292,7 @@ export default function StandConfigPage() {
                                 ) : (
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700">Upload File</label>
-                                        <input type="file" onChange={(e) => setNewResource(p => ({ ...p, file: e.target.files?.[0] || null }))} className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-[8px] file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                        <input key={resources.length} type="file" onChange={(e) => setNewResource(p => ({ ...p, file: e.target.files?.[0] || null }))} className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-[8px] file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     </div>
                                 )}
                             </div>

@@ -57,7 +57,7 @@ export const Button: React.FC<ButtonProps> = ({
         return cloneElement(children, {
             className: cn(classes, (children.props as { className?: string }).className),
             ...props,
-        });
+        } as any);
     }
 
     return (

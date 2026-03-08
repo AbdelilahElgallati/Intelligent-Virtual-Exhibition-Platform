@@ -20,7 +20,7 @@ const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, accent }: {
-    label: string; value: string | number; icon: React.ElementType; accent: string;
+    label: string; value: string | number; icon: any; accent: string;
 }) {
     return (
         <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4">
@@ -148,7 +148,7 @@ export default function AdminAnalyticsPage() {
                     <h2 className="text-sm font-semibold text-zinc-700 mb-4">Event Distribution</h2>
                     <ResponsiveContainer width="100%" height={220}>
                         <PieChart>
-                            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                                 {pieData.map((_, i) => (
                                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                                 ))}
@@ -162,7 +162,7 @@ export default function AdminAnalyticsPage() {
             {/* Events table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100">
-                    <h2 className="text-sm font-semibold text-zinc-700">Recent Events — click for deep metrics</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700">Recent Events — click for Business Intelligence report</h2>
                 </div>
                 <div className="divide-y divide-zinc-100">
                     {events.length === 0 ? (
@@ -170,7 +170,7 @@ export default function AdminAnalyticsPage() {
                     ) : events.map(ev => (
                         <Link
                             key={ev.id}
-                            href={`/admin/analytics/${ev.id}`}
+                            href={`/admin/events/${ev.id}/organizer-report`}
                             className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors group"
                         >
                             <div>

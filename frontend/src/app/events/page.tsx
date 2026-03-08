@@ -22,7 +22,7 @@ export default function EventsPage() {
             try {
                 const response = await eventsService.getEvents();
                 // Assuming response structure correctly returns events array
-                setEvents(response.events || []);
+                setEvents((response as any).items || (response as any).events || []);
             } catch (err) {
                 console.error('Failed to fetch events', err);
                 setError('Could not load events. Please try again later.');

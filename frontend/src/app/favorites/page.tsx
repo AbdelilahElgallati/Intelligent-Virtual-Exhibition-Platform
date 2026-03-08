@@ -59,7 +59,7 @@ export default function FavoritesPage() {
                 {!isAuthenticated ? (
                     <EmptyState
                         title="Login to view favorites"
-                        description="Sign in to see events, stands, and resources you’ve saved."
+                        message="Sign in to see events, stands, and resources you’ve saved."
                         action={
                             <div className="flex gap-3">
                                 <Link href="/auth/login"><Button size="sm">Login</Button></Link>
@@ -146,7 +146,7 @@ function FavoritesList({
             {!hasItems && !loading ? (
                 <EmptyState
                     title="No favorites yet"
-                    description="Save events or stands to quickly find them later."
+                    message="Save events or stands to quickly find them later."
                     action={
                         <Link href="/events">
                             <Button variant="outline" size="sm">Browse events</Button>

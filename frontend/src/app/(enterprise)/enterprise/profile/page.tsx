@@ -168,15 +168,15 @@ export default function EnterpriseProfilePage() {
                 </div>
 
                 {/* Logo Overlay */}
-                <div className="absolute -bottom-10 left-8 sm:left-12">
+                <div className="absolute -bottom-12 left-8 sm:left-12">
                     <div className="relative group/logo">
-                        <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-[2rem] bg-white p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/50 backdrop-blur-sm">
-                            <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                        <div className="w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] bg-white p-1.5 shadow-2xl border border-white/80 backdrop-blur-md">
+                            <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-white flex items-center justify-center relative shadow-inner">
                                 {profile.logo_url ? (
                                     <img
                                         src={`${API_BASE}${profile.logo_url}`}
                                         alt="Logo"
-                                        className="w-full h-full object-contain p-2"
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover/logo:scale-110"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-indigo-200">
@@ -202,7 +202,7 @@ export default function EnterpriseProfilePage() {
             </div>
 
             {/* Profile Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-12 sm:pt-16">
 
                 {/* Left Sidebar: Fixed Account Info */}
                 <div className="lg:col-span-1 space-y-6">

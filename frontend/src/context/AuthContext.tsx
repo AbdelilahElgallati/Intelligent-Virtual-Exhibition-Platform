@@ -17,6 +17,7 @@ interface AuthContextType {
     login: (credentials: any) => Promise<void>;
     register: (userData: any) => Promise<RegisterResult>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -149,6 +150,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push('/');
     };
 
+    const refreshUser = async () => {
+        try {
+            const freshUser = await authService.getMe();
+            setUser(freshUser);
+            localStorage.setItem('auth_user', JSON.stringify(freshUser));
+        } catch (error) {
+            console.error('Failed to refresh user', error);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -159,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 login,
                 register,
                 logout,
+                refreshUser,
             }}
         >
             {children}

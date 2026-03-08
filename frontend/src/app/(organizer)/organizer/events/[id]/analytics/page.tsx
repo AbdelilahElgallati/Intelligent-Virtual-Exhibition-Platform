@@ -439,12 +439,14 @@ export default function EventAnalyticsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {analytics.enterprises.map((ent) => (
                   <div key={ent.id} className="bg-white border border-zinc-100 rounded-[2.5rem] p-7 hover:border-indigo-200 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 group/ent cursor-default relative overflow-hidden flex flex-col items-center">
-                    <div className="w-28 h-28 bg-zinc-50 rounded-[2rem] mb-6 border border-zinc-100/50 p-2.5 shadow-sm group-hover/ent:scale-110 group-hover/ent:-rotate-2 transition-all duration-700 overflow-hidden flex items-center justify-center relative">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 to-transparent opacity-0 group-hover/ent:opacity-100 transition-opacity" />
+                    <div className="w-28 h-28 bg-white rounded-[2rem] mb-6 border border-zinc-100 shadow-md group-hover/ent:shadow-xl group-hover/ent:scale-110 group-hover/ent:-rotate-2 transition-all duration-700 overflow-hidden flex items-center justify-center relative">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent opacity-0 group-hover/ent:opacity-100 transition-opacity z-20" />
                       {ent.logo_url ? (
-                        <img src={`${API_BASE}${ent.logo_url}`} alt={ent.name} className="w-full h-full object-contain relative z-10" />
+                        <img src={`${API_BASE}${ent.logo_url}`} alt={ent.name} className="w-full h-full object-cover relative z-10" />
                       ) : (
-                        <Building className="text-zinc-200 relative z-10" size={40} />
+                        <div className="w-full h-full bg-zinc-50 flex items-center justify-center relative z-10">
+                          <Building className="text-zinc-300" size={40} />
+                        </div>
                       )}
                     </div>
                     <div className="text-center">

@@ -15,7 +15,7 @@ interface Notification {
 }
 
 // Map notification type → icon + colour
-const TYPE_META: Record<string, { icon: React.ElementType; ring: string; dot: string }> = {
+const TYPE_META: Record<string, { icon: any; ring: string; dot: string }> = {
     payment_required: { icon: CreditCard, ring: 'border-orange-200 bg-orange-50', dot: 'bg-orange-500' },
     payment_confirmed: { icon: CheckCircle2, ring: 'border-green-200 bg-green-50', dot: 'bg-green-500' },
     stand_approved: { icon: CheckCircle2, ring: 'border-green-200 bg-green-50', dot: 'bg-green-500' },

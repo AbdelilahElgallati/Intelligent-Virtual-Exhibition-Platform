@@ -38,6 +38,12 @@ export interface User {
     event_preferences?: EventPreferences;
     networking_goals?: string[];
     engagement_settings?: EngagementSettings;
+
+    // Enterprise/Organizer specific fields
+    org_name?: string;
+    org_city?: string;
+    org_country?: string;
+    org_type?: string;
 }
 
 export interface ProfileUpdatePayload {

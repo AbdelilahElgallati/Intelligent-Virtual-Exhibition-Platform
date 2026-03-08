@@ -465,11 +465,23 @@ async def upload_stand_resource(
         file_path = f"/{upload_dir}/{safe_name}"
 
     db = get_database()
+    
+    # Calculate file size if uploaded
+    file_size = 0
+    mime_type = "application/octet-stream"
+    if file and file.filename:
+        file_size = os.path.getsize(save_path)
+        mime_type = file.content_type or mime_type
+
     resource_doc = {
         "stand_id": str(stand["id"]),
         "title": title or "Untitled",
+        "description": "",
         "type": type,
+        "tags": [],
         "file_path": file_path,
+        "file_size": file_size,
+        "mime_type": mime_type,
         "uploaded_by": str(current_user["_id"]),
         "upload_date": datetime.now(timezone.utc),
         "downloads": 0,

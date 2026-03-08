@@ -219,4 +219,220 @@ def _format_uptime(seconds: int) -> str:
         return f"{hours}h {minutes}m {secs}s"
     return f"{minutes}m {secs}s"
 
+
+# ─── Enterprise Registrations ──────────────────────────────────────────────────
+
+@router.get("/enterprise-registrations")
+async def get_enterprise_registrations(
+    approval_status: Optional[str] = Query(None, description="Filter: PENDING_APPROVAL, APPROVED, REJECTED"),
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+):
+    db = get_database()
+    query = {"role": Role.ENTERPRISE}
+    if approval_status:
+        query["approval_status"] = approval_status
+    
+    users_cursor = db.users.find(query).sort("created_at", -1)
+    users = await users_cursor.to_list(length=200)
+    
+    registrations = []
+    for user in users:
+        user_id = str(user["_id"])
+        org = await db.organizations.find_one({"owner_id": user_id})
+        
+        registrations.append({
+            "_id": user_id,
+            "full_name": user.get("full_name"),
+            "email": user.get("email"),
+            "approval_status": user.get("approval_status", "PENDING_APPROVAL"),
+            "created_at": user.get("created_at"),
+            "organization": stringify_object_ids(org) if org else None,
+        })
+        
+    return {"registrations": registrations, "total": len(registrations)}
+
+@router.post("/enterprise-registrations/{user_id}/approve")
+async def approve_enterprise(user_id: str, current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
+    result = await db.users.update_one(
+        {"_id": user_id_obj, "role": Role.ENTERPRISE},
+        {"$set": {"approval_status": "APPROVED", "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Enterprise user not found")
+    await log_audit(actor_id=str(current_user["_id"]), action="enterprise.registration_approved", entity="user", entity_id=user_id)
+    return {"message": "Enterprise approved"}
+
+@router.post("/enterprise-registrations/{user_id}/reject")
+async def reject_enterprise(user_id: str, payload: dict = Body(...), current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    reason = payload.get("reason", "")
+    user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
+    result = await db.users.update_one(
+        {"_id": user_id_obj, "role": Role.ENTERPRISE},
+        {"$set": {"approval_status": "REJECTED", "rejection_reason": reason, "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Enterprise user not found")
+    await log_audit(actor_id=str(current_user["_id"]), action="enterprise.registration_rejected", entity="user", entity_id=user_id, metadata={"reason": reason})
+    return {"message": "Enterprise rejected"}
+
+# ─── Organizer Registrations ──────────────────────────────────────────────────
+
+@router.get("/organizer-registrations")
+async def get_organizer_registrations(
+    approval_status: Optional[str] = Query(None, description="Filter: PENDING_APPROVAL, APPROVED, REJECTED"),
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+):
+    db = get_database()
+    query = {"role": Role.ORGANIZER}
+    if approval_status:
+        query["approval_status"] = approval_status
+    
+    users_cursor = db.users.find(query).sort("created_at", -1)
+    users = await users_cursor.to_list(length=200)
+    
+    registrations = []
+    for user in users:
+        user_id = str(user["_id"])
+        
+        registrations.append({
+            "_id": user_id,
+            "full_name": user.get("full_name"),
+            "email": user.get("email"),
+            "org_name": user.get("org_name", ""),
+            "org_type": user.get("org_type", ""),
+            "org_country": user.get("org_country", ""),
+            "org_city": user.get("org_city", ""),
+            "org_phone": user.get("org_phone", ""),
+            "org_website": user.get("org_website", ""),
+            "org_professional_email": user.get("org_professional_email", ""),
+            "approval_status": user.get("approval_status", "PENDING_APPROVAL"),
+            "created_at": user.get("created_at"),
+        })
+        
+    return {"registrations": registrations, "total": len(registrations)}
+
+@router.post("/organizer-registrations/{user_id}/approve")
+async def approve_organizer(user_id: str, current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
+    result = await db.users.update_one(
+        {"_id": user_id_obj, "role": Role.ORGANIZER},
+        {"$set": {"approval_status": "APPROVED", "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Organizer user not found")
+    await log_audit(actor_id=str(current_user["_id"]), action="organizer.registration_approved", entity="user", entity_id=user_id)
+    return {"message": "Organizer approved"}
+
+@router.post("/organizer-registrations/{user_id}/reject")
+async def reject_organizer(user_id: str, payload: dict = Body(...), current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    reason = payload.get("reason", "")
+    user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
+    result = await db.users.update_one(
+        {"_id": user_id_obj, "role": Role.ORGANIZER},
+        {"$set": {"approval_status": "REJECTED", "rejection_reason": reason, "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Organizer user not found")
+    await log_audit(actor_id=str(current_user["_id"]), action="organizer.registration_rejected", entity="user", entity_id=user_id, metadata={"reason": reason})
+    return {"message": "Organizer rejected"}
+
+# ─── Detailed Partners (Organizations/Enterprises) ──────────────────────────────────────────────────
+
+@router.get("/organizations/detailed", response_model=list[PartnerDashboardRead])
+async def get_detailed_organizations(current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    users_cursor = db.users.find({"role": Role.ORGANIZER})
+    organizer_users = await users_cursor.to_list(length=500)
+    
+    detailed_orgs = []
+    for user in organizer_users:
+        user_id = str(user["_id"])
+        
+        org = await db.organizations.find_one({"owner_id": user_id})
+        
+        events_count = await db.events.count_documents({"organizer_id": user_id})
+        
+        event_ids_cursor = db.events.find({"organizer_id": user_id}, {"_id": 1})
+        event_ids_docs = await event_ids_cursor.to_list(length=None)
+        event_ids = [str(e["_id"]) for e in event_ids_docs]
+        
+        visitors_count = await db.participants.count_documents({"event_id": {"$in": event_ids}})
+        
+        revenue = await db.payments.aggregate([
+            {"$match": {"event_id": {"$in": event_ids}, "status": "APPROVED"}},
+            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+        ]).to_list(length=1)
+        total_revenue = revenue[0]["total"] if revenue else 0.0
+
+        org_data = {
+            "_id": str(org["_id"]) if org else user_id,
+            "name": org.get("name") if org else user.get("org_name", user.get("full_name", "Unknown")),
+            "description": org.get("description") if org else None,
+            "industry": org.get("industry") if org else user.get("org_type", "General"),
+            "website": org.get("website") if org else user.get("org_website", None),
+            "contact_email": org.get("professional_email") if org else user.get("org_professional_email", user.get("email")),
+            "logo_url": org.get("logo_url") if org else None,
+            "owner_id": user_id,
+            "owner_name": user.get("full_name"),
+            "owner_email": user.get("email"),
+            "owner_role": "organizer",
+            "is_verified": bool(org.get("is_verified")) if org else False,
+            "is_flagged": bool(org.get("is_flagged")) if org else False,
+            "is_suspended": bool(org.get("is_suspended")) if org else not bool(user.get("is_active", True)),
+            "stats": PartnerStats(
+                total_events=events_count,
+                total_visitors=visitors_count,
+                total_revenue=total_revenue
+            ),
+            "created_at": org.get("created_at") if org else user.get("created_at")
+        }
+        detailed_orgs.append(org_data)
+        
+    return detailed_orgs
+
+@router.get("/enterprises/detailed", response_model=list[PartnerDashboardRead])
+async def get_detailed_enterprises(current_user: dict = Depends(require_role(Role.ADMIN))):
+    db = get_database()
+    users_cursor = db.users.find({"role": Role.ENTERPRISE})
+    enterprise_users = await users_cursor.to_list(length=500)
+    
+    detailed_enterprises = []
+    for user in enterprise_users:
+        user_id = str(user["_id"])
+        
+        org = await db.organizations.find_one({"owner_id": user_id})
+        
+        stands_count = await db.stands.count_documents({"enterprise_id": user_id})
+        leads_count = await db.leads.count_documents({"enterprise_id": user_id})
+        meetings_count = await db.meetings.count_documents({"enterprise_id": user_id})
+
+        ent_data = {
+            "_id": str(org["_id"]) if org else user_id,
+            "name": org.get("name") if org else user.get("full_name", "Unknown"),
+            "description": org.get("description") if org else None,
+            "industry": org.get("industry") if org else "General",
+            "website": org.get("website") if org else None,
+            "contact_email": org.get("professional_email") if org else user.get("email"),
+            "logo_url": org.get("logo_url") if org else None,
+            "owner_id": user_id,
+            "owner_name": user.get("full_name"),
+            "owner_email": user.get("email"),
+            "owner_role": "enterprise",
+            "is_verified": bool(org.get("is_verified")) if org else False,
+            "is_flagged": bool(org.get("is_flagged")) if org else False,
+            "is_suspended": bool(org.get("is_suspended")) if org else not bool(user.get("is_active", True)),
+            "stats": PartnerStats(
+                total_stands=stands_count,
+                total_leads=leads_count,
+                total_meetings=meetings_count
+            ),
+            "created_at": org.get("created_at") if org else user.get("created_at")
+        }
+        detailed_enterprises.append(ent_data)
+        
     return detailed_enterprises

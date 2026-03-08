@@ -45,7 +45,7 @@ export default function OrganizerProfile() {
         setMessage(null);
 
         try {
-            await http.patch('/users/profile', form);
+            await http.put('/users/me', form);
             await refreshUser?.();
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (err: any) {
@@ -70,8 +70,8 @@ export default function OrganizerProfile() {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {message && (
                             <div className={`flex items-center gap-3 p-4 rounded-2xl border text-sm animate-in fade-in slide-in-from-top-2 ${message.type === 'success'
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                    : 'bg-red-50 text-red-700 border-red-100'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                : 'bg-red-50 text-red-700 border-red-100'
                                 }`}>
                                 {message.type === 'success' ? <CheckCircle2 size={16} /> : <X size={16} />}
                                 {message.text}

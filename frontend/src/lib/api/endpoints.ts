@@ -37,6 +37,11 @@ export const ENDPOINTS = {
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',
   },
+  MARKETPLACE: {
+    PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
+    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/checkout`,
+    MY_ORDERS: '/marketplace/orders',
+  },
   NOTIFICATIONS: {
     LIST: '/notifications',
     MARK_READ: (id: string) => `/notifications/${id}/read`,

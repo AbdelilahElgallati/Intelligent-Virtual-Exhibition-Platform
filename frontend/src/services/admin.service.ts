@@ -8,6 +8,7 @@ import { PlatformHealth, Incident, IncidentCreate, IncidentUpdate, ContentFlag }
 import { EnterpriseRequestsResponse, RejectBody } from '@/types/participant';
 import { LiveMetrics } from '@/types/monitoring';
 import { PartnerDashboardRead } from '@/types/admin';
+import { OrganizerSummary } from '@/types/organizer';
 import { getApiUrl } from '@/lib/config';
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
@@ -93,10 +94,6 @@ export const adminService = {
 
     async getPlatformAnalytics(): Promise<DashboardData> {
         return http.get('/analytics/platform');
-    },
-
-    async getEventAnalytics(eventId: string): Promise<DashboardData> {
-        return http.get(`/analytics/event/${eventId}`);
     },
 
     // ── Health (Day 8) ────────────────────────────────────────────────
