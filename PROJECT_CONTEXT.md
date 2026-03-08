@@ -199,10 +199,18 @@ class Settings(BaseSettings):
 | events_router | `/events` | Events |
 | participants_router | `/events/{event_id}/participants` | Participants |
 | stands_router | `/events/{event_id}/stands` | Stands |
-| subscriptions_router | `/subscriptions` | Subscriptions |
 | analytics_router | `/analytics` | Analytics |
 | notifications_router | `/notifications` | Notifications |
 | favorites_router | `/favorites` | Favorites |
+| admin_router | `/admin` | Admin |
+| audit_router | `/audit` | Audit |
+| incidents_router | `/incidents` | Incidents |
+| payments_router | `/payments` | Payments |
+| marketplace_router | `/marketplace` | Marketplace |
+| monitoring_router | `/monitoring` | Monitoring |
+| sessions_router | `/sessions` | Sessions |
+| organizer_report_router | `/organizer-report` | Organizer Report |
+| enterprise_router | `/enterprise` | Enterprise |
 | chat_router | `/chat` | chat |
 | rag_router | `/assistant` | assistant |
 | translation_router | `/translation` | translation |
@@ -211,14 +219,6 @@ class Settings(BaseSettings):
 | resources_router | `/resources` | resources |
 | leads_router | `/leads` | leads |
 | recommendations_router | `/recommendations` | recommendations |
-| admin_router | `/admin` | Admin |
-| audit_router | `/audit` | Audit |
-| incidents_router | `/incidents` | Incidents |
-| payments_router | `/payments` | Payments |
-| monitoring_router | `/monitoring` | Monitoring |
-| sessions_router | `/sessions` | Sessions |
-| enterprise_router | `/enterprise` | Enterprise |
-| organizer_report_router | `/organizer-report` | Organizer Report |
 | dev_router (dev only) | `/dev` | Development |
 
 **Root endpoints**:
@@ -777,7 +777,7 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | POST | `/incidents/flag` | Any authenticated | Flag a piece of content (entity_type, entity_id, reason) |
 | GET | `/incidents/flags` | ADMIN | List all content flags |
 
-### 6.22 Enterprise (`/api/v1/enterprise`)
+### 6.23 Enterprise (`/api/v1/enterprise`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -795,7 +795,7 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | GET | `/enterprise/dashboard/recent-leads` | ENTERPRISE | Get recent leads acquired by the enterprise |
 | GET | `/enterprise/dashboard/upcoming-meetings` | ENTERPRISE | Get upcoming meetings for the enterprise |
 
-### 6.23 Marketplace (`/api/v1/marketplace`)
+### 6.24 Marketplace (`/api/v1/marketplace`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -809,6 +809,16 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | GET | `/marketplace/requests/enterprise` | ENTERPRISE | View incoming product requests/leads |
 | PATCH | `/marketplace/requests/{request_id}/status`| ENTERPRISE | Update request status (approved/declined) |
 | POST | `/marketplace/products/{product_id}/checkout-session`| VISITOR | Create a Stripe checkout session for a product |
+
+### 6.25 Organizer Report (`/api/v1/organizer-report`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/admin/events/{event_id}/organizer-summary` | ADMIN | Get business-intel summary for an event |
+| GET | `/admin/events/{event_id}/organizer-summary/pdf` | ADMIN | Download summary PDF (admin view) |
+| GET | `/organizer/events/{event_id}/report` | ORGANIZER | Download event-specific report (PDF/TeX) |
+| GET | `/organizer/overall-summary` | ORGANIZER | Get performance summary for all events |
+| GET | `/organizer/overall-summary/pdf` | ORGANIZER | Download overall performance report as PDF |
 
 ---
 
