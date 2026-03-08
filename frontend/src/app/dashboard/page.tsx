@@ -6,7 +6,8 @@ import { RecommendedEvents } from '@/components/dashboard/RecommendedEvents';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { Event, Recommendation, Notification, EventsResponse } from '@/lib/api/types';
+import { Event, Recommendation, Notification } from '@/lib/api/types';
+import { EventsResponse } from '@/types/event';
 import { SectionTitle } from '@/components/common/SectionTitle';
 import { Container } from '@/components/common/Container';
 
@@ -23,7 +24,7 @@ export default function VisitorDashboard() {
   const fetchJoinedEvents = async () => {
     try {
       const data = await apiClient.get<EventsResponse>(ENDPOINTS.EVENTS.JOINED);
-      setJoinedEvents(data.events);
+      setJoinedEvents(data.items || (data as any).events || []);
     } catch (error) {
       console.error('Failed to fetch joined events:', error);
     } finally {

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Security / JWT  (loaded from .env)
-    JWT_SECRET_KEY: str = "change-me-in-dotenv"
+    JWT_SECRET_KEY: str = "your-super-secret-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -40,7 +40,6 @@ class Settings(BaseSettings):
     # Stripe (stand marketplace — isolated from event payments, loaded from .env)
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
-
 
     # Pydantic Config
     class Config:

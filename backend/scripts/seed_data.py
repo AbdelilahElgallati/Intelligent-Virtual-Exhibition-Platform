@@ -105,7 +105,6 @@ PRESENTER_FULL_BODY = {
         "https://pngimg.com/d/businesswoman_PNG15.png",
     ],
 }
-
 THEME_COLORS = [
     "#1e293b", "#f97316", "#3b82f6", "#10b981", "#8b5cf6",
     "#ef4444", "#06b6d4", "#f59e0b", "#ec4899", "#6366f1",
@@ -264,6 +263,7 @@ def _avatar_url(gender, idx):
 async def ensure_user(
     email: str, password: str, role: Role, full_name: str, username: str,
     bio: str = None, interests: list = None, language: str = "en",
+    is_active: bool = True, approval_status: str = None,
 ) -> dict:
     existing = await get_user_by_email(email)
     if existing:
@@ -276,7 +276,8 @@ async def ensure_user(
         "full_name": full_name,
         "hashed_password": hash_password(password),
         "role": role,
-        "is_active": True,
+        "is_active": is_active,
+        "approval_status": approval_status,
         "created_at": NOW,
         "bio": bio,
         "language": language,
@@ -369,11 +370,11 @@ async def ensure_event(
     }
 
     if target_state in STATES_NEEDING_APPROVAL:
-        # approve_event → sets payment_amount, state=WAITING_FOR_PAYMENT
+        # approve_event -> sets payment_amount, state=WAITING_FOR_PAYMENT
         event = _normalize_id(await approve_event(event["id"]))
 
     if target_state in STATES_NEEDING_PAYMENT:
-        # confirm_event_payment → sets enterprise_link + visitor_link, state=PAYMENT_DONE
+        # confirm_event_payment -> sets enterprise_link + visitor_link, state=PAYMENT_DONE
         event = _normalize_id(await confirm_event_payment(event["id"]))
 
     # If the final target differs from what the service left us at, force it
@@ -570,7 +571,6 @@ async def ensure_product(
     }
     return await _mkt_create(str(stand_id), data)
 
-
 # ─── Main seed function ──────────────────────────────────────────────────────
 
 async def main():
@@ -604,10 +604,52 @@ async def main():
         ("nina.org@demo.com", "Nina Patel", "ninapatel", "Innovation hackathon organizer", ["innovation", "startups"]),
     ]
     organizers = []
-    for email, name, uname, bio, interests in organizer_data:
-        o = await ensure_user(email, PASSWORD, Role.ORGANIZER, name, uname, bio=bio, interests=interests)
+    organizer_orgs = [
+        # (org_name, org_type, country, city, phone, website, professional_email)
+        ("Event Masters Pro", "Company", "France", "Paris", "+33 6 11 22 33 44", "https://eventmasters.fr", "contact@eventmasters.fr"),
+        ("TechConf International", "Company", "USA", "San Francisco", "+1 415 555 0101", "https://techconf.io", "sarah@techconf.io"),
+        ("HealthSummit Africa", "NGO", "Kenya", "Nairobi", "+254 700 123 456", "https://healthsummit.ke", "james@healthsummit.ke"),
+        ("EduExpo Europe", "University", "Germany", "Berlin", "+49 30 12345678", "https://eduexpo.de", "maria@eduexpo.de"),
+        ("FinTech Forum", "Company", "Singapore", "Singapore", "+65 6789 1234", "https://fintechforum.sg", "alex@fintechforum.sg"),
+        ("Green Summit Organisation", "NGO", "Netherlands", "Amsterdam", "+31 20 123 4567", "https://greensummit.nl", "emily@greensummit.nl"),
+        ("CyberDefense Council", "Government", "UK", "London", "+44 20 7946 0300", "https://cyberdefense.gov.uk", "david@cyberdefense.gov.uk"),
+        ("Digital Marketing Alliance", "Association", "Canada", "Toronto", "+1 416 555 0199", "https://dma.ca", "lisa@dma.ca"),
+        ("AI Research Collective", "University", "France", "Lyon", "+33 4 12 34 56 78", "https://airco.fr", "ahmed@airco.fr"),
+        ("Innovation Hub", "Startup", "India", "Bangalore", "+91 80 1234 5678", "https://innovationhub.in", "nina@innovationhub.in"),
+    ]
+    users_col = get_database()["users"]
+    for i, ((email, name, uname, bio, interests), (org_name, org_type, country, city, phone, website, prof_email)) in enumerate(zip(organizer_data, organizer_orgs)):
+        # Last 2 organizers start as pending approval (for admin testing)
+        is_pending = i >= 8
+        o = await ensure_user(
+            email, PASSWORD, Role.ORGANIZER, name, uname, bio=bio, interests=interests,
+            is_active=not is_pending,
+            approval_status="PENDING_APPROVAL" if is_pending else "APPROVED",
+        )
+        # Enrich with organizer profile fields
+        if "_id" in o:
+            oid = o["_id"]
+            try:
+                from bson import ObjectId as BsonObjectId
+                q = {"_id": BsonObjectId(oid)} if BsonObjectId.is_valid(str(oid)) else {"_id": oid}
+            except Exception:
+                q = {"email": email}
+            update_fields = {
+                "org_name": org_name,
+                "org_type": org_type,
+                "org_country": country,
+                "org_city": city,
+                "org_phone": phone,
+                "org_website": website,
+                "org_professional_email": prof_email,
+            }
+            if not is_pending:
+                update_fields["is_active"] = True
+                update_fields["approval_status"] = "APPROVED"
+            await users_col.update_one(q, {"$set": update_fields})
         organizers.append(o)
-        print(f"  + Organizer: {o['email']}")
+        status_label = "PENDING" if is_pending else "APPROVED"
+        print(f"  + Organizer [{status_label}]: {o['email']} ({org_name})")
 
     # 10 Enterprise users
     enterprise_data = [
@@ -623,10 +665,34 @@ async def main():
         ("enterprise10@demo.com", "XReality Dev", "xreality10", "Extended reality experiences", ["XR", "VR", "AR"]),
     ]
     enterprises = []
-    for email, name, uname, bio, interests in enterprise_data:
-        e = await ensure_user(email, PASSWORD, Role.ENTERPRISE, name, uname, bio=bio, interests=interests)
+    for i, (email, name, uname, bio, interests) in enumerate(enterprise_data):
+        # Last 2 enterprises start as pending approval (for admin testing)
+        is_pending = i >= 8
+        e = await ensure_user(
+            email, PASSWORD, Role.ENTERPRISE, name, uname, bio=bio, interests=interests,
+            is_active=not is_pending,
+            approval_status="PENDING_APPROVAL" if is_pending else "APPROVED",
+        )
+        # Set approval_status on existing users too
+        if "_id" in e:
+            eid = e["_id"]
+            try:
+                q = {"_id": ObjectId(eid)} if ObjectId.is_valid(str(eid)) else {"_id": eid}
+            except Exception:
+                q = {"email": email}
+            if is_pending:
+                await users_col.update_one(q, {"$set": {
+                    "is_active": False,
+                    "approval_status": "PENDING_APPROVAL",
+                }})
+            else:
+                await users_col.update_one(q, {"$set": {
+                    "is_active": True,
+                    "approval_status": "APPROVED",
+                }})
         enterprises.append(e)
-        print(f"  + Enterprise: {e['email']}")
+        status_label = "PENDING" if is_pending else "APPROVED"
+        print(f"  + Enterprise [{status_label}]: {e['email']}")
 
     # 10 Visitors
     visitor_data = [
@@ -1246,6 +1312,434 @@ async def main():
     print(f"  Total analytics events: {analytics_count}")
 
     # ──────────────────────────────────────────────────────────
+    # 11. ENTERPRISE ORGANIZATION ENRICHMENT
+    # ──────────────────────────────────────────────────────────
+    print("\n[11/17] Enriching enterprise organizations...")
+
+    org_enrichment = [
+        # (org_idx, industry, country, city, company_size, website, description)
+        (0, "Technology", "USA", "San Francisco", "201-500", "https://techcorp.example.com", "Enterprise AI & cloud solutions since 2010. Used by Fortune 500 companies."),
+        (1, "Cloud Computing", "USA", "Seattle", "501-1000", "https://cloudfirst.example.com", "Pure-play cloud infra provider. Multi-cloud, hybrid, and edge deployments."),
+        (2, "Healthcare Technology", "Germany", "Berlin", "51-200", "https://healthai.example.com", "Pioneering AI in healthcare diagnostics across 20 countries."),
+        (3, "Education Technology", "UK", "London", "51-200", "https://eduplatform.example.com", "Next-gen adaptive learning platform serving 5M students globally."),
+        (4, "Financial Technology", "Singapore", "Singapore", "201-500", "https://finsecure.example.com", "Securing digital financial transactions and fraud detection at scale."),
+        (5, "Green Energy", "Netherlands", "Amsterdam", "11-50", "https://greenpower.example.com", "IoT-driven renewable energy management systems for smart cities."),
+        (6, "Data & Analytics", "Canada", "Toronto", "11-50", "https://dataviz.example.com", "Real-time big data visualization and analytics dashboards."),
+        (7, "Robotics & Automation", "Japan", "Tokyo", "51-200", "https://robotech.example.com", "Industrial RPA and collaborative robotics pioneer."),
+        (8, "Blockchain", "Switzerland", "Zurich", "11-50", "https://blockchain.example.com", "Enterprise-grade blockchain infrastructure and DeFi solutions."),
+        (9, "Extended Reality", "South Korea", "Seoul", "51-200", "https://xreality.example.com", "Immersive XR content for retail, training, and live events."),
+    ]
+
+    orgs_col = get_organizations_collection()
+    for org_idx, industry, country, city, size, website, desc in org_enrichment:
+        org_id = organizations[org_idx]["_id"]
+        await orgs_col.update_one(
+            {"_id": ObjectId(org_id)} if ObjectId.is_valid(str(org_id)) else {"_id": org_id},
+            {"$set": {
+                "type": "ENTERPRISE",
+                "industry": industry,
+                "country": country,
+                "city": city,
+                "company_size": size,
+                "website": website,
+                "description": desc,
+                "theme_color": THEME_COLORS[org_idx],
+            }},
+        )
+    print(f"  Enriched {len(org_enrichment)} enterprise organizations")
+
+    # ──────────────────────────────────────────────────────────
+    # 12. PRODUCTS & SERVICES (8-12 per enterprise)
+    # ──────────────────────────────────────────────────────────
+    print("\n[12/17] Creating products & services...")
+
+    product_catalog = [
+        # (enterprise_idx, org_idx, name, description, category, is_service, price, tags)
+        # TechCorp (0)
+        (0, 0, "AI Pipeline Studio", "End-to-end MLOps platform for model training and deployment.", "Software", False, 4999.0, ["AI", "MLOps", "Cloud"]),
+        (0, 0, "Enterprise Analytics Suite", "Real-time business intelligence with AI-generated insights.", "Software", False, 2999.0, ["Analytics", "BI", "SaaS"]),
+        (0, 0, "AI Consulting Package", "3-month AI strategy and implementation consulting.", "Consulting", True, 15000.0, ["AI", "Consulting"]),
+        # CloudFirst (1)
+        (1, 1, "CloudFirst Pro Plan", "Managed multi-cloud infrastructure with 99.99% SLA.", "Cloud", False, 1999.0, ["Cloud", "DevOps"]),
+        (1, 1, "Kubernetes Management Platform", "Fully managed K8s clusters on any cloud.", "Software", False, 3499.0, ["Kubernetes", "Cloud"]),
+        (1, 1, "Cloud Migration Service", "Complete lift-and-shift to cloud-native in 90 days.", "Consulting", True, 25000.0, ["Cloud", "Migration"]),
+        # HealthAI (2)
+        (2, 2, "AI Diagnostic Imaging Module", "FDA-cleared AI for radiology image analysis.", "Healthcare", False, 8999.0, ["Healthcare", "AI", "Diagnostics"]),
+        (2, 2, "Patient Analytics Dashboard", "Population health management and predictive analytics.", "Software", False, 3999.0, ["Healthcare", "Analytics"]),
+        (2, 2, "HealthAI Integration Services", "EHR integration and HL7 FHIR implementation.", "Consulting", True, 20000.0, ["Healthcare", "Integration"]),
+        # EduPlatform (3)
+        (3, 3, "Adaptive LMS Platform", "AI-powered learning management system with personalization.", "SaaS", False, 999.0, ["EdTech", "AI", "LMS"]),
+        (3, 3, "Virtual Classroom Suite", "Live interactive classes with whiteboard and breakout rooms.", "SaaS", False, 599.0, ["EdTech", "Video"]),
+        # FinSecure (4)
+        (4, 4, "Fraud Detection Engine", "Real-time ML-based transaction fraud detection.", "Software", False, 5999.0, ["FinTech", "AI", "Security"]),
+        (4, 4, "Compliance Automation Platform", "AML, KYC, and regulatory compliance automation.", "Software", False, 7999.0, ["FinTech", "Compliance"]),
+        # GreenPower (5)
+        (5, 5, "Smart Grid Monitor", "IoT-based renewable energy monitoring system.", "Hardware+Software", False, 12000.0, ["GreenTech", "IoT"]),
+        (5, 5, "Energy Audit Consulting", "Comprehensive energy usage audit and optimization plan.", "Consulting", True, 5000.0, ["GreenTech", "Consulting"]),
+        # DataViz (6)
+        (6, 6, "DataViz Enterprise", "Self-service BI platform with 200+ chart types.", "Software", False, 1499.0, ["Analytics", "Visualization"]),
+        (6, 6, "Real-time Streaming Dashboard", "Live data streaming and alerting dashboard.", "Software", False, 2499.0, ["Analytics", "Streaming"]),
+        # RoboTech (7)
+        (7, 7, "RPA Starter Pack", "Deploy your first 5 robotic automations in 30 days.", "Software", False, 8999.0, ["Robotics", "Automation"]),
+        (7, 7, "Process Automation Audit", "Map and optimize business processes for RPA readiness.", "Consulting", True, 10000.0, ["Robotics", "Consulting"]),
+        # BlockChain (8)
+        (8, 8, "Enterprise Blockchain Node", "Managed private blockchain node with full API.", "Blockchain", False, 6999.0, ["Blockchain", "DeFi"]),
+        (8, 8, "Smart Contract Development", "Custom smart contract design, audit, and deployment.", "Consulting", True, 18000.0, ["Blockchain", "Development"]),
+        # XReality (9)
+        (9, 9, "XR Event Platform", "Virtual event platform with immersive 3D environments.", "SaaS", False, 3999.0, ["XR", "Events", "VR"]),
+        (9, 9, "AR Product Showcase Tool", "AR-powered product visualization for e-commerce.", "SaaS", False, 1999.0, ["AR", "E-commerce"]),
+    ]
+
+    db = get_database()
+    products_col = db["products"]
+    seeded_products = []
+    for ent_idx, org_idx, name, desc, cat, is_service, price, tags in product_catalog:
+        existing_prod = await products_col.find_one({
+            "enterprise_id": enterprises[ent_idx]["_id"],
+            "name": name,
+        })
+        if existing_prod:
+            existing_prod["_id"] = str(existing_prod["_id"])
+            seeded_products.append((ent_idx, org_idx, existing_prod))
+            continue
+        prod_doc = {
+            "enterprise_id": enterprises[ent_idx]["_id"],
+            "organization_id": organizations[org_idx]["_id"],
+            "name": name,
+            "description": desc,
+            "category": cat,
+            "is_service": is_service,
+            "price": price,
+            "tags": tags,
+            "is_active": True,
+            "created_at": NOW,
+        }
+        result = await products_col.insert_one(prod_doc)
+        prod_doc["_id"] = str(result.inserted_id)
+        seeded_products.append((ent_idx, org_idx, prod_doc))
+        print(f"  + Product: {name} ({cat})")
+
+    print(f"  Total products: {len(seeded_products)}")
+
+    # ──────────────────────────────────────────────────────────
+    # 13. PRODUCT REQUESTS (visitor -> enterprise, all statuses)
+    # ──────────────────────────────────────────────────────────
+    print("\n[13/17] Creating product requests...")
+
+    requests_col = db["product_requests"]
+    product_request_statuses = ["PENDING", "CONTACTED", "CLOSED"]
+    product_request_messages = [
+        "I'm very interested in your product. Could you share more details and pricing for 50 seats?",
+        "We'd like to schedule a demo for our team. When are you available next week?",
+        "Can you provide a case study for a company similar to ours in the logistics sector?",
+        "What are the integration options with Salesforce and HubSpot?",
+        "Is there a trial version available so our team can evaluate before committing?",
+        "I watched the demo video and I'm impressed. What's the onboarding process like?",
+        "We need a custom enterprise plan. Can you provide a quote for 500+ users?",
+        "Our legal team needs your data processing agreement (DPA). Can you share it?",
+    ]
+
+    pr_count = 0
+    for i, visitor in enumerate(visitors):
+        # Each visitor sends 2-3 product requests to different enterprises
+        num_requests = random.randint(2, 3)
+        target_products = random.sample(seeded_products, min(num_requests, len(seeded_products)))
+        for j, (ent_idx, org_idx, prod) in enumerate(target_products):
+            existing_pr = await requests_col.find_one({
+                "visitor_id": visitor["_id"],
+                "product_id": prod["_id"],
+            })
+            if existing_pr:
+                continue
+            pr_status = product_request_statuses[(i + j) % len(product_request_statuses)]
+            pr_doc = {
+                "visitor_id": visitor["_id"],
+                "enterprise_id": enterprises[ent_idx]["_id"],
+                "organization_id": organizations[org_idx]["_id"],
+                "product_id": prod["_id"],
+                "message": random.choice(product_request_messages),
+                "status": pr_status,
+                "created_at": NOW - timedelta(hours=random.randint(2, 120)),
+            }
+            await requests_col.insert_one(pr_doc)
+            pr_count += 1
+
+    print(f"  Total product requests: {pr_count}")
+
+    # ──────────────────────────────────────────────────────────
+    # 14. ENTERPRISE EVENT JOIN RECORDS (all 4 statuses)
+    # ──────────────────────────────────────────────────────────
+    print("\n[14/17] Creating enterprise event join records...")
+
+    participants_col = get_participants_collection()
+    #
+    # We create enterprise join records across live_events with all 4 statuses:
+    # pending_payment, pending_admin_approval, approved, rejected
+    # For "approved" ones we also create a stand (the auto-creation flow).
+    #
+    join_statuses = [
+        ParticipantStatus.PENDING_PAYMENT,
+        ParticipantStatus.PENDING_ADMIN_APPROVAL,
+        ParticipantStatus.APPROVED,
+        ParticipantStatus.REJECTED,
+    ]
+
+    ent_join_count = 0
+    # Use enterprise 0-8 for cross-event join records
+    # Enterprise 0-4 join live events 0 and 7; enterprise 5-9 join events 1 and 9
+    ent_event_pairs = [
+        # (ent_idx, event_idx, status_idx)
+        (0, 0, 2),   # approved  -> stand auto-created
+        (1, 0, 1),   # pending_admin_approval
+        (2, 0, 0),   # pending_payment
+        (3, 0, 3),   # rejected
+        (4, 7, 2),   # approved  -> stand auto-created
+        (5, 7, 1),   # pending_admin_approval
+        (6, 1, 2),   # approved  -> stand auto-created
+        (7, 1, 0),   # pending_payment
+        (8, 9, 2),   # approved  -> stand auto-created
+        (9, 9, 1),   # pending_admin_approval
+    ]
+
+    enterprise_approved_stands = []  # track for products linking
+
+    for ent_idx, ev_idx, status_idx in ent_event_pairs:
+        ent = enterprises[ent_idx]
+        org = organizations[ent_idx]
+        ev = events[ev_idx]
+        pstatus = join_statuses[status_idx]
+
+        existing_join = await participants_col.find_one({
+            "event_id": str(ev["id"]),
+            "organization_id": str(org["id"]),
+            "role": "ENTERPRISE",
+        })
+        if existing_join:
+            existing_join["_id"] = str(existing_join["_id"])
+            if pstatus == ParticipantStatus.APPROVED:
+                stand = await get_stands_collection().find_one({
+                    "event_id": str(ev["id"]),
+                    "organization_id": str(org["id"]),
+                })
+                if stand:
+                    stand["_id"] = str(stand["_id"])
+                    enterprise_approved_stands.append((ent_idx, stand))
+            continue
+
+        payment_ref = str(uuid4()) if status_idx >= 1 else None
+        join_doc = {
+            "event_id": str(ev["id"]),
+            "organization_id": str(org["id"]),
+            "user_id": str(ent["id"] or ent["_id"]),
+            "role": "ENTERPRISE",
+            "status": pstatus,
+            "stand_fee_paid": status_idx >= 1,
+            "payment_reference": payment_ref,
+            "created_at": NOW - timedelta(days=random.randint(1, 14)),
+        }
+        if pstatus == ParticipantStatus.APPROVED:
+            join_doc["approved_at"] = NOW - timedelta(days=random.randint(0, 7))
+        if pstatus == ParticipantStatus.REJECTED:
+            join_doc["rejected_at"] = NOW - timedelta(days=random.randint(0, 3))
+            join_doc["rejection_reason"] = "Stand allocation full for this event."
+
+        await participants_col.insert_one(join_doc)
+        ent_join_count += 1
+
+        # For APPROVED -> auto-create enterprise stand if not already there
+        if pstatus == ParticipantStatus.APPROVED:
+            existing_stand = await get_stands_collection().find_one({
+                "event_id": str(ev["id"]),
+                "organization_id": str(org["id"]),
+            })
+            if not existing_stand:
+                new_stand = await create_stand(
+                    event_id=str(ev["id"]),
+                    organization_id=str(org["id"]),
+                    name=f"{org.get('name', 'Enterprise')} Stand",
+                    description=org.get("description", ""),
+                    theme_color=THEME_COLORS[ent_idx],
+                    stand_background_url=STAND_BACKGROUNDS[ent_idx % len(STAND_BACKGROUNDS)],
+                    stand_type="premium",
+                    logo_url=UI_AVATARS.format(
+                        name=org.get("name", "Enterprise").replace(" ", "+"),
+                        bg=THEME_COLORS[ent_idx].lstrip("#"),
+                    ),
+                )
+                new_stand["_id"] = str(new_stand.get("_id", ""))
+                enterprise_approved_stands.append((ent_idx, new_stand))
+                print(f"  + Enterprise stand auto-created: {new_stand.get('name')} @ {ev.get('title', '')[:30]}")
+            else:
+                existing_stand["_id"] = str(existing_stand["_id"])
+                enterprise_approved_stands.append((ent_idx, existing_stand))
+
+        print(f"  + Enterprise join: {ent.get('email', '')} -> {ev.get('title', '')[:35]} [{pstatus}]")
+
+    print(f"  Total enterprise join records: {ent_join_count}")
+
+    # ──────────────────────────────────────────────────────────
+    # 15. ENTERPRISE STAND — PRODUCTS LINKED
+    # ──────────────────────────────────────────────────────────
+    print("\n[15/17] Linking products to enterprise stands...")
+
+    stands_col = get_stands_collection()
+    linked_count = 0
+    for ent_idx, ent_stand in enterprise_approved_stands:
+        # Find products for this enterprise
+        ent_products = [p for ei, oi, p in seeded_products if ei == ent_idx and p.get("is_active", True)]
+        product_ids = [p["_id"] for p in ent_products[:3]]  # link up to 3 products per stand
+        if not product_ids:
+            continue
+        s_id = ent_stand.get("_id") or ent_stand.get("id")
+        try:
+            await stands_col.update_one(
+                {"_id": ObjectId(s_id)} if ObjectId.is_valid(str(s_id)) else {"_id": s_id},
+                {"$set": {
+                    "products": product_ids,
+                    "rag_enabled": random.choice([True, False]),
+                    "rag_last_indexed": NOW - timedelta(hours=random.randint(1, 48)) if random.random() > 0.5 else None,
+                }},
+            )
+            linked_count += len(product_ids)
+        except Exception as e:
+            print(f"    (warn) Could not link products to stand {s_id}: {e}")
+
+    print(f"  Linked {linked_count} product references to enterprise stands")
+
+    # ──────────────────────────────────────────────────────────
+    # 16. 2D HALL LAYOUT — STAND POSITIONS
+    # ──────────────────────────────────────────────────────────
+    print("\n[16/17] Seeding 2D hall layout positions...")
+
+    # Each stand gets an x, y position + dimensions for the 2D hall view
+    # Layout: stands are arranged in a grid-like layout per event
+    # position: { x: col*200, y: row*150 } in pixels
+    # booth_type determines visual rendering
+
+    BOOTH_STYLES = [
+        {"width": 180, "height": 120, "booth_type": "standard"},
+        {"width": 240, "height": 150, "booth_type": "premium"},
+        {"width": 300, "height": 180, "booth_type": "sponsor"},
+    ]
+
+    position_count = 0
+    for ev_idx, stand in all_stands:
+        s_id = stand.get("_id") or stand.get("id")
+        existing = await stands_col.find_one(
+            {"_id": ObjectId(s_id)} if ObjectId.is_valid(str(s_id)) else {"_id": s_id},
+            projection={"hall_position": 1}
+        )
+        if existing and existing.get("hall_position"):
+            continue  # already has position
+
+        # calc position within event hall grid
+        ev_stands_count = position_count % 12  # up to 12 stands per "row-group"
+        col = ev_stands_count % 4
+        row = ev_stands_count // 4
+        stype = stand.get("stand_type", "standard")
+        style = next((s for s in BOOTH_STYLES if s["booth_type"] == stype), BOOTH_STYLES[0])
+
+        hall_pos = {
+            "x": col * 260 + 40,
+            "y": row * 200 + 60,
+            "width": style["width"],
+            "height": style["height"],
+            "floor": 1,
+            "zone": f"Zone-{chr(65 + col)}",  # Zone-A, Zone-B, Zone-C, Zone-D
+        }
+
+        try:
+            await stands_col.update_one(
+                {"_id": ObjectId(s_id)} if ObjectId.is_valid(str(s_id)) else {"_id": s_id},
+                {"$set": {"hall_position": hall_pos}},
+            )
+            position_count += 1
+        except Exception as e:
+            pass  # non-critical
+
+    # Also position enterprise stands
+    for ent_idx, ent_stand in enterprise_approved_stands:
+        s_id = ent_stand.get("_id") or ent_stand.get("id")
+        existing = await stands_col.find_one(
+            {"_id": ObjectId(s_id)} if ObjectId.is_valid(str(s_id)) else {"_id": s_id},
+            projection={"hall_position": 1}
+        )
+        if existing and existing.get("hall_position"):
+            continue
+        hall_pos = {
+            "x": (ent_idx % 4) * 260 + 200,
+            "y": (ent_idx // 4) * 200 + 500,
+            "width": 240,
+            "height": 150,
+            "floor": 2,  # Enterprise stands on floor 2
+            "zone": "Enterprise-Zone",
+        }
+        try:
+            await stands_col.update_one(
+                {"_id": ObjectId(s_id)} if ObjectId.is_valid(str(s_id)) else {"_id": s_id},
+                {"$set": {"hall_position": hall_pos}},
+            )
+            position_count += 1
+        except Exception:
+            pass
+
+    print(f"  Positioned {position_count} stands in 2D hall")
+
+    # ──────────────────────────────────────────────────────────
+    # 17. ENTERPRISE NOTIFICATIONS
+    # ──────────────────────────────────────────────────────────
+    print("\n[17/17] Creating enterprise notifications...")
+
+    ent_notif_count = 0
+    for ent_idx, ev_idx, status_idx in ent_event_pairs:
+        ent = enterprises[ent_idx]
+        ev = events[ev_idx]
+        pstatus = join_statuses[status_idx]
+
+        if pstatus == ParticipantStatus.PENDING_PAYMENT:
+            await ensure_notification(
+                ent["_id"] if "_id" in ent else ent["id"],
+                NotificationType.PAYMENT_REQUIRED,
+                f"Your join request for '{ev['title']}' requires stand fee payment. Complete payment to proceed.",
+            )
+            ent_notif_count += 1
+
+        elif pstatus == ParticipantStatus.PENDING_ADMIN_APPROVAL:
+            await ensure_notification(
+                ent["_id"] if "_id" in ent else ent["id"],
+                NotificationType.INVITATION_SENT,
+                f"Your payment for '{ev['title']}' is confirmed! Waiting for admin approval.",
+            )
+            ent_notif_count += 1
+
+        elif pstatus == ParticipantStatus.APPROVED:
+            await ensure_notification(
+                ent["_id"] if "_id" in ent else ent["id"],
+                NotificationType.PARTICIPANT_ACCEPTED,
+                f"Congratulations! Your enterprise stand for '{ev['title']}' has been approved. Start configuring your stand now!",
+            )
+            ent_notif_count += 1
+
+        elif pstatus == ParticipantStatus.REJECTED:
+            await ensure_notification(
+                ent["_id"] if "_id" in ent else ent["id"],
+                NotificationType.EVENT_APPROVED,
+                f"Your join request for '{ev['title']}' was not accepted this time. Stand allocation full for this event.",
+            )
+            ent_notif_count += 1
+
+    # Visitor product request notifications
+    for visitor in visitors[:5]:
+        await ensure_notification(
+            visitor["_id"] if "_id" in visitor else visitor["id"],
+            NotificationType.INVITATION_SENT,
+            "An enterprise has responded to your product inquiry. Check your messages!",
+        )
+        ent_notif_count += 1
+
+    print(f"  Enterprise notifications: {ent_notif_count}")
+
+    # ──────────────────────────────────────────────────────────
     # Summary
     # ──────────────────────────────────────────────────────────
     approved_count = len([e for e in events if e.get("state") == EventState.APPROVED])
@@ -1255,20 +1749,36 @@ async def main():
     print("  Seeding complete!")
     print("=" * 60)
     print(f"""
-  Users:          1 admin + {len(organizers)} organizers + {len(enterprises)} enterprises + {len(visitors)} visitors
-  Organizations:  {len(organizations)}
-  Events:         {len(events)} (LIVE: {len(live_events)}, APPROVED: {approved_count}, other: {other_count})
-  Stands:         {len(all_stands)}
-  Resources:      {resource_count}
-  Participations: {participation_count}
-  Favorites:      {fav_count}
-  Notifications:  {notif_count}
-  Meetings:       {meeting_count}
-  Chat rooms:     {chat_count}
-  Lead interact.: {lead_count}
-  Analytics:      {analytics_count}
-  Mkt products:   {product_count}
+  Users:              1 admin + {len(organizers)} organizers + {len(enterprises)} enterprises + {len(visitors)} visitors
+  Organizations:      {len(organizations)} (all enriched with type=ENTERPRISE)
+  Events:             {len(events)} (LIVE: {len(live_events)}, APPROVED: {approved_count}, other: {other_count})
+  Stands:             {len(all_stands)} organizer + {len(enterprise_approved_stands)} enterprise auto-created
+  Resources:          {resource_count}
+  Participations:     {participation_count} visitor + {ent_join_count} enterprise join records
+  Products:           {len(seeded_products)}
+  Product requests:   {pr_count}
+  Favorites:          {fav_count}
+  Notifications:      {notif_count} general + {ent_notif_count} enterprise
+  Meetings:           {meeting_count}
+  Chat rooms:         {chat_count}
+  Lead interactions:  {lead_count}
+  Analytics events:   {analytics_count}
+  Mkt products:       {product_count}
+  Hall positions:     {position_count} stands positioned
 
+  2D Hall Layout: All stands have x/y/zone positions.
+  Enterprise stands are on Floor 2 (zone: Enterprise-Zone).
+  Regular stands are on Floor 1 (zones: Zone-A to Zone-D).
+
+  Enterprise join statuses seeded:
+    PENDING_PAYMENT -> enterprise3, enterprise8
+    PENDING_ADMIN_APPROVAL -> enterprise2, enterprise6, enterprise10
+    APPROVED (stand auto-created) -> enterprise1, enterprise5, enterprise7, enterprise9
+    REJECTED -> enterprise4
+
+  Account approval statuses:
+    Pending Enterprise Accounts: enterprise9@demo.com, enterprise10@demo.com
+    Pending Organizer Accounts: ahmed.org@demo.com, nina.org@demo.com
   Login credentials (all users share the same password):
   --------------------------------------------------------
     Password: {PASSWORD}

@@ -268,7 +268,7 @@ export default function OrganizerReportPage() {
                                         dataKey="value" stroke="none" paddingAngle={3}>
                                         {revPie.map((_, i) => <Cell key={i} fill={REV_COLOURS[i % REV_COLOURS.length]} />)}
                                     </Pie>
-                                    <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                                    <Tooltip formatter={(v: any) => `$${v.toFixed(2)}`} />
                                     <Legend />
                                 </PieChart>
                             </ResponsiveContainer>

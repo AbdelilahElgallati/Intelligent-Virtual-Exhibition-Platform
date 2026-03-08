@@ -25,7 +25,9 @@ import {
 // ─── Status badge ────────────────────────────────────────────────────────────
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-    requested: { label: 'Pending', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+    pending_payment: { label: 'Pending Payment', cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
+    pending_admin_approval: { label: 'Awaiting Approval', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+    requested: { label: 'Requested', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
     approved: { label: 'Approved', cls: 'bg-green-50 text-green-700 border border-green-200' },
     rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-700 border border-red-200' },
 };
@@ -147,7 +149,8 @@ function SkeletonRow() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
-    { key: 'requested', label: 'Pending' },
+    { key: 'pending_admin_approval', label: 'Awaiting Approval' },
+    { key: 'pending_payment', label: 'Pending Payment' },
     { key: 'approved', label: 'Approved' },
     { key: 'rejected', label: 'Rejected' },
 ];
@@ -159,9 +162,10 @@ export default function EnterpriseRequestsPage() {
     const [data, setData] = useState<EnterpriseRequestsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeStatus, setActiveStatus] = useState('requested');
+    const [activeStatus, setActiveStatus] = useState('pending_admin_approval');
     const [searchInput, setSearchInput] = useState('');
     const [search, setSearch] = useState('');
+    const [eventName, setEventName] = useState<string | null>(null);
 
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [rejectTarget, setRejectTarget] = useState<EnterpriseRequestItem | null>(null);
@@ -193,6 +197,16 @@ export default function EnterpriseRequestsPage() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    // Fetch event name
+    useEffect(() => {
+        if (!eventId) return;
+        (async () => {
+            try {
+                const event = await adminService.getEventById(eventId);
+                setEventName(event?.title || null);
+            } catch { /* ignore */ }
+        })();
+    }, [eventId]);
     const handleSearch = () => setSearch(searchInput.trim());
 
     const handleApprove = async (item: EnterpriseRequestItem) => {
@@ -236,8 +250,8 @@ export default function EnterpriseRequestsPage() {
                     <div
                         key={t.id}
                         className={`px-4 py-3 rounded-xl text-sm font-medium shadow-lg border pointer-events-auto ${t.type === 'success'
-                                ? 'bg-white border-green-200 text-green-700'
-                                : 'bg-white border-red-200 text-red-700'
+                            ? 'bg-white border-green-200 text-green-700'
+                            : 'bg-white border-red-200 text-red-700'
                             }`}
                     >
                         <span className="flex items-center gap-2">
@@ -273,7 +287,7 @@ export default function EnterpriseRequestsPage() {
                 </div>
                 <div>
                     <h1 className="text-xl font-bold text-zinc-900">Enterprise Join Requests</h1>
-                    <p className="text-xs text-zinc-400">Event ID: {eventId}</p>
+                    <p className="text-xs text-zinc-400">{eventName || `Event ${eventId}`}</p>
                 </div>
                 <button
                     onClick={() => fetchData()}
@@ -293,8 +307,8 @@ export default function EnterpriseRequestsPage() {
                             key={tab.key}
                             onClick={() => setActiveStatus(tab.key)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeStatus === tab.key
-                                    ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200'
-                                    : 'text-zinc-500 hover:text-zinc-700'
+                                ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200'
+                                : 'text-zinc-500 hover:text-zinc-700'
                                 }`}
                         >
                             {tab.label}
@@ -399,7 +413,7 @@ export default function EnterpriseRequestsPage() {
                         {!loading && data?.items.map(item => {
                             const pid = item.participant.id;
                             const isActing = actionLoading === pid;
-                            const isPending = item.participant.status === 'requested';
+                            const isPending = (item.participant.status as string) === 'requested' || (item.participant.status as string) === 'pending_admin_approval';
 
                             return (
                                 <tr key={pid} className="hover:bg-zinc-50 transition-colors">

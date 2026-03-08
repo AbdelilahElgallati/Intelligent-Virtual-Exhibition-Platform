@@ -50,7 +50,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
 
             {/* Mobile backdrop */}
             {isSidebarOpen && (
@@ -65,8 +65,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                 className={`
                     fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
                     flex flex-col overflow-hidden
-                    transform transition-transform duration-200 ease-in-out
-                    lg:translate-x-0 lg:static lg:inset-0
+                    transform transition-transform duration-200 ease-in-out lg:translate-x-0
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}
             >
@@ -121,8 +120,8 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                 </div>
             </aside>
 
-            {/* ── Main area ── */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            {/* ── Main area (offset by sidebar width on desktop) ── */}
+            <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
 
                 {/* Topbar */}
                 <header className="shrink-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8">
@@ -169,8 +168,8 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                     </div>
                 </header>
 
-                {/* Page content — only this scrolls */}
-                <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-gray-50/50">
+                {/* Page content */}
+                <main className="flex-1 p-4 lg:p-8 bg-gray-50/50">
                     {children}
                 </main>
             </div>

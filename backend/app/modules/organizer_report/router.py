@@ -208,14 +208,14 @@ async def organizer_event_report(
     import io
 
     if format == "tex":
-        tex_content = latex_service.generate_tex(data)
+        tex_content = latex_service.generate_tex(data, template_name="organizer_event_report")
         return Response(
             content=tex_content,
             media_type="application/x-tex",
             headers={"Content-Disposition": f'attachment; filename="event_{event_id}_report.tex"'}
         )
     
-    pdf_bytes = latex_service.generate_report_pdf(data)
+    pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -257,7 +257,7 @@ async def organizer_summary_pdf(
         }
 
         from app.modules.analytics.latex_service import latex_service
-        pdf_bytes = latex_service.generate_report_pdf(data)
+        pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
         
         filename = f"organizer_report_{event_id}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
         return StreamingResponse(
@@ -326,7 +326,7 @@ async def organizer_overall_summary_pdf(
         }
 
         from app.modules.analytics.latex_service import latex_service
-        pdf_bytes = latex_service.generate_report_pdf(data)
+        pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_overall_report")
         
         filename = f"overall_performance_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
         return StreamingResponse(

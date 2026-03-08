@@ -18,6 +18,9 @@ class ParticipantStatus(str, Enum):
     REQUESTED = "requested"
     APPROVED = "approved"
     REJECTED = "rejected"
+    # Enterprise-specific statuses (Week 2)
+    PENDING_PAYMENT = "pending_payment"
+    PENDING_ADMIN_APPROVAL = "pending_admin_approval"
 
 
 class ParticipantBase(BaseModel):
@@ -103,3 +106,14 @@ class EnterpriseRequestsResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class EnterpriseJoinResponse(BaseModel):
+    """Response after enterprise joins an event."""
+    participant_id: str
+    event_id: str
+    organization_id: str
+    status: ParticipantStatus
+    stand_fee_paid: bool = False
+    payment_reference: Optional[str] = None
+    created_at: datetime

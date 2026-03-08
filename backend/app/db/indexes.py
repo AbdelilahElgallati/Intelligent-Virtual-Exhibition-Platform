@@ -175,6 +175,26 @@ async def ensure_indexes() -> None:
     except Exception:
         pass
 
+    # Enterprise Module (Week 7)
+    try:
+        # Products
+        await db.products.create_index("enterprise_id")
+        await db.products.create_index("organization_id")
+        await db.products.create_index("is_active")
+        await db.products.create_index([("name", "text"), ("description", "text"), ("tags", "text")])
+        
+        # Product Requests
+        await db.product_requests.create_index("enterprise_id")
+        await db.product_requests.create_index("visitor_id")
+        await db.product_requests.create_index("product_id")
+        await db.product_requests.create_index("status")
+        await db.product_requests.create_index("created_at")
+
+        # Organizations - extra fields
+        await db.organizations.create_index("type")
+        await db.organizations.create_index("industry")
+    except Exception:
+        pass
 
     # Stand Marketplace — products & orders (isolated from event payments)
     try:

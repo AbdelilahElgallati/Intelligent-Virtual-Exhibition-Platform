@@ -53,6 +53,11 @@ class OrganizationRead(BaseModel):
     is_verified: bool = False
     is_flagged: bool = False
     is_suspended: bool = False
+    # Additional details
+    industry: Optional[str] = "General"
+    website: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
     
     model_config = {"from_attributes": True, "populate_by_name": True}
 

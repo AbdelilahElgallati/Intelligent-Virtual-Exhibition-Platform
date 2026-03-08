@@ -21,6 +21,7 @@ class DashboardData(BaseModel):
     main_chart: List[TimeSeriesPoint]
     distribution: Dict[str, float]
     recent_activity: List[dict]
+    enterprises: Optional[List[dict]] = []
 
 class AnalyticsRequest(BaseModel):
     start_date: Optional[datetime] = None

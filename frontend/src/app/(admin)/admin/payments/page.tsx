@@ -18,6 +18,17 @@ export default function AdminPaymentsPage() {
     const [rejectNote, setRejectNote] = useState('');
     const [rejectingId, setRejectingId] = useState<string | null>(null);
 
+    // Pagination
+    const ITEMS_PER_PAGE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const paginatedPayments = payments.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(payments.length / ITEMS_PER_PAGE);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter]);
+
     const fetchPayments = useCallback(async () => {
         try {
             setLoading(true);
@@ -132,8 +143,8 @@ export default function AdminPaymentsPage() {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                             }`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -167,7 +178,7 @@ export default function AdminPaymentsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {payments.map((p) => (
+                            {paginatedPayments.map((p) => (
                                 <tr key={p.id || p._id} className="hover:bg-zinc-50 transition-colors">
                                     <td className="px-5 py-4 text-sm text-zinc-700 font-mono">{p.user_id.slice(0, 12)}…</td>
                                     <td className="px-5 py-4 text-sm text-zinc-700 font-mono">{p.event_id.slice(0, 12)}…</td>
@@ -215,6 +226,34 @@ export default function AdminPaymentsPage() {
                             ))}
                         </tbody>
                     </table>
+                    {!loading && payments.length > 0 && (
+                        <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
+                            <span className="text-xs text-zinc-500">
+                                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, payments.length)} of {payments.length} payment{payments.length !== 1 ? 's' : ''}
+                            </span>
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-xs font-medium text-zinc-600">
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 

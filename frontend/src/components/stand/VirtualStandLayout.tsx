@@ -12,7 +12,6 @@ import {
     Heart,
     Sparkles,
     FileText,
-    ShoppingBag,
     X,
 } from 'lucide-react';
 
@@ -30,9 +29,6 @@ interface VirtualStandLayoutProps {
     onAssistantOpen: () => void;
     onFavoriteToggle: () => void;
     favoriteId: string | null;
-    /* marketplace */
-    onProductsOpen?: () => void;
-    hasProducts?: boolean;
     /* tab state (owned by parent) */
     activeTab: 'resources' | 'about';
     onTabChange: (tab: 'resources' | 'about') => void;
@@ -82,8 +78,6 @@ export function VirtualStandLayout({
     onAssistantOpen,
     onFavoriteToggle,
     favoriteId,
-    onProductsOpen,
-    hasProducts,
     activeTab,
     onTabChange,
     children,
@@ -351,26 +345,6 @@ export function VirtualStandLayout({
                         icon={<Info className="w-4 h-4" />}
                         label="About"
                     />
-
-                    {/* Shop (only visible when stand has products) */}
-                    {hasProducts && onProductsOpen && (
-                        <button
-                            onClick={onProductsOpen}
-                            className="relative inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap text-white shadow-md hover:opacity-90 animate-pulse"
-                            style={{
-                                backgroundColor: themeColor,
-                                boxShadow: `0 0 12px 3px ${themeColor}66, 0 0 24px 6px ${themeColor}33`,
-                            }}
-                        >
-                            {/* Glow ping ring */}
-                            <span
-                                className="absolute inset-0 rounded-xl animate-ping opacity-30"
-                                style={{ backgroundColor: themeColor }}
-                            />
-                            <ShoppingBag className="w-4 h-4 relative z-10" />
-                            <span className="hidden sm:inline relative z-10">Shop</span>
-                        </button>
-                    )}
 
                     {/* Divider */}
                     <div className="w-px h-7 bg-gray-200 mx-0.5 sm:mx-1 shrink-0" />

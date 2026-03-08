@@ -14,6 +14,7 @@ const STATE_LABELS: Record<EventStatus, string> = {
     approved: 'Approved',
     rejected: 'Rejected',
     waiting_for_payment: 'Waiting for Payment',
+    payment_proof_submitted: 'Proof Submitted',
     payment_done: 'Payment Done',
     live: 'Live',
     closed: 'Closed',
@@ -24,6 +25,7 @@ const STATE_COLORS: Record<EventStatus, string> = {
     approved: 'bg-blue-100 text-blue-700',
     rejected: 'bg-red-100 text-red-700',
     waiting_for_payment: 'bg-orange-100 text-orange-700',
+    payment_proof_submitted: 'bg-teal-100 text-teal-700',
     payment_done: 'bg-indigo-100 text-indigo-700',
     live: 'bg-green-100 text-green-700',
     closed: 'bg-gray-100 text-gray-600',
@@ -185,7 +187,7 @@ export default function OrganizerEvents() {
                                             )}
 
                                             {/* Close — when live */}
-                                            {event.state === 'live' && (
+                                            {/* {event.state === 'live' && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -196,7 +198,7 @@ export default function OrganizerEvents() {
                                                     <XCircle className="w-3.5 h-3.5" />
                                                     Close
                                                 </Button>
-                                            )}
+                                            )} */}
 
                                             {/* Analytics — live or closed */}
                                             {(event.state === 'live' || event.state === 'closed') && (

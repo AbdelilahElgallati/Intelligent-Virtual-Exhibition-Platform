@@ -10,6 +10,8 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging
@@ -37,6 +39,8 @@ from app.modules.monitoring.router import router as monitoring_router
 from app.modules.sessions.router import router as sessions_router
 # Week 6 additions
 from app.modules.organizer_report.router import router as organizer_report_router
+# Week 7 additions
+from app.modules.enterprise.router import router as enterprise_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
@@ -115,6 +119,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(sessions_router, prefix=api_prefix)
     # Week 6: Organizer Value Dashboard
     app.include_router(organizer_report_router, prefix=api_prefix)
+    # Week 7: Enterprise Ecosystem
+    app.include_router(enterprise_router, prefix=api_prefix)
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
     app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])
@@ -153,6 +159,8 @@ def create_application() -> FastAPI:
             "http://127.0.0.1:3000",
             "http://localhost:3001",
             "http://127.0.0.1:3001",
+            "http://10.77.178.149:3000",
+            "http://10.77.178.149:3001",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -162,6 +170,12 @@ def create_application() -> FastAPI:
     # Register routers
     register_routers(app)
 
+    # Serve uploaded files (product images, resources, etc.)
+    # __file__ is backend/app/main.py → go 2 levels up to reach backend/
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    uploads_dir = os.path.join(backend_dir, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
     return app
 
 

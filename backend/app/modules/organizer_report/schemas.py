@@ -42,8 +42,16 @@ class PerformanceTrends(BaseModel):
     lead_generation_over_time: List[TrendPoint] = []
 
 
+class EnterpriseSummary(BaseModel):
+    id: str
+    name: str
+    logo_url: Optional[str] = None
+    industry: Optional[str] = None
+
+
 class OrganizerSummaryResponse(BaseModel):
     overview: OverviewMetrics = Field(default_factory=OverviewMetrics)
     safety: SafetyMetrics = Field(default_factory=SafetyMetrics)
     performance_trends: PerformanceTrends = Field(default_factory=PerformanceTrends)
+    enterprises: List[EnterpriseSummary] = []
     generated_at: datetime = Field(default_factory=datetime.utcnow)

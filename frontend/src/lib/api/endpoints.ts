@@ -37,6 +37,15 @@ export const ENDPOINTS = {
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',
   },
+  MARKETPLACE: {
+    PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
+    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/checkout`,
+    MY_ORDERS: '/marketplace/orders',
+    PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
+    CHECKOUT: (standId: string, productId: string) =>
+      `/marketplace/stands/${standId}/products/${productId}/checkout`,
+    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
+  },
   NOTIFICATIONS: {
     LIST: '/notifications',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
@@ -49,6 +58,7 @@ export const ENDPOINTS = {
   },
   ORGANIZATIONS: {
     LIST: '/organizations',
+    GET: (id: string) => `/organizations/${id}`,
     CREATE: '/organizations/create',
     INVITE: '/organizations/invite',
   },
@@ -78,13 +88,4 @@ export const ENDPOINTS = {
     UPDATE_DETAILS: (eventId: string) => `/events/${eventId}/payment-details`,
   },
 
-  MARKETPLACE: {
-    PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
-    PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
-    CHECKOUT: (standId: string, productId: string) =>
-      `/marketplace/stands/${standId}/products/${productId}/checkout`,
-    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/cart/checkout`,
-    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
-    MY_ORDERS: '/marketplace/my-orders',
-  },
 };

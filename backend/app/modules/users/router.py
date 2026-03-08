@@ -9,8 +9,8 @@ from typing import Optional
 
 from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.enums import Role
-from app.modules.users.schemas import UserRead, ProfileUpdate
-from app.modules.users.service import update_user_profile, list_all_users, set_user_active
+from app.modules.users.schemas import UserRead, ProfileUpdate, UserCreate
+from app.modules.users.service import update_user_profile, list_all_users, set_user_active, create_user, get_user_by_email
 from app.modules.audit.service import log_audit
 
 
@@ -108,3 +108,42 @@ async def admin_suspend_user(
         entity_id=user_id,
     )
     return UserRead(**updated)
+
+
+@router.post("/admin/create", response_model=UserRead)
+async def admin_create_user(
+    payload: UserCreate,
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+) -> UserRead:
+    """
+    Admin: Create a new user (e.g., another administrator).
+    """
+    from app.core.security import hash_password
+    from datetime import datetime, timezone
+    
+    # Check if user already exists
+    if await get_user_by_email(payload.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+    
+    user_data = payload.model_dump()
+    user_data["hashed_password"] = hash_password(user_data.pop("password"))
+    user_data["created_at"] = datetime.now(timezone.utc)
+    
+    # Default behavior for admin-created users
+    user_data["is_active"] = True
+    user_data["approval_status"] = "APPROVED"
+    
+    new_user = await create_user(user_data)
+    
+    await log_audit(
+        actor_id=str(current_user["_id"]),
+        action="user.create_admin" if payload.role == Role.ADMIN else "user.create",
+        entity="user",
+        entity_id=new_user["id"],
+    )
+    
+    return UserRead(**new_user)
+

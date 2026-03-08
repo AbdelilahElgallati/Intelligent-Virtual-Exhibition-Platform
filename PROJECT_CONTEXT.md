@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md — Intelligent Virtual Exhibition Platform (IVEP)
 
-> **Generated**: 2026-02-24 (updated)  
+> **Generated**: 2026-03-07 (updated)  
 > **Purpose**: Comprehensive project context document for development reference.
 
 ---
@@ -67,7 +67,8 @@ The **Intelligent Virtual Exhibition Platform (IVEP)** is a scalable, AI-powered
 | Vector DB | ChromaDB |
 | Translation | Helsinki-NLP/opus-mt (MarianMT via HuggingFace) |
 | STT | OpenAI Whisper |
-| Task Queue | Background workers (placeholder) |
+| Reporting | ReportLab + Jinja2 (LaTeX generation) |
+| Task Queue | Background workers (lifecycle loop) |
 | Validation | Pydantic v2 + pydantic-settings |
 
 ### Frontend
@@ -210,9 +211,14 @@ class Settings(BaseSettings):
 | resources_router | `/resources` | resources |
 | leads_router | `/leads` | leads |
 | recommendations_router | `/recommendations` | recommendations |
-| **admin_router** *(new)* | `/admin` | Admin |
-| **audit_router** *(new)* | `/audit` | Audit |
-| **incidents_router** *(new)* | `/incidents` | Incidents |
+| admin_router | `/admin` | Admin |
+| audit_router | `/audit` | Audit |
+| incidents_router | `/incidents` | Incidents |
+| payments_router | `/payments` | Payments |
+| monitoring_router | `/monitoring` | Monitoring |
+| sessions_router | `/sessions` | Sessions |
+| enterprise_router | `/enterprise` | Enterprise |
+| organizer_report_router | `/organizer-report` | Organizer Report |
 | dev_router (dev only) | `/dev` | Development |
 
 **Root endpoints**:
@@ -390,7 +396,7 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | Schema | Fields |
 |--------|--------|
 | **ResourceBase** | `title: str`, `description?: str`, `stand_id: str`, `type: str` (pdf/video/image/document), `tags: List[str] = []` |
-| **ResourceCreate** | extends ResourceBase + `file_path: str`, `file_size: int`, `mime_type: str` |
+| **ResourceCreate** | extends ResourceBase + `file_path: str`, `file_size?: int`, `mime_type?: str` |
 | **ResourceSchema** | extends ResourceCreate + `id: str (alias _id)`, `upload_date: datetime`, `downloads: int = 0` |
 
 ### 5.7 Participant Schemas (`participants/schemas.py`)
@@ -507,6 +513,51 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | **OrganizationUpdate** | `name?: str`, `description?: str` |
 | **OrganizationMember** | `user_id: str`, `organization_id: str`, `role_in_org: OrgMemberRole = MEMBER`, `joined_at: datetime` |
 
+### 5.18 Organizer Report Schemas (`organizer_report/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **OrganizerSummaryResponse** | `overview: dict`, `safety: dict`, `generated_at: datetime` |
+
+### 5.19 Payment Schemas (`payments/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **EventPaymentRead** | `id: str (alias _id)`, `event_id: str`, `user_id: str`, `amount: float`, `proof_file_path: str`, `status: PaymentStatus`, `admin_note?: str`, `created_at: datetime` |
+| **PaymentStatusResponse** | `status: str`, `admin_note?: str` |
+| **PaymentRejectRequest** | `admin_note?: str` |
+
+### 5.20 Session Schemas (`sessions/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **SessionCreate** | `title: str`, `speaker: str`, `description?: str`, `start_time: datetime`, `end_time: datetime` |
+| **SessionRead** | `id: str`, `event_id: str`, `title: str`, `speaker: str`, `description?: str`, `start_time: datetime`, `end_time: datetime`, `status: SessionStatus` |
+
+### 5.21 Monitoring Schemas (`monitoring/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **RecentFlagRead** | `id: str`, `entity_type: str`, `entity_id: str`, `reason: str`, `created_at: datetime` |
+| **KPIs** | `active_visitors: int`, `active_stands: int`, `ongoing_meetings: int`, `incident_flags_open: int` |
+| **LiveMetricsResponse** | `kpis: KPIs`, `active_users: list[ActiveUserRead]`, `recent_flags: list[RecentFlagRead]`, `timestamp: str` |
+
+### 5.22 Enterprise Schemas (`enterprise/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **EnterpriseProfileUpdate** | `description?`, `website?`, `linkedin?`, `theme_color?`, `branding_theme?`, `contact_email?`, `contact_phone?`, `avatar_gender?`, `tags?`, `logo_url?`, `banner_url?` |
+| **StandAIConfigUpdate** | `ai_greeting?`, `ai_knowledge_base?`, `auto_reply_enabled?` |
+
+### 5.23 Marketplace Schemas (`marketplace/schemas.py`)
+
+| Schema | Fields |
+|--------|--------|
+| **ProductBase** | `name: str`, `description: str`, `price: float`, `currency: str = "USD"`, `category: str`, `image_url?: str`, `features: list[str] = []` |
+| **ProductCreate** | extends ProductBase + `stand_id: str` |
+| **ProductRead** | extends ProductBase + `id: str (alias _id)`, `enterprise_id: str`, `stand_id: str`, `created_at: datetime`, `is_active: bool` |
+| **ProductRequestCreate** | `product_id: str`, `message?: str` |
+| **ProductRequestRead** | `id: str (alias _id)`, `product_id: str`, `visitor_id: str`, `enterprise_id: str`, `status: str` (pending/approved/declined), `message?: str`, `created_at: datetime` |
 ---
 
 ## 6. Backend Modules — API Endpoints
@@ -694,13 +745,20 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 |--------|------|------|-------------|
 | POST | `/dev/seed-data` | None | Seed database with test data (users, orgs, events, stands, resources) |
 
-### 6.20 Admin Health (`/api/v1/admin`) *(new)*
+### 6.20 Admin API (`/api/v1/admin`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/admin/health` | ADMIN | Platform health: MongoDB ping latency, Redis status, API process PID, uptime. Returns `{ status: "healthy"|"degraded", mongodb, redis, api, uptime }` |
+| GET | `/admin/health` | ADMIN | Platform health endpoint (MongoDB ping latency, Redis status, API uptime etc). |
+| GET | `/admin/events/pending-approval` | ADMIN | List events awaiting approval |
+| GET | `/admin/organizations/detailed` | ADMIN | List organizer accounts with aggregated stats (stands, events, revenue). |
+| GET | `/admin/enterprises/detailed` | ADMIN | List enterprise accounts with aggregated stats. |
+| GET | `/admin/enterprise-registrations` | ADMIN | List pending enterprise join requests |
+| GET | `/admin/organizer-registrations` | ADMIN | List pending organizer signups |
+| POST | `/admin/enterprise-registrations/{id}/approve` | ADMIN | Approve enterprise join request |
+| POST | `/admin/organizer-registrations/{id}/approve` | ADMIN | Approve organizer signup |
 
-### 6.21 Audit Logs (`/api/v1/audit`) *(new)*
+### 6.21 Audit Logs (`/api/v1/audit`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -718,6 +776,39 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | PATCH | `/incidents/{id}` | ADMIN | Update incident status/notes/title/severity |
 | POST | `/incidents/flag` | Any authenticated | Flag a piece of content (entity_type, entity_id, reason) |
 | GET | `/incidents/flags` | ADMIN | List all content flags |
+
+### 6.22 Enterprise (`/api/v1/enterprise`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/enterprise/profile` | ENTERPRISE | Get enterprise organization profile |
+| PATCH | `/enterprise/profile` | ENTERPRISE | Update enterprise details |
+| POST | `/enterprise/profile/logo` | ENTERPRISE | Upload enterprise logo |
+| POST | `/enterprise/profile/banner` | ENTERPRISE | Upload enterprise banner |
+| GET | `/enterprise/events` | ENTERPRISE | Get events the enterprise is participating in |
+| GET | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Get enterprise's stand for a specific event |
+| PATCH | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Update the stand's base configurations |
+| PATCH | `/enterprise/events/{event_id}/stand/ai-config` | ENTERPRISE | Update the stand's AI assistant prompt & knowledge |
+| POST | `/enterprise/events/{event_id}/stand/resources` | ENTERPRISE | Upload a resource (PDF/Image/Link) to the stand |
+| DELETE| `/enterprise/events/{event_id}/stand/resources/{resource_id}`| ENTERPRISE | Delete a resource |
+| GET | `/enterprise/dashboard/stats` | ENTERPRISE | Get enterprise KPI stats (views, leads, meetings) |
+| GET | `/enterprise/dashboard/recent-leads` | ENTERPRISE | Get recent leads acquired by the enterprise |
+| GET | `/enterprise/dashboard/upcoming-meetings` | ENTERPRISE | Get upcoming meetings for the enterprise |
+
+### 6.23 Marketplace (`/api/v1/marketplace`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/marketplace/products` | ENTERPRISE | Add a product to a stand |
+| GET | `/marketplace/products/enterprise` | ENTERPRISE | List all products owned by the enterprise |
+| GET | `/marketplace/products/stand/{stand_id}` | Any authenticated | List all products offered at a specific stand |
+| PUT | `/marketplace/products/{product_id}` | ENTERPRISE | Update a product |
+| DELETE| `/marketplace/products/{product_id}` | ENTERPRISE | Soft-delete a product (`is_active: false`) |
+| POST | `/marketplace/products/{product_id}/image` | ENTERPRISE | Upload product image |
+| POST | `/marketplace/requests` | VISITOR | Submit a request/interest in a product |
+| GET | `/marketplace/requests/enterprise` | ENTERPRISE | View incoming product requests/leads |
+| PATCH | `/marketplace/requests/{request_id}/status`| ENTERPRISE | Update request status (approved/declined) |
+| POST | `/marketplace/products/{product_id}/checkout-session`| VISITOR | Create a Stripe checkout session for a product |
 
 ---
 
@@ -1050,6 +1141,8 @@ Test credentials: `admin@ivep.com`/`admin123`, `organizer@ivep.com`/`organizer12
 | `audit_logs` *(new)* | `actor_id`, `action`, `entity`, `timestamp` |
 | `incidents` *(new)* | `status`, `severity`, `created_at` |
 | `content_flags` *(new)* | `entity_type`, `entity_id`, `created_at` |
+| `products` | `enterprise_id`, `stand_id` |
+| `product_requests` | `product_id`, `visitor_id`, `enterprise_id` |
 
 ---
 
@@ -1174,6 +1267,23 @@ backend/
 │   │   │   ├── router.py
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
+│   │   ├── monitoring/            # Live platform monitoring
+│   │   │   ├── presence.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── organizer_report/      # Organizer business intelligence
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── sessions/              # Conference session orchestration
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
+│   │   ├── payments/              # Payment proof management
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── service.py
 │   │   ├── participants/          # Event participation (invite/request/approve)
 │   │   │   ├── router.py
 │   │   │   ├── schemas.py
@@ -1294,4 +1404,3 @@ Admin role is already part of `AuthContext`. The admin layout reads `user.role` 
 | `/admin/monitoring` | Health cards (Overall/MongoDB/Redis/API), degraded alert banner, recent incidents |
 | `/admin/audit` | Filterable table: action, entity type, actor ID, from/to date |
 | `/admin/incidents` | Status filter tabs, incidents list, create modal, Investigate→Mitigate→Resolve flow + notes |
-

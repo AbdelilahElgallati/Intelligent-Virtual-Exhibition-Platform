@@ -28,6 +28,13 @@ export default function AdminSubscriptionsPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    // Pagination
+    const ITEMS_PER_PAGE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const paginatedSubs = subs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(subs.length / ITEMS_PER_PAGE);
+
     const fetchSubs = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -149,7 +156,7 @@ export default function AdminSubscriptionsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
-                            {subs.map((sub) => {
+                            {paginatedSubs.map((sub) => {
                                 const busy = actionId === sub.organization_id;
                                 const isFree = sub.plan.toLowerCase() === 'free';
                                 return (
@@ -196,8 +203,31 @@ export default function AdminSubscriptionsPage() {
                     </table>
                 )}
                 {!loading && subs.length > 0 && (
-                    <div className="px-6 py-3 border-t border-zinc-100 text-xs text-zinc-400">
-                        {subs.length} organization{subs.length !== 1 ? 's' : ''}
+                    <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
+                        <span className="text-xs text-zinc-500">
+                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, subs.length)} of {subs.length} organization{subs.length !== 1 ? 's' : ''}
+                        </span>
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-xs font-medium text-zinc-600">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

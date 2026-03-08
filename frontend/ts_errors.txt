@@ -1,0 +1,38 @@
+﻿.next/dev/types/validator.ts(393,39): error TS2306: File 'D:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/app/events/[id]/live/stands/[standId]/page.tsx' is not a module.
+.next/types/validator.ts(393,39): error TS2306: File 'D:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/app/events/[id]/live/stands/[standId]/page.tsx' is not a module.
+src/app/(admin)/admin/analytics/[id]/page.tsx(23,23): error TS2322: Type 'string' is not assignable to type 'never'.
+src/app/(admin)/admin/analytics/[id]/page.tsx(132,75): error TS18048: 'percent' is possibly 'undefined'.
+src/app/(admin)/admin/analytics/page.tsx(28,23): error TS2322: Type 'string' is not assignable to type 'never'.
+src/app/(admin)/admin/analytics/page.tsx(151,157): error TS18048: 'percent' is possibly 'undefined'.
+src/app/(admin)/admin/events/[id]/organizer-report/page.tsx(271,46): error TS2322: Type '(v: number) => string' is not assignable to type 'Formatter<number, NameType> & ((value: number, name: NameType, item: Payload<number, NameType>, index: number, payload: Payload<number, NameType>[]) => ReactNode | [...])'.
+  Type '(v: number) => string' is not assignable to type 'Formatter<number, NameType>'.
+    Types of parameters 'v' and 'value' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/app/(admin)/admin/page.tsx(181,23): error TS2322: Type 'string' is not assignable to type 'never'.
+src/app/(admin)/admin/page.tsx(326,157): error TS18048: 'percent' is possibly 'undefined'.
+src/app/(enterprise)/enterprise/notifications/page.tsx(136,43): error TS2322: Type 'string' is not assignable to type 'never'.
+src/app/(enterprise)/enterprise/profile/page.tsx(219,98): error TS2339: Property 'org_name' does not exist on type 'User'.
+src/app/(enterprise)/enterprise/profile/page.tsx(220,92): error TS2339: Property 'org_city' does not exist on type 'User'.
+src/app/(enterprise)/enterprise/profile/page.tsx(220,108): error TS2339: Property 'org_country' does not exist on type 'User'.
+src/app/(enterprise)/enterprise/profile/page.tsx(221,87): error TS2339: Property 'org_type' does not exist on type 'User'.
+src/app/(organizer)/organizer/events/page.tsx(12,7): error TS2741: Property 'payment_proof_submitted' is missing in type '{ pending_approval: string; approved: string; rejected: string; waiting_for_payment: string; payment_done: string; live: string; closed: string; }' but required in type 'Record<EventStatus, string>'.
+src/app/(organizer)/organizer/events/page.tsx(22,7): error TS2741: Property 'payment_proof_submitted' is missing in type '{ pending_approval: string; approved: string; rejected: string; waiting_for_payment: string; payment_done: string; live: string; closed: string; }' but required in type 'Record<EventStatus, string>'.
+src/app/(organizer)/organizer/notifications/page.tsx(131,43): error TS2322: Type 'string' is not assignable to type 'never'.
+src/app/(organizer)/organizer/profile/page.tsx(16,19): error TS2339: Property 'refreshUser' does not exist on type 'AuthContextType'.
+src/app/(organizer)/organizer/profile/page.tsx(165,70): error TS2339: Property 'org_name' does not exist on type 'User'.
+src/app/dashboard/components/JoinedEvents.tsx(3,27): error TS2307: Cannot find module '@/components/cards/EventCard' or its corresponding type declarations.
+src/app/dashboard/page.tsx(9,47): error TS2724: '"@/lib/api/types"' has no exported member named 'EventsResponse'. Did you mean 'JoinEventResponse'?
+src/app/favorites/page.tsx(62,25): error TS2322: Type '{ title: string; description: string; action: Element; }' is not assignable to type 'IntrinsicAttributes & EmptyStateProps'.
+  Property 'description' does not exist on type 'IntrinsicAttributes & EmptyStateProps'.
+src/app/favorites/page.tsx(149,21): error TS2322: Type '{ title: string; description: string; action: Element; }' is not assignable to type 'IntrinsicAttributes & EmptyStateProps'.
+  Property 'description' does not exist on type 'IntrinsicAttributes & EmptyStateProps'.
+src/app/marketplace/success/page.tsx(19,80): error TS2339: Property 'MARKETPLACE' does not exist on type '{ USERS: { ME: string; PROFILE: string; }; ORGANIZER: { MY_EVENTS: string; }; EVENTS: { LIST: string; GET: (id: string) => string; JOINED: string; MY_STATUS: (id: string) => string; JOIN: (id: string) => string; APPROVE: (id: string) => string; ... 5 more ...; ANALYTICS: (id: string) => string; }; ... 11 more ...; P...'.
+src/components/events/EventCard.tsx(37,29): error TS2367: This comparison appears to be unintentional because the types 'EventStatus' and '"APPROVED"' have no overlap.
+src/components/stand/ProductsPanel.tsx(43,71): error TS2339: Property 'MARKETPLACE' does not exist on type '{ USERS: { ME: string; PROFILE: string; }; ORGANIZER: { MY_EVENTS: string; }; EVENTS: { LIST: string; GET: (id: string) => string; JOINED: string; MY_STATUS: (id: string) => string; JOIN: (id: string) => string; APPROVE: (id: string) => string; ... 5 more ...; ANALYTICS: (id: string) => string; }; ... 11 more ...; P...'.
+src/components/stand/ProductsPanel.tsx(98,27): error TS2339: Property 'MARKETPLACE' does not exist on type '{ USERS: { ME: string; PROFILE: string; }; ORGANIZER: { MY_EVENTS: string; }; EVENTS: { LIST: string; GET: (id: string) => string; JOINED: string; MY_STATUS: (id: string) => string; JOIN: (id: string) => string; APPROVE: (id: string) => string; ... 5 more ...; ANALYTICS: (id: string) => string; }; ... 11 more ...; P...'.
+src/components/ui/Button.tsx(58,13): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'className' does not exist in type 'Partial<unknown> & Attributes'.
+src/services/admin.service.ts(223,57): error TS2304: Cannot find name 'OrganizerSummary'.
+src/services/events.service.ts(2,17): error TS2305: Module '"@/types/event"' has no exported member 'EventsResponse'.

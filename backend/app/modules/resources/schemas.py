@@ -17,8 +17,8 @@ class ResourceBase(BaseModel):
 
 class ResourceCreate(ResourceBase):
     file_path: str
-    file_size: int
-    mime_type: str
+    file_size: Optional[int] = 0
+    mime_type: Optional[str] = "application/octet-stream"
 
 class ResourceSchema(ResourceCreate):
     id: str = Field(alias="_id")

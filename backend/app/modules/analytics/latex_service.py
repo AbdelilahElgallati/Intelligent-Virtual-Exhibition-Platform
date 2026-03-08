@@ -83,18 +83,44 @@ This report summarizes the operational performance. Detailed metrics are availab
 """
 
 class LaTeXService:
-    def __init__(self, template_path: str = None):
-        if template_path and os.path.exists(template_path):
-            with open(template_path, "r", encoding="utf-8") as f:
-                self.template = Template(f.read())
-        else:
-            self.template = Template(LATEX_TEMPLATE_RAW)
+    def __init__(self, templates_dir: str):
+        self.templates_dir = templates_dir
+        self.templates = {}
+        self._load_templates()
 
-    def generate_tex(self, data: dict) -> str:
-        """Generate LaTeX source from data."""
+    def _load_templates(self):
+        """Load all .tex templates from the templates directory."""
+        if not os.path.exists(self.templates_dir):
+            logger.warning(f"Templates directory not found: {self.templates_dir}")
+            return
+
+        for filename in os.listdir(self.templates_dir):
+            if filename.endswith(".tex"):
+                name = filename[:-4]  # remove .tex
+                path = os.path.join(self.templates_dir, filename)
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        self.templates[name] = Template(f.read())
+                except Exception as e:
+                    logger.error(f"Failed to load template {filename}: {e}")
+
+    def get_template(self, template_name: str) -> Template:
+        """Get a template by name, falling back to 'report' or the backup raw string."""
+        if template_name in self.templates:
+            return self.templates[template_name]
+        
+        if "report" in self.templates:
+            return self.templates["report"]
+        
+        return Template(LATEX_TEMPLATE_RAW)
+
+    def generate_tex(self, data: dict, template_name: str = "report") -> str:
+        """Generate LaTeX source from data using a specific template."""
         if "generated_at" not in data:
             data["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-        return self.template.render(**data)
+        
+        template = self.get_template(template_name)
+        return template.render(**data)
 
     def compile_pdf(self, tex_content: str) -> bytes:
         """
@@ -112,13 +138,15 @@ class LaTeXService:
                     f.write(tex_content)
                 
                 try:
-                    subprocess.run(
-                        ["pdflatex", "-interaction=nonstopmode", "report.tex"],
-                        cwd=tmpdir,
-                        capture_output=True,
-                        check=True,
-                        timeout=30
-                    )
+                    # Run twice for ToC/references
+                    for _ in range(2):
+                        subprocess.run(
+                            ["pdflatex", "-interaction=nonstopmode", "report.tex"],
+                            cwd=tmpdir,
+                            capture_output=True,
+                            check=True,
+                            timeout=30
+                        )
                     pdf_path = os.path.join(tmpdir, "report.pdf")
                     if os.path.exists(pdf_path):
                         with open(pdf_path, "rb") as f:
@@ -130,9 +158,9 @@ class LaTeXService:
         logger.warning("pdflatex not found or failed, falling back to ReportLab")
         return None
 
-    def generate_report_pdf(self, data: dict) -> bytes:
+    def generate_report_pdf(self, data: dict, template_name: str = "report") -> bytes:
         """Generate PDF using LaTeX (if available) or ReportLab (fallback)."""
-        tex = self.generate_tex(data)
+        tex = self.generate_tex(data, template_name)
         
         # Check if pdflatex exists
         import shutil
@@ -234,4 +262,4 @@ class LaTeXService:
         doc.build(story)
         return buf.getvalue()
 
-latex_service = LaTeXService(os.path.join(os.path.dirname(__file__), "templates", "report.tex"))
+latex_service = LaTeXService(os.path.join(os.path.dirname(__file__), "templates"))

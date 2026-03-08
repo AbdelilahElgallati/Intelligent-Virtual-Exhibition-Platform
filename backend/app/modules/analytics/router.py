@@ -94,14 +94,14 @@ async def export_platform_report(
     import io
 
     if format == "tex":
-        tex_content = latex_service.generate_tex(data)
+        tex_content = latex_service.generate_tex(data, template_name="admin_platform_report")
         return Response(
             content=tex_content,
             media_type="application/x-tex",
             headers={"Content-Disposition": 'attachment; filename="platform_report.tex"'}
         )
     
-    pdf_bytes = latex_service.generate_report_pdf(data)
+    pdf_bytes = latex_service.generate_report_pdf(data, template_name="admin_platform_report")
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",

@@ -8,6 +8,7 @@ import {
     CalendarCheck, RefreshCw, CheckCircle2, XCircle, AlertCircle, X,
     MapPin, Calendar, Tag, Users, DollarSign, Clock, FileText,
     ExternalLink, ChevronRight, Building2, Info, BarChart2, CreditCard,
+    Search
 } from 'lucide-react';
 
 // ── Structured schedule renderer ─────────────────────────────────────────────
@@ -420,11 +421,16 @@ export default function AdminEventsPage() {
     const router = useRouter();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<EventState | ''>('pending_approval');
+    const [filter, setFilter] = useState<EventState | ''>('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [selected, setSelected] = useState<OrganizerEvent | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+
+    // Pagination
+    const ITEMS_PER_PAGE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchEvents = useCallback(async () => {
         setLoading(true); setError(null);
@@ -437,6 +443,21 @@ export default function AdminEventsPage() {
     }, [filter]);
 
     useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+    // Reset page on filter or search
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter, searchQuery]);
+
+    const filteredEvents = events.filter(ev => {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return ev.title.toLowerCase().includes(q) ||
+            (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q));
+    });
+
+    const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
+    const paginatedEvents = filteredEvents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     const showSuccess = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); };
 
@@ -489,13 +510,30 @@ export default function AdminEventsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Search events..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 pr-3 py-2 text-sm border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 lg:w-64"
+                        />
+                    </div>
                     <select
                         value={filter}
                         onChange={e => setFilter(e.target.value as EventState | '')}
                         className="text-sm border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
-                        <option value="pending_approval">Pending Approval</option>
                         <option value="">All Events</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="approved">Approved</option>
+                        <option value="waiting_for_payment">Waiting for Payment</option>
+                        <option value="payment_proof_submitted">Payment Reviewing</option>
+                        <option value="payment_done">Payment Done</option>
+                        <option value="live">Live</option>
+                        <option value="closed">Closed</option>
+                        <option value="rejected">Rejected</option>
                     </select>
                     <button onClick={fetchEvents} className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -533,14 +571,14 @@ export default function AdminEventsPage() {
                             <tr className="border-b border-zinc-100">
                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Event</th>
                                 <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">Dates</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Enterprises</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Organizer</th>
                                 <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
                                 <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden sm:table-cell">Actions</th>
                                 <th className="px-4 py-3.5" />
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
-                            {events.map((ev) => (
+                            {paginatedEvents.map((ev) => (
                                 <tr
                                     key={ev.id}
                                     onClick={() => setSelected(ev)}
@@ -548,7 +586,6 @@ export default function AdminEventsPage() {
                                 >
                                     <td className="px-6 py-4">
                                         <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{ev.title}</div>
-                                        {ev.organizer_name && <div className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1"><Building2 className="w-3 h-3" />{ev.organizer_name}</div>}
                                         {ev.category && <div className="text-xs text-zinc-400 mt-0.5">{ev.category}</div>}
                                     </td>
                                     <td className="px-4 py-4 hidden md:table-cell text-xs text-zinc-500">
@@ -556,7 +593,12 @@ export default function AdminEventsPage() {
                                         <div className="text-zinc-400">→ {fmt(ev.end_date)}</div>
                                     </td>
                                     <td className="px-4 py-4 hidden lg:table-cell text-sm text-zinc-600">
-                                        {ev.num_enterprises ?? '—'}
+                                        {ev.organizer_name ? (
+                                            <div className="flex items-center gap-1.5 font-medium">
+                                                <Building2 className="w-3.5 h-3.5 text-zinc-400" />
+                                                {ev.organizer_name}
+                                            </div>
+                                        ) : '—'}
                                     </td>
                                     <td className="px-4 py-4">
                                         <StateBadge state={ev.state} />
@@ -573,17 +615,6 @@ export default function AdminEventsPage() {
                                             >
                                                 <BarChart2 className="w-3.5 h-3.5" />
                                                 Report
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    router.push(`/admin/events/${ev.id}/enterprises`);
-                                                }}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                                                title="View Enterprise Requests"
-                                            >
-                                                <Building2 className="w-3.5 h-3.5" />
-                                                Enterprises
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -606,8 +637,31 @@ export default function AdminEventsPage() {
                     </table>
                 )}
                 {!loading && events.length > 0 && (
-                    <div className="px-6 py-3 border-t border-zinc-100 text-xs text-zinc-400">
-                        {events.length} event{events.length !== 1 ? 's' : ''}
+                    <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
+                        <span className="text-xs text-zinc-500">
+                            Showing {filteredEvents.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredEvents.length)} of {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
+                        </span>
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-xs font-medium text-zinc-600">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
