@@ -82,6 +82,63 @@ async def list_event_participants(event_id) -> List[dict]:
     docs = await cursor.to_list(length=1000)
     return stringify_object_ids(docs)
 
+
+async def list_event_attendees(event_id: str) -> List[dict]:
+    """List approved participants enriched with public user profile info."""
+    db = get_database()
+    participants_col = get_participants_collection()
+    users_col = db["users"]
+    org_members_col = db["organization_members"]
+    organizations_col = db["organizations"]
+
+    cursor = participants_col.find({
+        "event_id": str(event_id),
+        "status": ParticipantStatus.APPROVED,
+    })
+    participants = await cursor.to_list(length=1000)
+    participants = stringify_object_ids(participants)
+
+    items: List[dict] = []
+    for p in participants:
+        user_id = p.get("user_id")
+        uid = str(user_id)
+        user_doc = await users_col.find_one(
+            {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
+        )
+        if not user_doc:
+            continue
+        user_doc = stringify_object_ids(user_doc)
+
+        # Fetch organization
+        org_info = None
+        member_doc = await org_members_col.find_one({"user_id": uid})
+        if member_doc:
+            org_id = member_doc.get("organization_id")
+            if org_id:
+                org_doc = await organizations_col.find_one(_id_query(org_id))
+                if org_doc:
+                    org_doc = stringify_object_ids(org_doc)
+                    org_info = {
+                        "name": org_doc.get("name"),
+                        "industry": org_doc.get("industry"),
+                    }
+
+        prof = user_doc.get("professional_info") or {}
+        items.append({
+            "id": user_doc.get("id") or user_doc.get("_id"),
+            "full_name": user_doc.get("full_name"),
+            "email": user_doc.get("email"),
+            "avatar_url": user_doc.get("avatar_url"),
+            "role": user_doc.get("role"),
+            "bio": user_doc.get("bio"),
+            "job_title": prof.get("job_title"),
+            "company": prof.get("company") or (org_info.get("name") if org_info else None),
+            "industry": prof.get("industry") or (org_info.get("industry") if org_info else None),
+            "interests": user_doc.get("interests") or [],
+            "networking_goals": user_doc.get("networking_goals") or [],
+        })
+    return items
+
 async def approve_participant(participant_id) -> Optional[dict]:
     """
     Approve a participant.

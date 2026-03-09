@@ -84,6 +84,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
                                         initialFilters={visitorPrefs}
                                         showPagination={true}
                                         eventTitle={event?.title}
+                                        eventBannerUrl={event?.banner_url}
                                     />
                                 )}
                             </div>
@@ -93,7 +94,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
                     {tab === 'stands' && (
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">Exhibition Hall - All Stands</h2>
-                            <StandsGrid eventId={eventId} showFilters={true} showPagination={true} eventTitle={event?.title} />
+                            <StandsGrid eventId={eventId} showFilters={true} showPagination={true} eventTitle={event?.title} eventBannerUrl={event?.banner_url} />
                         </div>
                     )}
 

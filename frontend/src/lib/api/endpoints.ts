@@ -30,6 +30,7 @@ export const ENDPOINTS = {
     REQUEST: (eventId: string) => `/events/${eventId}/participants/request`,
     APPROVE: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/approve`,
     REJECT: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/reject`,
+    ATTENDEES: (eventId: string) => `/events/${eventId}/participants/attendees`,
   },
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',

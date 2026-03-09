@@ -1,207 +1,249 @@
 'use client';
 
 import React, { memo } from 'react';
+import { Text } from '@react-three/drei';
+import type { HallTextures } from './useHallTextures';
 
 /* ── Hall size constants (exported for scene camera framing) ── */
 export const HALL_WIDTH = 30;
 export const HALL_DEPTH = 24;
-const OUTER_EXTRA = 5; // extra wood floor around the hall
-const BORDER_THICKNESS = 0.4;
+const OUTER_EXTRA = 5;
 const FLOOR_Y = -0.01;
-const WALL_H = 3.8;
-const WALL_T = 0.18;
+const WALL_H = 4.2;
+const WALL_T = 0.22;
+
+/* ─── Color palette ─── */
+const ACCENT = '#e67e22';
+const ACCENT_GLOW = '#f39c12';
+const WALL_TRIM = '#d4c4a8';
+
+interface HallFloorProps {
+    eventTitle?: string;
+    textures: HallTextures;
+}
 
 /**
- * HallFloor – Richly styled exhibition hall:
- *   • Outer wood-toned floor surrounding the venue
- *   • Dark main hall floor with accent border
- *   • 4 perimeter walls themed with banners & event decor
- *   • Corner columns, entrance arch, directional signs
+ * HallFloor – Realistic exhibition hall environment with procedural textures:
+ *   • Textured wood-plank surround floor
+ *   • Polished dark marble exhibition floor
+ *   • Textured cream perimeter walls with event branding
+ *   • Textured green hedge/vine walls on left & right
+ *   • Corner pillars, decorative plants
+ *   • Event title integrated on walls
  */
-function HallFloorInner({ eventTitle }: { eventTitle?: string }) {
+function HallFloorInner({ eventTitle, textures }: HallFloorProps) {
     const halfW = HALL_WIDTH / 2;
     const halfD = HALL_DEPTH / 2;
     const outerW = HALL_WIDTH + OUTER_EXTRA * 2;
     const outerD = HALL_DEPTH + OUTER_EXTRA * 2;
 
+
+
     return (
         <group>
-            {/* ══════════ OUTER WOOD FLOOR ══════════ */}
+            {/* ══════════ OUTER WOOD FLOOR (textured) ══════════ */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y - 0.02, 0]}>
                 <planeGeometry args={[outerW, outerD]} />
-                <meshStandardMaterial color="#8B6914" roughness={0.75} metalness={0.05} />
+                <meshStandardMaterial map={textures.wood} roughness={0.65} metalness={0.02} />
             </mesh>
-            {/* Wood plank lines */}
-            {Array.from({ length: 14 }).map((_, i) => {
-                const z = -outerD / 2 + (i + 1) * (outerD / 15);
-                return (
-                    <mesh key={`plank-${i}`} position={[0, FLOOR_Y - 0.015, z]}>
-                        <boxGeometry args={[outerW, 0.005, 0.04]} />
-                        <meshStandardMaterial color="#7A5C10" roughness={0.9} />
-                    </mesh>
-                );
-            })}
 
-            {/* ══════════ MAIN HALL FLOOR ══════════ */}
+            {/* ══════════ MAIN HALL FLOOR (dark polished marble) ══════════ */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y, 0]}>
                 <planeGeometry args={[HALL_WIDTH, HALL_DEPTH]} />
-                <meshStandardMaterial color="#1e1e24" roughness={0.85} metalness={0.05} />
+                <meshStandardMaterial map={textures.marble} roughness={0.35} metalness={0.18} />
             </mesh>
 
-            {/* Inner lighter overlay */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y + 0.001, 0]}>
-                <planeGeometry args={[HALL_WIDTH - 2, HALL_DEPTH - 2]} />
-                <meshStandardMaterial color="#252530" roughness={0.9} metalness={0} />
-            </mesh>
-
-            {/* Center carpet runner (accent) */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y + 0.003, 0]}>
-                <planeGeometry args={[2.2, HALL_DEPTH - 3]} />
-                <meshStandardMaterial color="#4f46e5" roughness={0.9} transparent opacity={0.08} />
+            {/* Center aisle carpet runner */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y + 0.004, 0]}>
+                <planeGeometry args={[2.4, HALL_DEPTH - 3]} />
+                <meshStandardMaterial color={ACCENT} roughness={0.85} transparent opacity={0.08} />
             </mesh>
 
             {/* ══════════ ORANGE ACCENT BORDER ══════════ */}
-            {/* Front */}
-            <mesh position={[0, FLOOR_Y + 0.005, -halfD + BORDER_THICKNESS / 2]}>
-                <boxGeometry args={[HALL_WIDTH, 0.04, BORDER_THICKNESS]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.35} roughness={0.3} />
-            </mesh>
-            {/* Back */}
-            <mesh position={[0, FLOOR_Y + 0.005, halfD - BORDER_THICKNESS / 2]}>
-                <boxGeometry args={[HALL_WIDTH, 0.04, BORDER_THICKNESS]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.35} roughness={0.3} />
-            </mesh>
-            {/* Left */}
-            <mesh position={[-halfW + BORDER_THICKNESS / 2, FLOOR_Y + 0.005, 0]}>
-                <boxGeometry args={[BORDER_THICKNESS, 0.04, HALL_DEPTH]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.35} roughness={0.3} />
-            </mesh>
-            {/* Right */}
-            <mesh position={[halfW - BORDER_THICKNESS / 2, FLOOR_Y + 0.005, 0]}>
-                <boxGeometry args={[BORDER_THICKNESS, 0.04, HALL_DEPTH]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.35} roughness={0.3} />
-            </mesh>
-
-            {/* ══════════ PERIMETER WALLS ══════════ */}
-            {/* Back wall (far side, -Z) */}
-            <mesh position={[0, WALL_H / 2, -halfD - WALL_T / 2]}>
-                <boxGeometry args={[HALL_WIDTH + WALL_T * 2, WALL_H, WALL_T]} />
-                <meshStandardMaterial color="#2a2a36" roughness={0.7} metalness={0.1} />
-            </mesh>
-            {/* Back wall accent stripe */}
-            <mesh position={[0, WALL_H * 0.85, -halfD - 0.01]}>
-                <boxGeometry args={[HALL_WIDTH, 0.25, 0.01]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.3} roughness={0.3} />
-            </mesh>
-            {/* Back wall title banner */}
-            {eventTitle && (
-                <group position={[0, WALL_H * 0.55, -halfD + 0.02]}>
-                    {/* Banner background */}
-                    <mesh>
-                        <planeGeometry args={[HALL_WIDTH * 0.6, 1.6]} />
-                        <meshStandardMaterial color="#4f46e5" roughness={0.5} />
-                    </mesh>
-                </group>
-            )}
-
-            {/* Left wall (-X) */}
-            <mesh position={[-halfW - WALL_T / 2, WALL_H / 2, 0]}>
-                <boxGeometry args={[WALL_T, WALL_H, HALL_DEPTH + WALL_T * 2]} />
-                <meshStandardMaterial color="#2a2a36" roughness={0.7} metalness={0.1} />
-            </mesh>
-            {/* Left wall accent stripe */}
-            <mesh position={[-halfW - 0.01, WALL_H * 0.85, 0]}>
-                <boxGeometry args={[0.01, 0.25, HALL_DEPTH]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.3} roughness={0.3} />
-            </mesh>
-            {/* Left wall decorative panels */}
-            {[-halfD * 0.5, 0, halfD * 0.5].map((z, i) => (
-                <mesh key={`lpanel-${i}`} position={[-halfW + 0.01, WALL_H * 0.45, z]}>
-                    <planeGeometry args={[0.01, 1.8]} />
-                    <meshStandardMaterial color="#3a3a4a" roughness={0.6} />
+            {[
+                { pos: [0, FLOOR_Y + 0.006, -halfD + 0.2] as [number, number, number], size: [HALL_WIDTH, 0.05, 0.4] as [number, number, number] },
+                { pos: [0, FLOOR_Y + 0.006, halfD - 0.2] as [number, number, number], size: [HALL_WIDTH, 0.05, 0.4] as [number, number, number] },
+                { pos: [-halfW + 0.2, FLOOR_Y + 0.006, 0] as [number, number, number], size: [0.4, 0.05, HALL_DEPTH] as [number, number, number] },
+                { pos: [halfW - 0.2, FLOOR_Y + 0.006, 0] as [number, number, number], size: [0.4, 0.05, HALL_DEPTH] as [number, number, number] },
+            ].map((b, i) => (
+                <mesh key={`border-${i}`} position={b.pos}>
+                    <boxGeometry args={b.size} />
+                    <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.25} roughness={0.35} />
                 </mesh>
             ))}
 
-            {/* Right wall (+X) */}
+            {/* ══════════ PERIMETER WALLS ══════════ */}
+
+            {/* ── Back wall (-Z) — Textured cream wall with event branding ── */}
+            <mesh position={[0, WALL_H / 2, -halfD - WALL_T / 2]}>
+                <boxGeometry args={[HALL_WIDTH + WALL_T * 2, WALL_H, WALL_T]} />
+                <meshStandardMaterial map={textures.wall} roughness={0.6} metalness={0.02} />
+            </mesh>
+            {/* Back wall baseboard */}
+            <mesh position={[0, 0.15, -halfD - 0.01]}>
+                <boxGeometry args={[HALL_WIDTH, 0.3, 0.04]} />
+                <meshStandardMaterial color={WALL_TRIM} roughness={0.5} />
+            </mesh>
+            {/* Back wall accent stripe (orange) */}
+            <mesh position={[0, WALL_H * 0.88, -halfD - 0.01]}>
+                <boxGeometry args={[HALL_WIDTH, 0.2, 0.04]} />
+                <meshStandardMaterial color={ACCENT} emissive={ACCENT_GLOW} emissiveIntensity={0.3} roughness={0.3} />
+            </mesh>
+            {/* ── Event title centered on back wall ── */}
+            {eventTitle && (
+                <Text
+                    position={[0, WALL_H * 0.52, -halfD + 0.06]}
+                    fontSize={0.8}
+                    maxWidth={HALL_WIDTH * 0.85}
+                    textAlign="center"
+                    color="#1a1a1a"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.03}
+                    outlineColor="#ffffff"
+                    letterSpacing={0.05}
+                    fontWeight="bold"
+                    font={undefined}
+                >
+                    {eventTitle}
+                </Text>
+            )}
+
+            {/* ── Left wall (-X) — GREEN HEDGE WALL (textured) ── */}
+            <mesh position={[-halfW - WALL_T / 2, WALL_H / 2, 0]}>
+                <boxGeometry args={[WALL_T, WALL_H, HALL_DEPTH + WALL_T * 2]} />
+                <meshStandardMaterial map={textures.hedge} roughness={0.85} metalness={0} />
+            </mesh>
+            {/* Hedge leaf bumps — rows of tiny spheres simulate vine wall */}
+            {Array.from({ length: 8 }).map((_, row) => {
+                const y = 0.4 + row * (WALL_H - 0.6) / 7;
+                return Array.from({ length: 10 }).map((_, col) => {
+                    const z = -halfD + 1.2 + col * ((HALL_DEPTH - 2.4) / 9);
+                    const isLight = (row + col) % 3 === 0;
+                    return (
+                        <mesh key={`lh-${row}-${col}`} position={[-halfW + 0.02, y, z]}>
+                            <sphereGeometry args={[0.22 + (row * col % 3) * 0.04, 5, 5]} />
+                            <meshStandardMaterial
+                                color={isLight ? '#3d8a4e' : '#2d6b3a'}
+                                roughness={0.9}
+                            />
+                        </mesh>
+                    );
+                });
+            })}
+            {/* Left wall event title (vertical) */}
+            {eventTitle && (
+                <Text
+                    position={[-halfW + 0.15, WALL_H * 0.5, 0]}
+                    rotation={[0, Math.PI / 2, 0]}
+                    fontSize={0.45}
+                    maxWidth={HALL_DEPTH * 0.7}
+                    textAlign="center"
+                    color="#f0f0f0"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.015}
+                    outlineColor="#1a3d1a"
+                    font={undefined}
+                >
+                    {eventTitle}
+                </Text>
+            )}
+
+            {/* ── Right wall (+X) — GREEN HEDGE WALL (textured) ── */}
             <mesh position={[halfW + WALL_T / 2, WALL_H / 2, 0]}>
                 <boxGeometry args={[WALL_T, WALL_H, HALL_DEPTH + WALL_T * 2]} />
-                <meshStandardMaterial color="#2a2a36" roughness={0.7} metalness={0.1} />
+                <meshStandardMaterial map={textures.hedge} roughness={0.85} metalness={0} />
             </mesh>
-            {/* Right wall accent stripe */}
-            <mesh position={[halfW + 0.01, WALL_H * 0.85, 0]}>
-                <boxGeometry args={[0.01, 0.25, HALL_DEPTH]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.3} roughness={0.3} />
+            {/* Hedge leaf bumps */}
+            {Array.from({ length: 8 }).map((_, row) => {
+                const y = 0.4 + row * (WALL_H - 0.6) / 7;
+                return Array.from({ length: 10 }).map((_, col) => {
+                    const z = -halfD + 1.2 + col * ((HALL_DEPTH - 2.4) / 9);
+                    const isLight = (row + col) % 2 === 0;
+                    return (
+                        <mesh key={`rh-${row}-${col}`} position={[halfW - 0.02, y, z]}>
+                            <sphereGeometry args={[0.22 + (row * col % 3) * 0.04, 5, 5]} />
+                            <meshStandardMaterial
+                                color={isLight ? '#3d8a4e' : '#2d6b3a'}
+                                roughness={0.9}
+                            />
+                        </mesh>
+                    );
+                });
+            })}
+            {/* ── Front wall (+Z) — solid wall (no entrance) ── */}
+            <mesh position={[0, WALL_H / 2, halfD + WALL_T / 2]}>
+                <boxGeometry args={[HALL_WIDTH + WALL_T * 2, WALL_H, WALL_T]} />
+                <meshStandardMaterial map={textures.wall} roughness={0.6} metalness={0.02} />
             </mesh>
-            {/* Right wall banner panel */}
-            <mesh position={[halfW + 0.02, WALL_H * 0.45, 0]}>
-                <planeGeometry args={[0.01, 2.0]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.1} roughness={0.5} />
+            {/* Front wall baseboard */}
+            <mesh position={[0, 0.15, halfD + 0.01]}>
+                <boxGeometry args={[HALL_WIDTH, 0.3, 0.04]} />
+                <meshStandardMaterial color={WALL_TRIM} roughness={0.5} />
+            </mesh>
+            {/* Front wall accent stripe */}
+            <mesh position={[0, WALL_H * 0.88, halfD + 0.01]}>
+                <boxGeometry args={[HALL_WIDTH, 0.2, 0.04]} />
+                <meshStandardMaterial color={ACCENT} emissive={ACCENT_GLOW} emissiveIntensity={0.3} roughness={0.3} />
             </mesh>
 
-            {/* Front wall (+Z) — partial with entrance gap */}
-            {/* Left segment */}
-            <mesh position={[-halfW * 0.55, WALL_H / 2, halfD + WALL_T / 2]}>
-                <boxGeometry args={[HALL_WIDTH * 0.35, WALL_H, WALL_T]} />
-                <meshStandardMaterial color="#2a2a36" roughness={0.7} metalness={0.1} />
-            </mesh>
-            {/* Right segment */}
-            <mesh position={[halfW * 0.55, WALL_H / 2, halfD + WALL_T / 2]}>
-                <boxGeometry args={[HALL_WIDTH * 0.35, WALL_H, WALL_T]} />
-                <meshStandardMaterial color="#2a2a36" roughness={0.7} metalness={0.1} />
-            </mesh>
-            {/* Entrance arch top */}
-            <mesh position={[0, WALL_H - 0.2, halfD + WALL_T / 2]}>
-                <boxGeometry args={[HALL_WIDTH * 0.32, 0.5, WALL_T]} />
-                <meshStandardMaterial color="#4f46e5" emissive="#4f46e5" emissiveIntensity={0.4} roughness={0.3} />
-            </mesh>
-
-            {/* ══════════ CORNER COLUMNS ══════════ */}
-            {[
-                [-halfW, -halfD],
-                [halfW, -halfD],
-                [-halfW, halfD],
-                [halfW, halfD],
-            ].map(([x, z], i) => (
+            {/* ══════════ CORNER PILLARS ══════════ */}
+            {(
+                [
+                    [-halfW, -halfD],
+                    [halfW, -halfD],
+                    [-halfW, halfD],
+                    [halfW, halfD],
+                ] as [number, number][]
+            ).map(([x, z], i) => (
                 <group key={`col-${i}`} position={[x, 0, z]}>
-                    {/* Column body */}
                     <mesh position={[0, WALL_H / 2, 0]}>
-                        <boxGeometry args={[0.5, WALL_H, 0.5]} />
-                        <meshStandardMaterial color="#4f46e5" roughness={0.4} metalness={0.15} />
+                        <boxGeometry args={[0.55, WALL_H, 0.55]} />
+                        <meshStandardMaterial color={ACCENT} roughness={0.4} metalness={0.1} />
                     </mesh>
-                    {/* Column cap */}
-                    <mesh position={[0, WALL_H + 0.1, 0]}>
-                        <boxGeometry args={[0.65, 0.2, 0.65]} />
-                        <meshStandardMaterial color="#4338ca" roughness={0.4} />
+                    <mesh position={[0, WALL_H + 0.12, 0]}>
+                        <boxGeometry args={[0.72, 0.24, 0.72]} />
+                        <meshStandardMaterial color="#c96b10" roughness={0.4} />
                     </mesh>
-                    {/* Column base */}
                     <mesh position={[0, 0.1, 0]}>
-                        <boxGeometry args={[0.6, 0.2, 0.6]} />
-                        <meshStandardMaterial color="#4338ca" roughness={0.4} />
+                        <boxGeometry args={[0.68, 0.2, 0.68]} />
+                        <meshStandardMaterial color="#c96b10" roughness={0.4} />
                     </mesh>
                 </group>
             ))}
 
-            {/* ══════════ ENTRANCE FLOOR WELCOME MAT ══════════ */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y + 0.004, halfD + 1.2]}>
-                <planeGeometry args={[6, 2]} />
-                <meshStandardMaterial color="#4f46e5" roughness={0.9} transparent opacity={0.3} />
-            </mesh>
-
-            {/* ══════════ DECORATIVE PLANTS (simple green pillars) ══════════ */}
+            {/* ══════════ DECORATIVE PLANTS ══════════ */}
             {[
-                [-halfW + 1.2, halfD - 1.2],
-                [halfW - 1.2, halfD - 1.2],
+                [-halfW + 1.5, halfD - 1.5],
+                [halfW - 1.5, halfD - 1.5],
+                [-halfW + 1.5, -halfD + 1.5],
+                [halfW - 1.5, -halfD + 1.5],
             ].map(([x, z], i) => (
                 <group key={`plant-${i}`} position={[x, 0, z]}>
                     {/* Pot */}
-                    <mesh position={[0, 0.25, 0]}>
-                        <cylinderGeometry args={[0.22, 0.28, 0.5, 8]} />
-                        <meshStandardMaterial color="#8B6914" roughness={0.7} />
+                    <mesh position={[0, 0.3, 0]}>
+                        <cylinderGeometry args={[0.24, 0.3, 0.6, 8]} />
+                        <meshStandardMaterial color="#7a5c2e" roughness={0.7} />
                     </mesh>
-                    {/* Green foliage */}
-                    <mesh position={[0, 0.7, 0]}>
-                        <sphereGeometry args={[0.35, 8, 8]} />
-                        <meshStandardMaterial color="#2d8a4e" roughness={0.8} />
+                    {/* Soil rim */}
+                    <mesh position={[0, 0.61, 0]}>
+                        <cylinderGeometry args={[0.26, 0.24, 0.04, 8]} />
+                        <meshStandardMaterial color="#5a3e1e" roughness={0.8} />
+                    </mesh>
+                    {/* Main foliage */}
+                    <mesh position={[0, 0.9, 0]}>
+                        <sphereGeometry args={[0.38, 8, 8]} />
+                        <meshStandardMaterial color="#2d8a4e" roughness={0.85} />
+                    </mesh>
+                    {/* Secondary foliage layer */}
+                    <mesh position={[0.1, 1.1, 0.05]}>
+                        <sphereGeometry args={[0.25, 6, 6]} />
+                        <meshStandardMaterial color="#3da85e" roughness={0.85} />
+                    </mesh>
+                    <mesh position={[-0.08, 1.05, -0.08]}>
+                        <sphereGeometry args={[0.2, 6, 6]} />
+                        <meshStandardMaterial color="#268a42" roughness={0.85} />
                     </mesh>
                 </group>
             ))}

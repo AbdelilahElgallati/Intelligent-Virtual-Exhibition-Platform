@@ -23,6 +23,7 @@ from app.modules.participants.service import (
     get_participant_by_id,
     get_user_participation,
     invite_participant,
+    list_event_attendees,
     list_event_participants,
     reject_participant_with_reason,
     request_to_join,
@@ -179,3 +180,15 @@ async def get_event_participants(
 
     participants = await list_event_participants(event_id)
     return [ParticipantRead(**p) for p in participants]
+
+
+@router.get("/attendees")
+async def get_event_attendees(
+    event_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Public endpoint: list approved participants with profile info for networking."""
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return await list_event_attendees(event_id)

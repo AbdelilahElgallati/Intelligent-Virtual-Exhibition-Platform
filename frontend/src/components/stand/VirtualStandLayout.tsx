@@ -52,14 +52,11 @@ function hexToRgb(hex: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Booth scene images (curated office / showroom backdrops)           */
+/*  Static assets (from /public/stands/)                               */
 /* ------------------------------------------------------------------ */
-const BOOTH_SCENES = [
-    'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80',
-    'https://images.unsplash.com/photo-1497215842964-222b430dc094?auto=format&fit=crop&w=1920&q=80',
-    'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1920&q=80',
-    'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1920&q=80',
-];
+const SCENE_BG = '/stands/office-stand.png';
+const PRESENTER_MALE = '/stands/male-presenter.png';
+const PRESENTER_FEMALE = '/stands/female-presenter.png';
 
 function hashStandId(id: string): number {
     let hash = 0;
@@ -91,7 +88,8 @@ export function VirtualStandLayout({
     const [showPanel, setShowPanel] = useState(false);
     const { r, g, b } = hexToRgb(themeColor);
     const standId = stand.id || (stand as any)._id || stand.name || '';
-    const sceneUrl = BOOTH_SCENES[hashStandId(standId) % BOOTH_SCENES.length];
+    const presenterImg = hashStandId(standId) % 2 === 0 ? PRESENTER_MALE : PRESENTER_FEMALE;
+    const presenterLabel = hashStandId(standId) % 2 === 0 ? 'male' : 'female';
 
     const handleTabClick = (tab: 'resources' | 'about') => {
         if (activeTab === tab && showPanel) {
@@ -109,11 +107,10 @@ export function VirtualStandLayout({
 
             {/* Booth scene image */}
             <img
-                src={sceneUrl}
+                src={SCENE_BG}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
             {/* CSS gradient fallback (behind image) */}
             <div
@@ -144,37 +141,47 @@ export function VirtualStandLayout({
 
             {/* ================ BRANDING OVERLAYS ================ */}
 
-            {/* Center banner frame (visible when stand has bg image) */}
-            {stand.stand_background_url && (
-                <div className="absolute top-5 sm:top-7 left-1/2 -translate-x-1/2 z-10">
-                    <div className="relative w-[280px] sm:w-[420px] lg:w-[540px] aspect-[16/7] rounded-lg overflow-hidden shadow-2xl ring-4 ring-white/20">
+            {/* Wall banner — positioned on the back wall */}
+            <div className="absolute top-[6%] sm:top-[8%] left-1/2 -translate-x-1/2 z-10">
+                <div
+                    className="relative w-[200px] sm:w-[300px] lg:w-[380px] rounded-xl overflow-hidden shadow-2xl ring-2"
+                    style={{ borderColor: `${themeColor}88`, ringColor: `${themeColor}44` }}
+                >
+                    {stand.stand_background_url ? (
                         <img
                             src={stand.stand_background_url}
                             alt=""
-                            className="w-full h-full object-cover"
+                            className="w-full aspect-[16/7] object-cover"
                             draggable={false}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                        <div className="absolute bottom-2.5 left-3.5 right-3.5">
-                            <p className="text-white font-bold text-xs sm:text-sm lg:text-base drop-shadow-lg truncate">
-                                {stand.name}
-                            </p>
+                    ) : (
+                        <div
+                            className="w-full aspect-[16/7] flex items-center justify-center"
+                            style={{ background: `linear-gradient(135deg, ${themeColor}cc, ${themeColor}88)` }}
+                        >
+                            {stand.logo_url ? (
+                                <img
+                                    src={stand.logo_url}
+                                    alt={stand.name}
+                                    className="h-10 sm:h-14 w-auto object-contain"
+                                    draggable={false}
+                                />
+                            ) : (
+                                <Building2 className="w-8 h-8 text-white/70" />
+                            )}
                         </div>
+                    )}
+                    {/* Stand name strip */}
+                    <div
+                        className="px-3 py-1.5 text-center"
+                        style={{ backgroundColor: `${themeColor}ee` }}
+                    >
+                        <p className="text-white font-bold text-[10px] sm:text-xs lg:text-sm drop-shadow truncate">
+                            {stand.name}
+                        </p>
                     </div>
                 </div>
-            )}
-
-            {/* Welcome text (shows when NO banner, so the wall isn't empty) */}
-            {!stand.stand_background_url && (
-                <div className="absolute top-[12%] left-1/2 -translate-x-1/2 z-10 text-center pointer-events-none">
-                    <p className="text-white/70 text-base sm:text-lg font-light tracking-widest uppercase">
-                        Welcome to
-                    </p>
-                    <p className="text-white font-bold text-2xl sm:text-4xl drop-shadow-lg mt-1">
-                        {stand.name}
-                    </p>
-                </div>
-            )}
+            </div>
 
             {/* Left wall panel — Logo & Company Info */}
             <div className="absolute top-[22%] sm:top-[20%] left-3 sm:left-5 lg:left-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block">
@@ -247,26 +254,25 @@ export function VirtualStandLayout({
             </div>
 
             {/* ================ PRESENTER ================ */}
-            {stand.presenter_avatar_url && (
-                <div className="absolute bottom-[5%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center">
-                    <img
-                        src={stand.presenter_avatar_url}
-                        alt={stand.presenter_name ?? 'Presenter'}
-                        className="h-48 sm:h-60 lg:h-72 w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
-                        draggable={false}
-                    />
-                    {stand.presenter_name && (
-                        <div
-                            className="mt-1.5 px-3.5 py-1 rounded-full shadow-lg text-center backdrop-blur-sm"
-                            style={{ backgroundColor: `${themeColor}dd` }}
-                        >
-                            <p className="text-[11px] sm:text-xs font-medium text-white whitespace-nowrap">
-                                {stand.presenter_name}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
+            <div className="absolute bottom-[5%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center">
+                {/* Name badge ABOVE the presenter */}
+                {stand.presenter_name && (
+                    <div
+                        className="mb-1.5 px-3.5 py-1 rounded-full shadow-lg text-center backdrop-blur-sm"
+                        style={{ backgroundColor: `${themeColor}dd` }}
+                    >
+                        <p className="text-[11px] sm:text-xs font-medium text-white whitespace-nowrap">
+                            {stand.presenter_name}
+                        </p>
+                    </div>
+                )}
+                <img
+                    src={presenterImg}
+                    alt={stand.presenter_name ?? `${presenterLabel} presenter`}
+                    className="h-56 sm:h-72 lg:h-[24rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
+                    draggable={false}
+                />
+            </div>
 
             {/* ================ UI OVERLAY ================ */}
 

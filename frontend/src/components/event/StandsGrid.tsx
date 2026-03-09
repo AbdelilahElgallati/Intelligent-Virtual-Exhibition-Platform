@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
-import { Search, SlidersHorizontal, X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
+import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
 
 /* Lazy-load the 3D hall to keep initial bundle light */
 const HallScene = lazy(() => import('@/components/hall3d/HallScene').then(m => ({ default: m.HallScene })));
@@ -45,6 +45,8 @@ interface StandsGridProps {
     showPagination?: boolean;
     /** Event title displayed inside the 3D hall */
     eventTitle?: string;
+    /** Event banner image URL for wall display in 3D hall */
+    eventBannerUrl?: string;
 }
 
 export function StandsGrid({
@@ -53,7 +55,8 @@ export function StandsGrid({
     initialFilters,
     pageSize = DEFAULT_PAGE_SIZE,
     showPagination = true,
-    eventTitle
+    eventTitle,
+    eventBannerUrl
 }: StandsGridProps) {
     const router = useRouter();
     const [stands, setStands] = useState<Stand[]>([]);
@@ -144,58 +147,38 @@ export function StandsGrid({
         <div className="space-y-6">
             {/* ── Persistent Filter Bar ── */}
             {showFilters && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                        {/* Search input */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search stands by name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            />
-                            {search && (
-                                <button
-                                    onClick={() => setSearch('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Category dropdown */}
-                        <div className="relative min-w-[180px]">
-                            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="w-full appearance-none pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition cursor-pointer"
-                            >
-                                <option value="">All Categories</option>
-                                {STAND_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Reset button */}
-                        {hasActiveFilters && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    {/* Category chips */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs font-medium text-gray-500 mr-1">Category:</span>
+                        <button
+                            onClick={() => setCategory('')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                                category === ''
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                            }`}
+                        >
+                            All
+                        </button>
+                        {STAND_CATEGORIES.map((cat) => (
                             <button
-                                onClick={resetFilters}
-                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition whitespace-nowrap"
+                                key={cat}
+                                onClick={() => setCategory(category === cat ? '' : cat)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                                    category === cat
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                                }`}
                             >
-                                <X className="h-3.5 w-3.5" />
-                                Reset
+                                {cat}
                             </button>
-                        )}
+                        ))}
                     </div>
 
-                    {/* Active filter pills */}
+                    {/* Active filter summary + reset */}
                     {hasActiveFilters && (
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                             <span className="text-xs text-gray-500 font-medium">Active:</span>
                             {category && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
@@ -207,12 +190,19 @@ export function StandsGrid({
                             )}
                             {search && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                    &quot;{search}&quot;
+                                    {search}
                                     <button onClick={() => setSearch('')} className="hover:text-amber-900">
                                         <X className="h-3 w-3" />
                                     </button>
                                 </span>
                             )}
+                            <button
+                                onClick={resetFilters}
+                                className="ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
+                            >
+                                <X className="h-3 w-3" />
+                                Reset
+                            </button>
                         </div>
                     )}
                 </div>
@@ -287,6 +277,7 @@ export function StandsGrid({
                             stands={stands}
                             onStandClick={(standId) => router.push(`/events/${eventId}/stands/${standId}`)}
                             eventTitle={eventTitle}
+                            eventBannerUrl={eventBannerUrl}
                         />
                     </Suspense>
                 ) : (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { Stand } from '@/lib/api/types';
+import { Event } from '@/types/event';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -17,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
     const { id, standId } = use(params);
     const [stand, setStand] = useState<Stand | null>(null);
+    const [eventData, setEventData] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'resources' | 'about'>('resources');
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -32,6 +34,14 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             try {
                 const data = await apiClient.get<Stand>(ENDPOINTS.STANDS.GET(id, standId));
                 setStand(data);
+
+                // Fetch event data for meeting schedule constraints
+                try {
+                    const evt = await apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id));
+                    setEventData(evt);
+                } catch {
+                    /* event fetch is non-critical */
+                }
 
                 // Fetch favorites state
                 if (isAuthenticated) {
@@ -175,6 +185,9 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 onClose={() => setIsMeetingModalOpen(false)}
                 standId={standId}
                 standName={stand.name}
+                eventStartDate={eventData?.start_date}
+                eventEndDate={eventData?.end_date}
+                scheduleDays={eventData?.schedule_days}
             />
 
             {/* Products Panel */}
