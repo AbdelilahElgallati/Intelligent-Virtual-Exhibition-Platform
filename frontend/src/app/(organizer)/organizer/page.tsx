@@ -17,6 +17,8 @@ export default function OrganizerDashboard() {
 
     const [summary, setSummary] = useState<OrganizerSummary | null>(null);
     const [exportLoading, setExportLoading] = useState(false);
+    const [exportSuccess, setExportSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -39,10 +41,15 @@ export default function OrganizerDashboard() {
 
     const handleExportOverall = async () => {
         setExportLoading(true);
+        setError(null);
+        setExportSuccess(false);
         try {
             await organizerService.exportOverallReportPDF();
-        } catch (err) {
+            setExportSuccess(true);
+            setTimeout(() => setExportSuccess(false), 5000);
+        } catch (err: any) {
             console.error('Export failed', err);
+            setError(err.message || "Failed to export overall report.");
         } finally {
             setExportLoading(false);
         }
@@ -74,6 +81,18 @@ export default function OrganizerDashboard() {
                     </Button>
                 )}
             </div>
+
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl text-sm flex gap-3 items-center animate-in slide-in-from-top-2 duration-300">
+                    <Download className="w-5 h-5 shrink-0" /> {error}
+                </div>
+            )}
+
+            {exportSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-2xl text-sm flex gap-3 items-center animate-in slide-in-from-top-2 duration-300">
+                    <CheckCircle2 className="w-5 h-5 shrink-0" /> Overall performance report exported successfully!
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, idx) => {

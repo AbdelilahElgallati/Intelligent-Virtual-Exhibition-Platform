@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Event } from '@/lib/api/types';
+import { Event } from '@/types/event';
 import { formatDate } from '@/lib/utils';
 
 interface EventCardProps {
@@ -34,7 +34,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
             {event.title}
           </CardTitle>
           {showStatus && event.state && (
-            <Badge variant={event.state === 'APPROVED' || event.state === 'live' ? 'success' : 'secondary'}>
+            <Badge variant={event.state === 'approved' || event.state === 'live' ? 'success' : 'secondary'}>
               {event.state.toUpperCase()}
             </Badge>
           )}

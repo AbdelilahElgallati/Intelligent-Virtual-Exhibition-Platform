@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { FloatingAssistant } from '@/components/assistant/FloatingAssistant';
 
 // Routes that should NOT show the global Navbar/Footer
-const SHELL_FREE_PREFIXES = ['/admin', '/organizer'];
+const SHELL_FREE_PREFIXES = ['/admin', '/organizer', '/enterprise'];
 
 // Routes that should hide Navbar + Footer (fully immersive pages)
 const IMMERSIVE_PATTERNS = [/^\/events\/[^/]+\/stands\/[^/]+$/];

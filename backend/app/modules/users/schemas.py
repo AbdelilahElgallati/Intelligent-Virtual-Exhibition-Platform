@@ -73,6 +73,7 @@ class UserRead(BaseModel):
     full_name: str
     role: Role
     is_active: bool
+    approval_status: Optional[str] = None  # PENDING_APPROVAL | APPROVED | REJECTED
     created_at: datetime
 
     # Profile fields (optional – backward compatible)

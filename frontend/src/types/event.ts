@@ -56,6 +56,13 @@ export interface OrganizerEvent {
 
 export type Event = OrganizerEvent;
 
+export interface EventsResponse {
+    items: Event[];
+    total: number;
+    limit?: number;
+    skip?: number;
+}
+
 export interface EventCreatePayload {
     title: string;
     description?: string;

@@ -1,10 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/common/Container";
 import { SectionTitle } from "@/components/common/SectionTitle";
 import { Card, CardContent } from "@/components/ui/Card";
 
 export default function Home() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (isAuthenticated && user) {
+      // Non-visitor users go straight to their dashboard
+      if (user.role === 'admin') { router.replace('/admin'); return; }
+      if (user.role === 'organizer') { router.replace('/organizer'); return; }
+      if (user.role === 'enterprise') { router.replace('/enterprise'); return; }
+    }
+    // Visitors or unauthenticated users see the homepage
+    setReady(true);
+  }, [isLoading, isAuthenticated, user, router]);
+
+  // Show nothing while checking auth / redirecting
+  if (!ready) return null;
   return (
     <div className="flex flex-col gap-20 pb-20">
       {/* Hero Section */}

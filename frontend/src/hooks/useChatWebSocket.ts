@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL, API_PREFIX } from '@/lib/config';
 
 interface Message {
     _id?: string;
@@ -22,12 +23,18 @@ export function useChatWebSocket(roomId: string | null) {
     const connect = useCallback(() => {
         if (!roomId || !tokens?.access_token) return;
 
+        if (!API_BASE_URL) {
+            setError('Missing API base URL');
+            return;
+        }
+
         // Close existing connection
         if (wsRef.current) {
             wsRef.current.close();
         }
 
-        const wsUrl = `ws://127.0.0.1:8000/api/v1/chat/ws/chat/${roomId}?token=${tokens.access_token}`;
+        const wsBaseUrl = API_BASE_URL.startsWith('ws') ? API_BASE_URL : API_BASE_URL.replace(/^http/, 'ws');
+        const wsUrl = `${wsBaseUrl}${API_PREFIX}/chat/ws/chat/${roomId}?token=${tokens.access_token}`;
 
         try {
             const ws = new WebSocket(wsUrl);
@@ -63,8 +70,11 @@ export function useChatWebSocket(roomId: string | null) {
                 }
             };
 
-            ws.onerror = (e) => {
-                console.error('WS Error', e);
+            ws.onerror = () => {
+                console.warn('WS connection error', {
+                    url: wsUrl,
+                    readyState: ws.readyState,
+                });
                 setError('Connection error');
             };
 
@@ -75,6 +85,8 @@ export function useChatWebSocket(roomId: string | null) {
     }, [roomId, tokens?.access_token]);
 
     useEffect(() => {
+        // Clear old messages when room changes so we start fresh
+        setMessages([]);
         connect();
         return () => {
             if (wsRef.current) {

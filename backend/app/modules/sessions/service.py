@@ -85,14 +85,9 @@ async def create_session(
     ev_start = _aware(event_start)
     ev_end = _aware(event_end)
 
-    # Grace window of 1 day on each boundary to absorb browser ↔ UTC timezone
-    # offset differences (±14 h worst case).  Strict intra-event scheduling is
-    # left to the administrator; we only block obviously wrong years/dates.
-    GRACE = timedelta(days=1)
-
-    if ev_start and session_start < ev_start - GRACE:
+    if ev_start and session_start < ev_start:
         raise ValueError("session start_time is before event start_date")
-    if ev_end and session_end > ev_end + GRACE:
+    if ev_end and session_end > ev_end:
         raise ValueError("session end_time is after event end_date")
 
     now = _now()

@@ -8,12 +8,44 @@ from datetime import datetime
 import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
+from app.modules.leads.repository import lead_repo
+from app.modules.leads.schemas import LeadInteraction
 
 router = APIRouter()
 
 @router.get("/rooms", response_model=List[ChatRoomSchema])
-async def get_my_rooms(current_user: dict = Depends(get_current_user)):
-    return await chat_repo.get_user_rooms(current_user["_id"])
+async def get_my_rooms(
+    event_id: str = None,
+    room_category: str = None,
+    current_user: dict = Depends(get_current_user),
+):
+    rooms = await chat_repo.get_user_rooms(
+        str(current_user["_id"]),
+        event_id=event_id,
+        room_category=room_category,
+    )
+    
+    # Enrich rooms with member names
+    from app.modules.users.service import get_user_by_id
+    enriched_rooms = []
+    for room in rooms:
+        other_member_id = next((m for m in room.members if m != str(current_user["_id"])), None)
+        if other_member_id:
+            other_user = await get_user_by_id(other_member_id)
+            if other_user:
+                name = other_user.get('username')
+                if not name:
+                    name = other_user.get('full_name')
+                if not name and other_user.get('email'):
+                    name = other_user.get('email').split('@')[0]
+                room.name = name or "Visitor"
+            else:
+                room.name = f"Member #{other_member_id[:4]}"
+        else:
+            room.name = "Unknown"
+        enriched_rooms.append(room)
+        
+    return enriched_rooms
 
 @router.get("/rooms/{room_id}/messages", response_model=List[MessageSchema])
 async def get_room_history(
@@ -48,11 +80,50 @@ async def initiate_chat_with_stand(
     if not owner_id:
         raise HTTPException(status_code=404, detail="Organization not found")
     
-    # Optional: Prevent chatting with self
-    if owner_id == str(current_user["_id"]):
-         pass
+    # Log lead interaction
+    if current_user.get("role") == "visitor":
+        try:
+            await lead_repo.log_interaction(LeadInteraction(
+                visitor_id=str(current_user["_id"]),
+                stand_id=stand_id,
+                interaction_type="chat",
+                metadata={"stand_name": stand.get("name")}
+            ))
+        except Exception:
+            pass
 
-    return await chat_repo.get_or_create_direct_room(str(current_user["_id"]), owner_id)
+    event_id = stand.get("event_id")
+    return await chat_repo.get_or_create_direct_room(
+        str(current_user["_id"]), owner_id,
+        room_category="visitor", event_id=str(event_id) if event_id else None,
+    )
+
+@router.post("/rooms/b2b/{partner_org_id}", response_model=ChatRoomSchema)
+async def initiate_b2b_chat(
+    partner_org_id: str,
+    event_id: str = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Start a B2B chat between current user (enterprise) and another organization owner.
+    """
+    from app.modules.organizations.service import get_organization_by_id
+    
+    partner_org = await get_organization_by_id(partner_org_id)
+    if not partner_org:
+        raise HTTPException(status_code=404, detail="Partner organization not found")
+    
+    owner_id = partner_org.get("owner_id")
+    if not owner_id:
+        raise HTTPException(status_code=404, detail="Organization owner not found")
+    
+    if owner_id == str(current_user["_id"]):
+        raise HTTPException(status_code=400, detail="Cannot start a B2B chat with yourself")
+
+    return await chat_repo.get_or_create_direct_room(
+        str(current_user["_id"]), owner_id,
+        room_category="b2b", event_id=event_id,
+    )
 
 @router.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(
@@ -60,6 +131,7 @@ async def websocket_endpoint(
     room_id: str,
     token: str = Query(None),
 ):
+    await websocket.accept()
     from app.core.security import decode_token
     
     user = None
@@ -73,17 +145,25 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    # Check room membership (accept ObjectId or string room ids)
+    # Check room membership (accept ObjectId or string room ids and member ids)
     room = None
+    user_id_str = str(user["_id"])
+    user_id_obj = ObjectId(user_id_str) if ObjectId.is_valid(user_id_str) else None
+    
+    query_members = {"$in": [user_id_str, user_id_obj]} if user_id_obj else user_id_str
+    
     if ObjectId.is_valid(room_id):
-        room = await chat_repo.rooms.find_one({"_id": ObjectId(room_id), "members": str(user["_id"])})
+        room = await chat_repo.rooms.find_one({"_id": ObjectId(room_id), "members": query_members})
     if room is None:
-        room = await chat_repo.rooms.find_one({"id": room_id, "members": str(user["_id"])})
+        room = await chat_repo.rooms.find_one({"id": room_id, "members": query_members})
+    
     if room is None:
+        print(f"[WS] Access Denied: User {user_id_str} is not a member of room {room_id}")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await manager.connect(str(user["_id"]), websocket)
+    await manager.connect(user_id_str, websocket)
+    print(f"[WS] Connected: User {user_id_str} to room {room_id}")
     
     try:
         while True:
@@ -93,8 +173,8 @@ async def websocket_endpoint(
             # Create Message
             new_msg = {
                 "room_id": room_id,
-                "sender_id": str(user["_id"]),
-                "sender_name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip(),
+                "sender_id": user_id_str,
+                "sender_name": user.get('username') or user.get('full_name') or "Visitor",
                 "content": message_data.get("content"),
                 "type": message_data.get("type", "text"),
                 "timestamp": datetime.utcnow()
@@ -108,7 +188,8 @@ async def websocket_endpoint(
             await manager.broadcast_to_room(payload, room["members"])
             
     except WebSocketDisconnect:
-        manager.disconnect(str(user["_id"]), websocket)
+        print(f"[WS] Disconnected: User {user_id_str}")
+        manager.disconnect(user_id_str, websocket)
     except Exception as e:
-        print(f"WS Error: {e}")
-        manager.disconnect(str(user["_id"]), websocket)
+        print(f"[WS] Error for User {user_id_str}: {e}")
+        manager.disconnect(user_id_str, websocket)

@@ -22,6 +22,7 @@ class LeadRepository:
         
         # Update or create lead entry
         # In a real app, we'd fetch actual visitor info
+        # Interaction types: visit, resource_download, chat, meeting, product_request
         await self.leads.update_one(
             {"visitor_id": interaction.visitor_id, "stand_id": interaction.stand_id},
             {

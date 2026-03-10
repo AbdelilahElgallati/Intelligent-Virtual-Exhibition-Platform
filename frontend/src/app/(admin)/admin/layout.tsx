@@ -18,6 +18,8 @@ import {
     Activity,
     ScrollText,
     AlertTriangle,
+    UserCheck,
+    Briefcase,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -25,9 +27,9 @@ const NAV_ITEMS = [
     { label: 'Events', href: '/admin/events', icon: CalendarCheck },
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Organizations', href: '/admin/organizations', icon: Building2 },
-    // { label: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
-    // Week 2
-    // { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { label: 'Enterprises', href: '/admin/enterprises', icon: Briefcase },
+    { label: 'Organizer Approvals', href: '/admin/organizer-registrations', icon: UserCheck },
+    { label: 'Enterprise Approvals', href: '/admin/event-join-requests', icon: Briefcase },
     { label: 'Monitoring', href: '/admin/monitoring', icon: Activity },
     { label: 'Audit Logs', href: '/admin/audit', icon: ScrollText },
     { label: 'Incidents', href: '/admin/incidents', icon: AlertTriangle },

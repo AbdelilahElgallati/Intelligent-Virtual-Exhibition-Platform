@@ -107,6 +107,21 @@ async def invite_to_organization(
     )
 
 
+@router.get("/{organization_id}", response_model=OrganizationRead)
+async def get_organization(
+    organization_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> OrganizationRead:
+    """
+    Get organization by ID.
+    """
+    organization = await get_organization_by_id(organization_id)
+    if organization is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found",
+        )
+    return OrganizationRead(**organization)
 @router.get("/", response_model=list[OrganizationRead])
 async def list_organizations(
     current_user: dict = Depends(get_current_user),

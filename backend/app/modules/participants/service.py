@@ -182,7 +182,7 @@ async def reject_participant_with_reason(participant_id, reason: Optional[str] =
 
 async def list_enterprise_requests(
     event_id: str,
-    status: str = "requested",
+    status: str = "pending_admin_approval",
     search: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,

@@ -45,6 +45,8 @@ class ChatRoomSchema(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: Optional[str] = None
     type: str = "direct" # direct, group, stand
+    room_category: Optional[str] = None  # "visitor" or "b2b"
+    event_id: Optional[str] = None
     members: List[str] # List of user_ids
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_message: Optional[dict] = None

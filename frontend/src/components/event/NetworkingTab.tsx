@@ -363,7 +363,9 @@ function MeetingCard({ meeting, stands, eventId }: { meeting: Meeting; stands: S
     };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-4">
+
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            {/* Stand Logo */}
             <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
                 style={{ backgroundColor: stand?.theme_color || '#f3f4f6' }}
@@ -381,14 +383,46 @@ function MeetingCard({ meeting, stands, eventId }: { meeting: Meeting; stands: S
                 {meeting.purpose && <p className="text-xs text-gray-400 truncate">{meeting.purpose}</p>}
             </div>
 
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[meeting.status] || 'bg-gray-100 text-gray-800'}`}>
-                {meeting.status}
-            </span>
+            {/* Status Badge */}
+            <div className="flex items-center gap-2 sm:ml-auto">
+                <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
+                        statusColors[meeting.status] || 'bg-gray-100 text-gray-800'
+                    }`}
+                >
+                    {meeting.status}
+                </span>
+                {stand && (
+                    <Link
+                        href={`/events/${eventId}/stands/${stand.id}`}
+                        className="px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                        View
+                    </Link>
+                )}
+            </div>
 
-            {stand && (
-                <Link href={`/events/${eventId}/stands/${stand.id}`} className="px-3 py-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                    View
-                </Link>
+            {meeting.status === 'approved' && (
+                <div className="sm:ml-auto flex flex-col sm:items-end gap-2">
+                    <span className="text-xs text-gray-400">
+                        Waiting for the other side to join.
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            console.info('Meeting join is not implemented yet.');
+                        }}
+                        className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+                    >
+                        Join now
+                    </button>
+                </div>
+            )}
+
+            {meeting.status === 'pending' && (
+                <div className="sm:ml-auto text-xs text-gray-400 font-medium">
+                    Waiting for approval...
+                </div>
             )}
         </div>
     );

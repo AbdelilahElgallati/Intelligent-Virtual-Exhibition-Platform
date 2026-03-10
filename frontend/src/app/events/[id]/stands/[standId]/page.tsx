@@ -11,7 +11,6 @@ import { VirtualStandLayout } from '@/components/stand/VirtualStandLayout';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
 import { ChatShell } from '@/components/assistant/ChatShell';
-import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -24,8 +23,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-    const [isProductsOpen, setIsProductsOpen] = useState(false);
-    const [hasProducts, setHasProducts] = useState(false);
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
     const { isAuthenticated } = useAuth();
 
@@ -63,14 +60,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     });
                 } catch (e) {
                     // ignore
-                }
-
-                // Check if stand has marketplace products
-                try {
-                    const prods = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(standId));
-                    setHasProducts(Array.isArray(prods) && prods.length > 0);
-                } catch {
-                    /* ignore */
                 }
             } catch (error) {
                 console.error('Failed to fetch stand', error);
@@ -119,8 +108,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 onChatOpen={() => setIsChatOpen(true)}
                 onMeetingOpen={() => setIsMeetingModalOpen(true)}
                 onAssistantOpen={() => setIsAssistantOpen(true)}
-                onProductsOpen={() => setIsProductsOpen(true)}
-                hasProducts={hasProducts}
                 onFavoriteToggle={toggleFavorite}
                 favoriteId={favoriteId}
                 activeTab={activeTab}
@@ -189,16 +176,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 eventEndDate={eventData?.end_date}
                 scheduleDays={eventData?.schedule_days}
             />
-
-            {/* Products Panel */}
-            {isProductsOpen && (
-                <ProductsPanel
-                    standId={standId}
-                    standName={stand.name}
-                    themeColor={themeColor}
-                    onClose={() => setIsProductsOpen(false)}
-                />
-            )}
         </>
     );
 }

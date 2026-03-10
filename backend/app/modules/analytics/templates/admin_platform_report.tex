@@ -1,0 +1,145 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in, headheight=14.5pt}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{lastpage}
+\usepackage{colortbl}
+
+% Color Palette
+\definecolor{primary}{HTML}{1E293B}   % Slate 800
+\definecolor{secondary}{HTML}{0F172A} % Slate 900
+\definecolor{accent}{HTML}{6366F1}    % Indigo
+\definecolor{success}{HTML}{10B981}   % Emerald
+\definecolor{graybg}{HTML}{F8FAFC}
+\definecolor{bordergray}{HTML}{E2E8F0}
+
+% TColorBox Styles
+\tcbset{
+    kpicard/.style={
+        colback=graybg,
+        colframe=bordergray,
+        boxrule=0.5pt,
+        sharp corners,
+        fontupper=\small,
+        width=0.3\textwidth,
+        nobeforeafter,
+        boxsep=2pt,
+        left=4pt,
+        right=4pt,
+        top=4pt,
+        bottom=4pt,
+        equal height group=kpis
+    }
+}
+
+% Page Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\color{gray}\small IVEP - Executive Platform Report}
+\rhead{\color{gray}\small \today}
+\lfoot{\color{gray}\small Confidential Administration Document - Generated: {{ generated_at }}}
+\rfoot{\color{gray}\small Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Section Styles
+\titleformat{\section}{\color{secondary}\normalfont\Large\bfseries}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\color{accent}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% --- Cover Page ---
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge \color{secondary} \bfseries IVEP Executive Analytics \par}
+    \vspace{1cm}
+    {\Large \color{accent} Platform-Wide Performance Review \par}
+    \vspace{2cm}
+    \begin{tcolorbox}[colback=secondary, colhead=secondary, colframe=secondary, fontupper=\color{white}, center, width=0.8\textwidth, arc=5pt]
+        \centering
+        \vspace{0.5cm}
+        \textbf{\large Administration Control Panel} \\
+        Ecosystem Health, Growth \& Moderation Metrics
+        \vspace{0.5cm}
+    \end{tcolorbox}
+    \vfill
+    {\large \textbf{Report Period:} \\ {{ generated_at }} \par}
+    \vspace{1cm}
+    {\small \color{gray} This document is intended for authorized administrative personnel only. \par}
+\end{titlepage}
+
+% --- Table of Contents ---
+\newpage
+\tableofcontents
+\newpage
+
+% --- Ecosystem Overview ---
+\section{Ecosystem Overview}
+{{ overview_description }}
+
+\vspace{1cm}
+
+\subsection{System-Wide KPIs}
+\begin{center}
+    {% for kpi in kpis %}
+    \begin{tcolorbox}[kpicard]
+        \textbf{ {{ kpi.label }} } \\
+        \LARGE \color{accent} {{ kpi.value }} \small {{ kpi.unit if kpi.unit else "" }}
+    \end{tcolorbox}
+    {% if loop.index % 3 == 0 %}\\[0.5cm]{% else %}\hspace{0.2cm}{% endif %}
+    {% endfor %}
+\end{center}
+
+% --- Financial Performance ---
+\section{Financial Performance}
+Aggregation of revenue streams across the entire platform.
+
+\subsection{Global Revenue Summary}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{X r}
+        \rowcolor{secondary!10}
+        \textbf{Revenue Stream} & \textbf{Amount (USD)} \\
+        \midrule
+        Visitor Ticketing & \${{ revenue.ticket_revenue }} \\
+        Enterprise Stand Allotment & \${{ revenue.stand_revenue }} \\
+        \midrule
+        \rowcolor{success!10}
+        \textbf{Total Platform Revenue} & \textbf{\${{ revenue.total_revenue }} } \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+% --- Safety & Compliance ---
+\section{Safety, Compliance \& Moderation}
+Overview of platform health and automated/manual moderation efficacy.
+
+\begin{tcolorbox}[colback=graybg, colframe=bordergray, title=Moderation Efficacy Report]
+    \begin{itemize}
+        \item \textbf{Total Reported Incidents}: {{ safety.total_flags }}
+        \item \textbf{Successfully Resolved}: {{ safety.resolved_flags }}
+        \item \textbf{System Resolution Rate}: \color{success} \bfseries {{ safety.resolution_rate }}\%
+    \end{itemize}
+\end{tcolorbox}
+
+\section{Administrative Action Items}
+Based on the current metrics, administration should focus on ecosystem scaling and enterprise relations.
+
+\vspace{2cm}
+\begin{center}
+    \small \color{gray} --- End of Administrative Report ---
+\end{center}
+
+\end{document}

@@ -11,11 +11,17 @@ type RequestOptions = {
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { method = 'GET', headers = {}, body, token, responseType = 'json' } = options;
     const url = getApiUrl(endpoint);
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
     const defaultHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
         ...headers,
     };
+
+    if (!isFormData && !defaultHeaders['Content-Type']) {
+        defaultHeaders['Content-Type'] = 'application/json';
+    } else if (isFormData && defaultHeaders['Content-Type']) {
+        delete defaultHeaders['Content-Type'];
+    }
 
     let activeToken = token;
 
@@ -39,7 +45,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     const response = await fetch(url, {
         method,
         headers: defaultHeaders,
-        body: body ? JSON.stringify(body) : undefined,
+        body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
     });
 
     if (response.status === 401) {

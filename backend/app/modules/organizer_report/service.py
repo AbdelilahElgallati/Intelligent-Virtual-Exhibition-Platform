@@ -277,6 +277,54 @@ async def _trend_leads(db, stand_ids: list[str]) -> list[TrendPoint]:
     return [TrendPoint(date=r["_id"], value=r["value"]) for r in rows if r.get("_id")]
 
 
+# ─── Enterprise List ──────────────────────────────────────────────────────────
+
+async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> list[EnterpriseSummary]:
+    """Fetch basic info for all approved enterprises in the specified event(s)."""
+    match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
+    cursor = db["participants"].find({**match_q, "role": "enterprise", "status": "approved"})
+    participants = await cursor.to_list(length=None)
+    
+    org_ids = []
+    for p in participants:
+         oid = p.get("organization_id")
+         if oid:
+             try:
+                 org_ids.append(ObjectId(str(oid)) if ObjectId.is_valid(str(oid)) else str(oid))
+             except Exception:
+                 org_ids.append(str(oid))
+
+    if not org_ids:
+        return []
+
+    # Filter out valid vs invalid ObjectIds
+    valid_oids = [o for o in org_ids if isinstance(o, ObjectId)]
+    string_ids = [o for o in org_ids if isinstance(o, str) and not ObjectId.is_valid(o)]
+    
+    query = {"$or": []}
+    if valid_oids:
+        query["$or"].append({"_id": {"$in": valid_oids}})
+    if string_ids:
+        query["$or"].append({"_id": {"$in": string_ids}})
+    
+    if not query["$or"]:
+        return []
+
+    org_cursor = db["organizations"].find(query)
+    orgs = await org_cursor.to_list(length=None)
+    
+    from .schemas import EnterpriseSummary
+    return [
+        EnterpriseSummary(
+            id=str(o["_id"]),
+            name=o.get("name", "Unknown"),
+            logo_url=o.get("logo_url"),
+            industry=o.get("org_type") or o.get("industry")
+        )
+        for o in orgs
+    ]
+
+
 # ─── main entry points ────────────────────────────────────────────────────────
 
 async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
@@ -297,6 +345,7 @@ async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
         trend_visitors,
         trend_engagement,
         trend_leads,
+        enterprises,
     ) = await asyncio.gather(
         _visitor_counts(db, event_id),
         _enterprise_rate(db, event_id),
@@ -307,6 +356,7 @@ async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
         _trend_participants(db, event_id),
         _trend_engagement(event_id),
         _trend_leads(db, stand_ids),
+        _get_participating_enterprises(db, event_id),
     )
 
     engagement_score = await _stand_engagement_score(db, event_id, stand_ids, meetings)
@@ -364,6 +414,7 @@ async def get_organizer_overall_summary(organizer_id: str) -> OrganizerSummaryRe
         trend_visitors,
         trend_engagement,
         trend_leads,
+        enterprises,
     ) = await asyncio.gather(
         _visitor_counts(db, event_ids),
         _enterprise_rate(db, event_ids),
@@ -374,6 +425,7 @@ async def get_organizer_overall_summary(organizer_id: str) -> OrganizerSummaryRe
         _trend_participants(db, event_ids),
         _trend_engagement(event_ids),
         _trend_leads(db, stand_ids),
+        _get_participating_enterprises(db, event_ids),
     )
 
     engagement_score = await _stand_engagement_score(db, event_ids, stand_ids, meetings)
@@ -395,5 +447,6 @@ async def get_organizer_overall_summary(organizer_id: str) -> OrganizerSummaryRe
             engagement_over_time=trend_engagement,
             lead_generation_over_time=trend_leads,
         ),
+        enterprises=enterprises,
         generated_at=datetime.now(timezone.utc),
     )

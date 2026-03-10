@@ -7,8 +7,10 @@ import { AuditLog } from '@/types/audit';
 import { PlatformHealth, Incident, IncidentCreate, IncidentUpdate, ContentFlag } from '@/types/incident';
 import { EnterpriseRequestsResponse, RejectBody } from '@/types/participant';
 import { LiveMetrics } from '@/types/monitoring';
+import { PartnerDashboardRead } from '@/types/admin';
 import { OrganizerSummary } from '@/types/organizer';
 import { getApiUrl } from '@/lib/config';
+import { ENDPOINTS } from '@/lib/api/endpoints';
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
 
@@ -67,6 +69,14 @@ export const adminService = {
         return http.patch(`/organizations/${id}/suspend`, {});
     },
 
+    async getDetailedOrganizations(): Promise<PartnerDashboardRead[]> {
+        return http.get('/admin/organizations/detailed');
+    },
+
+    async getDetailedEnterprises(): Promise<PartnerDashboardRead[]> {
+        return http.get('/admin/enterprises/detailed');
+    },
+
     // ── Subscriptions (Day 5) ─────────────────────────────────────────
 
     async getSubscriptions(): Promise<AdminSubscription[]> {
@@ -85,10 +95,6 @@ export const adminService = {
 
     async getPlatformAnalytics(): Promise<DashboardData> {
         return http.get('/analytics/platform');
-    },
-
-    async getEventAnalytics(eventId: string): Promise<DashboardData> {
-        return http.get(`/analytics/event/${eventId}`);
     },
 
     // ── Health (Day 8) ────────────────────────────────────────────────
@@ -160,11 +166,11 @@ export const adminService = {
     },
 
     async approveEnterpriseRequest(eventId: string, participantId: string): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/approve`, {});
+        return http.post(ENDPOINTS.PARTICIPANTS.APPROVE(eventId, participantId), {});
     },
 
     async rejectEnterpriseRequest(eventId: string, participantId: string, body: RejectBody = {}): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/reject`, body);
+        return http.post(ENDPOINTS.PARTICIPANTS.REJECT(eventId, participantId), body);
     },
 
     // ── Event Lifecycle (Week 2) ──────────────────────────────────────────────
@@ -308,6 +314,10 @@ export const adminService = {
 
     async closeEvent(eventId: string): Promise<OrganizerEvent> {
         return http.post(`/events/${eventId}/close`, {});
+    },
+
+    async createAdminAccount(data: any): Promise<User> {
+        return http.post('/users/admin/create', data);
     },
 };
 

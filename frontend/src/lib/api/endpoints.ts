@@ -31,9 +31,19 @@ export const ENDPOINTS = {
     APPROVE: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/approve`,
     REJECT: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/reject`,
     ATTENDEES: (eventId: string) => `/events/${eventId}/participants/attendees`,
+    ENTERPRISES: (eventId: string) => `/participants/event/${eventId}/enterprises`,
   },
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',
+  },
+  MARKETPLACE: {
+    PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
+    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/checkout`,
+    MY_ORDERS: '/marketplace/orders',
+    PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
+    CHECKOUT: (standId: string, productId: string) =>
+      `/marketplace/stands/${standId}/products/${productId}/checkout`,
+    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
   },
   NOTIFICATIONS: {
     LIST: '/notifications',
@@ -47,6 +57,7 @@ export const ENDPOINTS = {
   },
   ORGANIZATIONS: {
     LIST: '/organizations',
+    GET: (id: string) => `/organizations/${id}`,
     CREATE: '/organizations/create',
     INVITE: '/organizations/invite',
   },
@@ -76,13 +87,5 @@ export const ENDPOINTS = {
     MY_STATUS: (eventId: string) => `/events/${eventId}/my-payment-status`,
     RECEIPT: (eventId: string) => `/events/${eventId}/my-receipt`,
   },
-  MARKETPLACE: {
-    PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
-    PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
-    CHECKOUT: (standId: string, productId: string) =>
-      `/marketplace/stands/${standId}/products/${productId}/checkout`,
-    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/cart/checkout`,
-    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
-    MY_ORDERS: '/marketplace/my-orders',
-  },
+
 };

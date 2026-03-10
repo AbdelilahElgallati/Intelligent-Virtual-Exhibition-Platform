@@ -5,14 +5,19 @@ import { User, AuthTokens } from '@/types/user';
 import { authService } from '@/services/auth.service';
 import { useRouter } from 'next/navigation';
 
+interface RegisterResult {
+    pendingApproval: boolean;
+}
+
 interface AuthContextType {
     user: User | null;
     tokens: AuthTokens | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (credentials: any) => Promise<void>;
-    register: (userData: any) => Promise<void>;
+    register: (userData: any) => Promise<RegisterResult>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
     }, []);
 
+    const getRoleRedirect = (role: string): string => {
+        switch (role) {
+            case 'admin': return '/admin';
+            case 'organizer': return '/organizer';
+            case 'enterprise': return '/enterprise';
+            default: return '/';
+        }
+    };
+
     const login = async (credentials: any) => {
         setIsLoading(true);
         try {
@@ -83,28 +97,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.removeItem('redirectAfterLogin');
                 router.push(redirectPath);
             } else {
-                // Role-based default redirect
-                if (user.role === 'organizer') {
-                    router.push('/organizer');
-                } else {
-                    router.push('/');
-                }
+                router.push(getRoleRedirect(user.role));
             }
         } catch (error) {
-            console.error('Login failed', error);
             throw error;
         } finally {
             setIsLoading(false);
         }
     };
 
-    const register = async (userData: any) => {
+    const register = async (userData: any): Promise<RegisterResult> => {
         setIsLoading(true);
         try {
             const response = await authService.register(userData);
             const { user, access_token, refresh_token, token_type } = response;
-            const tokens = { access_token, refresh_token, token_type };
 
+            // Organizer & enterprise accounts need admin approval before they can use the platform.
+            // Do NOT store tokens or redirect — just signal pending approval.
+            if (user.is_active === false || user.approval_status === 'PENDING_APPROVAL') {
+                return { pendingApproval: true };
+            }
+
+            const tokens = { access_token, refresh_token, token_type };
             setTokens(tokens);
             setUser(user);
             localStorage.setItem('auth_tokens', JSON.stringify(tokens));
@@ -116,15 +130,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.removeItem('redirectAfterLogin');
                 router.push(redirectPath);
             } else {
-                // Role-based default redirect
-                if (user.role === 'organizer') {
-                    router.push('/organizer');
-                } else {
-                    router.push('/');
-                }
+                router.push(getRoleRedirect(user.role));
             }
+
+            return { pendingApproval: false };
         } catch (error) {
-            console.error('Registration failed', error);
             throw error;
         } finally {
             setIsLoading(false);
@@ -140,6 +150,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push('/');
     };
 
+    const refreshUser = async () => {
+        try {
+            const freshUser = await authService.getMe();
+            setUser(freshUser);
+            localStorage.setItem('auth_user', JSON.stringify(freshUser));
+        } catch (error) {
+            console.error('Failed to refresh user', error);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -150,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 login,
                 register,
                 logout,
+                refreshUser,
             }}
         >
             {children}

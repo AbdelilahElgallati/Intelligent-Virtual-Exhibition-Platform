@@ -5,6 +5,7 @@ Defines data models for authentication, authorization, and user roles.
 """
 
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -30,6 +31,26 @@ class RegisterRequest(BaseModel):
     full_name: str
     role: Role = Role.VISITOR
     
+    # Enterprise-specific fields (optional, used if role == ENTERPRISE)
+    company_name: Optional[str] = None
+    professional_email: Optional[EmailStr] = None
+    industry: Optional[str] = None
+    description: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    creation_year: Optional[int] = None
+    company_size: Optional[str] = None
+    website: Optional[str] = None
+    linkedin: Optional[str] = None
+
+    # Organizer-specific fields (optional, used if role == ORGANIZER)
+    org_name: Optional[str] = None          # Organisation / company name
+    org_type: Optional[str] = None          # NGO, Company, University, Government…
+    org_country: Optional[str] = None
+    org_city: Optional[str] = None
+    org_phone: Optional[str] = None
+    org_website: Optional[str] = None
+    org_professional_email: Optional[EmailStr] = None
     model_config = {"from_attributes": True}
 
 

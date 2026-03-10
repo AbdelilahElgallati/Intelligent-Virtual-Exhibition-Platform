@@ -4,14 +4,16 @@ import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Button } from '@/components/ui/Button';
-import { X, Send, User, Loader2 } from 'lucide-react';
+import { X, Send, User, Loader2, Calendar } from 'lucide-react';
 import clsx from 'clsx';
 
 interface ChatPanelProps {
-    standId: string;
+    standId?: string;
     standName: string;
     onClose: () => void;
     avatarBg?: string;
+    initialRoomId?: string;
+    isEmbedded?: boolean;
 }
 
 interface ChatRoom {
@@ -19,20 +21,45 @@ interface ChatRoom {
     members: string[];
 }
 
-export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelProps) {
+export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId, isEmbedded }: ChatPanelProps) {
     const { user, isAuthenticated } = useAuth();
-    const [roomId, setRoomId] = useState<string | null>(null);
+    const [roomId, setRoomId] = useState<string | null>(initialRoomId || null);
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!initialRoomId);
 
     // Connect to WS
     const { messages, setMessages, isConnected, sendMessage } = useChatWebSocket(roomId);
+    const [visitorMessageCount, setVisitorMessageCount] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 1. Initialize Chat (Get Room)
+    // Update visitor message count
+    useEffect(() => {
+        if (!user) return;
+        const count = messages.filter(m => m.sender_id !== (user.id || (user as any)._id)).length;
+        setVisitorMessageCount(count);
+    }, [messages, user]);
+
+    // 1. Initialize Chat (Get Room or use initialRoomId)
     useEffect(() => {
         const initChat = async () => {
             if (!isAuthenticated) return;
+
+            if (initialRoomId) {
+                setRoomId(initialRoomId);
+                // Fetch History for initialRoomId
+                try {
+                    const history = await apiClient.get<any[]>(ENDPOINTS.CHAT.HISTORY(initialRoomId));
+                    setMessages(history.reverse());
+                } catch (error) {
+                    console.error("Failed to fetch history", error);
+                } finally {
+                    setIsLoading(false);
+                }
+                return;
+            }
+
+            if (!standId) return;
+
             try {
                 const room = await apiClient.post<ChatRoom>(ENDPOINTS.CHAT.START(standId));
                 const actualRoomId = room._id || (room as any).id;
@@ -40,10 +67,6 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
 
                 // 2. Fetch History
                 const history = await apiClient.get<any[]>(ENDPOINTS.CHAT.HISTORY(actualRoomId));
-                // Reverse history to show oldest first if API returns newest first, 
-                // but usually chat UI wants chronological. 
-                // Our repo sorts timestamp -1 (newest first).
-                // So we need to reverse for display (bottom is newest).
                 setMessages(history.reverse());
             } catch (error) {
                 console.error("Failed to init chat", error);
@@ -52,7 +75,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
             }
         };
         initChat();
-    }, [standId, isAuthenticated]);
+    }, [standId, initialRoomId, isAuthenticated]);
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -66,22 +89,26 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
         setInput('');
     };
 
+    const containerClasses = isEmbedded
+        ? "flex flex-col h-full bg-white w-full transition-all"
+        : "flex flex-col h-full bg-white shadow-xl border-l border-gray-200 w-80 sm:w-96 fixed right-0 bottom-0 top-0 z-50 transition-transform";
+
     if (!isAuthenticated) {
         return (
-            <div className="flex flex-col h-full bg-white shadow-xl border-l border-gray-200 w-80 fixed right-0 bottom-0 top-0 z-50">
+            <div className={containerClasses}>
                 <div className="p-4 border-b flex justify-between items-center bg-indigo-600 text-white">
                     <h3 className="font-bold">Chat with {standName}</h3>
-                    <button onClick={onClose}><X size={20} /></button>
+                    {!isEmbedded && <button onClick={onClose}><X size={20} /></button>}
                 </div>
                 <div className="flex-1 flex items-center justify-center p-6 text-center text-gray-500">
-                    Please log in to chat with the exhibitor.
+                    Please log in to chat.
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full bg-white shadow-xl border-l border-gray-200 w-80 sm:w-96 fixed right-0 bottom-0 top-0 z-50 transition-transform">
+        <div className={containerClasses}>
             {/* Header */}
             <div className="p-4 border-b flex justify-between items-center bg-indigo-600 text-white shadow-sm">
                 <div>
@@ -91,7 +118,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
                         {isConnected ? 'Online' : 'Connecting...'}
                     </div>
                 </div>
-                <button onClick={onClose} className="hover:bg-indigo-500 p-1 rounded transition-colors"><X size={20} /></button>
+                {!isEmbedded && <button onClick={onClose} className="hover:bg-indigo-500 p-1 rounded transition-colors"><X size={20} /></button>}
             </div>
 
             {/* Messages */}
@@ -118,6 +145,11 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
                                         "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
                                         isMe ? "bg-indigo-600 text-white rounded-br-none" : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
                                     )}>
+                                        {!isMe && msg.sender_name && (
+                                            <div className="text-[10px] font-bold text-indigo-500 mb-0.5">
+                                                {msg.sender_name}
+                                            </div>
+                                        )}
                                         {msg.content}
                                     </div>
                                     <span className="text-[10px] text-gray-400 mt-1 px-1">
@@ -127,6 +159,23 @@ export function ChatPanel({ standId, standName, onClose, avatarBg }: ChatPanelPr
                             </div>
                         );
                     })
+                )}
+                {visitorMessageCount >= 15 && (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <Calendar size={24} className="mx-auto text-indigo-600 mb-2" />
+                        <h4 className="text-sm font-bold text-indigo-900">Highly Engaged!</h4>
+                        <p className="text-[11px] text-indigo-700 mb-3">You've had a great conversation. Would you like to schedule a formal meeting to discuss further?</p>
+                        <Button
+                            size="sm"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-xs h-8"
+                            onClick={() => {
+                                // Logic to trigger meeting request modal or navigation
+                                window.dispatchEvent(new CustomEvent('open-meeting-request', { detail: { standId } }));
+                            }}
+                        >
+                            Request Formal Meeting
+                        </Button>
+                    </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>

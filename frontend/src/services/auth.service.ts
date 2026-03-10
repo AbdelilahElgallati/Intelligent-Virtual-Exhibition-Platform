@@ -2,6 +2,10 @@ import { http } from '@/lib/http';
 import { AuthResponse, AuthTokens } from '@/types/user';
 
 export const authService = {
+    async getMe(): Promise<any> {
+        return http.get<any>('/users/me');
+    },
+
     async login(credentials: any): Promise<AuthResponse> {
         // In a real scenario, this would call GET /auth/login or POST /auth/login
         // For now, let's assume the backend expects POST /auth/login

@@ -17,6 +17,7 @@ from app.modules.participants.schemas import (
     ParticipantRead,
     ParticipantStatus,
     RejectRequest,
+    EnrichedParticipantRead,
 )
 from app.modules.participants.service import (
     approve_participant,
@@ -31,7 +32,7 @@ from app.modules.participants.service import (
 from app.modules.audit.service import log_audit
 
 
-router = APIRouter(prefix="/events/{event_id}/participants", tags=["Participants"])
+router = APIRouter(prefix="/participants/event/{event_id}", tags=["Participants"])
 
 
 class InviteRequest(BaseModel):
@@ -92,6 +93,7 @@ async def approve_event_participant(
 ) -> ParticipantRead:
     event = await get_event_by_id(event_id)
     if event is None:
+        print(f"DEBUG: Event {event_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
     if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
@@ -99,12 +101,31 @@ async def approve_event_participant(
 
     participant = await get_participant_by_id(participant_id)
     if participant is None:
+        print(f"DEBUG: Participant {participant_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found")
 
     if str(participant.get("event_id")) != str(event_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Participant does not belong to this event")
 
     updated = await approve_participant(participant_id)
+
+    # Trigger stand creation for enterprises
+    if updated and updated.get("role") == Role.ENTERPRISE.value:
+        from app.modules.stands.service import get_stand_by_org, create_stand
+        from app.modules.organizations.service import get_organization_by_id
+        
+        org_id = updated.get("organization_id")
+        if org_id:
+            existing_stand = await get_stand_by_org(event_id, org_id)
+            if not existing_stand:
+                org = await get_organization_by_id(org_id)
+                stand_name = org.get("name", "Enterprise Stand") if org else "Enterprise Stand"
+                await create_stand(
+                    event_id=event_id,
+                    organization_id=org_id,
+                    name=stand_name,
+                    description=org.get("description") if org else None
+                )
 
     await create_notification(
         user_id=participant["user_id"],
@@ -181,7 +202,6 @@ async def get_event_participants(
     participants = await list_event_participants(event_id)
     return [ParticipantRead(**p) for p in participants]
 
-
 @router.get("/attendees")
 async def get_event_attendees(
     event_id: str,
@@ -192,3 +212,115 @@ async def get_event_attendees(
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return await list_event_attendees(event_id)
+
+@router.get("/enterprises", response_model=list[EnrichedParticipantRead])
+async def get_event_enterprise_participants(
+    event_id: str,
+    current_user: dict = Depends(require_roles([Role.ENTERPRISE, Role.ADMIN, Role.ORGANIZER])),
+) -> list[EnrichedParticipantRead]:
+    """
+    Allow enterprises to see other approved participants of the same event for B2B discovery.
+    """
+    from app.modules.participants.service import get_participants_collection
+    from app.db.utils import stringify_object_ids
+    from app.db.mongo import get_database
+    from bson import ObjectId
+
+    collection = get_participants_collection()
+    db = get_database()
+    org_members_col = db["organization_members"]
+    organizations_col = db["organizations"]
+    users_col = db["users"]
+
+    # Only approved enterprises
+    cursor = collection.find({
+        "event_id": str(event_id),
+        "status": ParticipantStatus.APPROVED
+    })
+    docs = await cursor.to_list(length=1000)
+    
+    enriched = []
+    for doc in docs:
+        user_id = doc.get("user_id")
+        
+        # Don't include the current enterprise in the B2B list
+        if str(user_id) == str(current_user["_id"]):
+            continue
+            
+        # Verify the user is actually an enterprise
+        try:
+            uid_str = str(user_id)
+            uid_obj = ObjectId(uid_str) if ObjectId.is_valid(uid_str) else None
+            
+            user_doc = None
+            if uid_obj:
+                user_doc = await users_col.find_one({"_id": uid_obj})
+            if not user_doc:
+                user_doc = await users_col.find_one({"_id": uid_str})
+            if not user_doc:
+                user_doc = await users_col.find_one({"id": uid_str})
+                
+            if not user_doc:
+                continue
+                
+            role = user_doc.get("role")
+            if hasattr(role, "value"):
+                role = role.value
+            role_str = str(role).lower() if role else ""
+            if role_str != "enterprise":
+                continue
+        except Exception as e:
+            print(f"Error verifying enterprise role for {user_id}: {e}")
+            continue
+            
+        # Try to find their organization
+        organization_name = "Unknown Enterprise"
+        organization_id = doc.get("organization_id")
+        
+        if not organization_id:
+            # Fallback to org_members lookup
+            member_doc = await org_members_col.find_one({"user_id": str(user_id)})
+            if member_doc:
+                organization_id = member_doc.get("organization_id")
+        
+        org_doc = None
+        if organization_id:
+            organization_id = str(organization_id)
+            try:
+                query = {"$or": [
+                    {"_id": ObjectId(organization_id) if ObjectId.is_valid(organization_id) else None},
+                    {"id": organization_id},
+                    {"_id": organization_id}
+                ]}
+                actual_query = [q for q in query["$or"] if q[list(q.keys())[0]] is not None]
+                org_doc = await organizations_col.find_one({"$or": actual_query})
+            except Exception as e:
+                print(f"Error fetching org by ID for {organization_id}: {e}")
+
+        if not org_doc:
+            # Try lookup via owner_id since we know the user_id
+            try:
+                org_doc = await organizations_col.find_one({"owner_id": str(user_id)})
+            except Exception:
+                pass
+
+        if org_doc:
+            organization_name = org_doc.get("name", organization_name)
+            organization_id = str(org_doc.get("_id", org_doc.get("id")))
+        
+        # Find stand_id for this participant
+        stand_id = None
+        if organization_id:
+            from app.modules.stands.service import get_stand_by_org
+            stand_doc = await get_stand_by_org(str(event_id), organization_id)
+            if stand_doc:
+                stand_id = str(stand_doc.get("_id", stand_doc.get("id")))
+
+        doc["organization_name"] = organization_name
+        doc["organization_id"] = organization_id
+        doc["stand_id"] = stand_id
+        if "role" not in doc:
+            doc["role"] = "enterprise" # It's from /enterprises endpoint
+        enriched.append(EnrichedParticipantRead(**stringify_object_ids(doc)))
+        
+    return enriched

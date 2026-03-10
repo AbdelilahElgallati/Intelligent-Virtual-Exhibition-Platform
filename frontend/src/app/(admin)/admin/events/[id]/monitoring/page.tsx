@@ -37,8 +37,8 @@ function Skeleton({ className = '' }: { className?: string }) {
 
 function KPISkeleton() {
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
     );
 }
@@ -507,7 +507,7 @@ export default function EventMonitoringPage() {
 
             {/* ── KPI Cards ── */}
             {kpis ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                     <KPICard
                         label="Active Visitors"
                         value={kpis.active_visitors}
@@ -537,14 +537,6 @@ export default function EventMonitoringPage() {
                         value={kpis.messages_per_minute}
                         icon={<MessageSquare className="w-5 h-5 text-violet-600" />}
                         accent="bg-violet-50 border border-violet-100"
-                        bg="bg-white"
-                        border="border-zinc-200"
-                    />
-                    <KPICard
-                        label="Downloads / Hour"
-                        value={kpis.resource_downloads_last_hour}
-                        icon={<Download className="w-5 h-5 text-amber-600" />}
-                        accent="bg-amber-50 border border-amber-100"
                         bg="bg-white"
                         border="border-zinc-200"
                     />
