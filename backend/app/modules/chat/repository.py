@@ -26,28 +26,46 @@ class ChatRepository:
         messages = await cursor.to_list(length=limit)
         return [MessageSchema(**msg) for msg in messages]
 
-    async def get_or_create_direct_room(self, user1_id: str, user2_id: str) -> ChatRoomSchema:
-        # Check if room exists
-        room = await self.rooms.find_one({
+    async def get_or_create_direct_room(
+        self, user1_id: str, user2_id: str,
+        room_category: str = None, event_id: str = None
+    ) -> ChatRoomSchema:
+        # Build query — match members + category + event
+        query: dict = {
             "type": "direct",
             "members": {"$all": [user1_id, user2_id]}
-        })
-        
+        }
+        if room_category:
+            query["room_category"] = room_category
+        if event_id:
+            query["event_id"] = event_id
+
+        room = await self.rooms.find_one(query)
         if room:
             return ChatRoomSchema(**room)
-        
-        # Create new room
+
+        # Create new room with metadata
         new_room = {
             "type": "direct",
             "members": [user1_id, user2_id],
-            "created_at": ObjectId().generation_time
+            "created_at": ObjectId().generation_time,
+            "room_category": room_category,
+            "event_id": event_id,
         }
         result = await self.rooms.insert_one(new_room)
         new_room["_id"] = result.inserted_id
         return ChatRoomSchema(**new_room)
 
-    async def get_user_rooms(self, user_id: str) -> List[ChatRoomSchema]:
-        cursor = self.rooms.find({"members": user_id}).sort("created_at", -1)
+    async def get_user_rooms(
+        self, user_id: str,
+        event_id: str = None, room_category: str = None
+    ) -> List[ChatRoomSchema]:
+        query: dict = {"members": user_id}
+        if event_id:
+            query["event_id"] = event_id
+        if room_category:
+            query["room_category"] = room_category
+        cursor = self.rooms.find(query).sort("created_at", -1)
         rooms = await cursor.to_list(length=100)
         return [ChatRoomSchema(**room) for room in rooms]
 

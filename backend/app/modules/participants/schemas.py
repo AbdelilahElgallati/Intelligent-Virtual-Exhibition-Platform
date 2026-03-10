@@ -42,10 +42,18 @@ class ParticipantRead(BaseModel):
     event_id: str
     user_id: str
     status: ParticipantStatus
+    role: Optional[str] = None
     created_at: datetime
     rejection_reason: Optional[str] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+class EnrichedParticipantRead(ParticipantRead):
+    """Participant with organization name for B2B discovery."""
+    organization_id: Optional[str] = None
+    organization_name: Optional[str] = None
+    stand_id: Optional[str] = None
 
 
 # ── Enterprise request enrichment schemas ────────────────────────────────────

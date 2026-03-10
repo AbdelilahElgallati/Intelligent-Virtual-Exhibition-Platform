@@ -143,7 +143,7 @@ async def register(request: RegisterRequest) -> TokenResponse:
         await org_coll.update_one(
             {"_id": ObjectId(org["id"])},
             {"$set": {
-                "type": "ENTERPRISE",
+                "type": "enterprise",
                 "industry": request.industry,
                 "professional_email": request.professional_email,
                 "country": request.country,

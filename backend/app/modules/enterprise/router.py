@@ -21,6 +21,7 @@ from app.modules.enterprise.schemas import (
 from app.modules.enterprise.repository import enterprise_repo
 from app.modules.leads.repository import lead_repo
 from app.modules.leads.schemas import LeadInteraction
+from app.modules.stands.service import get_stand_by_org
 from app.modules.participants.schemas import ParticipantStatus
 from app.modules.events.service import get_event_by_id
 from app.modules.stands.service import get_stand_by_org, update_stand
@@ -67,7 +68,7 @@ async def get_enterprise_participant(event_id: str, org_id: str) -> Optional[dic
     doc = await db.participants.find_one({
         "event_id": str(event_id),
         "organization_id": str(org_id),
-        "role": "ENTERPRISE",
+        "role": Role.ENTERPRISE.value,
     })
     return stringify_object_ids(doc) if doc else None
 
@@ -259,9 +260,13 @@ async def visitor_request_product(
         quantity=quantity,
     )
     try:
+        # Find the correct stand ID for this organization in this event
+        stand_doc = await get_stand_by_org(data.event_id, product["organization_id"])
+        actual_stand_id = stand_doc["id"] if stand_doc else f"org_{product['organization_id']}"
+        
         await lead_repo.log_interaction(LeadInteraction(
             visitor_id=str(current_user["_id"]),
-            stand_id=f"org_{product['organization_id']}",
+            stand_id=actual_stand_id,
             interaction_type="product_request",
             metadata={
                 "product_id": product_id,
@@ -286,7 +291,7 @@ async def list_enterprise_events(current_user: dict = Depends(require_role(Role.
     cursor = db.events.find({"state": {"$in": ["approved", "live", "waiting_for_payment", "payment_done"]}})
     all_events = stringify_object_ids(await cursor.to_list(length=200))
 
-    part_cursor = db.participants.find({"organization_id": str(org["id"]), "role": "ENTERPRISE"})
+    part_cursor = db.participants.find({"organization_id": str(org["id"]), "role": Role.ENTERPRISE.value})
     participations = {p["event_id"]: p for p in stringify_object_ids(await part_cursor.to_list(length=200))}
 
     result = []
@@ -296,7 +301,7 @@ async def list_enterprise_events(current_user: dict = Depends(require_role(Role.
         num_ent = ev.get("num_enterprises") or 0
         taken = await db.participants.count_documents({
             "event_id": ev_id,
-            "role": "ENTERPRISE",
+            "role": Role.ENTERPRISE.value,
             "status": {"$nin": ["rejected"]},
         })
         stands_left = max(0, num_ent - taken)
@@ -321,7 +326,7 @@ async def enterprise_join_event(
     db = get_database()
     taken = await db.participants.count_documents({
         "event_id": str(event_id),
-        "role": "ENTERPRISE",
+        "role": Role.ENTERPRISE.value,
         "status": {"$nin": ["rejected"]},
     })
     if num_enterprises > 0 and taken >= num_enterprises:
@@ -337,7 +342,7 @@ async def enterprise_join_event(
         "event_id": str(event_id),
         "organization_id": org_id,
         "user_id": str(current_user["_id"]),
-        "role": "ENTERPRISE",
+        "role": Role.ENTERPRISE.value,
         "status": ParticipantStatus.PENDING_PAYMENT,
         "stand_fee_paid": False,
         "payment_reference": None,
@@ -367,7 +372,7 @@ async def enterprise_pay_stand_fee(
     db = get_database()
     from pymongo import ReturnDocument
     updated = await db.participants.find_one_and_update(
-        {"event_id": str(event_id), "organization_id": org_id, "role": "ENTERPRISE"},
+        {"event_id": str(event_id), "organization_id": org_id, "role": Role.ENTERPRISE.value},
         {"$set": {
             "stand_fee_paid": True,
             "payment_reference": payment_ref,

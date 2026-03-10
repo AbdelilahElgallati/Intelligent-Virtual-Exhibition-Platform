@@ -257,7 +257,7 @@ async def approve_enterprise(user_id: str, current_user: dict = Depends(require_
     user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
     result = await db.users.update_one(
         {"_id": user_id_obj, "role": Role.ENTERPRISE},
-        {"$set": {"approval_status": "APPROVED", "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"approval_status": "APPROVED", "is_active": True, "updated_at": datetime.now(timezone.utc)}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Enterprise user not found")
@@ -320,7 +320,7 @@ async def approve_organizer(user_id: str, current_user: dict = Depends(require_r
     user_id_obj = ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id
     result = await db.users.update_one(
         {"_id": user_id_obj, "role": Role.ORGANIZER},
-        {"$set": {"approval_status": "APPROVED", "updated_at": datetime.now(timezone.utc)}}
+        {"$set": {"approval_status": "APPROVED", "is_active": True, "updated_at": datetime.now(timezone.utc)}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Organizer user not found")

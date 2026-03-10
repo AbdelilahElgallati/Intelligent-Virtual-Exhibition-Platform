@@ -128,10 +128,12 @@ import {
 const NAV_ITEMS = [
     { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
     { label: 'Events', href: '/enterprise/events', icon: Calendar },
-    { label: 'Profile', href: '/enterprise/profile', icon: User },
+    { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
+    { label: 'Leads', href: '/enterprise/leads', icon: Users },
+    { label: 'Analytics', href: '/enterprise/analytics', icon: CreditCard },
     { label: 'Products', href: '/enterprise/products', icon: Package },
+    { label: 'Profile', href: '/enterprise/profile', icon: User },
     { label: 'Notifications', href: '/enterprise/notifications', icon: Bell },
-    { label: 'Requests Products', href: '/enterprise/product-requests', icon: MessageSquare },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -241,7 +243,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <Menu className="w-5 h-5" />
                     </button>
                     <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                    <span className="text-sm font-semibold text-zinc-900">Admin Panel</span>
+                    <span className="text-sm font-semibold text-zinc-900">Enterprise Panel</span>
                 </header>
 
                 <main className="flex-1 p-6 lg:p-8">

@@ -10,6 +10,7 @@ import { LiveMetrics } from '@/types/monitoring';
 import { PartnerDashboardRead } from '@/types/admin';
 import { OrganizerSummary } from '@/types/organizer';
 import { getApiUrl } from '@/lib/config';
+import { ENDPOINTS } from '@/lib/api/endpoints';
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
 
@@ -165,11 +166,11 @@ export const adminService = {
     },
 
     async approveEnterpriseRequest(eventId: string, participantId: string): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/approve`, {});
+        return http.post(ENDPOINTS.PARTICIPANTS.APPROVE(eventId, participantId), {});
     },
 
     async rejectEnterpriseRequest(eventId: string, participantId: string, body: RejectBody = {}): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/reject`, body);
+        return http.post(ENDPOINTS.PARTICIPANTS.REJECT(eventId, participantId), body);
     },
 
     // ── Event Lifecycle (Week 2) ──────────────────────────────────────────────

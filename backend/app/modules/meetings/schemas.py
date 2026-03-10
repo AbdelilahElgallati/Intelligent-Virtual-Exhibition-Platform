@@ -30,6 +30,12 @@ class MeetingSchema(MeetingBase):
     created_at: datetime
     updated_at: datetime
     
+    # Enriched fields
+    requester_name: Optional[str] = None
+    requester_role: Optional[str] = None
+    requester_org_name: Optional[str] = None
+    receiver_org_name: Optional[str] = None
+    
     class Config:
         populate_by_name = True
 

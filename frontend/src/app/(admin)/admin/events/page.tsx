@@ -619,6 +619,17 @@ export default function AdminEventsPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    router.push(`/admin/events/${ev.id}/enterprises`);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                                                title="View Enterprise Join Requests"
+                                            >
+                                                <Users className="w-3.5 h-3.5" />
+                                                Join Requests
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     router.push(`/admin/events/${ev.id}`);
                                                 }}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap"

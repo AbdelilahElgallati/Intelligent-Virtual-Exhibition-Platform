@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
     Loader, Settings, AlertCircle, Globe, Users, DollarSign,
-    Building2, X, Tag, ChevronRight
+    Building2, X, Tag, ChevronRight, BarChart3, MessageSquare
 } from 'lucide-react';
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -413,35 +413,53 @@ function EnterpriseEventCard({
                 <div className="flex-1" />
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-1 border-t border-zinc-100">
-                    <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-9">
-                        Details <ChevronRight size={13} />
-                    </Button>
-                    {!participation && ev.stands_left !== 0 && (
-                        <Button size="sm" onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 text-xs h-9">
-                            Join Request
+                <div className="flex flex-col gap-2 pt-4 mt-auto border-t border-zinc-100">
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
+                            View Details
                         </Button>
-                    )}
-                    {!participation && ev.stands_left === 0 && (
-                        <Button size="sm" disabled className="flex-1 text-xs h-9 opacity-50">
-                            Fully Booked
-                        </Button>
-                    )}
-                    {partStatus === 'pending_payment' && (
-                        <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-9 bg-amber-600 hover:bg-amber-700">
-                            {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
-                        </Button>
-                    )}
-                    {partStatus === 'approved' && (
-                        <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
-                            <Button size="sm" className="w-full flex items-center gap-1.5 text-xs h-9">
-                                <Settings size={13} /> Configure
+                        {!participation && ev.stands_left !== 0 && (
+                            <Button size="sm" onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold">
+                                Join Event
                             </Button>
-                        </Link>
+                        )}
+                        {!participation && ev.stands_left === 0 && (
+                            <Button size="sm" disabled className="flex-1 text-xs h-10 opacity-50 bg-zinc-100 text-zinc-400 font-bold">
+                                Fully Booked
+                            </Button>
+                        )}
+                        {partStatus === 'pending_payment' && (
+                            <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-200 font-bold">
+                                {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
+                            </Button>
+                        )}
+                        {partStatus === 'approved' && (
+                            <Link href={`/enterprise/events/${evId}/manage`} className="flex-1">
+                                <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
+                                    <MessageSquare size={14} /> Manage Event
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
+
+                    {partStatus === 'approved' && (
+                        <div className="flex gap-2">
+                            <Link href={`/enterprise/events/${evId}/analytics`} className="flex-1">
+                                <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                    <BarChart3 size={13} /> Analytics
+                                </Button>
+                            </Link>
+                            <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
+                                <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                    <Settings size={13} /> Configure
+                                </Button>
+                            </Link>
+                        </div>
                     )}
+
                     {(partStatus === 'pending_admin_approval' || partStatus === 'rejected') && (
-                        <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-9 opacity-60">
-                            {partStatus === 'rejected' ? 'Rejected' : 'Pending…'}
+                        <Button size="sm" variant="outline" disabled className="w-full text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100">
+                            {partStatus === 'rejected' ? 'Request Rejected' : 'Waiting for Approval…'}
                         </Button>
                     )}
                 </div>

@@ -282,7 +282,7 @@ async def _trend_leads(db, stand_ids: list[str]) -> list[TrendPoint]:
 async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> list[EnterpriseSummary]:
     """Fetch basic info for all approved enterprises in the specified event(s)."""
     match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
-    cursor = db["participants"].find({**match_q, "role": "ENTERPRISE", "status": "approved"})
+    cursor = db["participants"].find({**match_q, "role": "enterprise", "status": "approved"})
     participants = await cursor.to_list(length=None)
     
     org_ids = []

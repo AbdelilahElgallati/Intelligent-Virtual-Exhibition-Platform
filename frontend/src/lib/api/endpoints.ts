@@ -28,11 +28,12 @@ export const ENDPOINTS = {
     VIEW_PAYMENT_PROOF: (id: string) => `/admin/payments/${id}/proof`,
   },
   PARTICIPANTS: {
-    LIST: (eventId: string) => `/events/${eventId}/participants`,
-    INVITE: (eventId: string) => `/events/${eventId}/participants/invite`,
-    REQUEST: (eventId: string) => `/events/${eventId}/participants/request`,
-    APPROVE: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/approve`,
-    REJECT: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/reject`,
+    LIST: (eventId: string) => `/participants/event/${eventId}`,
+    INVITE: (eventId: string) => `/participants/event/${eventId}/invite`,
+    REQUEST: (eventId: string) => `/participants/event/${eventId}/request`,
+    APPROVE: (eventId: string, participantId: string) => `/participants/event/${eventId}/${participantId}/approve`,
+    REJECT: (eventId: string, participantId: string) => `/participants/event/${eventId}/${participantId}/reject`,
+    ENTERPRISES: (eventId: string) => `/participants/event/${eventId}/enterprises`,
   },
   RECOMMENDATIONS: {
     EVENTS: '/recommendations/events',

@@ -66,6 +66,7 @@ from app.modules.resources.schemas import ResourceCreate
 from app.modules.stands.service import create_stand, get_stands_collection
 from app.modules.users.service import create_user, get_user_by_email
 from app.modules.chat.repository import chat_repo
+from app.modules.analytics.schemas import AnalyticsEventType
 
 # ─── Constants ────────────────────────────────────────────────────────────────
 PASSWORD = "Password123!"
@@ -148,6 +149,8 @@ EVENT_BANNERS = [
     f"{UNSPLASH}1485827404703-89b55fcc595e?w=1400&h=400&fit=crop",   # data science
     f"{UNSPLASH}1519389950473-47ba0277781c?w=1400&h=400&fit=crop",   # innovation
     f"{UNSPLASH}1451187580459-43490279c0fa?w=1400&h=400&fit=crop",   # cloud summit
+]
+
 # Marketplace product templates by stand category
 # (name, description, price_usd, image_url, initial_stock)
 PRODUCT_CATALOG = {
@@ -264,6 +267,7 @@ async def ensure_user(
     email: str, password: str, role: Role, full_name: str, username: str,
     bio: str = None, interests: list = None, language: str = "en",
     is_active: bool = True, approval_status: str = None,
+    created_at: datetime = None,
 ) -> dict:
     existing = await get_user_by_email(email)
     if existing:
@@ -278,12 +282,19 @@ async def ensure_user(
         "role": role,
         "is_active": is_active,
         "approval_status": approval_status,
-        "created_at": NOW,
+        "created_at": created_at or NOW,
         "bio": bio,
         "language": language,
         "interests": interests or [],
     }
     await create_user(user)
+    
+    # Force update created_at if provided (create_user might overwrite it)
+    if created_at:
+        users_col = get_database()["users"]
+        await users_col.update_one({"email": email}, {"$set": {"created_at": created_at}})
+        user["created_at"] = created_at
+
     return _normalize_id(user)
 
 
@@ -296,6 +307,7 @@ async def ensure_event(
     is_paid: bool = False,
     ticket_price: float = None,
     banner_url: str = None,
+    created_at_days_ago: int = 0,
 ) -> dict:
     events_col = get_events_collection()
     existing = await events_col.find_one({"title": title})
@@ -380,6 +392,15 @@ async def ensure_event(
     # If the final target differs from what the service left us at, force it
     if event.get("state") != target_state:
         event = _normalize_id(await update_event_state(event["id"], target_state))
+
+    # Backdate created_at for analytics charts
+    if created_at_days_ago > 0:
+        actual_created_at = NOW - timedelta(days=created_at_days_ago)
+        await events_col.update_one(
+            {"_id": ObjectId(event["id"]) if ObjectId.is_valid(event["id"]) else event["id"]},
+            {"$set": {"created_at": actual_created_at}}
+        )
+        event["created_at"] = actual_created_at
 
     return event
 
@@ -571,6 +592,48 @@ async def ensure_product(
     }
     return await _mkt_create(str(stand_id), data)
 
+
+async def ensure_analytics_event(etype: AnalyticsEventType, user_id: str = None, event_id: str = None, stand_id: str = None, days_ago: int = 0):
+    db = get_database()
+    timestamp = NOW - timedelta(days=days_ago, minutes=random.randint(1, 1440))
+    
+    query = {"type": etype, "user_id": user_id}
+    if event_id: query["event_id"] = event_id
+    if stand_id: query["stand_id"] = stand_id
+    
+    existing = await db["analytics_events"].find_one(query)
+    if existing:
+        return
+
+    event = {
+        "type": etype,
+        "user_id": user_id,
+        "event_id": event_id,
+        "stand_id": stand_id,
+        "created_at": timestamp,
+    }
+    await db["analytics_events"].insert_one(event)
+
+
+async def ensure_connection_and_chat(user1_id: str, user2_id: str, user1_name: str, user2_name: str, messages: list[str]):
+    # Simulation B2B Networking / Connections
+    db = get_database()
+    existing = await db["connections"].find_one({
+        "$or": [
+            {"from_user_id": user1_id, "to_user_id": user2_id},
+            {"from_user_id": user2_id, "to_user_id": user1_id}
+        ]
+    })
+    if not existing:
+        await db["connections"].insert_one({
+            "from_user_id": user1_id,
+            "to_user_id": user2_id,
+            "status": "accepted",
+            "created_at": NOW - timedelta(days=2)
+        })
+    
+    await ensure_chat_room_and_messages(user1_id, user2_id, user1_name, user2_name, messages)
+
 # ─── Main seed function ──────────────────────────────────────────────────────
 
 async def main():
@@ -587,6 +650,7 @@ async def main():
     admin = await ensure_user(
         "admin@demo.com", PASSWORD, Role.ADMIN, "Admin User", "admindemo",
         bio="Platform administrator", interests=["management", "analytics"],
+        created_at=NOW - timedelta(days=60),
     )
     print(f"  + Admin: {admin['email']}")
 
@@ -625,6 +689,7 @@ async def main():
             email, PASSWORD, Role.ORGANIZER, name, uname, bio=bio, interests=interests,
             is_active=not is_pending,
             approval_status="PENDING_APPROVAL" if is_pending else "APPROVED",
+            created_at=NOW - timedelta(days=random.randint(20, 45)),
         )
         # Enrich with organizer profile fields
         if "_id" in o:
@@ -672,6 +737,7 @@ async def main():
             email, PASSWORD, Role.ENTERPRISE, name, uname, bio=bio, interests=interests,
             is_active=not is_pending,
             approval_status="PENDING_APPROVAL" if is_pending else "APPROVED",
+            created_at=NOW - timedelta(days=random.randint(15, 40)),
         )
         # Set approval_status on existing users too
         if "_id" in e:
@@ -712,6 +778,7 @@ async def main():
         v = await ensure_user(
             email, PASSWORD, Role.VISITOR, name, uname,
             bio=bio, interests=interests,
+            created_at=NOW - timedelta(days=random.randint(1, 30)),
         )
         visitors.append(v)
         print(f"  + Visitor: {v['email']}")
@@ -748,61 +815,61 @@ async def main():
     print("\n[3/10] Creating events...")
 
     event_definitions = [
-        # (title, desc, org_idx, state, category, tags, num_ent, start_off, dur, stand_price, is_paid, ticket_price, banner_url)
+        # (title, desc, org_idx, state, category, tags, num_ent, start_off, dur, stand_price, is_paid, ticket_price, banner_url, created_ago)
         (
             "Future Tech Expo 2026",
             "Experience AI, cloud, and XR demos across virtual stands. The premier tech exhibition of the year.",
-            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5, 500.0, True, 30.0, EVENT_BANNERS[0],
+            0, EventState.LIVE, "Technology", ["AI", "Cloud", "XR"], 8, -1, 5, 500.0, True, 30.0, EVENT_BANNERS[0], 25
         ),
         (
             "Healthcare Innovations Summit",
             "Cutting-edge digital health, biotech, and telemedicine innovations.",
-            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4, 450.0, True, 20.0, EVENT_BANNERS[1],
+            2, EventState.LIVE, "Healthcare", ["HealthTech", "Biotech", "AI"], 6, -2, 4, 450.0, True, 20.0, EVENT_BANNERS[1], 18
         ),
         (
             "Global Education Expo",
             "Transforming education through technology — from K12 to lifelong learning.",
-            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3, 300.0, False, None, EVENT_BANNERS[2],
+            3, EventState.APPROVED, "Education", ["EdTech", "AI", "No-Code"], 5, 7, 3, 300.0, False, None, EVENT_BANNERS[2], 5
         ),
         (
             "FinTech World Forum",
             "Blockchain, DeFi, and next-gen banking solutions showcase.",
-            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4, 600.0, True, 50.0, EVENT_BANNERS[3],
+            4, EventState.APPROVED, "Finance", ["FinTech", "Blockchain", "Cybersecurity"], 7, 10, 4, 600.0, True, 50.0, EVENT_BANNERS[3], 12
         ),
         (
             "Green Energy Conference",
             "Sustainability, smart grids, and renewable energy technologies.",
-            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3, 350.0, False, None, EVENT_BANNERS[4],
+            5, EventState.PAYMENT_DONE, "Green Energy", ["GreenTech", "IoT", "Sustainability"], 5, 14, 3, 350.0, False, None, EVENT_BANNERS[4], 8
         ),
         (
             "Cybersecurity Defense Summit",
             "Zero trust, threat intelligence, and SOC modernization.",
-            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3, 550.0, True, 40.0, EVENT_BANNERS[5],
+            6, EventState.WAITING_FOR_PAYMENT, "Cybersecurity", ["Cybersecurity", "Cloud", "AI"], 6, 20, 3, 550.0, True, 40.0, EVENT_BANNERS[5], 2
         ),
         (
             "Digital Marketing Masterclass",
             "SEO, content strategy, and marketing automation tools exhibition.",
-            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2, 250.0, False, None, EVENT_BANNERS[6],
+            7, EventState.PENDING_APPROVAL, "Marketing", ["Marketing", "Analytics", "SaaS"], 4, 28, 2, 250.0, False, None, EVENT_BANNERS[6], 1
         ),
         (
             "AI & Data Science Conference",
             "Deep learning, NLP, computer vision, and MLOps — the data revolution.",
-            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6, 700.0, True, 60.0, EVENT_BANNERS[7],
+            8, EventState.LIVE, "AI & Data", ["AI", "ML", "Big Data", "Analytics"], 10, -3, 6, 700.0, True, 60.0, EVENT_BANNERS[7], 28
         ),
         (
             "Startup Innovation Hackathon",
             "48-hour hackathon with pitches, demos, and investor networking.",
-            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2, 200.0, False, None, EVENT_BANNERS[8],
+            9, EventState.APPROVED, "Technology", ["Innovation", "Startups", "No-Code"], 5, 5, 2, 200.0, False, None, EVENT_BANNERS[8], 15
         ),
         (
             "Enterprise Cloud Summit",
             "Multi-cloud strategies, containerization, and serverless architectures.",
-            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4, 480.0, True, 35.0, EVENT_BANNERS[9],
+            1, EventState.LIVE, "Engineering", ["Cloud", "DevOps", "Kubernetes"], 8, -1, 4, 480.0, True, 35.0, EVENT_BANNERS[9], 22
         ),
     ]
 
     events = []
-    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur, sp, paid, tp, banner in event_definitions:
+    for title, desc, org_idx, state, cat, tags, num_ent, start_off, dur, sp, paid, tp, banner, created_ago in event_definitions:
         ev = await ensure_event(
             title=title,
             description=desc,
@@ -817,6 +884,7 @@ async def main():
             is_paid=paid,
             ticket_price=tp,
             banner_url=banner,
+            created_at_days_ago=created_ago,
         )
         events.append(ev)
         print(f"  + Event: {title} [{state.value}] | stand ${sp} | {'paid $' + str(tp) if paid else 'free'}")
@@ -1235,6 +1303,30 @@ async def main():
 
     print(f"  Total chat rooms: {chat_count}")
 
+    # B2B Networking Simulation (Enterprise <-> Enterprise)
+    print("\n[9b] Creating B2B networking chats...")
+    b2b_chat_count = 0
+    b2b_conversations = [
+        [
+            "Hello! I saw your stand at the Tech Expo. Interested in a potential partnership?",
+            "Hi! Yes, we're looking for cloud partners. Let's discuss your integration options.",
+            "Great, I'll send over our partner program details.",
+        ],
+        [
+            "Hi, interested in your AI diagnostics for our health platform.",
+            "Hello! We'd love to explore an integration. Are you available for a quick call?",
+            "Yes, how about Thursday at 10 AM?",
+        ],
+    ]
+    for i in range(min(len(b2b_conversations), 2)):
+        await ensure_connection_and_chat(
+            enterprises[i]["_id"], enterprises[i+1]["_id"],
+            enterprises[i]["full_name"], enterprises[i+1]["full_name"],
+            b2b_conversations[i]
+        )
+        b2b_chat_count += 1
+    print(f"  B2B Networking Chats: {b2b_chat_count}")
+
     # ──────────────────────────────────────────────────────────
     # 10. LEAD INTERACTIONS & ANALYTICS DATA
     # ──────────────────────────────────────────────────────────
@@ -1257,7 +1349,16 @@ async def main():
                     metadata["duration_minutes"] = str(random.randint(2, 30))
                 elif itype == "meeting":
                     metadata["meeting_type"] = random.choice(["demo", "discussion", "pitch"])
-                await ensure_lead_interaction(visitor["_id"], stand["_id"], itype, metadata)
+                # Stagger lead timestamps over 30 days
+                timestamp = NOW - timedelta(days=random.randint(0, 30), minutes=random.randint(1, 1440))
+                interaction = LeadInteraction(
+                    visitor_id=str(visitor["_id"]),
+                    stand_id=str(stand["_id"]),
+                    interaction_type=itype,
+                    metadata=metadata or {},
+                    timestamp=timestamp,
+                )
+                await lead_repo.log_interaction(interaction)
                 lead_count += 1
 
     print(f"  Total lead interactions: {lead_count}")
@@ -1280,7 +1381,7 @@ async def main():
                     "type": "event_view",
                     "user_id": visitor["_id"],
                     "event_id": ev["id"],
-                    "created_at": NOW - timedelta(hours=random.randint(1, 72)),
+                    "created_at": NOW - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23)),
                 })
                 analytics_count += 1
 
@@ -1296,16 +1397,19 @@ async def main():
                     "type": "stand_visit",
                     "user_id": visitor["_id"],
                     "stand_id": stand["_id"],
-                    "created_at": NOW - timedelta(hours=random.randint(1, 48)),
+                    "event_id": stand["event_id"],
+                    "created_at": NOW - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23)),
                 })
                 analytics_count += 1
 
         # Chat opened
         if random.random() > 0.5:
+            stand_rand = random.choice(live_stands)[1]
             await analytics_col.insert_one({
                 "type": "chat_opened",
                 "user_id": visitor["_id"],
-                "created_at": NOW - timedelta(hours=random.randint(1, 24)),
+                "event_id": stand_rand["event_id"],
+                "created_at": NOW - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23)),
             })
             analytics_count += 1
 
