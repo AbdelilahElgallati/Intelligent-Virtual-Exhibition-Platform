@@ -9,6 +9,7 @@ export interface Product {
   currency: string;
   image_url: string;
   stock: number;
+  type: 'product' | 'service';
   created_at: string;
 }
 
@@ -19,6 +20,7 @@ export interface ProductCreatePayload {
   currency?: string;
   image_url?: string;
   stock: number;
+  type?: 'product' | 'service';
 }
 
 export interface ProductUpdatePayload {
@@ -28,6 +30,7 @@ export interface ProductUpdatePayload {
   currency?: string;
   image_url?: string;
   stock?: number;
+  type?: 'product' | 'service';
 }
 
 export interface MarketplaceOrder {
@@ -38,15 +41,18 @@ export interface MarketplaceOrder {
   product_name: string;
   quantity: number;
   total_amount: number;
-  stripe_session_id: string;
-  stripe_payment_intent: string;
+  payzone_payment_id: string;
+  payzone_transaction_id: string;
   status: 'pending' | 'paid' | 'cancelled';
+  shipping_address?: string;
+  delivery_notes?: string;
+  buyer_phone?: string;
   created_at: string;
   paid_at: string | null;
 }
 
 export interface CheckoutResponse {
-  session_url: string;
+  payment_url: string;
   order_id: string;
 }
 
@@ -56,6 +62,6 @@ export interface CartItem {
 }
 
 export interface CartCheckoutResponse {
-  session_url: string;
+  payment_url: string;
   order_ids: string[];
 }

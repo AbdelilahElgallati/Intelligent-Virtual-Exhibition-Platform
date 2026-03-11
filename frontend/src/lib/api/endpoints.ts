@@ -38,8 +38,9 @@ export const ENDPOINTS = {
   },
   MARKETPLACE: {
     PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
-    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/checkout`,
+    CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/cart/checkout`,
     MY_ORDERS: '/marketplace/orders',
+    ORDER_RECEIPT: (orderId: string) => `/marketplace/orders/${orderId}/receipt`,
     PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
     CHECKOUT: (standId: string, productId: string) =>
       `/marketplace/stands/${standId}/products/${productId}/checkout`,

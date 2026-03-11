@@ -1,5 +1,5 @@
 """
-Marketplace service — CRUD for stand products & orders.
+Marketplace service — CRUD for stand products, services & orders.
 Uses Motor (async MongoDB) directly, same pattern as other modules.
 """
 
@@ -42,9 +42,10 @@ async def create_product(stand_id: str, data: dict) -> dict:
         "name": data["name"],
         "description": data.get("description", ""),
         "price": data["price"],
-        "currency": data.get("currency", "usd"),
+        "currency": data.get("currency", "MAD"),
         "image_url": data.get("image_url", ""),
         "stock": data.get("stock", 0),
+        "type": data.get("type", "product"),
         "created_at": datetime.now(timezone.utc),
     }
     result = await _db().stand_products.insert_one(doc)
@@ -52,8 +53,11 @@ async def create_product(stand_id: str, data: dict) -> dict:
     return _serialize(doc)
 
 
-async def list_products(stand_id: str) -> list[dict]:
-    cursor = _db().stand_products.find({"stand_id": _oid(stand_id)}).sort("created_at", -1)
+async def list_products(stand_id: str, product_type: Optional[str] = None) -> list[dict]:
+    query: dict = {"stand_id": _oid(stand_id)}
+    if product_type:
+        query["type"] = product_type
+    cursor = _db().stand_products.find(query).sort("created_at", -1)
     return [_serialize(d) async for d in cursor]
 
 
@@ -91,7 +95,10 @@ async def create_order(
     product_name: str,
     quantity: int,
     total_amount: float,
-    stripe_session_id: str = "",
+    payzone_payment_id: str = "",
+    shipping_address: str = "",
+    delivery_notes: str = "",
+    buyer_phone: str = "",
 ) -> dict:
     doc = {
         "product_id": _oid(product_id),
@@ -100,32 +107,32 @@ async def create_order(
         "product_name": product_name,
         "quantity": quantity,
         "total_amount": total_amount,
-        "stripe_payment_intent": "",
+        "payzone_payment_id": payzone_payment_id,
+        "payzone_transaction_id": "",
         "status": "pending",
         "created_at": datetime.now(timezone.utc),
         "paid_at": None,
+        "shipping_address": shipping_address,
+        "delivery_notes": delivery_notes,
+        "buyer_phone": buyer_phone,
     }
-    # Only include stripe_session_id if it has a real value;
-    # sparse unique index skips documents where the field is absent.
-    if stripe_session_id:
-        doc["stripe_session_id"] = stripe_session_id
     result = await _db().stand_orders.insert_one(doc)
     doc["_id"] = result.inserted_id
     return _serialize(doc)
 
 
-async def get_order_by_stripe_session(session_id: str) -> Optional[dict]:
-    doc = await _db().stand_orders.find_one({"stripe_session_id": session_id})
+async def get_order_by_payzone_payment(payment_id: str) -> Optional[dict]:
+    doc = await _db().stand_orders.find_one({"payzone_payment_id": payment_id})
     return _serialize(doc) if doc else None
 
 
-async def mark_order_paid(order_id: str, payment_intent: str) -> Optional[dict]:
+async def mark_order_paid(order_id: str, transaction_id: str = "") -> Optional[dict]:
     await _db().stand_orders.update_one(
         {"_id": _oid(order_id)},
         {
             "$set": {
                 "status": "paid",
-                "stripe_payment_intent": payment_intent,
+                "payzone_transaction_id": transaction_id,
                 "paid_at": datetime.now(timezone.utc),
             }
         },

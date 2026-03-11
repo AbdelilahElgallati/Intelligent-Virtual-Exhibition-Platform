@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Package, Loader2 } from 'lucide-react';
+import { CheckCircle2, Package, Loader2, Download } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { MarketplaceOrder } from '@/types/marketplace';
@@ -31,7 +31,20 @@ export default function MarketplaceSuccessPage() {
     }, []);
 
     const fmt = (amount: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(amount);
+
+    const downloadReceipt = async (orderId: string) => {
+        try {
+            const receipt = await apiClient.get<Record<string, any>>(ENDPOINTS.MARKETPLACE.ORDER_RECEIPT(orderId));
+            const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `receipt-${orderId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch { /* ignore */ }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white flex items-center justify-center p-4">
@@ -68,6 +81,13 @@ export default function MarketplaceSuccessPage() {
                                 <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold uppercase">
                                     {order.status}
                                 </span>
+                                <button
+                                    onClick={() => downloadReceipt(order.id)}
+                                    className="shrink-0 p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                                    title="Download receipt"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
                             </div>
                         ))}
                     </div>

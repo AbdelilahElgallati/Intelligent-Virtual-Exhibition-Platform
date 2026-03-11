@@ -1,7 +1,7 @@
 """
 Payment service for IVEP.
 
-Provides MongoDB-backed event payment storage and operations (Stripe-based).
+Provides MongoDB-backed event payment storage and operations (Payzone-based).
 """
 
 from datetime import datetime, timezone
@@ -31,9 +31,9 @@ async def create_payment(
     user_id: str,
     amount: float,
     currency: str = "mad",
-    stripe_session_id: str = "",
+    payzone_payment_id: str = "",
 ) -> dict:
-    """Create a new pending payment record for Stripe checkout."""
+    """Create a new pending payment record for Payzone checkout."""
     now = datetime.now(timezone.utc)
 
     payment = {
@@ -41,8 +41,8 @@ async def create_payment(
         "user_id": str(user_id),
         "amount": amount,
         "currency": currency,
-        "stripe_session_id": stripe_session_id,
-        "stripe_payment_intent": None,
+        "payzone_payment_id": payzone_payment_id,
+        "payzone_transaction_id": None,
         "status": PaymentStatus.PENDING,
         "created_at": now,
         "paid_at": None,
@@ -75,25 +75,25 @@ async def get_user_payment_by_status(
     return stringify_object_ids(doc) if doc else None
 
 
-async def get_payment_by_stripe_session(session_id: str) -> Optional[dict]:
-    """Get a payment by Stripe session ID."""
+async def get_payment_by_payzone_id(payment_id: str) -> Optional[dict]:
+    """Get a payment by Payzone payment ID."""
     collection = get_payments_collection()
-    doc = await collection.find_one({"stripe_session_id": session_id})
+    doc = await collection.find_one({"payzone_payment_id": payment_id})
     return stringify_object_ids(doc) if doc else None
 
 
 async def mark_payment_paid(
     payment_id: str,
-    stripe_payment_intent: str = "",
+    payzone_transaction_id: str = "",
 ) -> Optional[dict]:
-    """Mark a payment as paid after Stripe confirmation."""
+    """Mark a payment as paid after Payzone confirmation."""
     collection = get_payments_collection()
     updated = await collection.find_one_and_update(
         _id_query(payment_id),
         {
             "$set": {
                 "status": PaymentStatus.PAID,
-                "stripe_payment_intent": stripe_payment_intent,
+                "payzone_transaction_id": payzone_transaction_id,
                 "paid_at": datetime.now(timezone.utc),
             }
         },

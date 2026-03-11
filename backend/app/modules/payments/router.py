@@ -1,7 +1,7 @@
 """
 Payments module router for IVEP.
 
-Stripe-based event ticket payments for visitors.
+Payzone-based event ticket payments for visitors.
 """
 
 import logging
@@ -28,15 +28,17 @@ from app.modules.payments.schemas import (
 from app.modules.payments.service import (
     create_payment,
     get_payment_by_id,
-    get_payment_by_stripe_session,
+    get_payment_by_payzone_id,
     get_user_payment,
     get_user_payment_by_status,
     list_payments,
     mark_payment_paid,
 )
-from app.modules.marketplace.stripe_service import _configure as _stripe_configure
-
-import stripe
+from app.modules.marketplace.payzone_service import (
+    create_payment_session,
+    check_payment_status,
+    verify_callback_signature,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +55,8 @@ async def create_event_checkout(
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ):
     """
-    Create a Stripe Checkout session for a paid event ticket.
-    Returns the Stripe session URL to redirect the browser to.
+    Create a Payzone payment session for a paid event ticket.
+    Returns the Payzone payment URL to redirect the browser to.
     """
     event = await get_event_by_id(event_id)
     if not event:
@@ -77,8 +79,8 @@ async def create_event_checkout(
         )
 
     amount = event.get("ticket_price", 0) or 0
-    currency = "mad"
-    unit_price_cents = int(math.ceil(amount * 100))
+    currency = "MAD"
+    amount_cents = int(math.ceil(amount * 100))
 
     # Create pending payment record
     payment = await create_payment(
@@ -91,27 +93,22 @@ async def create_event_checkout(
     # Build success/cancel URLs
     origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
     origin = origin.rstrip("/")
-    success_url = f"{origin}/events/{event_id}/payment?success=true&session_id={{CHECKOUT_SESSION_ID}}"
+    backend_base = str(request.base_url).rstrip("/")
+    success_url = f"{origin}/events/{event_id}/payment?success=true&payment_id={{PAYMENT_ID}}"
     cancel_url = f"{origin}/events/{event_id}/payment?cancelled=true"
-
-    _stripe_configure()
+    notification_url = f"{backend_base}/events/{event_id}/payment-callback"
 
     try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": currency.lower(),
-                        "unit_amount": unit_price_cents,
-                        "product_data": {"name": f"Ticket: {event['title']}"},
-                    },
-                    "quantity": 1,
-                }
-            ],
+        pz_result = await create_payment_session(
+            order_id=payment["_id"],
+            amount_cents=amount_cents,
+            currency=currency,
+            description=f"Ticket: {event['title']}",
             success_url=success_url,
             cancel_url=cancel_url,
+            notification_url=notification_url,
             customer_email=current_user.get("email"),
+            customer_name=current_user.get("full_name", current_user.get("name", "")),
             metadata={
                 "payment_id": payment["_id"],
                 "event_id": event_id,
@@ -119,19 +116,19 @@ async def create_event_checkout(
             },
         )
     except Exception as exc:
-        logger.error("Stripe checkout failed: %s", exc)
+        logger.error("Payzone checkout failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
-    # Update payment with stripe session id
+    # Update payment with payzone payment id
     from app.db.mongo import get_database
     from bson import ObjectId
 
     await get_database()["event_payments"].update_one(
         {"_id": ObjectId(payment["_id"]) if ObjectId.is_valid(payment["_id"]) else payment["_id"]},
-        {"$set": {"stripe_session_id": session.id}},
+        {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
     )
 
-    return {"session_url": session.url, "payment_id": payment["_id"]}
+    return {"payment_url": pz_result["payment_url"], "payment_id": payment["_id"]}
 
 
 @router.post("/events/{event_id}/verify-payment")
@@ -141,29 +138,20 @@ async def verify_event_payment(
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ):
     """
-    Verify a Stripe payment after the visitor returns from checkout.
-    Called by the frontend with ?session_id=xxx.
+    Verify a Payzone payment after the visitor returns from checkout.
+    Called by the frontend with payment_id.
     On success: marks payment as paid, creates APPROVED participant, notifies.
     """
     body = await request.json()
-    session_id = body.get("session_id", "")
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id is required")
+    payment_id = body.get("payment_id", "")
+    if not payment_id:
+        raise HTTPException(status_code=400, detail="payment_id is required")
 
-    _stripe_configure()
-
-    # Retrieve the Stripe session to verify payment
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-    except Exception as exc:
-        logger.error("Failed to retrieve Stripe session: %s", exc)
-        raise HTTPException(status_code=400, detail="Invalid session")
-
-    if session.payment_status != "paid":
-        raise HTTPException(status_code=400, detail="Payment not completed")
-
-    # Find the payment record
-    payment = await get_payment_by_stripe_session(session_id)
+    # Find the payment record by our internal _id
+    payment = await get_payment_by_id(payment_id)
+    if not payment:
+        # Try by payzone payment id
+        payment = await get_payment_by_payzone_id(payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment record not found")
 
@@ -174,9 +162,24 @@ async def verify_event_payment(
     if payment["event_id"] != event_id or payment["user_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Payment does not match")
 
+    # Check payment status with Payzone
+    pz_payment_id = payment.get("payzone_payment_id", "")
+    if pz_payment_id:
+        try:
+            pz_status = await check_payment_status(pz_payment_id)
+            if pz_status.get("status") != "completed":
+                raise HTTPException(status_code=400, detail="Payment not completed")
+            transaction_id = pz_status.get("transaction_id", "")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.error("Failed to check Payzone status: %s", exc)
+            raise HTTPException(status_code=400, detail="Could not verify payment status")
+    else:
+        transaction_id = ""
+
     # Mark as paid
-    payment_intent = session.payment_intent or ""
-    await mark_payment_paid(payment["_id"], payment_intent)
+    await mark_payment_paid(payment["_id"], transaction_id)
 
     # Auto-approve participant
     existing = await get_user_participation(event_id, current_user["_id"])
@@ -194,7 +197,7 @@ async def verify_event_payment(
         action="event_payment_completed",
         entity="event_payment",
         entity_id=payment["_id"],
-        metadata={"event_id": event_id, "stripe_session_id": session_id},
+        metadata={"event_id": event_id, "payzone_payment_id": pz_payment_id},
     )
 
     # Notify visitor
@@ -207,6 +210,55 @@ async def verify_event_payment(
     )
 
     return {"status": "paid", "message": "Payment confirmed. You now have access to the event."}
+
+
+@router.post("/events/{event_id}/payment-callback")
+async def event_payment_callback(event_id: str, request: Request):
+    """
+    Payzone server-to-server callback for event payments.
+    No auth — Payzone signs the payload.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    received_sig = body.get("signature", "")
+    if not verify_callback_signature(body, received_sig):
+        logger.warning("Payzone event payment callback signature failed")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    payment_status = body.get("status", "")
+    pz_payment_id = body.get("payment_id", "")
+    transaction_id = body.get("transaction_id", "")
+    order_id = body.get("order_id", "")
+
+    if payment_status == "completed":
+        # Find payment record
+        payment = None
+        if order_id:
+            payment = await get_payment_by_id(order_id)
+        if not payment and pz_payment_id:
+            payment = await get_payment_by_payzone_id(pz_payment_id)
+
+        if payment and payment["status"] != PaymentStatus.PAID:
+            await mark_payment_paid(payment["_id"], transaction_id)
+
+            # Auto-approve participant
+            user_id = payment["user_id"]
+            ev_id = payment["event_id"]
+            existing = await get_user_participation(ev_id, user_id)
+            if not existing:
+                participant = await request_to_join(ev_id, user_id)
+                from app.modules.participants.service import approve_participant
+                await approve_participant(participant["_id"])
+            elif existing["status"] != ParticipantStatus.APPROVED:
+                from app.modules.participants.service import approve_participant
+                await approve_participant(existing["_id"])
+
+            logger.info("Event payment %s confirmed via Payzone callback", payment["_id"])
+
+    return {"status": "ok"}
 
 
 @router.get("/events/{event_id}/my-payment-status", response_model=PaymentStatusResponse)
@@ -225,7 +277,7 @@ async def get_my_payment_status(
 
     return PaymentStatusResponse(
         status=payment["status"],
-        stripe_session_id=payment.get("stripe_session_id"),
+        payzone_payment_id=payment.get("payzone_payment_id"),
     )
 
 
@@ -235,30 +287,33 @@ async def get_my_receipt(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Get Stripe receipt URL for a paid event payment.
-    The visitor can use this to download their receipt.
+    Generate a receipt for a paid event payment.
+    Returns receipt data that the frontend can display/download.
     """
     payment = await get_user_payment(event_id, current_user["_id"])
     if not payment or payment["status"] != PaymentStatus.PAID:
         raise HTTPException(status_code=404, detail="No paid payment found for this event")
 
-    _stripe_configure()
+    event = await get_event_by_id(event_id)
+    event_title = event["title"] if event else "Unknown Event"
 
-    receipt_url = None
-    payment_intent_id = payment.get("stripe_payment_intent")
-    if payment_intent_id:
-        try:
-            pi = stripe.PaymentIntent.retrieve(payment_intent_id)
-            if pi.latest_charge:
-                charge = stripe.Charge.retrieve(pi.latest_charge)
-                receipt_url = charge.receipt_url
-        except Exception as exc:
-            logger.error("Failed to get receipt: %s", exc)
+    receipt = {
+        "receipt_id": payment["_id"],
+        "event_id": event_id,
+        "event_title": event_title,
+        "payer_name": current_user.get("full_name", current_user.get("name", "")),
+        "payer_email": current_user.get("email", ""),
+        "amount": payment["amount"],
+        "currency": payment.get("currency", "MAD").upper(),
+        "status": payment["status"],
+        "payment_method": "Payzone",
+        "payzone_payment_id": payment.get("payzone_payment_id", ""),
+        "payzone_transaction_id": payment.get("payzone_transaction_id", ""),
+        "created_at": payment["created_at"].isoformat() if hasattr(payment.get("created_at", ""), "isoformat") else str(payment.get("created_at", "")),
+        "paid_at": payment["paid_at"].isoformat() if payment.get("paid_at") and hasattr(payment["paid_at"], "isoformat") else str(payment.get("paid_at", "")),
+    }
 
-    if not receipt_url:
-        raise HTTPException(status_code=404, detail="Receipt not available yet")
-
-    return {"receipt_url": receipt_url}
+    return receipt
 
 
 # ============== Admin Endpoints ==============

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { X, ShoppingBag, ShoppingCart, Package, Minus, Plus, Loader2, Trash2, AlertCircle } from 'lucide-react';
+import { X, ShoppingBag, ShoppingCart, Package, Minus, Plus, Loader2, Trash2, AlertCircle, Briefcase } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { Product, CartCheckoutResponse } from '@/types/marketplace';
@@ -34,6 +34,10 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     const [cart, setCart] = useState<Record<string, CartEntry>>({});
     const [checkingOut, setCheckingOut] = useState(false);
     const [view, setView] = useState<'products' | 'cart'>('products');
+    const [activeTab, setActiveTab] = useState<'product' | 'service'>('product');
+    const [shippingAddress, setShippingAddress] = useState('');
+    const [deliveryNotes, setDeliveryNotes] = useState('');
+    const [buyerPhone, setBuyerPhone] = useState('');
 
     /* ---- Fetch products ---- */
     useEffect(() => {
@@ -50,6 +54,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         })();
         return () => { cancelled = true; };
     }, [standId]);
+
+    /* ---- Filter by tab ---- */
+    const filteredProducts = products.filter((p) => (p.type || 'product') === activeTab);
 
     /* ---- Cart helpers ---- */
     const cartItems = Object.values(cart);
@@ -96,9 +103,14 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
             }));
             const resp = await apiClient.post<CartCheckoutResponse>(
                 ENDPOINTS.MARKETPLACE.CART_CHECKOUT(standId),
-                { items },
+                {
+                    items,
+                    shipping_address: shippingAddress || undefined,
+                    delivery_notes: deliveryNotes || undefined,
+                    buyer_phone: buyerPhone || undefined,
+                },
             );
-            window.location.href = resp.session_url;
+            window.location.href = resp.payment_url;
         } catch (err: any) {
             alert(err?.message || 'Checkout failed. Please try again.');
         } finally {
@@ -107,8 +119,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     };
 
     /* ---- Currency formatting ---- */
-    const fmt = (amount: number, currency: string = 'usd') =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
+    const fmt = (amount: number, currency: string = 'MAD') =>
+        new Intl.NumberFormat('fr-MA', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -126,7 +138,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-gray-900">
-                                {view === 'products' ? 'Products' : 'Shopping Cart'}
+                                {view === 'products' ? (activeTab === 'product' ? 'Products' : 'Services') : 'Shopping Cart'}
                             </h2>
                             <p className="text-xs text-gray-500 truncate max-w-[280px]">{standName}</p>
                         </div>
@@ -177,15 +189,43 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     {/* ====== PRODUCTS VIEW ====== */}
                     {!loading && !error && view === 'products' && (
                         <>
-                            {products.length === 0 ? (
+                            {/* Tab toggle */}
+                            <div className="flex gap-2 mb-5">
+                                <button
+                                    onClick={() => setActiveTab('product')}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                                        activeTab === 'product'
+                                            ? 'text-white border-transparent shadow-sm'
+                                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                                    style={activeTab === 'product' ? { backgroundColor: themeColor } : {}}
+                                >
+                                    <Package className="w-4 h-4" />
+                                    Products
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('service')}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                                        activeTab === 'service'
+                                            ? 'text-white border-transparent shadow-sm'
+                                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                                    style={activeTab === 'service' ? { backgroundColor: themeColor } : {}}
+                                >
+                                    <Briefcase className="w-4 h-4" />
+                                    Services
+                                </button>
+                            </div>
+
+                            {filteredProducts.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                                     <Package className="w-10 h-10 mb-3 text-gray-300" />
-                                    <p className="text-sm font-medium text-gray-500">No products yet</p>
-                                    <p className="text-xs text-gray-400 mt-1">This stand hasn&apos;t listed any products.</p>
+                                    <p className="text-sm font-medium text-gray-500">No {activeTab === 'product' ? 'products' : 'services'} yet</p>
+                                    <p className="text-xs text-gray-400 mt-1">This stand hasn&apos;t listed any {activeTab === 'product' ? 'products' : 'services'}.</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {products.map((product) => {
+                                    {filteredProducts.map((product) => {
                                         const inCart = cart[product.id]?.quantity ?? 0;
                                         const outOfStock = product.stock <= 0;
 
@@ -286,7 +326,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     </button>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
+                                    {/* Cart items */}
+                                    <div className="space-y-3">
                                     {cartItems.map(({ product, quantity }) => (
                                         <div
                                             key={product.id}
@@ -354,6 +396,44 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                             </div>
                                         </div>
                                     ))}
+                                    </div>
+
+                                    {/* ---- Shipping / Delivery Info ---- */}
+                                    <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Delivery Information (optional)</h4>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Shipping Address</label>
+                                                <input
+                                                    type="text"
+                                                    value={shippingAddress}
+                                                    onChange={(e) => setShippingAddress(e.target.value)}
+                                                    placeholder="Enter your full shipping address"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    value={buyerPhone}
+                                                    onChange={(e) => setBuyerPhone(e.target.value)}
+                                                    placeholder="+212 6XX XXX XXX"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Delivery Notes</label>
+                                                <textarea
+                                                    value={deliveryNotes}
+                                                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                                                    placeholder="Any special instructions for delivery..."
+                                                    rows={2}
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </>

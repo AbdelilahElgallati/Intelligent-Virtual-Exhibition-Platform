@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
@@ -356,9 +356,13 @@ async def enterprise_join_event(
 @router.post("/events/{event_id}/pay")
 async def enterprise_pay_stand_fee(
     event_id: str,
+    request: "Request",
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    """Simulate stand fee payment: PENDING_PAYMENT → PENDING_ADMIN_APPROVAL."""
+    """Create Payzone payment session for stand fee: returns payment_url for redirect."""
+    import math
+    from app.modules.marketplace.payzone_service import create_payment_session as pz_create
+
     org = await get_enterprise_org(current_user)
     org_id = str(org["id"])
 
@@ -368,19 +372,102 @@ async def enterprise_pay_stand_fee(
     if participant.get("status") != ParticipantStatus.PENDING_PAYMENT:
         raise HTTPException(status_code=400, detail=f"Cannot pay in current status: {participant.get('status')}")
 
-    payment_ref = str(uuid.uuid4())
+    event = await get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    stand_fee = event.get("stand_fee", 0) or event.get("ticket_price", 0) or 0
+    if stand_fee <= 0:
+        # Free stand fee — just approve directly
+        payment_ref = str(uuid.uuid4())
+        db = get_database()
+        from pymongo import ReturnDocument
+        updated = await db.participants.find_one_and_update(
+            {"event_id": str(event_id), "organization_id": org_id, "role": Role.ENTERPRISE.value},
+            {"$set": {
+                "stand_fee_paid": True,
+                "payment_reference": payment_ref,
+                "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        return stringify_object_ids(updated)
+
+    amount_cents = int(math.ceil(stand_fee * 100))
+    participant_id = str(participant["_id"])
+
+    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
+    origin = origin.rstrip("/")
+    backend_base = str(request.base_url).rstrip("/")
+    success_url = f"{origin}/enterprise/events?payment_success=true&event_id={event_id}"
+    cancel_url = f"{origin}/enterprise/events?payment_cancelled=true&event_id={event_id}"
+    notification_url = f"{backend_base}/enterprise/events/{event_id}/pay-callback"
+
+    try:
+        pz_result = await pz_create(
+            order_id=participant_id,
+            amount_cents=amount_cents,
+            currency="MAD",
+            description=f"Stand Fee: {event['title']}",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            notification_url=notification_url,
+            customer_email=current_user.get("email"),
+            customer_name=current_user.get("full_name", current_user.get("name", "")),
+            metadata={"event_id": event_id, "org_id": org_id, "participant_id": participant_id},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
+
+    # Store payzone payment id on participant
     db = get_database()
-    from pymongo import ReturnDocument
-    updated = await db.participants.find_one_and_update(
-        {"event_id": str(event_id), "organization_id": org_id, "role": Role.ENTERPRISE.value},
-        {"$set": {
-            "stand_fee_paid": True,
-            "payment_reference": payment_ref,
-            "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
-        }},
-        return_document=ReturnDocument.AFTER,
+    await db.participants.update_one(
+        {"_id": participant["_id"]},
+        {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
     )
-    return stringify_object_ids(updated)
+
+    return {"payment_url": pz_result["payment_url"], "participant_id": participant_id}
+
+
+@router.post("/events/{event_id}/pay-callback")
+async def enterprise_pay_callback(event_id: str, request: "Request"):
+    """Payzone server-to-server callback for enterprise stand fee payments."""
+    from app.modules.marketplace.payzone_service import verify_callback_signature
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    received_sig = body.get("signature", "")
+    if not verify_callback_signature(body, received_sig):
+        logger.warning("Payzone enterprise callback signature failed")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    payment_status = body.get("status", "")
+    transaction_id = body.get("transaction_id", "")
+    order_id = body.get("order_id", "")  # participant_id
+
+    if payment_status == "completed" and order_id:
+        db = get_database()
+        from pymongo import ReturnDocument
+        pid = ObjectId(order_id) if ObjectId.is_valid(order_id) else order_id
+        updated = await db.participants.find_one_and_update(
+            {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT},
+            {"$set": {
+                "stand_fee_paid": True,
+                "payment_reference": transaction_id,
+                "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        if updated:
+            logger.info("Enterprise stand fee paid for participant %s", order_id)
+
+    return {"status": "ok"}
 
 
 # ─── Week 2: Stand Management (only if APPROVED) ─────────────────────────────

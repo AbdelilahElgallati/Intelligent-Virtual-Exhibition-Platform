@@ -25,11 +25,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
     const [paymentStatus, setPaymentStatus] = useState<string>('none');
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
-    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+    const [receiptData, setReceiptData] = useState<Record<string, any> | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const isSuccess = searchParams.get('success') === 'true';
-    const sessionId = searchParams.get('session_id');
+    const paymentId = searchParams.get('payment_id');
     const isCancelled = searchParams.get('cancelled') === 'true';
 
     const fetchData = useCallback(async () => {
@@ -49,12 +49,12 @@ export default function PaymentPage({ params }: PaymentPageProps) {
         }
     }, [id]);
 
-    // Verify payment after Stripe redirect
+    // Verify payment after Payzone redirect
     useEffect(() => {
-        if (isSuccess && sessionId && id && !verifying && paymentStatus !== 'paid') {
+        if (isSuccess && paymentId && id && !verifying && paymentStatus !== 'paid') {
             setVerifying(true);
             apiClient
-                .post<{ status: string }>(ENDPOINTS.PAYMENTS.VERIFY(id), { session_id: sessionId })
+                .post<{ status: string }>(ENDPOINTS.PAYMENTS.VERIFY(id), { payment_id: paymentId })
                 .then((res) => {
                     if (res.status === 'paid' || res.status === 'already_paid') {
                         setPaymentStatus('paid');
@@ -66,17 +66,17 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                 })
                 .finally(() => setVerifying(false));
         }
-    }, [isSuccess, sessionId, id, verifying, paymentStatus]);
+    }, [isSuccess, paymentId, id, verifying, paymentStatus]);
 
-    // Fetch receipt URL when payment is confirmed
+    // Fetch receipt data when payment is confirmed
     useEffect(() => {
-        if (paymentStatus === 'paid' && id && !receiptUrl) {
+        if (paymentStatus === 'paid' && id && !receiptData) {
             apiClient
-                .get<{ receipt_url: string }>(ENDPOINTS.PAYMENTS.RECEIPT(id))
-                .then((res) => setReceiptUrl(res.receipt_url))
+                .get<Record<string, any>>(ENDPOINTS.PAYMENTS.RECEIPT(id))
+                .then((res) => setReceiptData(res))
                 .catch(() => { /* receipt may not be ready yet */ });
         }
-    }, [paymentStatus, id, receiptUrl]);
+    }, [paymentStatus, id, receiptData]);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -93,11 +93,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
         try {
             setCheckoutLoading(true);
             setError(null);
-            const res = await apiClient.post<{ session_url: string }>(
+            const res = await apiClient.post<{ payment_url: string }>(
                 ENDPOINTS.PAYMENTS.CHECKOUT(id)
             );
-            // Redirect to Stripe Checkout
-            window.location.href = res.session_url;
+            // Redirect to Payzone Checkout
+            window.location.href = res.payment_url;
         } catch (err: any) {
             console.error('Checkout failed:', err);
             setError(err.message || 'Failed to start checkout. Please try again.');
@@ -176,7 +176,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
             {verifying && (
                 <div className="rounded-xl p-4 mb-8 text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
                     <p className="font-bold">Verifying Payment...</p>
-                    <p className="mt-1">Please wait while we confirm your payment with Stripe.</p>
+                    <p className="mt-1">Please wait while we confirm your payment.</p>
                 </div>
             )}
 
@@ -193,15 +193,21 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                         >
                             Enter Event &rarr;
                         </button>
-                        {receiptUrl && (
-                            <a
-                                href={receiptUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                        {receiptData && (
+                            <button
+                                onClick={() => {
+                                    const blob = new Blob([JSON.stringify(receiptData, null, 2)], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `receipt-${receiptData.receipt_id || 'event'}.json`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                }}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 border border-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
                             >
                                 Download Receipt
-                            </a>
+                            </button>
                         )}
                     </div>
                 </div>
@@ -214,15 +220,15 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                 </div>
             )}
 
-            {/* Pay with Stripe (show when not yet paid and not verifying) */}
+            {/* Pay with Payzone (show when not yet paid and not verifying) */}
             {paymentStatus !== 'paid' && !verifying && (
                 <div className="border rounded-xl p-6">
-                    <h3 className="font-semibold text-lg mb-4">Pay with Stripe</h3>
+                    <h3 className="font-semibold text-lg mb-4">Secure Payment</h3>
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
                         <p>
-                            Click the button below to securely pay <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong> via Stripe.
-                            You will be redirected to Stripe&apos;s secure checkout page.
+                            Click the button below to securely pay <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong> via Payzone.
+                            You will be redirected to Payzone&apos;s secure checkout page.
                         </p>
                     </div>
 
@@ -235,11 +241,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                                 : 'bg-indigo-600 hover:bg-indigo-700'
                         }`}
                     >
-                        {checkoutLoading ? 'Redirecting to Stripe...' : 'Pay Now'}
+                        {checkoutLoading ? 'Redirecting to Payzone...' : 'Pay Now'}
                     </button>
 
                     <p className="text-xs text-muted-foreground mt-3 text-center">
-                        Powered by Stripe. Your payment information is handled securely.
+                        Powered by Payzone. Your payment information is handled securely.
                     </p>
                 </div>
             )}

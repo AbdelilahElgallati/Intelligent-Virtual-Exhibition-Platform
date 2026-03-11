@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { Button } from '@/components/ui/Button';
 import {
@@ -273,7 +274,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                 className={`flex-1 ${standPrice === 0 ? 'bg-zinc-600 hover:bg-zinc-700' : 'bg-amber-600 hover:bg-amber-700'}`}
                             >
                                 <CreditCard size={16} className="mr-2" />
-                                {standPrice === 0 ? 'Confirm (Free Stand)' : `Pay Stand Fee ($${standPrice})`}
+                                {standPrice === 0 ? 'Confirm (Free Stand)' : `Pay Stand Fee (${standPrice} MAD)`}
                             </Button>
                         )}
                         {partStatus === 'pending_admin_approval' && (
@@ -476,6 +477,9 @@ export default function EnterpriseEventsPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const [search, setSearch] = useState('');
+    const searchParams = useSearchParams();
+    const paymentSuccess = searchParams.get('payment_success') === 'true';
+    const paymentCancelled = searchParams.get('payment_cancelled') === 'true';
 
     const fetchEvents = async () => {
         setIsLoading(true);
@@ -507,7 +511,13 @@ export default function EnterpriseEventsPage() {
     const handlePay = async (eventId: string) => {
         setActionLoading(eventId + '_pay');
         try {
-            await http.post(`/enterprise/events/${eventId}/pay`, {});
+            const res = await http.post(`/enterprise/events/${eventId}/pay`, {});
+            // If Payzone returns a payment_url, redirect to it
+            if (res.payment_url) {
+                window.location.href = res.payment_url;
+                return;
+            }
+            // Otherwise (free stand fee), just refresh
             await fetchEvents();
             setSelectedEvent(null);
         } catch (err: any) {
@@ -526,6 +536,18 @@ export default function EnterpriseEventsPage() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            {paymentSuccess && (
+                <div className="rounded-xl p-4 text-sm font-medium bg-green-50 text-green-700 border border-green-200">
+                    <p className="font-bold">Stand Fee Payment Successful!</p>
+                    <p className="mt-1">Your payment has been confirmed. Your stand request is now pending admin approval.</p>
+                </div>
+            )}
+            {paymentCancelled && (
+                <div className="rounded-xl p-4 text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    <p className="font-bold">Payment Cancelled</p>
+                    <p className="mt-1">Stand fee payment was cancelled. You can try again from the event details.</p>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <p className="text-zinc-500 text-sm">Browse available events and manage your participation.</p>
                 <input
