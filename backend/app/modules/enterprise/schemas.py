@@ -23,13 +23,12 @@ class EnterpriseProfileUpdate(BaseModel):
 
 class ProductBase(BaseModel):
     name: str
-    description: str
-    category: str
-    is_service: bool = False
-    price: Optional[float] = None
-    stock: Optional[int] = None  # number of available pieces (products only)
-    tags: List[str] = []
-    images: List[str] = []
+    description: str = ""
+    price: float = 0
+    currency: str = "MAD"
+    image_url: str = ""
+    stock: int = 0
+    type: str = "product"  # "product" or "service"
     is_active: bool = True
 
 class ProductCreate(ProductBase):
@@ -38,12 +37,11 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    category: Optional[str] = None
-    is_service: Optional[bool] = None
     price: Optional[float] = None
+    currency: Optional[str] = None
+    image_url: Optional[str] = None
     stock: Optional[int] = None
-    tags: Optional[List[str]] = None
-    images: Optional[List[str]] = None
+    type: Optional[str] = None
     is_active: Optional[bool] = None
 
 class ProductRead(ProductBase):
@@ -79,7 +77,8 @@ class ProductRequestRead(BaseModel):
     visitor_email: Optional[str] = None
     visitor_phone: Optional[str] = None
     product_name: Optional[str] = None
-    product_is_service: Optional[bool] = None
+    product_is_service: Optional[bool] = None  # kept for backward compat
+    product_type: Optional[str] = None  # "product" or "service"
 
     class Config:
         populate_by_name = True

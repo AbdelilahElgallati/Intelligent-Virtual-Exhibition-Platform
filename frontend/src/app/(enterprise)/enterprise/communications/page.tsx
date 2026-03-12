@@ -364,6 +364,7 @@ export default function EnterpriseCommunicationsPage() {
                                     initialRoomId={selectedRoomId!}
                                     standName={activeRoom?.name || "Member"}
                                     isEmbedded={true}
+                                    disableMessageLimit={true}
                                     onClose={() => setSelectedRoomId(null)}
                                 />
                                 {/* Note: ChatPanel in this project is 'fixed' and right-positioned. 

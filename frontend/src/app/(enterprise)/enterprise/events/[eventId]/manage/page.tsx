@@ -467,6 +467,7 @@ export default function EventManagementHub() {
                                 initialRoomId={selectedRoomId!}
                                 standName={activeRoom?.name || "Member"}
                                 isEmbedded={true}
+                                disableMessageLimit={true}
                                 onClose={() => setSelectedRoomId(null)}
                             />
                         ) : (

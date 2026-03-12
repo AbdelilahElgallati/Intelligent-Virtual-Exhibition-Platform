@@ -10,6 +10,7 @@ import { StandResources } from '@/components/stand/StandResources';
 import { VirtualStandLayout } from '@/components/stand/VirtualStandLayout';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
+import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { ChatShell } from '@/components/assistant/ChatShell';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +24,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+    const [isShopOpen, setIsShopOpen] = useState(false);
+    const [hasProducts, setHasProducts] = useState(false);
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
     const { isAuthenticated } = useAuth();
 
@@ -49,6 +52,14 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     } catch {
                         /* ignore favorites fetch error */
                     }
+                }
+
+                // Check if stand has marketplace products
+                try {
+                    const products = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(standId));
+                    setHasProducts(Array.isArray(products) && products.length > 0);
+                } catch {
+                    /* marketplace check is non-critical */
                 }
 
                 // Track visit
@@ -108,6 +119,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 onChatOpen={() => setIsChatOpen(true)}
                 onMeetingOpen={() => setIsMeetingModalOpen(true)}
                 onAssistantOpen={() => setIsAssistantOpen(true)}
+                onShopOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
                 onFavoriteToggle={toggleFavorite}
                 favoriteId={favoriteId}
                 activeTab={activeTab}
@@ -143,6 +155,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     standName={stand.name}
                     onClose={() => setIsChatOpen(false)}
                     avatarBg={avatarBg}
+                    themeColor={themeColor}
+                    onMeetingOpen={() => setIsMeetingModalOpen(true)}
                 />
             )}
 
@@ -164,6 +178,16 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                         />
                     </div>
                 </div>
+            )}
+
+            {/* Shop Panel */}
+            {isShopOpen && (
+                <ProductsPanel
+                    standId={standId}
+                    standName={stand.name}
+                    themeColor={themeColor}
+                    onClose={() => setIsShopOpen(false)}
+                />
             )}
 
             {/* Meeting Modal */}

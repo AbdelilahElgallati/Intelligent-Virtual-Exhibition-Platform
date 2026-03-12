@@ -5,8 +5,11 @@ Completely isolated from the existing event payment system.
 
 import logging
 import math
+import os
+import shutil
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
 from app.core.dependencies import get_current_user
 from app.db.mongo import get_database
@@ -122,6 +125,31 @@ async def delete_product(
     await _require_stand_owner(product["stand_id"], user)
     await mkt_svc.delete_product(product_id)
     return None
+
+
+# ── Product Image Upload ────────────────────────────────────────────
+
+PRODUCT_IMAGE_DIR = "uploads/product_images"
+os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
+
+
+@router.post("/upload-product-image")
+async def upload_product_image(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    """Upload a single product image and return its URL path."""
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
+    safe_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(PRODUCT_IMAGE_DIR, safe_name)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {"image_url": f"/uploads/product_images/{safe_name}"}
 
 
 # ── Payzone Checkout ────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import {
     Heart,
     Sparkles,
     FileText,
+    ShoppingBag,
     X,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ interface VirtualStandLayoutProps {
     onChatOpen: () => void;
     onMeetingOpen: () => void;
     onAssistantOpen: () => void;
+    onShopOpen?: () => void;
     onFavoriteToggle: () => void;
     favoriteId: string | null;
     /* tab state (owned by parent) */
@@ -73,6 +75,7 @@ export function VirtualStandLayout({
     onChatOpen,
     onMeetingOpen,
     onAssistantOpen,
+    onShopOpen,
     onFavoriteToggle,
     favoriteId,
     activeTab,
@@ -352,6 +355,17 @@ export function VirtualStandLayout({
                         label="About"
                     />
 
+                    {/* Shop */}
+                    {onShopOpen && (
+                        <ActionBarBtn
+                            glow
+                            themeColor={themeColor}
+                            onClick={onShopOpen}
+                            icon={<ShoppingBag className="w-4 h-4" />}
+                            label="Shop"
+                        />
+                    )}
+
                     {/* Divider */}
                     <div className="w-px h-7 bg-gray-200 mx-0.5 sm:mx-1 shrink-0" />
 
@@ -392,6 +406,7 @@ function ActionBarBtn({
     onClick,
     active,
     accent,
+    glow,
     themeColor,
 }: {
     icon: React.ReactNode;
@@ -399,10 +414,27 @@ function ActionBarBtn({
     onClick: () => void;
     active?: boolean;
     accent?: boolean;
+    glow?: boolean;
     themeColor: string;
 }) {
     const base =
         'inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap';
+
+    if (glow) {
+        return (
+            <button
+                onClick={onClick}
+                className={`${base} text-white shadow-lg hover:opacity-90 animate-pulse`}
+                style={{
+                    backgroundColor: themeColor,
+                    boxShadow: `0 0 14px 3px ${themeColor}88, 0 0 4px 1px ${themeColor}44`,
+                }}
+            >
+                {icon}
+                <span className="hidden sm:inline">{label}</span>
+            </button>
+        );
+    }
 
     if (active || accent) {
         return (

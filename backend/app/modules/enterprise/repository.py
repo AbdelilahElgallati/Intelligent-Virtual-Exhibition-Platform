@@ -64,22 +64,12 @@ class EnterpriseRepository:
         )
         return result.modified_count > 0
 
-    async def add_product_image(self, product_id: str, enterprise_id: str, image_url: str) -> Optional[dict]:
-        """Append an image URL to the product's images list."""
+    async def set_product_image(self, product_id: str, enterprise_id: str, image_url: str) -> Optional[dict]:
+        """Set the product's image_url field."""
         from pymongo import ReturnDocument
         doc = await self.products.find_one_and_update(
             {"_id": ObjectId(product_id), "enterprise_id": str(enterprise_id)},
-            {"$push": {"images": image_url}},
-            return_document=ReturnDocument.AFTER
-        )
-        return stringify_object_ids(doc) if doc else None
-
-    async def remove_product_image(self, product_id: str, enterprise_id: str, image_url: str) -> Optional[dict]:
-        """Remove a specific image URL from the product's images list."""
-        from pymongo import ReturnDocument
-        doc = await self.products.find_one_and_update(
-            {"_id": ObjectId(product_id), "enterprise_id": str(enterprise_id)},
-            {"$pull": {"images": image_url}},
+            {"$set": {"image_url": image_url}},
             return_document=ReturnDocument.AFTER
         )
         return stringify_object_ids(doc) if doc else None
@@ -140,7 +130,9 @@ class EnterpriseRepository:
                         product = await self.db.products.find_one({"_id": pid})
                     if product:
                         req["product_name"] = product.get("name", "")
-                        req["product_is_service"] = product.get("is_service", False)
+                        req["product_type"] = product.get("type", "product")
+                        # backward compat: derive is_service from type
+                        req["product_is_service"] = product.get("type") == "service"
                 except Exception:
                     pass
             enriched.append(req)

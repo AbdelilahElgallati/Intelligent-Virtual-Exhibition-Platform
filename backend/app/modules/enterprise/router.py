@@ -183,14 +183,13 @@ async def delete_product(product_id: str, current_user: dict = Depends(require_r
     return {"message": "Product soft-deleted successfully"}
 
 
-@router.post("/products/{product_id}/images")
+@router.post("/products/{product_id}/image")
 async def upload_product_image(
     product_id: str,
     file: UploadFile = File(...),
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    """Upload an image for a product and append its URL to images[]."""
-    # Validate it's an image
+    """Upload a single image for a product and set its image_url field."""
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
@@ -201,26 +200,12 @@ async def upload_product_image(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Build a URL the frontend can reach via the /uploads static mount
     image_url = f"/uploads/product_images/{safe_name}"
 
-    updated = await enterprise_repo.add_product_image(product_id, str(current_user["_id"]), image_url)
+    updated = await enterprise_repo.set_product_image(product_id, str(current_user["_id"]), image_url)
     if not updated:
         raise HTTPException(status_code=404, detail="Product not found or access denied")
-    return {"image_url": image_url, "images": updated.get("images", [])}
-
-
-@router.delete("/products/{product_id}/images")
-async def remove_product_image(
-    product_id: str,
-    image_url: str,
-    current_user: dict = Depends(require_role(Role.ENTERPRISE)),
-):
-    """Remove a specific image URL from a product's images list."""
-    updated = await enterprise_repo.remove_product_image(product_id, str(current_user["_id"]), image_url)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Product not found or access denied")
-    return {"images": updated.get("images", [])}
+    return {"image_url": image_url}
 
 
 @router.get("/product-requests", response_model=List[ProductRequestRead])
@@ -248,7 +233,7 @@ async def visitor_request_product(
 
     # Validate quantity: only meaningful for products (not services)
     quantity = None
-    if not product.get("is_service") and data.quantity is not None and data.quantity > 0:
+    if product.get("type", "product") != "service" and data.quantity is not None and data.quantity > 0:
         quantity = data.quantity
 
     request = await enterprise_repo.create_product_request(
