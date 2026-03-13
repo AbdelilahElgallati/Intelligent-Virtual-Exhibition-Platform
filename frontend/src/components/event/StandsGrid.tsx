@@ -149,15 +149,14 @@ export function StandsGrid({
             {showFilters && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
                     {/* Category chips */}
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-xs font-medium text-gray-500 mr-1">Category:</span>
+                    <div className="flex gap-2 items-center overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+                        <span className="text-xs font-medium text-gray-500 mr-1 shrink-0">Category:</span>
                         <button
                             onClick={() => setCategory('')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                                category === ''
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition shrink-0 ${category === ''
                                     ? 'bg-indigo-600 text-white border-indigo-600'
                                     : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-                            }`}
+                                }`}
                         >
                             All
                         </button>
@@ -165,11 +164,10 @@ export function StandsGrid({
                             <button
                                 key={cat}
                                 onClick={() => setCategory(category === cat ? '' : cat)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                                    category === cat
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition shrink-0 ${category === cat
                                         ? 'bg-indigo-600 text-white border-indigo-600'
                                         : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
-                                }`}
+                                    }`}
                             >
                                 {cat}
                             </button>
@@ -178,7 +176,7 @@ export function StandsGrid({
 
                     {/* Active filter summary + reset */}
                     {hasActiveFilters && (
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
                             <span className="text-xs text-gray-500 font-medium">Active:</span>
                             {category && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
@@ -198,7 +196,7 @@ export function StandsGrid({
                             )}
                             <button
                                 onClick={resetFilters}
-                                className="ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
+                                className="sm:ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
                             >
                                 <X className="h-3 w-3" />
                                 Reset
@@ -210,35 +208,33 @@ export function StandsGrid({
 
             {/* ── Results count + View Toggle ── */}
             {!loading && stands.length > 0 && (
-                <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <p className="text-xs sm:text-sm text-gray-500">
                         Showing {stands.length} of {total} stand{total !== 1 ? 's' : ''}
                         {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
                     </p>
                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                         <button
                             onClick={() => setViewMode('hall')}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                                viewMode === 'hall'
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition ${viewMode === 'hall'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                                }`}
                             title="3D Exhibition Hall"
                         >
                             <Landmark className="h-3.5 w-3.5" />
-                            Hall View
+                            <span className="xs:inline">3D Hall View</span>
                         </button>
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                                viewMode === 'grid'
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition ${viewMode === 'grid'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                                }`}
                             title="Grid View"
                         >
                             <LayoutGrid className="h-3.5 w-3.5" />
-                            Grid View
+                            <span className="xs:inline">Grid View</span>
                         </button>
                     </div>
                 </div>
@@ -266,7 +262,7 @@ export function StandsGrid({
                 ) : viewMode === 'hall' ? (
                     /* ── 3D Isometric Hall View ── */
                     <Suspense fallback={
-                        <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center" style={{ height: '85vh', minHeight: 600 }}>
+                        <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center h-[45vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]" style={{ minHeight: 320 }}>
                             <div className="text-center">
                                 <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                                 <p className="text-gray-400 text-sm">Loading Exhibition Hall...</p>
@@ -380,11 +376,11 @@ export function StandsGrid({
 
                 {/* ── Pagination Controls ── */}
                 {showPagination && totalPages > 1 && !loading && (
-                    <div className="flex items-center justify-center gap-4 pt-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-6">
                         <button
                             onClick={handlePrevPage}
                             disabled={currentPage <= 1}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition w-full sm:w-auto justify-center"
                         >
                             <ChevronLeft className="h-4 w-4" />
                             Previous
@@ -406,9 +402,9 @@ export function StandsGrid({
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-9 h-9 rounded-lg text-sm font-medium transition ${currentPage === pageNum
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs sm:text-sm font-medium transition ${currentPage === pageNum
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         {pageNum}
@@ -420,7 +416,7 @@ export function StandsGrid({
                         <button
                             onClick={handleNextPage}
                             disabled={currentPage >= totalPages}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition w-full sm:w-auto justify-center"
                         >
                             Next
                             <ChevronRight className="h-4 w-4" />

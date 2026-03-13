@@ -61,7 +61,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
             {/* Event Header */}
             <div className="bg-white border-b border-gray-200">
                 {/* Banner */}
-                <div className="h-48 md:h-64 w-full bg-gradient-to-r from-indigo-900 to-purple-800 relative overflow-hidden">
+                <div className="h-36 sm:h-48 md:h-64 w-full bg-gradient-to-r from-indigo-900 to-purple-800 relative overflow-hidden">
                     {event.banner_url ? (
                         <img
                             src={event.banner_url}
@@ -73,7 +73,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                             {event.title.charAt(0)}
                         </div>
                     )}
-                    <div className="absolute bottom-4 left-0 right-0">
+                    <div className="absolute bottom-3 sm:bottom-4 left-0 right-0">
                         <Container>
                             <div className="flex items-center space-x-2">
                                 <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 uppercase tracking-wide">
@@ -84,11 +84,11 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                     </div>
                 </div>
 
-                <Container className="py-6">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <Container className="py-4 sm:py-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
-                            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{event.title}</h1>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
                                 <div className="flex items-center gap-1">
                                     <User className="h-4 w-4" />
                                     <span>{event.organizer_name || 'Organizer'}</span>
@@ -112,8 +112,8 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div className="mt-8 border-b border-gray-200">
-                        <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                    <div className="mt-4 sm:mt-8 border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
+                        <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide">
                             {tabs.map((tab) => {
                                 const isActive = currentTab === tab.id;
                                 return (
@@ -124,7 +124,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                                             isActive
                                                 ? 'border-indigo-500 text-indigo-600'
                                                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                                            'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors'
+                                            'whitespace-nowrap border-b-2 py-3 sm:py-4 px-1 text-xs sm:text-sm font-medium transition-colors'
                                         )}
                                         aria-current={isActive ? 'page' : undefined}
                                     >
@@ -138,7 +138,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 py-8">
+            <div className="flex-1 py-4 sm:py-8">
                 <Container>
                     {typeof children === 'function' ? children(event) : children}
                 </Container>

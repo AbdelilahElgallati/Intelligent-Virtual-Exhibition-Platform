@@ -6,7 +6,7 @@ import type { HallTextures } from './useHallTextures';
 
 /* ── Hall size constants (exported for scene camera framing) ── */
 export const HALL_WIDTH = 30;
-export const HALL_DEPTH = 24;
+export const HALL_DEPTH = 30;
 const OUTER_EXTRA = 5;
 const FLOOR_Y = -0.01;
 const WALL_H = 4.2;

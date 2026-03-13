@@ -6,14 +6,14 @@ import * as THREE from 'three';
 import type { Stand } from '@/types/stand';
 import type { HallTextures } from './useHallTextures';
 
-/* ── Booth dimensions ── */
-const BOOTH_W = 3.4;   // width  (X)
-const BOOTH_D = 2.8;   // depth  (Z)
-const WALL_H = 2.2;    // wall height
-const WALL_T = 0.08;   // wall thickness
+/* ── Booth dimensions (enlarged for 3-per-row layout) ── */
+const BOOTH_W = 4.5;   // width  (X)
+const BOOTH_D = 3.4;   // depth  (Z)
+const WALL_H = 2.8;    // wall height
+const WALL_T = 0.10;   // wall thickness
 const FLOOR_T = 0.05;
 /* Extra space in front of booth for the floor label */
-const LABEL_OFFSET_Z = BOOTH_D / 2 + 0.9;
+const LABEL_OFFSET_Z = BOOTH_D / 2 + 1.1;
 
 /* ── Warm realistic booth palette ── */
 const PARTITION_WHITE = '#f0eff5';     // Light white-blue partition panels
@@ -40,10 +40,29 @@ function getVariant(stand: Stand): BoothVariant {
     return (hash % 4) as BoothVariant;
 }
 
-/* ── Truncate name to first line (~22 chars) for label safety ── */
-function truncateName(name: string, max = 24): string {
+/* ── Truncate name to first line (~26 chars) for label safety ── */
+function truncateName(name: string, max = 26): string {
     if (name.length <= max) return name;
     return name.slice(0, max - 1).trimEnd() + '…';
+}
+
+/* ── Pick readable text color based on background luminance ── */
+function getContrastColor(hex: string): string {
+    const c = hex.replace('#', '');
+    const rMatch = parseInt(c.substring(0, 2), 16) / 255;
+    const gMatch = parseInt(c.substring(2, 4), 16) / 255;
+    const bMatch = parseInt(c.substring(4, 6), 16) / 255;
+
+    // WCAG standard conversion for relative luminance
+    const r = rMatch <= 0.03928 ? rMatch / 12.92 : Math.pow((rMatch + 0.055) / 1.055, 2.4);
+    const g = gMatch <= 0.03928 ? gMatch / 12.92 : Math.pow((gMatch + 0.055) / 1.055, 2.4);
+    const b = bMatch <= 0.03928 ? bMatch / 12.92 : Math.pow((bMatch + 0.055) / 1.055, 2.4);
+
+    const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+    // Use black text on bright colors, white text on dark colors
+    // Threshold adjusted to 0.179 based on W3C accessibility guidelines
+    return L > 0.179 ? '#000000ff' : '#ffffff';
 }
 
 /**
@@ -140,7 +159,7 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
             {/* Name on back wall (under screen) */}
             <Text
                 position={[0, WALL_H * 0.26, -BOOTH_D / 2 + WALL_T + 0.02]}
-                fontSize={0.17}
+                fontSize={0.22}
                 maxWidth={BOOTH_W * 0.85}
                 textAlign="center"
                 color="#444"
@@ -358,71 +377,74 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
             {/* ══════════════════════════════════════════════════════════
                 FLOOR NAME PLATE (in front of booth)
                ══════════════════════════════════════════════════════════ */}
-            {/* Accent border plate */}
+            {/* Accent border plate — warm bronze */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, LABEL_OFFSET_Z + 0.1]}>
-                <planeGeometry args={[BOOTH_W * 1.12, 1.3]} />
+                <planeGeometry args={[BOOTH_W * 1.08, 1.7]} />
                 <meshStandardMaterial
-                    color={hovered ? themeColor : '#4a4a54'}
-                    emissive={hovered ? themeColor : '#333340'}
-                    emissiveIntensity={hovered ? 0.3 : 0.06}
-                    roughness={0.5}
+                    color={hovered ? themeColor : '#8B7355'}
+                    emissive={hovered ? themeColor : '#6B5535'}
+                    emissiveIntensity={hovered ? 0.3 : 0.1}
+                    roughness={0.4}
+                    metalness={0.15}
                     transparent
-                    opacity={0.92}
+                    opacity={0.95}
                 />
             </mesh>
-            {/* Background plate */}
+            {/* Background plate — deep warm */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, LABEL_OFFSET_Z + 0.1]}>
-                <planeGeometry args={[BOOTH_W * 1.06, 1.18]} />
+                <planeGeometry args={[BOOTH_W * 1.02, 1.55]} />
                 <meshStandardMaterial
-                    color={hovered ? themeColor : '#2a2a32'}
-                    emissive={hovered ? themeColor : '#000000'}
-                    emissiveIntensity={hovered ? 0.45 : 0}
+                    color={hovered ? themeColor : '#2C2520'}
+                    emissive={hovered ? themeColor : '#1A1510'}
+                    emissiveIntensity={hovered ? 0.45 : 0.05}
                     roughness={0.6}
                     transparent
-                    opacity={0.92}
+                    opacity={0.95}
                 />
             </mesh>
             {/* Name text */}
             <Text
-                position={[0, 0.02, LABEL_OFFSET_Z - 0.15]}
+                position={[0, 0.045, LABEL_OFFSET_Z - 0.25]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                fontSize={0.3}
-                maxWidth={BOOTH_W * 1.0}
+                fontSize={0.35}
+                maxWidth={BOOTH_W * 0.95}
                 textAlign="center"
-                color={hovered ? '#ffffff' : themeColor}
+                color={hovered ? getContrastColor(themeColor) : '#F0E6D0'}
                 anchorX="center"
-                anchorY="top"
-                outlineWidth={0.016}
-                outlineColor="#000000"
+                anchorY="middle"
+                fontWeight="bold"
+                outlineWidth={0.015}
+                outlineColor={hovered ? (getContrastColor(themeColor) === '#ffffff' ? '#000000' : '#ffffff') : '#000000'}
                 letterSpacing={0.02}
                 font={undefined}
             >
                 {displayName}
             </Text>
-            {/* Separator line */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.018, LABEL_OFFSET_Z + 0.12]}>
-                <planeGeometry args={[BOOTH_W * 0.7, 0.025]} />
+            {/* Separator line
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.018, LABEL_OFFSET_Z + 0.1]}>
+                <planeGeometry args={[BOOTH_W * 0.65, 0.03]} />
                 <meshStandardMaterial
                     color={themeColor}
                     emissive={themeColor}
-                    emissiveIntensity={0.3}
+                    emissiveIntensity={0.35}
                     transparent
-                    opacity={0.6}
+                    opacity={0.7}
                 />
-            </mesh>
+            </mesh> */}
             {/* Category sub-label */}
             {stand.category && (
                 <Text
-                    position={[0, 0.02, LABEL_OFFSET_Z + 0.32]}
+                    position={[0, 0.045, LABEL_OFFSET_Z + 0.55]}
                     rotation={[-Math.PI / 2, 0, 0]}
-                    fontSize={0.22}
-                    maxWidth={BOOTH_W * 0.95}
+                    fontSize={0.33}
+                    maxWidth={BOOTH_W * 0.9}
                     textAlign="center"
-                    color={hovered ? '#ffffff' : '#d4d4dc'}
+                    color={hovered ? getContrastColor(themeColor) : '#C0B8A8'}
                     anchorX="center"
-                    anchorY="top"
-                    outlineWidth={0.012}
-                    outlineColor="#000000"
+                    anchorY="middle"
+                    fontWeight="bold"
+                    outlineWidth={0.008}
+                    outlineColor={hovered ? (getContrastColor(themeColor) === '#ffffff' ? '#000000' : '#ffffff') : '#000000'}
                     letterSpacing={0.015}
                     font={undefined}
                 >

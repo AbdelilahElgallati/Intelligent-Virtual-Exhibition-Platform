@@ -66,17 +66,17 @@ function LiveEventContent({ eventId }: { eventId: string }) {
                     )}
 
                     {tab === 'overview' && (
-                        <div className="space-y-6">
-                            <Card className="p-8 text-center bg-gray-50 border-dashed">
-                                <h3 className="text-xl font-medium text-gray-900">Welcome to the Live Event!</h3>
-                                <p className="mt-2 text-gray-500">
+                        <div className="space-y-4 sm:space-y-6">
+                            <Card className="p-4 sm:p-8 text-center bg-gray-50 border-dashed">
+                                <h3 className="text-lg sm:text-xl font-medium text-gray-900">Welcome to the Live Event!</h3>
+                                <p className="mt-2 text-sm sm:text-base text-gray-500">
                                     Explore the exhibition hall, visit stands, and network with other participants.
                                     Use the tabs above to navigate.
                                 </p>
                             </Card>
 
-                            <div className="mt-8">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Recommended for You</h3>
+                            <div className="mt-4 sm:mt-8">
+                                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Recommended for You</h3>
                                 {!showOnboarding && (
                                     <StandsGrid
                                         eventId={eventId}
@@ -93,7 +93,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
 
                     {tab === 'stands' && (
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Exhibition Hall - All Stands</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Exhibition Hall - All Stands</h2>
                             <StandsGrid eventId={eventId} showFilters={true} showPagination={true} eventTitle={event?.title} eventBannerUrl={event?.banner_url} />
                         </div>
                     )}

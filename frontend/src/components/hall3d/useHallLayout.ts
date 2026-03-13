@@ -12,13 +12,17 @@ export interface BoothPlacement {
 
 /* Space reserved around edges */
 const MARGIN_X = 3.5;
-const MARGIN_Z = 3.5;
+const MARGIN_Z = 4.0;
 
-/* Booth footprint + spacing (GAP_Z increased for front-of-booth floor labels) */
-const BOOTH_W = 3.4;
-const BOOTH_D = 2.8;
-const GAP_X = 1.6;
-const GAP_Z = 3.0;
+/* Booth footprint + spacing — enlarged for 3-per-row layout */
+const BOOTH_W = 4.5;
+const BOOTH_D = 3.4;
+const GAP_X = 2.2;
+const GAP_Z = 4.0;
+const FIXED_COLS = 3;
+
+/* Shift grid slightly toward back wall to center booths+labels within hall */
+const Z_OFFSET = -1.5;
 
 /**
  * useHallLayout – Computes booth positions for the current page of stands.
@@ -34,8 +38,8 @@ export function useHallLayout(stands: Stand[]): BoothPlacement[] {
         const usableW = HALL_WIDTH - MARGIN_X * 2;
         const usableD = HALL_DEPTH - MARGIN_Z * 2;
 
-        /* How many columns & rows fit */
-        const cols = Math.max(1, Math.floor((usableW + GAP_X) / (BOOTH_W + GAP_X)));
+        /* Fixed 3 columns for clearer, larger booths */
+        const cols = FIXED_COLS;
         const rows = Math.max(1, Math.ceil(stands.length / cols));
 
         /* Actual grid dimensions for centering */
@@ -66,7 +70,7 @@ export function useHallLayout(stands: Stand[]): BoothPlacement[] {
             const row = Math.floor(index / cols);
 
             const x = originX + col * (BOOTH_W + GAP_X);
-            const z = originZ + row * (BOOTH_D + GAP_Z);
+            const z = originZ + row * (BOOTH_D + GAP_Z) + Z_OFFSET;
 
             return {
                 id,
