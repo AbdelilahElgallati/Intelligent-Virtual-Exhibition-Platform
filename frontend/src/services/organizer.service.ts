@@ -1,6 +1,7 @@
 import { http } from '@/lib/http';
 import { OrganizerEvent } from '@/types/event';
 import { OrganizerSummary } from '@/types/organizer';
+import { DashboardData } from '@/types/analytics';
 import { getApiUrl } from '@/lib/config';
 
 export const organizerService = {
@@ -41,6 +42,20 @@ export const organizerService = {
 
     async closeEvent(eventId: string): Promise<OrganizerEvent> {
         return http.post(`/events/${eventId}/close`, {});
+    },
+
+    /**
+     * Get live event analytics snapshot for organizer-owned events.
+     */
+    async getLiveEventAnalytics(eventId: string): Promise<{ dashboard: DashboardData; live: Record<string, number> }> {
+        return http.get(`/analytics/live/events/${eventId}`);
+    },
+
+    /**
+     * Fallback event analytics (non-live dashboard structure).
+     */
+    async getEventAnalytics(eventId: string): Promise<DashboardData> {
+        return http.get(`/analytics/event/${eventId}`);
     },
 
 

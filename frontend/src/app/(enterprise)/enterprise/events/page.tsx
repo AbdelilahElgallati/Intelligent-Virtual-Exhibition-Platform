@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import { Button } from '@/components/ui/Button';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
     Loader, Settings, AlertCircle, Globe, Users, DollarSign,
-    Building2, X, Tag, ChevronRight, BarChart3, MessageSquare
+    Building2, X, Tag, ChevronRight, BarChart3, MessageSquare,
+    CalendarClock, Lock, CalendarCheck,
 } from 'lucide-react';
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -44,6 +46,56 @@ const getStandPrice = (ev: any): number | null => {
     // Events schema uses "stand_price" but some legacy docs may use "stand_fee"
     const val = ev.stand_price ?? ev.stand_fee;
     return (val !== undefined && val !== null) ? Number(val) : null;
+};
+
+const parseClockTime = (value?: string): [number, number] | null => {
+    if (!value || !value.includes(':')) return null;
+    const [hours, minutes] = value.split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return [hours, minutes];
+};
+
+const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null } => {
+    const scheduleDays: any[] = Array.isArray(ev?.schedule_days) ? ev.schedule_days : [];
+    const baseDateValue = ev?.start_date || ev?.schedule?.start_date;
+
+    if (scheduleDays.length > 0 && baseDateValue) {
+        let earliest: Date | null = null;
+        let latest: Date | null = null;
+
+        for (const day of scheduleDays) {
+            const slots: any[] = Array.isArray(day?.slots) ? day.slots : [];
+            const dayOffset = Math.max(0, Number(day?.day_number ?? 1) - 1);
+
+            for (const slot of slots) {
+                const startParts = parseClockTime(slot?.start_time);
+                const endParts = parseClockTime(slot?.end_time);
+                if (!startParts || !endParts) continue;
+
+                const slotStart = new Date(baseDateValue);
+                slotStart.setHours(0, 0, 0, 0);
+                slotStart.setDate(slotStart.getDate() + dayOffset);
+                slotStart.setHours(startParts[0], startParts[1], 0, 0);
+
+                const slotEnd = new Date(baseDateValue);
+                slotEnd.setHours(0, 0, 0, 0);
+                slotEnd.setDate(slotEnd.getDate() + dayOffset);
+                slotEnd.setHours(endParts[0], endParts[1], 0, 0);
+
+                if (!earliest || slotStart < earliest) earliest = slotStart;
+                if (!latest || slotEnd > latest) latest = slotEnd;
+            }
+        }
+
+        if (earliest || latest) {
+            return { start: earliest, end: latest };
+        }
+    }
+
+    return {
+        start: baseDateValue ? new Date(baseDateValue) : null,
+        end: ev?.end_date ? new Date(ev.end_date) : (ev?.schedule?.end_date ? new Date(ev.schedule.end_date) : null),
+    };
 };
 
 // ─── Day-by-Day Schedule Panel ───────────────────────────────────────────────
@@ -139,6 +191,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const partStatus = participation?.status;
     const statusConf = partStatus ? STATUS_CONFIG[partStatus] : null;
     const standPrice = getStandPrice(ev);
+    const now = new Date();
+    const evState = ev.state || '';
+    const scheduleWindow = getEventScheduleWindow(ev);
+    const isEventEnded = evState === 'closed' || (scheduleWindow.end !== null && now > scheduleWindow.end);
+    const canConfigure = partStatus === 'approved' && !isEventEnded;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -150,7 +207,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                 <div className="relative">
                     {ev.banner_url ? (
                         <div className="h-44 w-full overflow-hidden rounded-t-2xl">
-                            <img src={ev.banner_url} alt={ev.title} className="w-full h-full object-cover" />
+                            <img src={resolveMediaUrl(ev.banner_url)} alt={ev.title} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-t-2xl" />
                         </div>
                     ) : (
@@ -261,12 +318,12 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">
-                        {!participation && (
+                        {!participation && !isEventEnded && (
                             <Button onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1">
                                 Request to Join
                             </Button>
                         )}
-                        {partStatus === 'pending_payment' && (
+                        {partStatus === 'pending_payment' && !isEventEnded && (
                             <Button
                                 onClick={() => onPay(evId)}
                                 isLoading={actionLoading === evId + '_pay'}
@@ -281,7 +338,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                 Waiting for Admin Approval…
                             </Button>
                         )}
-                        {partStatus === 'approved' && (
+                        {canConfigure && (
                             <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
                                 <Button className="w-full flex items-center gap-2">
                                     <Settings size={16} /> Configure Stand
@@ -318,22 +375,36 @@ function EnterpriseEventCard({
     const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
 
+    // Timeline status
+    const now = new Date();
+    const evState = ev.state || '';
+    const scheduleWindow = getEventScheduleWindow(ev);
+    const evStart = scheduleWindow.start;
+    const evEnd = scheduleWindow.end;
+    const isEventEnded = evState === 'closed' || (evEnd !== null && now > evEnd);
+    const isEventLive = evState === 'live' && evStart !== null && evEnd !== null && now >= evStart && now <= evEnd;
+    const isEventUpcoming = !isEventEnded && evStart !== null && now < evStart;
+    const isEventNotReady = ['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(evState);
+    const canManage = partStatus === 'approved' && isEventLive;
+    const canAnalytics = partStatus === 'approved' && (isEventLive || isEventEnded);
+    const canConfigure = partStatus === 'approved' && !isEventEnded;
+
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col group">
+        <div className={`bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col group ${isEventEnded ? 'opacity-75' : ''}`}>
             {/* Banner */}
             <div className="relative h-44 w-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 flex-shrink-0">
                 {ev.banner_url ? (
                     <img
-                        src={ev.banner_url}
+                        src={resolveMediaUrl(ev.banner_url)}
                         alt={ev.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${isEventEnded ? 'grayscale-[40%]' : ''}`}
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center opacity-30">
                         <Globe size={48} className="text-white" />
                     </div>
                 )}
-                {/* Status badge */}
+                {/* Status badge — participation */}
                 {statusConf ? (
                     <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${statusConf.badgeClass}`}>
                         {statusConf.icon} {statusConf.label}
@@ -341,6 +412,22 @@ function EnterpriseEventCard({
                 ) : (
                     <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/90 text-zinc-600 border border-zinc-200 capitalize">
                         {(ev.state || '').replace(/_/g, ' ')}
+                    </span>
+                )}
+                {/* Timeline badge — top-left */}
+                {isEventLive && (
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500 text-white border border-emerald-400 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
+                    </span>
+                )}
+                {isEventUpcoming && !isEventNotReady && (
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500 text-white border border-indigo-400 shadow-sm">
+                        <CalendarClock size={11} /> Upcoming
+                    </span>
+                )}
+                {isEventEnded && (
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-zinc-600 text-white border border-zinc-500 shadow-sm">
+                        <CalendarCheck size={11} /> Ended
                     </span>
                 )}
                 {/* Stand fee badge — only show when there's an actual price */}
@@ -414,26 +501,30 @@ function EnterpriseEventCard({
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 pt-4 mt-auto border-t border-zinc-100">
+                    {/* Row 1: Primary actions */}
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
                             View Details
                         </Button>
-                        {!participation && ev.stands_left !== 0 && (
+                        {/* Join: available when not participated and event not ended */}
+                        {!participation && !isEventEnded && ev.stands_left !== 0 && (
                             <Button size="sm" onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold">
                                 Join Event
                             </Button>
                         )}
-                        {!participation && ev.stands_left === 0 && (
+                        {!participation && !isEventEnded && ev.stands_left === 0 && (
                             <Button size="sm" disabled className="flex-1 text-xs h-10 opacity-50 bg-zinc-100 text-zinc-400 font-bold">
                                 Fully Booked
                             </Button>
                         )}
-                        {partStatus === 'pending_payment' && (
+                        {/* Pay fee: only before event ends */}
+                        {partStatus === 'pending_payment' && !isEventEnded && (
                             <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-200 font-bold">
                                 {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
                             </Button>
                         )}
-                        {partStatus === 'approved' && (
+                        {/* Manage Event: only when live */}
+                        {canManage && (
                             <Link href={`/enterprise/events/${evId}/manage`} className="flex-1">
                                 <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
                                     <MessageSquare size={14} /> Manage Event
@@ -442,18 +533,23 @@ function EnterpriseEventCard({
                         )}
                     </div>
 
-                    {partStatus === 'approved' && (
+                    {/* Row 2: Configure + Analytics */}
+                    {(canConfigure || canAnalytics) && (
                         <div className="flex gap-2">
-                            <Link href={`/enterprise/events/${evId}/analytics`} className="flex-1">
-                                <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
-                                    <BarChart3 size={13} /> Analytics
-                                </Button>
-                            </Link>
-                            <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
-                                <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
-                                    <Settings size={13} /> Configure
-                                </Button>
-                            </Link>
+                            {canAnalytics && (
+                                <Link href={`/enterprise/events/${evId}/analytics`} className="flex-1">
+                                    <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                        <BarChart3 size={13} /> Analytics
+                                    </Button>
+                                </Link>
+                            )}
+                            {canConfigure && (
+                                <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
+                                    <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                        <Settings size={13} /> Configure
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     )}
 

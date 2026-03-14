@@ -23,6 +23,12 @@ class NotificationType(str, Enum):
     PAYMENT_PROOF_SUBMITTED = "payment_proof_submitted"
     VISITOR_PAYMENT_APPROVED = "visitor_payment_approved"
     VISITOR_PAYMENT_REJECTED = "visitor_payment_rejected"
+    # Conferences
+    CONFERENCE_ASSIGNED = "conference_assigned"
+    CONFERENCE_LIVE = "conference_live"
+    MEETING_APPROVED = "meeting_approved"
+    MEETING_REJECTED = "meeting_rejected"
+
 
 
 class NotificationBase(BaseModel):

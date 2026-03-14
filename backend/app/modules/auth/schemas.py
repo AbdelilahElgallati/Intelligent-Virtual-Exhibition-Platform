@@ -16,7 +16,8 @@ from app.modules.auth.enums import Role
 class LoginRequest(BaseModel):
     """Schema for user login request."""
     
-    email: EmailStr
+    # Keep as string so local/dev seed accounts like *.test can authenticate.
+    email: str
     password: str
     
     model_config = {"from_attributes": True}

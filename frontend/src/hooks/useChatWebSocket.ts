@@ -12,6 +12,27 @@ interface Message {
     timestamp: string;
 }
 
+function mergeMessages(existing: Message[], incoming: Message[]): Message[] {
+    const merged = [...existing];
+
+    for (const message of incoming) {
+        const existingIndex = merged.findIndex((item) => {
+            if (item._id && message._id) return item._id === message._id;
+            return item.sender_id === message.sender_id
+                && item.timestamp === message.timestamp
+                && item.content === message.content;
+        });
+
+        if (existingIndex === -1) {
+            merged.push(message);
+        } else {
+            merged[existingIndex] = { ...merged[existingIndex], ...message };
+        }
+    }
+
+    return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}
+
 export function useChatWebSocket(roomId: string | null) {
     const { tokens } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -43,13 +64,17 @@ export function useChatWebSocket(roomId: string | null) {
             ws.onopen = () => {
                 setIsConnected(true);
                 setError(null);
+                if (reconnectTimeoutRef.current) {
+                    clearTimeout(reconnectTimeoutRef.current);
+                    reconnectTimeoutRef.current = null;
+                }
                 console.log('WS Connected');
             };
 
             ws.onmessage = (event) => {
                 try {
                     const message = JSON.parse(event.data);
-                    setMessages((prev) => [...prev, message]);
+                    setMessages((prev) => mergeMessages(prev, [message]));
                 } catch (e) {
                     console.error('Failed to parse WS message', e);
                 }

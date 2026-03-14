@@ -53,7 +53,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const buildHeaders = (token?: string | null): Headers => {
         const headers = new Headers(options.headers);
         const isFormData = options.body instanceof FormData;
-        if (!isFormData && !headers.has('Content-Type')) {
+        const methodUpper = (options.method || 'GET').toUpperCase();
+        const shouldSendJsonContentType = !isFormData && methodUpper !== 'GET' && methodUpper !== 'HEAD';
+        if (shouldSendJsonContentType && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
         } else if (isFormData && headers.has('Content-Type')) {
             headers.delete('Content-Type');

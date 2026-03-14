@@ -42,7 +42,8 @@ class UserBase(BaseModel):
     """Base schema for user data."""
     
     id: str = Field(alias="_id")
-    email: EmailStr
+    # Keep string to support local/dev seeded accounts (e.g. *.test).
+    email: str
     username: str
     full_name: str
     role: Role
@@ -68,7 +69,8 @@ class UserRead(BaseModel):
     """Schema for reading user data (no password)."""
     
     id: str = Field(alias="_id")
-    email: EmailStr
+    # Keep string to support local/dev seeded accounts (e.g. *.test).
+    email: str
     username: Optional[str] = None  # Made optional for backward compatibility
     full_name: str
     role: Role

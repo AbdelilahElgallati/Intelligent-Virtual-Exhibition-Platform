@@ -18,6 +18,12 @@ class ScheduleSlot(BaseModel):
     start_time: str   # "HH:MM" — e.g. "09:00"
     end_time:   str   # "HH:MM" — e.g. "17:00"
     label:      str = ""  # activity description
+    # Conference fields (optional)
+    is_conference: bool = False
+    assigned_enterprise_id: Optional[str] = None
+    assigned_enterprise_name: Optional[str] = None
+    speaker_name: Optional[str] = None
+    conference_id: Optional[str] = None
 
 
 class ScheduleDay(BaseModel):
@@ -139,6 +145,16 @@ class EventUpdate(BaseModel):
     ticket_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
+
+
+class ScheduleSlotConferenceAssign(BaseModel):
+    """Payload to assign/unassign a conference on a specific schedule slot."""
+    day_index: int = Field(..., ge=0)
+    slot_index: int = Field(..., ge=0)
+    is_conference: bool = False
+    assigned_enterprise_id: Optional[str] = None
+    speaker_name: Optional[str] = None
+    title: Optional[str] = None  # conference title (defaults to slot label)
 
 
 class EventApproveRequest(BaseModel):

@@ -10,6 +10,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Event } from '@/types/event';
+import EventConferencesTab from '@/components/conferences/EventConferencesTab';
 
 function LiveEventContent({ eventId }: { eventId: string }) {
     const searchParams = useSearchParams();
@@ -104,6 +105,10 @@ function LiveEventContent({ eventId }: { eventId: string }) {
 
                     {tab === 'networking' && (
                         <NetworkingTab event={event} eventId={eventId} />
+                    )}
+
+                    {tab === 'conferences' && (
+                        <EventConferencesTab eventId={eventId} />
                     )}
                 </>
             )}

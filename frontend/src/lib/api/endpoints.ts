@@ -25,12 +25,12 @@ export const ENDPOINTS = {
     EVENT_PAYMENTS: '/admin/event-payments',
   },
   PARTICIPANTS: {
-    LIST: (eventId: string) => `/events/${eventId}/participants`,
-    INVITE: (eventId: string) => `/events/${eventId}/participants/invite`,
-    REQUEST: (eventId: string) => `/events/${eventId}/participants/request`,
-    APPROVE: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/approve`,
-    REJECT: (eventId: string, participantId: string) => `/events/${eventId}/participants/${participantId}/reject`,
-    ATTENDEES: (eventId: string) => `/events/${eventId}/participants/attendees`,
+    LIST: (eventId: string) => `/participants/event/${eventId}/`,
+    INVITE: (eventId: string) => `/participants/event/${eventId}/invite`,
+    REQUEST: (eventId: string) => `/participants/event/${eventId}/request`,
+    APPROVE: (eventId: string, participantId: string) => `/participants/event/${eventId}/${participantId}/approve`,
+    REJECT: (eventId: string, participantId: string) => `/participants/event/${eventId}/${participantId}/reject`,
+    ATTENDEES: (eventId: string) => `/participants/event/${eventId}/attendees`,
     ENTERPRISES: (eventId: string) => `/participants/event/${eventId}/enterprises`,
   },
   RECOMMENDATIONS: {

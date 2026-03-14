@@ -54,6 +54,14 @@ class EnrichedParticipantRead(ParticipantRead):
     organization_id: Optional[str] = None
     organization_name: Optional[str] = None
     stand_id: Optional[str] = None
+    description: Optional[str] = None
+    industry: Optional[str] = None
+    website: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    location_city: Optional[str] = None
+    location_country: Optional[str] = None
 
 
 # ── Enterprise request enrichment schemas ────────────────────────────────────

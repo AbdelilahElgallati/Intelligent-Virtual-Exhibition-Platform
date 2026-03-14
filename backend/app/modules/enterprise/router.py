@@ -7,7 +7,8 @@ import shutil
 
 from app.core.dependencies import require_role
 from app.modules.auth.enums import Role
-from app.modules.organizations.service import get_organizations_collection, list_organizations
+from app.modules.organizations.service import get_organizations_collection, create_organization
+from app.modules.organizations.schemas import OrganizationCreate
 from app.modules.enterprise.schemas import (
     EnterpriseProfileUpdate,
     ProductCreate,
@@ -19,7 +20,7 @@ from app.modules.enterprise.schemas import (
     ProductStatus,
 )
 from app.modules.enterprise.repository import enterprise_repo
-from app.modules.leads.repository import lead_repo
+from app.modules.leads.service import lead_service
 from app.modules.leads.schemas import LeadInteraction
 from app.modules.stands.service import get_stand_by_org
 from app.modules.participants.schemas import ParticipantStatus
@@ -54,11 +55,61 @@ async def upload_profile_image(org_id: str, file: UploadFile, field_name: str) -
     return f"/uploads/enterprise_profile/{safe_name}"
 
 async def get_enterprise_org(current_user: dict) -> dict:
-    """Find the organization owned by the enterprise user."""
-    orgs = await list_organizations()
-    for org in orgs:
-        if str(org.get("owner_id")) == str(current_user.get("_id")):
-            return org
+    """Find enterprise organization; auto-provision one if missing."""
+    db = get_database()
+    user_id = str(current_user.get("_id") or current_user.get("id") or "")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enterprise organization not found")
+
+    # Owner lookup (primary path).
+    org_doc = await db.organizations.find_one({"owner_id": user_id})
+
+    # Some legacy documents may use a different owner key.
+    if not org_doc:
+        org_doc = await db.organizations.find_one({"created_by": user_id})
+
+    # Member lookup fallback: enterprise user is linked via organization_members.
+    if not org_doc:
+        member_doc = await db.organization_members.find_one({"user_id": user_id})
+        if member_doc:
+            org_ref = str(member_doc.get("organization_id") or "")
+            if org_ref:
+                if ObjectId.is_valid(org_ref):
+                    org_doc = await db.organizations.find_one({"_id": ObjectId(org_ref)})
+                else:
+                    org_doc = await db.organizations.find_one({"_id": org_ref})
+
+    if org_doc:
+        return stringify_object_ids(org_doc)
+
+    # Auto-provision a minimal organization for enterprise accounts missing profile linkage.
+    base_name = (
+        (current_user.get("professional_info") or {}).get("company")
+        or current_user.get("company")
+        or current_user.get("org_name")
+        or current_user.get("full_name")
+        or current_user.get("email")
+        or "Enterprise"
+    )
+    org_name = f"{str(base_name).strip()} Organization"
+
+    # Ensure unique org name.
+    name_in_use = await db.organizations.find_one({"name": org_name})
+    if name_in_use:
+        org_name = f"{org_name} {uuid.uuid4().hex[:6]}"
+
+    try:
+        created = await create_organization(
+            OrganizationCreate(
+                name=org_name,
+                description="Auto-created enterprise organization profile",
+            ),
+            owner_id=user_id,
+        )
+        return created
+    except Exception:
+        pass
+
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Enterprise organization not found")
 
 
@@ -76,7 +127,7 @@ async def get_enterprise_participant(event_id: str, org_id: str) -> Optional[dic
 async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> dict:
     """Guard helper — returns stand only if enterprise is APPROVED for the event."""
     participant = await get_enterprise_participant(event_id, org_id)
-    if not participant or participant.get("status") != ParticipantStatus.APPROVED:
+    if not participant or participant.get("status") != ParticipantStatus.APPROVED.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Enterprise not approved for this event",
@@ -264,7 +315,7 @@ async def visitor_request_product(
         stand_doc = await get_stand_by_org(data.event_id, product["organization_id"])
         actual_stand_id = stand_doc["id"] if stand_doc else f"org_{product['organization_id']}"
         
-        await lead_repo.log_interaction(LeadInteraction(
+        await lead_service.log_interaction(LeadInteraction(
             visitor_id=str(current_user["_id"]),
             stand_id=actual_stand_id,
             interaction_type="product_request",
@@ -286,13 +337,23 @@ async def visitor_request_product(
 async def list_enterprise_events(current_user: dict = Depends(require_role(Role.ENTERPRISE))):
     """List all events: available ones + enterprise's joined status + stands_left."""
     db = get_database()
-    org = await get_enterprise_org(current_user)
+
+    # Some enterprise accounts may exist before an organization profile is created.
+    # In that case, still return the available event catalog with null participation.
+    org = None
+    try:
+        org = await get_enterprise_org(current_user)
+    except HTTPException as exc:
+        if not (exc.status_code == status.HTTP_404_NOT_FOUND and str(exc.detail) == "Enterprise organization not found"):
+            raise
 
     cursor = db.events.find({"state": {"$in": ["approved", "live", "waiting_for_payment", "payment_done"]}})
     all_events = stringify_object_ids(await cursor.to_list(length=200))
 
-    part_cursor = db.participants.find({"organization_id": str(org["id"]), "role": Role.ENTERPRISE.value})
-    participations = {p["event_id"]: p for p in stringify_object_ids(await part_cursor.to_list(length=200))}
+    participations = {}
+    if org:
+        part_cursor = db.participants.find({"organization_id": str(org["id"]), "role": Role.ENTERPRISE.value})
+        participations = {p["event_id"]: p for p in stringify_object_ids(await part_cursor.to_list(length=200))}
 
     result = []
     for ev in all_events:
@@ -343,7 +404,7 @@ async def enterprise_join_event(
         "organization_id": org_id,
         "user_id": str(current_user["_id"]),
         "role": Role.ENTERPRISE.value,
-        "status": ParticipantStatus.PENDING_PAYMENT,
+        "status": ParticipantStatus.PENDING_PAYMENT.value,
         "stand_fee_paid": False,
         "payment_reference": None,
         "created_at": datetime.now(timezone.utc),
@@ -365,7 +426,7 @@ async def enterprise_pay_stand_fee(
     participant = await get_enterprise_participant(event_id, org_id)
     if not participant:
         raise HTTPException(status_code=404, detail="No join request found. Please join the event first.")
-    if participant.get("status") != ParticipantStatus.PENDING_PAYMENT:
+    if participant.get("status") != ParticipantStatus.PENDING_PAYMENT.value:
         raise HTTPException(status_code=400, detail=f"Cannot pay in current status: {participant.get('status')}")
 
     payment_ref = str(uuid.uuid4())
@@ -376,7 +437,7 @@ async def enterprise_pay_stand_fee(
         {"$set": {
             "stand_fee_paid": True,
             "payment_reference": payment_ref,
-            "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
+            "status": ParticipantStatus.PENDING_ADMIN_APPROVAL.value,
         }},
         return_document=ReturnDocument.AFTER,
     )

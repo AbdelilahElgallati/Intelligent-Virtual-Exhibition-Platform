@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { eventsApi } from "@/lib/api/events";
+import { organizerService } from "@/services/organizer.service";
+import { resolveMediaUrl } from "@/lib/media";
 import { OrganizerEvent } from "@/types/event";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -54,6 +56,15 @@ interface EventAnalytics {
   enterprises?: EnterpriseSummary[];
 }
 
+interface LiveEventAnalyticsResponse {
+  dashboard?: {
+    kpis?: Kpi[];
+    distribution?: Record<string, number> | DistributionItem[];
+    [key: string]: unknown;
+  };
+  live?: Record<string, number>;
+}
+
 const KPI_ICONS: Record<string, React.ReactNode> = {
   visitors: <Eye className="w-5 h-5 text-blue-500" />,
   enterprises: <Store className="w-5 h-5 text-purple-500" />,
@@ -68,11 +79,63 @@ function getIcon(label: string) {
   return key ? KPI_ICONS[key] : <BarChart2 className="w-5 h-5 text-gray-400" />;
 }
 
+function normalizeDistribution(distribution: EventAnalytics["distribution"] | Record<string, number> | undefined): DistributionItem[] {
+  if (!distribution) {
+    return [];
+  }
+
+  if (Array.isArray(distribution)) {
+    return distribution;
+  }
+
+  return Object.entries(distribution).map(([label, value]) => ({
+    label,
+    value,
+  }));
+}
+
+function normalizeAnalyticsPayload(payload: Partial<EventAnalytics>): EventAnalytics {
+  return {
+    ...payload,
+    kpis: payload.kpis ?? [],
+    distribution: normalizeDistribution(payload.distribution),
+    enterprises: payload.enterprises ?? [],
+  };
+}
+
+function mapLiveAnalyticsPayload(livePayload: LiveEventAnalyticsResponse): EventAnalytics {
+  const dashboard = livePayload.dashboard ?? {};
+  const live = livePayload.live ?? {};
+
+  const rollingKpis: Kpi[] = [
+    {
+      label: "Live meetings (now)",
+      value: Number(live.live_meetings ?? 0),
+      description: "Sessions currently in progress",
+    },
+    {
+      label: "Messages (last 15 min)",
+      value: Number(live.messages_last_15m ?? 0),
+      description: "Recent chat activity",
+    },
+    {
+      label: "Events tracked (last 15 min)",
+      value: Number(live.events_last_15m ?? 0),
+      description: "Tracked analytics actions",
+    },
+  ];
+
+  return normalizeAnalyticsPayload({
+    ...dashboard,
+    kpis: [...(dashboard.kpis ?? []), ...rollingKpis],
+    distribution: dashboard.distribution,
+  });
+}
+
 // ── Enterprise Detail Modal ──────────────────────────────────────────────
 function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () => void }) {
   const [org, setOrg] = useState<OrganizationRead | null>(null);
   const [loading, setLoading] = useState(true);
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     organizationsApi.getOrganizationById(orgId)
@@ -103,7 +166,7 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
               <div className="absolute -bottom-12 left-10 p-2 bg-white rounded-[2rem] shadow-xl">
                 <div className="w-24 h-24 bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-100 flex items-center justify-center">
                   {org.logo_url ? (
-                    <img src={`${API_BASE}${org.logo_url}`} alt={org.name} className="w-full h-full object-contain" />
+                    <img src={resolveMediaUrl(org.logo_url)} alt={org.name} className="w-full h-full object-contain" />
                   ) : (
                     <Building className="text-zinc-200" size={40} />
                   )}
@@ -183,36 +246,75 @@ export default function EventAnalyticsPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [eventData, analyticsData] = await Promise.all([
-          eventsApi.getEventById(eventId),
-          eventsApi.getEventAnalytics(eventId),
-        ]);
+    if (!eventId) {
+      return;
+    }
+
+    let isMounted = true;
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+    const loadEvent = async () => {
+      const eventData = await eventsApi.getEventById(eventId);
+      if (isMounted) {
         setEvent(eventData);
-
-        // Safely transform distribution from Dict to Array if needed
-        let processedAnalytics = { ...analyticsData } as EventAnalytics;
-        if (analyticsData.distribution && !Array.isArray(analyticsData.distribution)) {
-          const distObj = analyticsData.distribution as unknown as Record<string, number>;
-          processedAnalytics.distribution = Object.entries(distObj).map(([label, value]) => ({
-            label,
-            value
-          }));
-        }
-
-        setAnalytics(processedAnalytics);
-      } catch (err) {
-        console.error("Analytics fetch error:", err);
-        setError("Could not load analytics data.");
-      } finally {
-        setLoading(false);
       }
     };
-    load();
+
+    const loadAnalytics = async (surfaceError = true) => {
+      try {
+        const livePayload = await organizerService.getLiveEventAnalytics(eventId);
+        if (isMounted) {
+          setAnalytics(mapLiveAnalyticsPayload(livePayload));
+          setError(null);
+        }
+        return;
+      } catch (liveErr) {
+        console.warn("Live analytics fetch failed, falling back to standard analytics:", liveErr);
+      }
+
+      try {
+        const fallbackPayload = await organizerService.getEventAnalytics(eventId);
+        if (isMounted) {
+          setAnalytics(normalizeAnalyticsPayload(fallbackPayload as unknown as Partial<EventAnalytics>));
+          setError(null);
+        }
+      } catch (fallbackErr) {
+        console.error("Analytics fetch error:", fallbackErr);
+        if (isMounted && surfaceError) {
+          setError("Could not load analytics data.");
+        }
+      }
+    };
+
+    const initialize = async () => {
+      setLoading(true);
+      try {
+        await loadEvent();
+        await loadAnalytics(true);
+      } catch (initErr) {
+        console.error("Event analytics initialization error:", initErr);
+        if (isMounted) {
+          setError("Could not load event analytics.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          refreshTimer = setInterval(() => {
+            loadAnalytics(false);
+          }, 15000);
+        }
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isMounted = false;
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+    };
   }, [eventId]);
 
   const handleExport = async () => {
@@ -220,7 +322,6 @@ export default function EventAnalyticsPage() {
     setError(null);
     setExportSuccess(false);
     try {
-      const { organizerService } = await import("@/services/organizer.service");
       await organizerService.exportEventReportPDF(eventId);
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 5000);
@@ -442,7 +543,7 @@ export default function EventAnalyticsPage() {
                     <div className="w-28 h-28 bg-white rounded-[2rem] mb-6 border border-zinc-100 shadow-md group-hover/ent:shadow-xl group-hover/ent:scale-110 group-hover/ent:-rotate-2 transition-all duration-700 overflow-hidden flex items-center justify-center relative">
                       <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent opacity-0 group-hover/ent:opacity-100 transition-opacity z-20" />
                       {ent.logo_url ? (
-                        <img src={`${API_BASE}${ent.logo_url}`} alt={ent.name} className="w-full h-full object-cover relative z-10" />
+                        <img src={resolveMediaUrl(ent.logo_url)} alt={ent.name} className="w-full h-full object-cover relative z-10" />
                       ) : (
                         <div className="w-full h-full bg-zinc-50 flex items-center justify-center relative z-10">
                           <Building className="text-zinc-300" size={40} />

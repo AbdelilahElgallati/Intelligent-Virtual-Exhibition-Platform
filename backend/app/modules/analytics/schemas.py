@@ -1,8 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
 
 # --- Person B: Dashboard Models ---
 
@@ -36,15 +35,19 @@ class AnalyticsEventType(str, Enum):
     EVENT_VIEW = "event_view"
     STAND_VISIT = "stand_visit"
     CHAT_OPENED = "chat_opened"
+    MEETING_BOOKED = "meeting_booked"
+    PAYMENT_CONFIRMED = "payment_confirmed"
+    CONFERENCE_JOINED = "conference_joined"
 
 
 class AnalyticsEventBase(BaseModel):
     """Base schema for analytics data."""
     
     type: AnalyticsEventType
-    user_id: Optional[UUID] = None
-    event_id: Optional[UUID] = None
-    stand_id: Optional[UUID] = None
+    user_id: Optional[str] = None
+    event_id: Optional[str] = None
+    stand_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
     
     model_config = {"from_attributes": True}
 
@@ -57,7 +60,8 @@ class AnalyticsEventCreate(AnalyticsEventBase):
 class AnalyticsEventRead(AnalyticsEventBase):
     """Schema for reading analytics data."""
     
-    id: UUID
+    id: str = Field(alias="_id")
     created_at: datetime
+    timestamp: Optional[datetime] = None
     
     model_config = {"from_attributes": True}

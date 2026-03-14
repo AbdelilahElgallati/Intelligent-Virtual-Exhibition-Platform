@@ -3,9 +3,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { Conference } from '@/types/conference';
+import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import {
     MessageSquare,
     Calendar,
@@ -19,12 +22,181 @@ import {
     LayoutDashboard,
     ArrowLeft,
     Loader2,
-    Building2
+    Building2,
+    AlertTriangle,
+    Timer,
+    CircleDot,
+    Ban,
+    Hourglass,
+    PhoneCall,
+    ArrowRight,
+    CalendarClock,
+    Lock,
+    CalendarCheck,
+    ShieldAlert,
+    Globe,
+    Mail,
+    FileText,
+    Phone,
+    MapPin,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 
+// ─── Meeting Timeline ────────────────────────────────────────────────────────
+
+type TimelineStatus = 'upcoming' | 'starting-soon' | 'live' | 'ended' | 'expired';
+
+function getMeetingTimeline(m: Meeting): { status: TimelineStatus; label: string; color: string; bgColor: string; icon: typeof Clock } {
+    const now = Date.now();
+    const start = new Date(m.start_time).getTime();
+    const end = new Date(m.end_time).getTime();
+    const diff = start - now;
+    const minsUntilStart = Math.round(diff / 60000);
+
+    // If meeting is rejected / canceled / completed by backend
+    if (m.status === 'rejected') return { status: 'ended', label: 'Rejected', color: 'text-red-600', bgColor: 'bg-red-50 border-red-100', icon: Ban };
+    if (m.status === 'canceled') return { status: 'ended', label: 'Canceled', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: Ban };
+    if (m.status === 'completed' || m.session_status === 'ended') return { status: 'ended', label: 'Completed', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: CheckCircle2 };
+
+    // Session is currently live
+    if (m.session_status === 'live') return { status: 'live', label: 'Live Now', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: CircleDot };
+
+    // Time already passed but meeting wasn't started
+    if (now > end) return { status: 'expired', label: 'Expired', color: 'text-red-500', bgColor: 'bg-red-50/50 border-red-100', icon: Timer };
+
+    // Currently in the meeting window but session not started
+    if (now >= start && now <= end) return { status: 'live', label: 'Ready to Join', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: PhoneCall };
+
+    // Starting soon (within 15 min)
+    if (minsUntilStart <= 15 && minsUntilStart > 0) return { status: 'starting-soon', label: `In ${minsUntilStart} min`, color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: Hourglass };
+
+    // Upcoming – format relative time
+    if (minsUntilStart <= 60) return { status: 'upcoming', label: `In ${minsUntilStart} min`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    const hoursUntil = Math.floor(minsUntilStart / 60);
+    if (hoursUntil < 24) return { status: 'upcoming', label: `In ${hoursUntil}h`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    const daysUntil = Math.floor(hoursUntil / 24);
+    return { status: 'upcoming', label: `In ${daysUntil}d`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+}
+
+function parseClockTime(value?: string): [number, number] | null {
+    if (!value || !value.includes(':')) return null;
+    const [hours, minutes] = value.split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return [hours, minutes];
+}
+
+function timeToMinutes(value: string): number | null {
+    const parsed = parseClockTime(value);
+    if (!parsed) return null;
+    return parsed[0] * 60 + parsed[1];
+}
+
+function minutesToTime(totalMinutes: number): string {
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const minutes = String(totalMinutes % 60).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+type ScheduleSegment = { start: string; end: string };
+
+function buildScheduleSegments(slots: { start_time: string; end_time: string }[]): ScheduleSegment[] {
+    const parsed = slots
+        .map((slot) => {
+            const start = timeToMinutes(slot.start_time);
+            const end = timeToMinutes(slot.end_time);
+            if (start === null || end === null || end <= start) return null;
+            return { start, end };
+        })
+        .filter((slot): slot is { start: number; end: number } => slot !== null)
+        .sort((a, b) => a.start - b.start);
+
+    if (parsed.length === 0) return [];
+
+    const merged: { start: number; end: number }[] = [];
+    for (const slot of parsed) {
+        const last = merged[merged.length - 1];
+        if (!last || slot.start > last.end) {
+            merged.push({ ...slot });
+            continue;
+        }
+        last.end = Math.max(last.end, slot.end);
+    }
+
+    return merged.map((slot) => ({
+        start: minutesToTime(slot.start),
+        end: minutesToTime(slot.end),
+    }));
+}
+
+function buildHalfHourSteps(startTime: string, endTime: string, includeEnd: boolean): string[] {
+    const start = timeToMinutes(startTime);
+    const end = timeToMinutes(endTime);
+    if (start === null || end === null || end <= start) return [];
+
+    const values: string[] = [];
+    for (let current = start; current < end; current += 30) {
+        values.push(minutesToTime(current));
+    }
+    if (includeEnd) {
+        values.push(minutesToTime(end));
+    }
+    return values;
+}
+
+function getEventScheduleWindow(eventData: OrganizerEvent | null): { start: Date | null; end: Date | null } {
+    if (!eventData) return { start: null, end: null };
+
+    const scheduleDays = Array.isArray(eventData.schedule_days) ? eventData.schedule_days : [];
+    const baseDateValue = eventData.start_date;
+
+    if (scheduleDays.length > 0 && baseDateValue) {
+        let earliest: Date | null = null;
+        let latest: Date | null = null;
+
+        for (const day of scheduleDays) {
+            const slots = Array.isArray(day.slots) ? day.slots : [];
+            const dayOffset = Math.max(0, Number(day.day_number ?? 1) - 1);
+
+            for (const slot of slots) {
+                const startParts = parseClockTime(slot.start_time);
+                const endParts = parseClockTime(slot.end_time);
+                if (!startParts || !endParts) continue;
+
+                const slotStart = new Date(baseDateValue);
+                slotStart.setHours(0, 0, 0, 0);
+                slotStart.setDate(slotStart.getDate() + dayOffset);
+                slotStart.setHours(startParts[0], startParts[1], 0, 0);
+
+                const slotEnd = new Date(baseDateValue);
+                slotEnd.setHours(0, 0, 0, 0);
+                slotEnd.setDate(slotEnd.getDate() + dayOffset);
+                slotEnd.setHours(endParts[0], endParts[1], 0, 0);
+
+                if (!earliest || slotStart < earliest) earliest = slotStart;
+                if (!latest || slotEnd > latest) latest = slotEnd;
+            }
+        }
+
+        if (earliest || latest) {
+            return { start: earliest, end: latest };
+        }
+    }
+
+    return {
+        start: eventData.start_date ? new Date(eventData.start_date) : null,
+        end: eventData.end_date ? new Date(eventData.end_date) : null,
+    };
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface BusySlot {
+    start_time: string;
+    end_time: string;
+    type: string;
+    label: string;
+}
 
 interface ChatRoom {
     _id: string;
@@ -53,6 +225,7 @@ interface Meeting {
     requester_org_name?: string;
     type?: 'inbound' | 'outbound';
     receiver_org_name?: string;
+    session_status?: 'scheduled' | 'live' | 'ended';
 }
 
 interface Session {
@@ -78,6 +251,14 @@ interface Participant {
     role: string;
     status: string;
     stand_id?: string;
+    description?: string;
+    industry?: string;
+    website?: string;
+    logo_url?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    location_city?: string;
+    location_country?: string;
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -124,7 +305,7 @@ export default function EventManagementHub() {
     const { user } = useAuth();
     const eventId = params.eventId as string;
 
-    const [activeTab, setActiveTab] = useState<'chats' | 'meetings' | 'webinar' | 'partners'>('chats');
+    const [activeTab, setActiveTab] = useState<'chats' | 'meetings' | 'conferences' | 'partners'>('chats');
     const [chatSubTab, setChatSubTab] = useState<'visitor' | 'b2b'>('visitor');
     const [stand, setStand] = useState<Stand | null>(null);
     const [visitorRooms, setVisitorRooms] = useState<ChatRoom[]>([]);
@@ -139,8 +320,17 @@ export default function EventManagementHub() {
     const [selectedPartner, setSelectedPartner] = useState<Participant | null>(null);
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
-    const [meetingForm, setMeetingForm] = useState({ date: '', time: '', purpose: '' });
+    const [myConferences, setMyConferences] = useState<Conference[]>([]);
+    const [allConferences, setAllConferences] = useState<Conference[]>([]);
+    const [meetingForm, setMeetingForm] = useState({ date: '', startTime: '', endTime: '', purpose: '' });
     const [isSubmittingMeeting, setIsSubmittingMeeting] = useState(false);
+    const [meetingFilter, setMeetingFilter] = useState<'all' | 'upcoming' | 'live' | 'past'>('all');
+    const [eventData, setEventData] = useState<OrganizerEvent | null>(null);
+    const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [meetingError, setMeetingError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isForbidden, setIsForbidden] = useState(false);
 
     // Polling interval ref for auto-refresh
     const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,6 +369,10 @@ export default function EventManagementHub() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // 0. Fetch event details FIRST — needed for timeline gating
+            const evtData = await http.get<OrganizerEvent>(`/events/${eventId}`);
+            setEventData(evtData);
+
             // 1. Fetch stand for this event
             const standData = await http.get<Stand>(`/enterprise/events/${eventId}/stand`);
             setStand(standData);
@@ -189,9 +383,17 @@ export default function EventManagementHub() {
             // 3. Fetch Meetings (Inbound + Outbound)
             await fetchMeetings(standData.id);
 
-            // 4. Fetch Sessions
+            // 4. Fetch Sessions (Legacy or Other)
             const sessionData = await http.get<Session[]>(`/events/${eventId}/sessions`);
             setSessions(sessionData);
+
+            // 4.5 Fetch Conferences (All + My Assigned)
+            const [myConfs, allConfs] = await Promise.all([
+                http.get<Conference[]>(`/conferences/my-assigned?event_id=${eventId}`),
+                http.get<Conference[]>(`/conferences/?event_id=${eventId}`)
+            ]);
+            setMyConferences(myConfs);
+            setAllConferences(allConfs);
 
             // 5. Fetch Participants for B2B — backend already excludes self and
             //    only returns approved enterprises, no extra filtering needed.
@@ -207,8 +409,13 @@ export default function EventManagementHub() {
                 ).values()
             );
             setParticipants(uniqueParticipants);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to fetch event hub data', err);
+            if (err.status === 403) {
+                setIsForbidden(true);
+            } else {
+                setError(err.message || 'An error occurred while loading dashboard data.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -253,25 +460,172 @@ export default function EventManagementHub() {
         } catch (err) { console.error(err); }
     };
 
-    const handleCreateB2BMeeting = async () => {
-        if (!selectedPartner?.stand_id) return;
-        setIsSubmittingMeeting(true);
+    // Fetch busy slots when modal opens
+    const fetchBusySlots = useCallback(async (partnerStandId: string) => {
+        setLoadingSlots(true);
         try {
-            const startStr = `${meetingForm.date}T${meetingForm.time}`;
-            const start = new Date(startStr);
-            const end = new Date(start.getTime() + 30 * 60000); // +30 mins
+            const slots = await http.get<BusySlot[]>(
+                `/meetings/busy-slots?event_id=${eventId}&partner_stand_id=${partnerStandId}`
+            );
+            setBusySlots(slots);
+        } catch (err) {
+            console.error('Failed to fetch busy slots', err);
+        } finally {
+            setLoadingSlots(false);
+        }
+    }, [eventId]);
+
+    // Compute event days for the date picker
+    const eventDays = useMemo(() => {
+        if (!eventData) return [];
+        // Prefer schedule_days if available
+        if (eventData.schedule_days && eventData.schedule_days.length > 0) {
+            return eventData.schedule_days.map(sd => {
+                // Compute actual date from event start + day_number
+                const base = new Date(eventData.start_date);
+                base.setDate(base.getDate() + sd.day_number - 1);
+                const dateStr = base.toISOString().split('T')[0];
+                return {
+                    dateStr,
+                    label: sd.date_label || `Day ${sd.day_number}`,
+                    slots: sd.slots,
+                };
+            });
+        }
+        // Fallback: generate from start_date to end_date
+        const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
+        const start = new Date(eventData.start_date);
+        const end = new Date(eventData.end_date);
+        let d = new Date(start);
+        let num = 1;
+        while (d <= end) {
+            days.push({
+                dateStr: d.toISOString().split('T')[0],
+                label: `Day ${num} — ${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`,
+                slots: [{ start_time: '09:00', end_time: '18:00' }],
+            });
+            d.setDate(d.getDate() + 1);
+            num++;
+        }
+        return days;
+    }, [eventData]);
+
+    const getDateTimeValue = useCallback((dateStr: string, time: string) => {
+        return new Date(`${dateStr}T${time}:00`).getTime();
+    }, []);
+
+    const isPastDate = useCallback((dateStr: string) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(`${dateStr}T00:00:00`);
+        return target.getTime() < today.getTime();
+    }, []);
+
+    const isPastDateTime = useCallback((dateStr: string, time: string) => {
+        return getDateTimeValue(dateStr, time) <= Date.now();
+    }, [getDateTimeValue]);
+
+    const dayAvailability = useMemo(() => {
+        return eventDays.map((day) => {
+            const segments = buildScheduleSegments(day.slots);
+            const hasFutureStart = segments.some((segment) =>
+                buildHalfHourSteps(segment.start, segment.end, false).some((time) => !isPastDateTime(day.dateStr, time))
+            );
+
+            return {
+                ...day,
+                disabled: isPastDate(day.dateStr) || !hasFutureStart,
+            };
+        });
+    }, [eventDays, isPastDate, isPastDateTime]);
+
+    const selectedDay = useMemo(() => {
+        return dayAvailability.find((day) => day.dateStr === meetingForm.date) || null;
+    }, [dayAvailability, meetingForm.date]);
+
+    const selectedDaySegments = useMemo(() => {
+        return selectedDay ? buildScheduleSegments(selectedDay.slots) : [];
+    }, [selectedDay]);
+
+    const startTimeOptions = useMemo(() => {
+        if (!selectedDay) return [];
+        return selectedDaySegments.flatMap((segment) =>
+            buildHalfHourSteps(segment.start, segment.end, false).map((time) => ({
+                time,
+                disabled: isPastDateTime(selectedDay.dateStr, time),
+            }))
+        );
+    }, [selectedDay, selectedDaySegments, isPastDateTime]);
+
+    const endTimeOptions = useMemo(() => {
+        if (!selectedDay || !meetingForm.startTime) return [];
+        const startMinutes = timeToMinutes(meetingForm.startTime);
+        if (startMinutes === null) return [];
+
+        const segment = selectedDaySegments.find((item) => {
+            const segmentStart = timeToMinutes(item.start);
+            const segmentEnd = timeToMinutes(item.end);
+            return segmentStart !== null && segmentEnd !== null && startMinutes >= segmentStart && startMinutes < segmentEnd;
+        });
+        if (!segment) return [];
+
+        const values = buildHalfHourSteps(meetingForm.startTime, segment.end, true).slice(1);
+        return values.map((time) => ({
+            time,
+            disabled: isPastDateTime(selectedDay.dateStr, time),
+        }));
+    }, [selectedDay, selectedDaySegments, meetingForm.startTime, isPastDateTime]);
+
+    useEffect(() => {
+        if (!meetingForm.startTime || !meetingForm.endTime) return;
+        const stillValid = endTimeOptions.some((option) => option.time === meetingForm.endTime && !option.disabled);
+        if (!stillValid) {
+            setMeetingForm((prev) => ({ ...prev, endTime: '' }));
+        }
+    }, [meetingForm.startTime, meetingForm.endTime, endTimeOptions]);
+
+    // Check if a time slot is busy
+    const isSlotBusy = useCallback((time: string, isEnd = false) => {
+        if (!meetingForm.date) return null;
+        const dt = new Date(`${meetingForm.date}T${time}:00`);
+        for (const bs of busySlots) {
+            const bsStart = new Date(bs.start_time);
+            const bsEnd = new Date(bs.end_time);
+            if (isEnd) {
+                // For end time: conflict if dt > bsStart && startDt < bsEnd
+                const startDt = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
+                if (dt > bsStart && startDt < bsEnd) return bs;
+            } else {
+                // For start time: conflict if dt >= bsStart && dt < bsEnd
+                if (dt >= bsStart && dt < bsEnd) return bs;
+            }
+        }
+        return null;
+    }, [meetingForm.date, meetingForm.startTime, busySlots]);
+
+    const handleCreateB2BMeeting = async () => {
+        if (!selectedPartner?.stand_id || !meetingForm.date || !meetingForm.startTime || !meetingForm.endTime) return;
+        setIsSubmittingMeeting(true);
+        setMeetingError(null);
+        try {
+            const start = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
+            const end = new Date(`${meetingForm.date}T${meetingForm.endTime}:00`);
 
             await http.post('/meetings/', {
                 visitor_id: user?._id || user?.id || "SELF",
                 stand_id: selectedPartner.stand_id,
+                event_id: eventId,
                 start_time: start.toISOString(),
                 end_time: end.toISOString(),
                 purpose: meetingForm.purpose,
             });
             setIsMeetingModalOpen(false);
-            setMeetingForm({ date: '', time: '', purpose: '' });
+            setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+            setBusySlots([]);
             if (stand) fetchMeetings(stand.id);
-        } catch (err) {
+        } catch (err: any) {
+            const detail = err?.body?.detail || err?.message || 'Failed to create meeting';
+            setMeetingError(detail);
             console.error('Failed to create B2B meeting', err);
         } finally {
             setIsSubmittingMeeting(false);
@@ -312,10 +666,222 @@ export default function EventManagementHub() {
 
     const unreadTotal = useMemo(() => Object.values(unreadByRoomId).reduce((sum, v) => sum + v, 0), [unreadByRoomId]);
 
-    if (isLoading && !stand) {
+    // ── Event Timeline Gating ─────────────────────────────────────────────
+    const eventTimeline = useMemo(() => {
+        if (!eventData) return null;
+        const now = Date.now();
+        const scheduleWindow = getEventScheduleWindow(eventData);
+        const start = scheduleWindow.start?.getTime() ?? new Date(eventData.start_date).getTime();
+        const end = scheduleWindow.end?.getTime() ?? new Date(eventData.end_date).getTime();
+        const state = eventData.state;
+
+        // Compute remaining time for countdown
+        const diffMs = start - now;
+        const days = Math.floor(diffMs / 86400000);
+        const hours = Math.floor((diffMs % 86400000) / 3600000);
+        const mins = Math.floor((diffMs % 3600000) / 60000);
+
+        if (state === 'closed') {
+            return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+        }
+        if (state === 'rejected') {
+            return { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
+        }
+        if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
+            return { gate: 'not-ready' as const, title: eventData.title, state };
+        }
+        if (state === 'approved' || state === 'payment_done') {
+            if (now < start) {
+                return { gate: 'not-started' as const, title: eventData.title, countdown: { days, hours, mins }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            }
+            if (now > end) {
+                return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            }
+            return { gate: 'not-started' as const, title: eventData.title, countdown: { days: 0, hours: 0, mins: 0 }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+        }
+        if (state === 'live') {
+            if (now < start) {
+                return { gate: 'not-started' as const, title: eventData.title, countdown: { days, hours, mins }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            }
+            if (now > end) {
+                return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            }
+            return { gate: 'active' as const, title: eventData.title };
+        }
+        return { gate: 'not-ready' as const, title: eventData.title, state };
+    }, [eventData]);
+
+    if (isLoading && !stand && !isForbidden) {
         return (
             <div className="h-[60vh] flex items-center justify-center">
                 <Loader2 className="animate-spin text-indigo-600" size={40} />
+            </div>
+        );
+    }
+
+    if (isForbidden) {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
+                    <Clock size={48} className="text-amber-500 animate-pulse" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">Approval Pending</h2>
+                <p className="text-zinc-500 max-w-md leading-relaxed mb-10">
+                    Your enterprise participation is currently being reviewed by the exhibition organizers.
+                    You will have full access to this management hub once your stand is approved.
+                </p>
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh Status
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    {/* ── Event Timeline Gate Screens ────────────────────────────────────── */}
+
+    if (eventTimeline && eventTimeline.gate === 'not-started') {
+        const ct = (eventTimeline as any).countdown || { days: 0, hours: 0, mins: 0 };
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center mb-8">
+                    <CalendarClock size={48} className="text-indigo-500" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Not Started Yet</h2>
+                <p className="text-lg font-semibold text-indigo-600 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-500 max-w-lg leading-relaxed mb-8">
+                    This event hasn&apos;t opened yet. All features — meetings, chats, conferences, and partner interactions — will be available once the event goes live.
+                </p>
+
+                {/* Countdown */}
+                {(ct.days > 0 || ct.hours > 0 || ct.mins > 0) && (
+                    <div className="flex gap-4 mb-8">
+                        {ct.days > 0 && (
+                            <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
+                                <span className="text-3xl font-black text-indigo-600">{ct.days}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Days</span>
+                            </div>
+                        )}
+                        <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
+                            <span className="text-3xl font-black text-indigo-600">{ct.hours}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Hours</span>
+                        </div>
+                        <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
+                            <span className="text-3xl font-black text-indigo-600">{ct.mins}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Min</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Event dates */}
+                <div className="flex items-center gap-3 text-sm text-zinc-400 mb-10">
+                    <Calendar size={14} />
+                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <ArrowRight size={14} />
+                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (eventTimeline && eventTimeline.gate === 'ended') {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center mb-8">
+                    <CalendarCheck size={48} className="text-zinc-400" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Has Ended</h2>
+                <p className="text-lg font-semibold text-zinc-500 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-400 max-w-lg leading-relaxed mb-6">
+                    This exhibition has concluded. Meeting rooms, live chats, and conference sessions are no longer available.
+                    Thank you for your participation.
+                </p>
+
+                {/* Event period */}
+                <div className="flex items-center gap-3 text-sm text-zinc-400 mb-10">
+                    <Calendar size={14} />
+                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <ArrowRight size={14} />
+                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button variant="outline" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
+                        <LayoutDashboard size={16} className="mr-2" /> View Analytics
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (eventTimeline && eventTimeline.gate === 'rejected') {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-8">
+                    <ShieldAlert size={48} className="text-red-400" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Rejected</h2>
+                <p className="text-lg font-semibold text-red-500 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-500 max-w-lg leading-relaxed mb-4">
+                    This event was not approved by the platform administrators. Access to all event features is unavailable.
+                </p>
+                {(eventTimeline as any).reason && (
+                    <div className="p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-sm max-w-md mb-10">
+                        <strong>Reason:</strong> {(eventTimeline as any).reason}
+                    </div>
+                )}
+                <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                    <ArrowLeft size={16} className="mr-2" /> Back to Events
+                </Button>
+            </div>
+        );
+    }
+
+    if (eventTimeline && eventTimeline.gate === 'not-ready') {
+        const stateLabels: Record<string, string> = {
+            pending_approval: 'Pending platform approval',
+            waiting_for_payment: 'Waiting for organizer payment',
+            payment_proof_submitted: 'Payment verification in progress',
+        };
+        const currentState = (eventTimeline as any).state || '';
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
+                    <Lock size={48} className="text-amber-500" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Not Available</h2>
+                <p className="text-lg font-semibold text-amber-600 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-500 max-w-lg leading-relaxed mb-6">
+                    This event is currently being prepared. All interactive features will become available once the event is fully set up and goes live.
+                </p>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-10">
+                    <Hourglass size={14} className="animate-pulse" />
+                    {stateLabels[currentState] || 'Event setup in progress'}
+                </div>
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -354,7 +920,7 @@ export default function EventManagementHub() {
                 {[
                     { id: 'chats', label: 'Chats', icon: MessageSquare, count: visitorRooms.length + b2bRooms.length },
                     { id: 'meetings', label: 'Meetings', icon: Calendar, count: meetings.filter(m => m.status === 'pending').length },
-                    { id: 'webinar', label: 'Webinar', icon: Video, count: sessions.length },
+                    { id: 'conferences', label: 'Conferences', icon: Video, count: allConferences.length },
                     { id: 'partners', label: 'Partners', icon: Users, count: participants.length },
                 ].map(tab => (
                     <button
@@ -491,328 +1057,699 @@ export default function EventManagementHub() {
                 </Card>
             )}
 
-            {activeTab === 'meetings' && (
+            {activeTab === 'meetings' && (() => {
+                // Categorize meetings by timeline
+                const categorized = meetings.map(m => ({ ...m, _tl: getMeetingTimeline(m) }));
+                const liveMeetings = categorized.filter(m => m._tl.status === 'live' || m._tl.status === 'starting-soon');
+                const upcomingMeetings = categorized.filter(m => m._tl.status === 'upcoming');
+                const pastMeetings = categorized.filter(m => m._tl.status === 'ended' || m._tl.status === 'expired');
+                const pendingInbound = categorized.filter(m => m.status === 'pending' && m.type === 'inbound' && m._tl.status !== 'expired' && m._tl.status !== 'ended');
+
+                const filtered = meetingFilter === 'live' ? liveMeetings
+                    : meetingFilter === 'upcoming' ? upcomingMeetings
+                    : meetingFilter === 'past' ? pastMeetings
+                    : categorized;
+
+                return (
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                    <div className="grid grid-cols-1 gap-4">
-                        {meetings.map((m) => (
-                            <Card key={m.id || m._id} className="border-zinc-200 hover:border-indigo-100 transition-all">
-                                <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div className="flex items-center gap-4">
+                    {/* Meeting sub-filters */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {[
+                            { id: 'all' as const, label: 'All', count: meetings.length },
+                            { id: 'live' as const, label: 'Live & Soon', count: liveMeetings.length },
+                            { id: 'upcoming' as const, label: 'Upcoming', count: upcomingMeetings.length },
+                            { id: 'past' as const, label: 'Past', count: pastMeetings.length },
+                        ].map(f => (
+                            <button
+                                key={f.id}
+                                onClick={() => setMeetingFilter(f.id)}
+                                className={clsx(
+                                    "px-4 py-1.5 rounded-full text-xs font-bold transition-all border",
+                                    meetingFilter === f.id
+                                        ? "bg-indigo-600 text-white border-indigo-600"
+                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-indigo-300"
+                                )}
+                            >
+                                {f.label}
+                                {f.count > 0 && (
+                                    <span className={clsx(
+                                        "ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full",
+                                        meetingFilter === f.id ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-500"
+                                    )}>{f.count}</span>
+                                )}
+                            </button>
+                        ))}
+
+                        {/* Pending inbound badge */}
+                        {pendingInbound.length > 0 && (
+                            <span className="ml-auto flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                                <Hourglass size={12} />
+                                {pendingInbound.length} awaiting your response
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                        {filtered.map((m) => {
+                            const tl = m._tl;
+                            const TlIcon = tl.icon;
+                            const canJoin = m.status === 'approved' && (tl.status === 'live' || tl.status === 'starting-soon');
+                            const isExpired = tl.status === 'expired';
+                            const isPast = tl.status === 'ended' || isExpired;
+
+                            return (
+                            <Card key={m.id || m._id} className={clsx(
+                                "transition-all border",
+                                tl.status === 'live' ? "border-emerald-200 shadow-emerald-100/50 shadow-md" :
+                                tl.status === 'starting-soon' ? "border-orange-200 shadow-orange-100/50 shadow-sm" :
+                                isPast ? "border-zinc-100 opacity-75" :
+                                "border-zinc-200 hover:border-indigo-100"
+                            )}>
+                                <CardContent className="p-0">
+                                    {/* Top colored strip for live / starting-soon */}
+                                    {(tl.status === 'live' || tl.status === 'starting-soon') && (
                                         <div className={clsx(
-                                            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
-                                            m.status === 'pending' ? "bg-amber-50 text-amber-600" :
-                                                m.status === 'approved' ? "bg-emerald-50 text-emerald-600" :
-                                                    "bg-zinc-100 text-zinc-500"
-                                        )}>
-                                            <Calendar size={24} />
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-bold text-zinc-900">
-                                                    {m.type === 'inbound' ? (m.requester_name || 'Visitor') : `To: ${m.receiver_org_name || 'Partner'}`}
-                                                </h4>
-                                                <span className={clsx(
-                                                    "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
-                                                    m.status === 'pending' ? "bg-amber-100 text-amber-700" :
+                                            "h-1 rounded-t-xl",
+                                            tl.status === 'live' ? "bg-emerald-500" : "bg-orange-400"
+                                        )} />
+                                    )}
+
+                                    <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        {/* Left: Icon + Info */}
+                                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                                            <div className={clsx(
+                                                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border",
+                                                tl.bgColor
+                                            )}>
+                                                <TlIcon size={22} className={tl.color} />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                    <h4 className={clsx("font-bold truncate", isPast ? "text-zinc-400" : "text-zinc-900")}>
+                                                        {m.type === 'inbound' ? (m.requester_name || m.requester_org_name || 'Visitor') : `To: ${m.receiver_org_name || 'Partner'}`}
+                                                    </h4>
+                                                    {/* Timeline badge */}
+                                                    <span className={clsx(
+                                                        "text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border flex items-center gap-1",
+                                                        tl.bgColor, tl.color
+                                                    )}>
+                                                        {tl.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                                        {tl.label}
+                                                    </span>
+                                                    {/* Approval status badge */}
+                                                    <span className={clsx(
+                                                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                                                        m.status === 'pending' ? "bg-amber-100 text-amber-700" :
                                                         m.status === 'approved' ? "bg-emerald-100 text-emerald-700" :
-                                                            "bg-zinc-200 text-zinc-600"
-                                                )}>
-                                                    {m.status}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-2">
-                                                    {m.type === 'inbound' ? 'Received' : 'Sent'}
-                                                </span>
+                                                        m.status === 'rejected' ? "bg-red-100 text-red-600" :
+                                                        "bg-zinc-200 text-zinc-500"
+                                                    )}>
+                                                        {m.status}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
+                                                        {m.type === 'inbound' ? 'Received' : 'Sent'}
+                                                    </span>
+                                                </div>
+                                                <p className={clsx("text-sm font-medium mb-1.5", isPast ? "text-zinc-400" : "text-zinc-600")}>
+                                                    {m.purpose || 'General Discussion'}
+                                                </p>
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Calendar size={11} />
+                                                        {new Date(m.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Clock size={11} />
+                                                        {new Date(m.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        <ArrowRight size={10} />
+                                                        {new Date(m.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Building2 size={11} />
+                                                        {m.type === 'inbound' ? (m.requester_org_name || 'Individual') : (m.receiver_org_name || 'Partner')}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-zinc-600 font-medium mb-1">{m.purpose || 'General Discussion'}</p>
-                                            <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-                                                <span className="flex items-center gap-1.5"><Clock size={12} /> {new Date(m.start_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                                <span className="flex items-center gap-1.5"><Building2 size={12} /> {m.type === 'inbound' ? (m.requester_org_name || 'Individual') : 'Request'}</span>
-                                            </div>
+                                        </div>
+
+                                        {/* Right: Actions */}
+                                        <div className="flex flex-col items-end gap-2 w-full md:w-auto shrink-0">
+                                            {/* Pending inbound => Approve/Reject (only if not expired) */}
+                                            {m.status === 'pending' && m.type === 'inbound' && !isExpired && (
+                                                <div className="flex gap-2 w-full md:w-auto">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1 md:flex-none text-red-600 border-red-100 hover:bg-red-50"
+                                                        onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}
+                                                    >
+                                                        <XCircle size={14} className="mr-1.5" /> Reject
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}
+                                                    >
+                                                        <CheckCircle2 size={14} className="mr-1.5" /> Approve
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Pending outbound => Waiting text */}
+                                            {m.status === 'pending' && m.type === 'outbound' && !isExpired && (
+                                                <span className="text-xs text-amber-500 font-medium flex items-center gap-1.5">
+                                                    <Hourglass size={12} className="animate-pulse" />
+                                                    Awaiting partner approval
+                                                </span>
+                                            )}
+
+                                            {/* Expired pending => Show expired notice */}
+                                            {m.status === 'pending' && isExpired && (
+                                                <span className="text-xs text-red-400 font-medium flex items-center gap-1.5">
+                                                    <Timer size={12} /> Time slot has passed
+                                                </span>
+                                            )}
+
+                                            {/* Approved + can join (live / starting-soon) */}
+                                            {canJoin && (
+                                                <Button
+                                                    size="sm"
+                                                    className={clsx(
+                                                        "text-white px-6",
+                                                        tl.status === 'live'
+                                                            ? "bg-emerald-600 hover:bg-emerald-700 animate-pulse"
+                                                            : "bg-orange-500 hover:bg-orange-600"
+                                                    )}
+                                                    onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}
+                                                >
+                                                    <Video size={14} className="mr-1.5" />
+                                                    {m.session_status === 'live' ? 'Join Live' : 'Join Now'}
+                                                </Button>
+                                            )}
+
+                                            {/* Approved but not yet time */}
+                                            {m.status === 'approved' && tl.status === 'upcoming' && (
+                                                <span className="text-xs text-indigo-500 font-medium flex items-center gap-1.5">
+                                                    <Clock size={12} /> Available {tl.label.toLowerCase()}
+                                                </span>
+                                            )}
+
+                                            {/* Approved but expired without joining */}
+                                            {m.status === 'approved' && isExpired && (
+                                                <span className="text-xs text-red-400 font-medium flex items-center gap-1.5">
+                                                    <Timer size={12} /> Meeting window passed
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-
-                                    {m.status === 'pending' && m.type === 'inbound' && (
-                                        <div className="flex gap-2 w-full md:w-auto">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex-1 md:flex-none text-red-600 border-red-100 hover:bg-red-50"
-                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}
-                                            >
-                                                <XCircle size={14} className="mr-1.5" /> Reject
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}
-                                            >
-                                                <CheckCircle2 size={14} className="mr-1.5" /> Approve
-                                            </Button>
-                                        </div>
-                                    )}
-
-                                    {m.type === 'outbound' && m.status === 'pending' && (
-                                        <div className="text-xs text-zinc-400 font-medium italic">
-                                            Waiting for partner approval...
-                                        </div>
-                                    )}
-
-                                    {m.status === 'approved' && (
-                                        <div className="flex flex-col items-end gap-2 w-full md:w-auto">
-                                            <span className="text-xs text-zinc-400 font-medium">
-                                                Waiting for the other side to join.
-                                            </span>
-                                            <Button
-                                                size="sm"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                                                onClick={() => {
-                                                    console.info('Meeting join is not implemented yet.');
-                                                }}
-                                            >
-                                                Join now
-                                            </Button>
-                                        </div>
-                                    )}
                                 </CardContent>
                             </Card>
-                        ))}
-                        {meetings.length === 0 && (
+                            );
+                        })}
+                        {filtered.length === 0 && (
                             <div className="h-64 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
                                 <Calendar size={48} className="text-zinc-200 mb-4" />
-                                <h3 className="text-lg font-bold text-zinc-400">No Meetings Scheduled</h3>
-                                <p className="text-sm text-zinc-400 max-w-xs">When visitors or partners request meetings, they will appear here.</p>
+                                <h3 className="text-lg font-bold text-zinc-400">
+                                    {meetingFilter === 'all' ? 'No Meetings Scheduled' :
+                                     meetingFilter === 'live' ? 'No Live Meetings' :
+                                     meetingFilter === 'upcoming' ? 'No Upcoming Meetings' :
+                                     'No Past Meetings'}
+                                </h3>
+                                <p className="text-sm text-zinc-400 max-w-xs">
+                                    {meetingFilter === 'all'
+                                        ? 'When visitors or partners request meetings, they will appear here.'
+                                        : 'Try switching to a different filter.'}
+                                </p>
                             </div>
                         )}
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
-            {activeTab === 'partners' && (
-                <div className="flex-1 overflow-y-auto pr-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {participants.map((p, idx) => {
-                            const pId = p.id || p._id || "";
-                            const orgId = p.organization_id || "";
-                            return (
-                                <Card key={pId || `partner-${idx}`} className="border-zinc-200 hover:border-indigo-200 transition-all group">
-                                    <CardContent className="p-5">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500">
-                                                    <Building2 size={20} />
+            {
+                activeTab === 'partners' && (
+                    <div className="flex-1 overflow-y-auto pr-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {participants.map((p, idx) => {
+                                const pId = p.id || p._id || "";
+                                const orgId = p.organization_id || "";
+                                return (
+                                    <Card key={pId || `partner-${idx}`} className="border-zinc-200 hover:border-indigo-200 transition-all group">
+                                        <CardContent className="p-5">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500">
+                                                        <Building2 size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">
+                                                            {p.organization_name === 'Unknown Enterprise' ? `Partner #${(orgId || pId).slice(-4)}` : p.organization_name}
+                                                        </h4>
+                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Approved Participant</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">
-                                                        {p.organization_name === 'Unknown Enterprise' ? `Partner #${(orgId || pId).slice(-4)}` : p.organization_name}
-                                                    </h4>
-                                                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Approved Participant</p>
-                                                </div>
+                                                <Button size="sm" variant="ghost" className="rounded-full w-9 h-9 p-0 text-indigo-600 hover:bg-indigo-50" onClick={() => handleStartB2B(orgId)}>
+                                                    <MessageSquare size={18} />
+                                                </Button>
                                             </div>
-                                            <Button size="sm" variant="ghost" className="rounded-full w-9 h-9 p-0 text-indigo-600 hover:bg-indigo-50" onClick={() => handleStartB2B(orgId)}>
-                                                <MessageSquare size={18} />
-                                            </Button>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex-1 text-xs h-8"
-                                                onClick={() => {
-                                                    setSelectedPartner(p);
-                                                    setIsPartnerModalOpen(true);
-                                                }}
-                                            >
-                                                Details
-                                            </Button>
-                                            {p.stand_id && (
+                                            <div className="flex gap-2">
                                                 <Button
-                                                    variant="primary"
+                                                    variant="outline"
                                                     size="sm"
-                                                    className="flex-1 text-xs h-8 bg-indigo-600"
+                                                    className="flex-1 text-xs h-8"
                                                     onClick={() => {
                                                         setSelectedPartner(p);
-                                                        setIsMeetingModalOpen(true);
+                                                        setIsPartnerModalOpen(true);
                                                     }}
                                                 >
-                                                    <Calendar size={12} className="mr-1.5" /> Meeting
+                                                    Details
                                                 </Button>
+                                                {p.stand_id && (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        className="flex-1 text-xs h-8 bg-indigo-600"
+                                                        onClick={() => {
+                                                            setSelectedPartner(p);
+                                                            setIsMeetingModalOpen(true);
+                                                            setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+                                                            setMeetingError(null);
+                                                            if (p.stand_id) fetchBusySlots(p.stand_id);
+                                                        }}
+                                                    >
+                                                        <Calendar size={12} className="mr-1.5" /> Meeting
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                        {participants.length === 0 && (
+                            <div className="h-64 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
+                                <Users size={48} className="text-zinc-200 mb-4" />
+                                <h3 className="text-lg font-bold text-zinc-400">No Partners Available</h3>
+                                <p className="text-sm text-zinc-400 max-w-xs">Other enterprises participating in this event will appear here once approved.</p>
+                            </div>
+                        )}
+                    </div>
+                )
+            }
+
+            {
+                activeTab === 'conferences' && (
+                    <div className="flex-1 space-y-6 overflow-y-auto">
+                        <Card className="border-indigo-100 bg-indigo-50/50 p-6 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-indigo-900">Event Conferences</h3>
+                                <p className="text-sm text-indigo-700 mt-1">View all scheduled live sessions. You can host your assigned talks or join others.</p>
+                            </div>
+                            <Video size={40} className="text-indigo-400 opacity-50" />
+                        </Card>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {allConferences.map(c => {
+                                const isHost = myConferences.some(mc => mc._id === c._id);
+                                const now = new Date();
+                                const startTime = new Date(c.start_time);
+                                const endTime = new Date(c.end_time);
+                                const hasEnded = c.status === 'ended' || now > endTime;
+                                const canJoin = c.status === 'live' || (now >= startTime && !hasEnded);
+                                // Hosts can go live 15 min early
+                                const canGoLive = c.status === 'live' || (now >= new Date(startTime.getTime() - 15 * 60 * 1000) && !hasEnded);
+                                return (
+                                    <Card key={c._id} className={clsx(
+                                        "border-zinc-200 overflow-hidden group transition-all",
+                                        isHost ? "border-indigo-200 bg-indigo-50/20" : "hover:border-zinc-300"
+                                    )}>
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">{c.title}</h4>
+                                                    {isHost && <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">You are Hosting</span>}
+                                                </div>
+                                                <span className={clsx(
+                                                    "px-2 py-1 text-[10px] font-bold rounded uppercase",
+                                                    c.status === 'live' ? "bg-red-100 text-red-600"
+                                                        : hasEnded ? "bg-zinc-200 text-zinc-500"
+                                                        : "bg-zinc-100 text-zinc-600"
+                                                )}>
+                                                    {c.status === 'live' ? '🔴 Live' : hasEnded ? 'Ended' : c.status}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2 mb-6 text-xs text-zinc-500">
+                                                <div className="flex items-center gap-2">
+                                                    <Clock size={14} /> {new Date(c.start_time).toLocaleString()}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Users size={14} /> {c.attendee_count} attendees
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                {isHost ? (
+                                                    <Button
+                                                        className={clsx(
+                                                            "flex-1 transition-all",
+                                                            hasEnded ? "bg-zinc-300 text-zinc-500 cursor-not-allowed"
+                                                                : c.status === 'live' ? "bg-red-600 hover:bg-red-700"
+                                                                : "bg-indigo-600 hover:bg-indigo-700"
+                                                        )}
+                                                        disabled={hasEnded || !canGoLive}
+                                                        onClick={() => {
+                                                            router.push(`/enterprise/events/${eventId}/conferences/${c._id}/live`);
+                                                        }}
+                                                    >
+                                                        {hasEnded ? 'Conference Ended' : c.status === 'live' ? 'Enter Studio' : canGoLive ? 'Go Live' : 'Not Started Yet'}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant={hasEnded ? "outline" : c.status === 'live' ? "primary" : "primary"}
+                                                        className={clsx("flex-1", hasEnded && "opacity-50 cursor-not-allowed")}
+                                                        disabled={hasEnded || !canJoin}
+                                                        onClick={() => {
+                                                            router.push(`/events/${eventId}/live/conferences/${c._id}/watch`);
+                                                        }}
+                                                    >
+                                                        {hasEnded ? 'Conference Ended' : c.status === 'live' ? 'Join Conference' : canJoin ? 'Join Conference' : 'Not Started Yet'}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {isHost && !hasEnded && (
+                                                <p className="text-[10px] text-zinc-400 mt-2 text-center">
+                                                    Speakers can go live up to 15 mins before scheduled time.
+                                                </p>
                                             )}
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                    {participants.length === 0 && (
-                        <div className="h-64 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
-                            <Users size={48} className="text-zinc-200 mb-4" />
-                            <h3 className="text-lg font-bold text-zinc-400">No Partners Available</h3>
-                            <p className="text-sm text-zinc-400 max-w-xs">Other enterprises participating in this event will appear here once approved.</p>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'webinar' && (
-                <div className="flex-1 space-y-6 overflow-y-auto">
-                    <Card className="border-indigo-100 bg-indigo-50/50 p-6 flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-bold text-indigo-900">Host a Webinar</h3>
-                            <p className="text-sm text-indigo-700 mt-1">If you have a speaking session, you can manage it here.</p>
-                        </div>
-                        <Video size={40} className="text-indigo-400 opacity-50" />
-                    </Card>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {sessions.map(s => (
-                            <Card key={s.id} className="border-zinc-200 overflow-hidden group">
-                                <div className="p-5">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">{s.title}</h4>
-                                        <span className="px-2 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold rounded uppercase">{s.status}</span>
-                                    </div>
-                                    <div className="space-y-2 mb-6">
-                                        <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                            <Clock size={14} /> {new Date(s.start_time).toLocaleString()}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                            <User size={14} /> {s.speaker || "Assigned Speaker"}
-                                        </div>
-                                    </div>
-                                    <Button
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
-                                        disabled={s.status !== 'live' && s.status !== 'upcoming'}
-                                        onClick={() => {
-                                            if (s.status === 'live' || s.status === 'upcoming') {
-                                                window.open(`/sessions/${s.id}`, '_blank');
-                                            }
-                                        }}
-                                    >
-                                        {s.status === 'live' ? 'Join Now' : s.status === 'upcoming' ? 'View Details' : 'Closed'}
-                                    </Button>
+                                    </Card>
+                                );
+                            })}
+                            {allConferences.length === 0 && (
+                                <div className="col-span-full h-48 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
+                                    <Video size={48} className="text-zinc-200 mb-4" />
+                                    <h3 className="text-lg font-bold text-zinc-400">No Conferences</h3>
+                                    <p className="text-sm text-zinc-400 max-w-xs">There are no conferences scheduled for this event yet.</p>
                                 </div>
-                            </Card>
-                        ))}
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Partner Details Modal */}
-            {isPartnerModalOpen && selectedPartner && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <Card className="w-full max-w-lg shadow-2xl border-none">
-                        <CardHeader className="border-b border-zinc-100">
-                            <div className="flex justify-between items-center">
-                                <CardTitle className="text-xl font-black flex items-center gap-2">
-                                    <Building2 className="text-indigo-600" />
-                                    Partner Details
-                                </CardTitle>
-                                <Button variant="ghost" size="sm" onClick={() => setIsPartnerModalOpen(false)}>
-                                    <XCircle size={20} />
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                                        <Building2 size={32} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-zinc-900">{selectedPartner.organization_name}</h3>
-                                        <p className="text-zinc-500 text-sm">Approved Event Partner</p>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 italic text-zinc-600 text-sm">
-                                    &ldquo;This enterprise is a certified participant in this exhibition. You can initiate a direct B2B chat or request a meeting to discuss partnerships.&rdquo;
-                                </div>
-
-                                <div className="flex flex-col gap-3">
-                                    <Button className="w-full bg-indigo-600 py-6" onClick={() => {
-                                        setIsPartnerModalOpen(false);
-                                        handleStartB2B(selectedPartner.organization_id!);
-                                    }}>
-                                        <MessageSquare className="mr-2" size={18} /> Send Message
+            {
+                isPartnerModalOpen && selectedPartner && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                        <Card className="w-full max-w-lg shadow-2xl border-none">
+                            <CardHeader className="border-b border-zinc-100">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-xl font-black flex items-center gap-2">
+                                        <Building2 className="text-indigo-600" />
+                                        Partner Details
+                                    </CardTitle>
+                                    <Button variant="ghost" size="sm" onClick={() => setIsPartnerModalOpen(false)}>
+                                        <XCircle size={20} />
                                     </Button>
-                                    {selectedPartner.stand_id && (
-                                        <Button variant="outline" className="w-full py-6" onClick={() => {
-                                            setIsPartnerModalOpen(false);
-                                            setIsMeetingModalOpen(true);
-                                        }}>
-                                            <Calendar className="mr-2" size={18} /> Request Meeting
-                                        </Button>
-                                    )}
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 overflow-hidden border border-indigo-100">
+                                            {selectedPartner.logo_url ? (
+                                                <img src={resolveMediaUrl(selectedPartner.logo_url)} alt={selectedPartner.organization_name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Building2 size={32} />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-zinc-900">{selectedPartner.organization_name}</h3>
+                                            <p className="text-zinc-500 text-sm">Approved Event Partner</p>
+                                            {selectedPartner.industry && (
+                                                <p className="text-xs font-semibold text-indigo-600 mt-1">{selectedPartner.industry}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-600 text-sm leading-relaxed">
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400 mb-2">
+                                            <FileText size={13} /> Company Overview
+                                        </div>
+                                        {selectedPartner.description || 'This enterprise is participating in the event and is available for direct partnership discussions.'}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-2">
+                                                <Building2 size={13} /> Company
+                                            </div>
+                                            <p className="text-sm font-semibold text-zinc-900">{selectedPartner.organization_name}</p>
+                                            <p className="text-xs text-zinc-500 mt-1">{selectedPartner.industry || 'Industry not specified'}</p>
+                                        </div>
+                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-2">
+                                                <MapPin size={13} /> Location
+                                            </div>
+                                            <p className="text-sm font-semibold text-zinc-900">
+                                                {[selectedPartner.location_city, selectedPartner.location_country].filter(Boolean).join(', ') || 'Location not shared'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4 sm:col-span-2">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-3">
+                                                <Globe size={13} /> Contact & Links
+                                            </div>
+                                            <div className="space-y-2 text-sm text-zinc-600">
+                                                <div className="flex items-center gap-2">
+                                                    <Mail size={14} className="text-zinc-400" />
+                                                    <span>{selectedPartner.contact_email || 'Email not shared'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Phone size={14} className="text-zinc-400" />
+                                                    <span>{selectedPartner.contact_phone || 'Phone not shared'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <Globe size={14} className="text-zinc-400 shrink-0" />
+                                                    {selectedPartner.website ? (
+                                                        <a href={selectedPartner.website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 truncate">
+                                                            {selectedPartner.website}
+                                                        </a>
+                                                    ) : (
+                                                        <span>Website not shared</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <Button className="w-full bg-indigo-600 py-6" onClick={() => {
+                                            setIsPartnerModalOpen(false);
+                                            handleStartB2B(selectedPartner.organization_id!);
+                                        }}>
+                                            <MessageSquare className="mr-2" size={18} /> Send Message
+                                        </Button>
+                                        {selectedPartner.stand_id && (
+                                            <Button variant="outline" className="w-full py-6" onClick={() => {
+                                                setIsPartnerModalOpen(false);
+                                                setIsMeetingModalOpen(true);
+                                                setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+                                                setMeetingError(null);
+                                                if (selectedPartner?.stand_id) fetchBusySlots(selectedPartner.stand_id);
+                                            }}>
+                                                <Calendar className="mr-2" size={18} /> Request Meeting
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )
+            }
 
             {/* Meeting Request Modal */}
-            {isMeetingModalOpen && selectedPartner && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <Card className="w-full max-w-md shadow-2xl border-none">
-                        <CardHeader className="border-b border-zinc-100">
-                            <div className="flex justify-between items-center">
-                                <CardTitle className="text-xl font-black flex items-center gap-2">
-                                    <Calendar className="text-indigo-600" />
-                                    Request B2B Meeting
-                                </CardTitle>
-                                <Button variant="ghost" size="sm" onClick={() => setIsMeetingModalOpen(false)}>
-                                    <XCircle size={20} />
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <div className="space-y-4">
-                                <p className="text-sm text-zinc-500 mb-4">
-                                    Select a preferred time to meet with <strong>{selectedPartner.organization_name}</strong>.
-                                </p>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">Preferred Date</label>
-                                    <input
-                                        type="date"
-                                        className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={meetingForm.date}
-                                        onChange={e => setMeetingForm({ ...meetingForm, date: e.target.value })}
-                                    />
+            {
+                isMeetingModalOpen && selectedPartner && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                        <Card className="w-full max-w-lg shadow-2xl border-none">
+                            <CardHeader className="border-b border-zinc-100">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-xl font-black flex items-center gap-2">
+                                        <Calendar className="text-indigo-600" />
+                                        Schedule Meeting
+                                    </CardTitle>
+                                    <Button variant="ghost" size="sm" onClick={() => { setIsMeetingModalOpen(false); setMeetingError(null); }}>
+                                        <XCircle size={20} />
+                                    </Button>
                                 </div>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="space-y-5">
+                                    <p className="text-sm text-zinc-500">
+                                        Choose an available slot to meet with <strong>{selectedPartner.organization_name}</strong>.
+                                    </p>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">Preferred Time</label>
-                                    <input
-                                        type="time"
-                                        className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                        value={meetingForm.time}
-                                        onChange={e => setMeetingForm({ ...meetingForm, time: e.target.value })}
-                                    />
+                                    {/* Error banner */}
+                                    {meetingError && (
+                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                                            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                            <span>{meetingError}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Day picker */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-zinc-400">Event Day</label>
+                                        {dayAvailability.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {dayAvailability.map(day => (
+                                                    <button
+                                                        key={day.dateStr}
+                                                        disabled={day.disabled}
+                                                        onClick={() => {
+                                                            setMeetingForm(f => ({ ...f, date: day.dateStr, startTime: '', endTime: '' }));
+                                                            setMeetingError(null);
+                                                        }}
+                                                        className={clsx(
+                                                            "px-4 py-2 rounded-xl text-sm font-semibold border transition-all",
+                                                            meetingForm.date === day.dateStr
+                                                                ? "bg-indigo-600 text-white border-indigo-600"
+                                                                : day.disabled
+                                                                    ? "bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed"
+                                                                    : "bg-white text-zinc-700 border-zinc-200 hover:border-indigo-300"
+                                                        )}
+                                                    >
+                                                        {day.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-zinc-400 italic">Loading event schedule…</p>
+                                        )}
+                                    </div>
+
+                                    {/* Start Time picker */}
+                                    {meetingForm.date && (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase text-zinc-400">Start Time</label>
+                                            {loadingSlots ? (
+                                                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                                    <Loader2 size={14} className="animate-spin" /> Checking availability…
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                                    {startTimeOptions.map(({ time, disabled }) => {
+                                                        const conflict = disabled ? null : isSlotBusy(time);
+                                                        const isDisabled = disabled || !!conflict;
+                                                        return (
+                                                            <button
+                                                                key={time}
+                                                                disabled={isDisabled}
+                                                                title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
+                                                                onClick={() => {
+                                                                    setMeetingForm(f => ({ ...f, startTime: time, endTime: '' }));
+                                                                    setMeetingError(null);
+                                                                }}
+                                                                className={clsx(
+                                                                    "px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all",
+                                                                    isDisabled
+                                                                        ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
+                                                                        : meetingForm.startTime === time
+                                                                            ? "bg-indigo-600 text-white"
+                                                                            : "bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-indigo-300 hover:bg-indigo-50"
+                                                                )}
+                                                            >
+                                                                {time}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {startTimeOptions.length === 0 && (
+                                                        <p className="col-span-full text-xs text-zinc-400 italic">No time slots available for this day.</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* End Time picker */}
+                                    {meetingForm.startTime && (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black uppercase text-zinc-400">End Time</label>
+                                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                                                {endTimeOptions.map(({ time, disabled }) => {
+                                                    const conflict = disabled ? null : isSlotBusy(time, true);
+                                                    const isDisabled = disabled || !!conflict;
+                                                    return (
+                                                        <button
+                                                            key={time}
+                                                            disabled={isDisabled}
+                                                            title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
+                                                            onClick={() => {
+                                                                setMeetingForm(f => ({ ...f, endTime: time }));
+                                                                setMeetingError(null);
+                                                            }}
+                                                            className={clsx(
+                                                                "px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all",
+                                                                isDisabled
+                                                                    ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
+                                                                    : meetingForm.endTime === time
+                                                                        ? "bg-emerald-600 text-white"
+                                                                        : "bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-emerald-300 hover:bg-emerald-50"
+                                                            )}
+                                                        >
+                                                            {time}
+                                                        </button>
+                                                    );
+                                                })}
+                                                {endTimeOptions.length === 0 && (
+                                                    <p className="col-span-full text-xs text-zinc-400 italic">No valid end times for this start slot.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Selected time summary */}
+                                    {meetingForm.startTime && meetingForm.endTime && (
+                                        <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl text-sm text-indigo-700 font-medium">
+                                            <Clock size={16} />
+                                            {meetingForm.startTime} — {meetingForm.endTime}
+                                            <span className="text-indigo-400 text-xs ml-auto">
+                                                {(() => {
+                                                    const [sh, sm] = meetingForm.startTime.split(':').map(Number);
+                                                    const [eh, em] = meetingForm.endTime.split(':').map(Number);
+                                                    const mins = (eh * 60 + em) - (sh * 60 + sm);
+                                                    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? mins % 60 + 'min' : ''}` : `${mins} min`;
+                                                })()}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Purpose */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black uppercase text-zinc-400">Purpose / Agenda</label>
+                                        <textarea
+                                            placeholder="What would you like to discuss?"
+                                            className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500/20 outline-none h-20 resize-none text-sm"
+                                            value={meetingForm.purpose}
+                                            onChange={e => setMeetingForm({ ...meetingForm, purpose: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <Button
+                                        className="w-full bg-indigo-600 py-6 mt-2"
+                                        disabled={!meetingForm.date || !meetingForm.startTime || !meetingForm.endTime || isSubmittingMeeting}
+                                        onClick={handleCreateB2BMeeting}
+                                    >
+                                        {isSubmittingMeeting ? <Loader2 className="animate-spin" size={20} /> : "Submit Meeting Request"}
+                                    </Button>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">Purpose / Agenda</label>
-                                    <textarea
-                                        placeholder="What would you like to discuss?"
-                                        className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500/20 outline-none h-24 resize-none"
-                                        value={meetingForm.purpose}
-                                        onChange={e => setMeetingForm({ ...meetingForm, purpose: e.target.value })}
-                                    />
-                                </div>
-
-                                <Button
-                                    className="w-full bg-indigo-600 py-6 mt-4"
-                                    disabled={!meetingForm.date || !meetingForm.time || isSubmittingMeeting}
-                                    onClick={handleCreateB2BMeeting}
-                                >
-                                    {isSubmittingMeeting ? <Loader2 className="animate-spin" size={20} /> : "Submit Request"}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-        </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )
+            }
+        </div >
     );
 }

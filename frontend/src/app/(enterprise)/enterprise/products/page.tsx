@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import {
     Package, Plus, Trash2, Edit2, X, Image as ImageIcon,
     Upload, CheckCircle2, Tag, DollarSign
@@ -300,7 +301,7 @@ export default function EnterpriseProductsPage() {
                                             {editingProduct.images.map((url: string) => (
                                                 <div key={url} className="relative group w-24 h-24 rounded-xl overflow-hidden border border-zinc-200">
                                                     <img
-                                                        src={`${API_BASE}${url}`}
+                                                        src={resolveMediaUrl(url)}
                                                         alt=""
                                                         className="w-full h-full object-cover"
                                                     />
@@ -393,7 +394,7 @@ export default function EnterpriseProductsPage() {
                                 {p.images?.length > 0 ? (
                                     <div className="relative h-44 w-full overflow-hidden bg-zinc-100">
                                         <img
-                                            src={`${API_BASE}${p.images[0]}`}
+                                            src={resolveMediaUrl(p.images[0])}
                                             alt={p.name}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
@@ -401,7 +402,7 @@ export default function EnterpriseProductsPage() {
                                             <div className="absolute bottom-2 right-2 flex gap-1">
                                                 {p.images.slice(1, 4).map((img: string, idx: number) => (
                                                     <div key={idx} className="w-10 h-10 rounded-lg overflow-hidden border-2 border-white shadow">
-                                                        <img src={`${API_BASE}${img}`} alt="" className="w-full h-full object-cover" />
+                                                        <img src={resolveMediaUrl(img)} alt="" className="w-full h-full object-cover" />
                                                     </div>
                                                 ))}
                                                 {p.images.length > 4 && (

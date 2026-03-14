@@ -35,6 +35,8 @@ from app.modules.payments.service import (
     mark_payment_paid,
 )
 from app.modules.marketplace.stripe_service import _configure as _stripe_configure
+from app.modules.analytics.service import log_event_persistent
+from app.modules.analytics.schemas import AnalyticsEventType
 
 import stripe
 
@@ -184,7 +186,7 @@ async def verify_event_payment(
         participant = await request_to_join(event_id, current_user["_id"])
         from app.modules.participants.service import approve_participant
         await approve_participant(participant["_id"])
-    elif existing["status"] != ParticipantStatus.APPROVED:
+    elif existing["status"] != ParticipantStatus.APPROVED.value:
         from app.modules.participants.service import approve_participant
         await approve_participant(existing["_id"])
 
@@ -205,6 +207,22 @@ async def verify_event_payment(
         type=NotificationType.PAYMENT_CONFIRMED,
         message=f"Your payment for '{event_title}' has been confirmed. You can now enter the event!",
     )
+
+    # Best-effort analytics instrumentation.
+    try:
+        await log_event_persistent(
+            type=AnalyticsEventType.PAYMENT_CONFIRMED,
+            user_id=str(current_user["_id"]),
+            event_id=str(event_id),
+            metadata={
+                "payment_id": payment.get("_id"),
+                "stripe_session_id": session_id,
+                "amount": payment.get("amount"),
+                "currency": payment.get("currency"),
+            },
+        )
+    except Exception:
+        pass
 
     return {"status": "paid", "message": "Payment confirmed. You now have access to the event."}
 

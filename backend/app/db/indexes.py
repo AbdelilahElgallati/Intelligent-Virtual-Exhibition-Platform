@@ -68,6 +68,7 @@ async def ensure_indexes() -> None:
         await db.leads.create_index([("visitor_id", 1), ("stand_id", 1)], unique=True)
         await db.leads.create_index("score")
         await db.leads.create_index("last_interaction")
+        await db.leads.create_index([("stand_id", 1), ("created_at", 1)])
     except Exception:
         pass
 
@@ -119,6 +120,8 @@ async def ensure_indexes() -> None:
         await db.analytics_events.create_index("user_id")
         await db.analytics_events.create_index("type")
         await db.analytics_events.create_index("timestamp")
+        # Compound for stand-level performance
+        await db.analytics_events.create_index([("stand_id", 1), ("type", 1), ("created_at", 1)])
         # Compound for live-metrics download query
         await db.analytics_events.create_index([("event_id", 1), ("type", 1), ("timestamp", 1)])
     except Exception:
@@ -218,5 +221,26 @@ async def ensure_indexes() -> None:
             name="stripe_session_id_sparse",
         )
         await db.stand_orders.create_index([("stand_id", 1), ("created_at", -1)])
+    except Exception:
+        pass
+
+    # Conferences & Meetings (video sessions)
+    try:
+        # conferences
+        await db.conferences.create_index([("assigned_enterprise_id", 1), ("status", 1)])
+        await db.conferences.create_index([("event_id", 1), ("status", 1)])
+        await db.conferences.create_index([("start_time", 1), ("status", 1)])
+        await db.conferences.create_index("livekit_room_name", sparse=True)
+        await db.conferences.create_index([("title", "text"), ("description", "text")])
+        # conference registrations
+        await db.conference_registrations.create_index(
+            [("conference_id", 1), ("user_id", 1)], unique=True
+        )
+        # conference Q&A
+        await db.conference_qa.create_index("conference_id")
+        await db.conference_qa.create_index([("conference_id", 1), ("upvotes", -1)])
+        # meetings — session fields
+        await db.meetings.create_index("session_status")
+        await db.meetings.create_index("livekit_room_name", sparse=True)
     except Exception:
         pass

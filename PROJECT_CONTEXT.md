@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md — Intelligent Virtual Exhibition Platform (IVEP)
 
-> **Generated**: 2026-03-07 (updated)  
+> **Generated**: 2026-03-11 (updated)  
 > **Purpose**: Comprehensive project context document for development reference.
 
 ---
@@ -187,7 +187,11 @@ class Settings(BaseSettings):
 - **Startup**: Setup logging → Connect to MongoDB → Ensure indexes
 - **Shutdown**: Close MongoDB connection
 
-**CORS**: All origins allowed (`["*"]`), all methods, all headers, credentials enabled
+**CORS**: Specific allowed origins: `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:3001`, `http://127.0.0.1:3001`, `http://10.77.178.149:3000`, `http://10.77.178.149:3001`. All methods and headers, credentials enabled.
+
+**Static file serving**: `/uploads` path is mounted as a `StaticFiles` directory, serving product images, stand resources, enterprise profile images etc.
+
+**Lifecycle worker**: A background task `lifecycle_loop()` from `backend/app/workers/lifecycle.py` is started on application startup and cancelled on shutdown. It handles automated event state transitions (e.g., auto-starting/closing events based on scheduled times).
 
 **Registered Routers** (all prefixed with `/api/v1`):
 
@@ -256,12 +260,16 @@ class EventState(str, Enum):
 
 ### Participant Status (`app/modules/participants/schemas.py`)
 
+> **Updated** — Two new enterprise-specific statuses added for the stand-fee payment flow.
+
 ```python
 class ParticipantStatus(str, Enum):
     INVITED = "invited"
     REQUESTED = "requested"
     APPROVED = "approved"
     REJECTED = "rejected"
+    PENDING_PAYMENT = "pending_payment"           # NEW — enterprise joined, awaiting stand fee
+    PENDING_ADMIN_APPROVAL = "pending_admin_approval"  # NEW — fee paid, awaiting admin approval
 ```
 
 ### Meeting Status (`app/modules/meetings/schemas.py`)
@@ -385,10 +393,12 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 5.5 Chat Schemas (`chat/schemas.py`)
 
+> **Updated** — `ChatRoomSchema` now includes `room_category` and `event_id` fields. `GET /chat/rooms` enriches room names from user data server-side.
+
 | Schema | Fields |
 |--------|--------|
 | **MessageSchema** | `id?: PyObjectId (alias _id)`, `room_id: str`, `sender_id: str`, `sender_name: str`, `content: str`, `type: str = "text"` (text/image/file), `timestamp: datetime` |
-| **ChatRoomSchema** | `id?: PyObjectId (alias _id)`, `name?: str`, `type: str = "direct"` (direct/group/stand), `members: List[str]`, `created_at: datetime`, `last_message?: dict` |
+| **ChatRoomSchema** | `id?: PyObjectId (alias _id)`, `name?: str`, `type: str = "direct"` (direct/group/stand), `room_category?: str` (**NEW** — "visitor" or "b2b"), `event_id?: str` (**NEW**), `members: List[str]`, `created_at: datetime`, `last_message?: dict` |
 | **MessageCreate** | `room_id: str`, `content: str`, `type: str = "text"` |
 
 ### 5.6 Resource Schemas (`resources/schemas.py`)
@@ -401,10 +411,17 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 5.7 Participant Schemas (`participants/schemas.py`)
 
+> **Updated** — Added new enterprise join-flow schemas.
+
 | Schema | Fields |
 |--------|--------|
 | **ParticipantBase** | `id: str (alias _id)`, `event_id: str`, `user_id: str`, `status: ParticipantStatus`, `created_at: datetime` |
-| **ParticipantRead** | Same fields as ParticipantBase |
+| **ParticipantRead** | extends ParticipantBase + `role?: str`, `rejection_reason?: str` |
+| **EnrichedParticipantRead** | extends ParticipantRead + `organization_id?: str`, `organization_name?: str`, `stand_id?: str` |
+| **RejectRequest** | `reason?: str` |
+| **EnterpriseRequestItem** | `participant: ParticipantItem`, `user: EnterpriseUserInfo`, `organization?: EnterpriseOrgInfo`, `history: EnterpriseHistoryInfo` |
+| **EnterpriseRequestsResponse** | `items: List[EnterpriseRequestItem]`, `total: int`, `skip: int`, `limit: int` |
+| **EnterpriseJoinResponse** | `participant_id: str`, `event_id: str`, `organization_id: str`, `status: ParticipantStatus`, `stand_fee_paid: bool`, `payment_reference?: str`, `created_at: datetime` |
 
 ### 5.8 Notification Schemas (`notifications/schemas.py`)
 
@@ -422,12 +439,14 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 5.10 Meeting Schemas (`meetings/schemas.py`)
 
+> **Updated** — `MeetingSchema` has enriched fields for requester/receiver context. `MeetingCreate` now supports `visitor_id = "SELF"` (resolved server-side to the current user's `_id`).
+
 | Schema | Fields |
 |--------|--------|
 | **MeetingBase** | `visitor_id: str`, `stand_id: str`, `start_time: datetime`, `end_time: datetime`, `purpose?: str` |
-| **MeetingCreate** | Same as MeetingBase |
+| **MeetingCreate** | Same as MeetingBase. `visitor_id = "SELF"` is resolved to current user automatically. |
 | **MeetingUpdate** | `status: MeetingStatus`, `notes?: str` |
-| **MeetingSchema** | extends MeetingBase + `id: str (alias _id)`, `status: MeetingStatus = PENDING`, `created_at: datetime`, `updated_at: datetime` |
+| **MeetingSchema** | extends MeetingBase + `id: str (alias _id)`, `status: MeetingStatus = PENDING`, `created_at: datetime`, `updated_at: datetime`, `requester_name?: str` (**NEW**), `requester_role?: str` (**NEW**), `requester_org_name?: str` (**NEW**), `receiver_org_name?: str` (**NEW**) |
 | **AvailabilitySlot** | `start_time: datetime`, `end_time: datetime`, `is_available: bool = True` |
 
 ### 5.11 AI RAG Schemas (`ai_rag/schemas.py`)
@@ -542,17 +561,29 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 | **KPIs** | `active_visitors: int`, `active_stands: int`, `ongoing_meetings: int`, `incident_flags_open: int` |
 | **LiveMetricsResponse** | `kpis: KPIs`, `active_users: list[ActiveUserRead]`, `recent_flags: list[RecentFlagRead]`, `timestamp: str` |
 
+
 ### 5.22 Enterprise Schemas (`enterprise/schemas.py`)
 
+> **Updated** — Full product/request schema suite now lives in `enterprise/schemas.py` (not just `marketplace/schemas.py`). `StandAIConfigUpdate` removed in favour of standalone AI-enable endpoints.
+
 | Schema | Fields |
-|--------|--------|
-| **EnterpriseProfileUpdate** | `description?`, `website?`, `linkedin?`, `theme_color?`, `branding_theme?`, `contact_email?`, `contact_phone?`, `avatar_gender?`, `tags?`, `logo_url?`, `banner_url?` |
-| **StandAIConfigUpdate** | `ai_greeting?`, `ai_knowledge_base?`, `auto_reply_enabled?` |
+|--------|---------|
+| **ProductStatus** | `PENDING`, `CONTACTED`, `CLOSED` (enterprise-side request lifecycle) |
+| **EnterpriseProfileUpdate** | `description?`, `tags?`, `website?`, `linkedin?`, `logo_url?`, `banner_url?`, `theme_color?`, `branding_theme?`, `contact_email?`, `contact_phone?`, `avatar_gender?` |
+| **ProductBase** | `name: str`, `description: str`, `category: str`, `is_service: bool = False`, `price?: float`, `stock?: int`, `tags: list[str] = []`, `images: list[str] = []`, `is_active: bool = True` |
+| **ProductCreate** | extends ProductBase |
+| **ProductUpdate** | All ProductBase fields optional |
+| **ProductRead** | extends ProductBase + `id: str (alias _id)`, `enterprise_id: str`, `organization_id: str`, `created_at: datetime` |
+| **ProductRequestCreate** | `product_id: str`, `event_id: str`, `message: str`, `quantity?: int` |
+| **ProductRequestStatusUpdate** | `status: ProductStatus` |
+| **ProductRequestRead** | `id: str (alias _id)`, `visitor_id: str`, `enterprise_id: str`, `product_id: str`, `event_id?: str`, `message: str`, `quantity?: int`, `status: ProductStatus`, `created_at: datetime`, `visitor_name?: str`, `visitor_email?: str`, `visitor_phone?: str`, `product_name?: str`, `product_is_service?: bool` |
 
 ### 5.23 Marketplace Schemas (`marketplace/schemas.py`)
 
+> **Note** — The marketplace router (`/api/v1/marketplace`) is a separate module from the enterprise router. It handles visitor-facing product browsing and Stripe checkout sessions.
+
 | Schema | Fields |
-|--------|--------|
+|--------|---------|
 | **ProductBase** | `name: str`, `description: str`, `price: float`, `currency: str = "USD"`, `category: str`, `image_url?: str`, `features: list[str] = []` |
 | **ProductCreate** | extends ProductBase + `stand_id: str` |
 | **ProductRead** | extends ProductBase + `id: str (alias _id)`, `enterprise_id: str`, `stand_id: str`, `created_at: datetime`, `is_active: bool` |
@@ -655,12 +686,15 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 6.10 Chat (`/api/v1/chat`)
 
+> **Updated** — Added B2B chat endpoint; `GET /chat/rooms` now supports filtering and server-side room name enrichment.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/chat/rooms` | Any authenticated | Get user's chat rooms |
+| GET | `/chat/rooms` | Any authenticated | Get user's chat rooms. Query params: `event_id?`, `room_category?` ("visitor"/"b2b"). Room names are enriched from user profiles server-side. |
 | GET | `/chat/rooms/{room_id}/messages` | Any authenticated | Get room message history (params: limit, skip) |
-| POST | `/chat/rooms/stand/{stand_id}` | Any authenticated | Initiate/get direct chat with stand owner |
-| WS | `/chat/ws/chat/{room_id}?token=<jwt>` | JWT via query | WebSocket for real-time messaging |
+| POST | `/chat/rooms/stand/{stand_id}` | Any authenticated | Initiate/get direct visitor chat with stand owner. Logs lead interaction. |
+| POST | `/chat/rooms/b2b/{partner_org_id}` | Any authenticated | **NEW** Initiate/get B2B chat between current enterprise and partner org owner. Optional `event_id` query param. |
+| WS | `/chat/ws/chat/{room_id}?token=<jwt>` | JWT via query | WebSocket for real-time messaging. Validates room membership. |
 
 ### 6.11 Meetings (`/api/v1/meetings`)
 
@@ -747,16 +781,23 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 6.20 Admin API (`/api/v1/admin`)
 
+> **Updated** — Added enterprise request management, force lifecycle transitions, and approve/reject registration endpoints.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/admin/health` | ADMIN | Platform health endpoint (MongoDB ping latency, Redis status, API uptime etc). |
 | GET | `/admin/events/pending-approval` | ADMIN | List events awaiting approval |
+| GET | `/admin/events/{event_id}/enterprise-requests` | ADMIN | **NEW** List enriched enterprise join requests for an event (params: status?, search?, skip, limit) |
+| POST | `/admin/events/{event_id}/force-start` | ADMIN | **NEW** Force event from PAYMENT_DONE → LIVE (bypass schedule). Audit log: `event.force_start` |
+| POST | `/admin/events/{event_id}/force-close` | ADMIN | **NEW** Force event from LIVE → CLOSED. Audit log: `event.force_close` |
 | GET | `/admin/organizations/detailed` | ADMIN | List organizer accounts with aggregated stats (stands, events, revenue). |
 | GET | `/admin/enterprises/detailed` | ADMIN | List enterprise accounts with aggregated stats. |
-| GET | `/admin/enterprise-registrations` | ADMIN | List pending enterprise join requests |
-| GET | `/admin/organizer-registrations` | ADMIN | List pending organizer signups |
+| GET | `/admin/enterprise-registrations` | ADMIN | List enterprise join requests (filter: `approval_status?`) |
+| GET | `/admin/organizer-registrations` | ADMIN | List organizer signups (filter: `approval_status?`) |
 | POST | `/admin/enterprise-registrations/{id}/approve` | ADMIN | Approve enterprise join request |
+| POST | `/admin/enterprise-registrations/{id}/reject` | ADMIN | **NEW** Reject enterprise request with reason |
 | POST | `/admin/organizer-registrations/{id}/approve` | ADMIN | Approve organizer signup |
+| POST | `/admin/organizer-registrations/{id}/reject` | ADMIN | **NEW** Reject organizer registration with reason |
 
 ### 6.21 Audit Logs (`/api/v1/audit`)
 
@@ -779,21 +820,58 @@ FavoriteTarget = Literal["event", "stand", "organization"]
 
 ### 6.23 Enterprise (`/api/v1/enterprise`)
 
+> **Updated** — Major new endpoints added for the enterprise event-join flow, stand AI assistant, and product/request management.
+
+**Profile:**
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/enterprise/profile` | ENTERPRISE | Get enterprise organization profile |
-| PATCH | `/enterprise/profile` | ENTERPRISE | Update enterprise details |
-| POST | `/enterprise/profile/logo` | ENTERPRISE | Upload enterprise logo |
-| POST | `/enterprise/profile/banner` | ENTERPRISE | Upload enterprise banner |
-| GET | `/enterprise/events` | ENTERPRISE | Get events the enterprise is participating in |
-| GET | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Get enterprise's stand for a specific event |
-| PATCH | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Update the stand's base configurations |
-| PATCH | `/enterprise/events/{event_id}/stand/ai-config` | ENTERPRISE | Update the stand's AI assistant prompt & knowledge |
-| POST | `/enterprise/events/{event_id}/stand/resources` | ENTERPRISE | Upload a resource (PDF/Image/Link) to the stand |
-| DELETE| `/enterprise/events/{event_id}/stand/resources/{resource_id}`| ENTERPRISE | Delete a resource |
+| PATCH | `/enterprise/profile` | ENTERPRISE | Update enterprise profile details |
+| POST | `/enterprise/profile/logo` | ENTERPRISE | Upload enterprise logo (multipart image) |
+| POST | `/enterprise/profile/banner` | ENTERPRISE | Upload enterprise banner (multipart image) |
+
+**Products & Requests:**
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/enterprise/products` | ENTERPRISE | Create a product or service |
+| GET | `/enterprise/products` | ENTERPRISE | List own products (params: skip, limit) |
+| PATCH | `/enterprise/products/{product_id}` | ENTERPRISE | Update a product |
+| DELETE | `/enterprise/products/{product_id}` | ENTERPRISE | Soft-delete a product |
+| POST | `/enterprise/products/{product_id}/images` | ENTERPRISE | Upload product image (appended to `images[]`) |
+| DELETE | `/enterprise/products/{product_id}/images` | ENTERPRISE | Remove a specific image URL from `images[]` |
+| GET | `/enterprise/product-requests` | ENTERPRISE | List incoming product/service requests |
+| PATCH | `/enterprise/product-requests/{request_id}/status` | ENTERPRISE | Update request status (PENDING/CONTACTED/CLOSED) |
+| POST | `/enterprise/public/products/{product_id}/request` | VISITOR | Submit a product/service request. Logs lead interaction. |
+
+**Event Join Flow:**
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/enterprise/events` | ENTERPRISE | List all open events with participation status + `stands_left` |
+| POST | `/enterprise/events/{event_id}/join` | ENTERPRISE | Join event → creates participant with status `PENDING_PAYMENT` |
+| POST | `/enterprise/events/{event_id}/pay` | ENTERPRISE | Simulate stand fee payment → transitions to `PENDING_ADMIN_APPROVAL` |
+
+**Stand Management (approved enterprises only):**
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Get stand (requires APPROVED status) |
+| PATCH | `/enterprise/events/{event_id}/stand` | ENTERPRISE | Update stand branding/description |
+| PATCH | `/enterprise/events/{event_id}/stand/products` | ENTERPRISE | Link product IDs to stand |
+| POST | `/enterprise/events/{event_id}/stand/resources` | ENTERPRISE | Upload/link a resource (file or URL) to stand |
+| POST | `/enterprise/events/{event_id}/stand/enable-assistant` | ENTERPRISE | **NEW** Index stand resources into RAG and enable AI assistant |
+| GET | `/enterprise/events/{event_id}/stand/assistant-status` | ENTERPRISE | **NEW** Get RAG assistant status (enabled, doc count, last indexed) |
+
+**Dashboard:**
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | GET | `/enterprise/dashboard/stats` | ENTERPRISE | Get enterprise KPI stats (views, leads, meetings) |
 | GET | `/enterprise/dashboard/recent-leads` | ENTERPRISE | Get recent leads acquired by the enterprise |
 | GET | `/enterprise/dashboard/upcoming-meetings` | ENTERPRISE | Get upcoming meetings for the enterprise |
+
 
 ### 6.24 Marketplace (`/api/v1/marketplace`)
 
@@ -876,17 +954,29 @@ Dev: `tailwindcss@4`, `shadcn@3.8.4`, `typescript@5`, `eslint-config-next`
 | `/(organizer)/organizer/events/new` | Create new event |
 | `/(organizer)/organizer/profile` | Organizer profile |
 | `/(organizer)/organizer/subscription` | Subscription management |
-| `/(organizer)/organizer/notifications` | **NEW** Organizer notification bell + list |
-| `/(admin)/admin` | **NEW** Admin home dashboard (8 section cards) |
-| `/(admin)/admin/events` | **NEW** Admin event review (approve/reject) |
-| `/(admin)/admin/users` | **NEW** Admin user management (activate/suspend) |
-| `/(admin)/admin/organizations` | **NEW** Admin organisations overview |
-| `/(admin)/admin/subscriptions` | **NEW** Admin subscription management |
-| `/(admin)/admin/analytics` | **NEW** Platform analytics: KPIs, trend chart, pie chart, events table |
-| `/(admin)/admin/analytics/[id]` | **NEW** Per-event deep-dive analytics |
-| `/(admin)/admin/monitoring` | **NEW** Platform health (MongoDB/Redis/API) + incident alerts |
-| `/(admin)/admin/audit` | **NEW** Audit log table with filters |
-| `/(admin)/admin/incidents` | **NEW** Incident management (create, investigate, mitigate, resolve) |
+| `/(organizer)/organizer/notifications` | Organizer notification bell + list |
+| `/(admin)/admin` | Admin home dashboard (8 section cards) |
+| `/(admin)/admin/events` | Admin event review (approve/reject) |
+| `/(admin)/admin/users` | Admin user management (activate/suspend) |
+| `/(admin)/admin/organizations` | Admin organisations overview |
+| `/(admin)/admin/subscriptions` | Admin subscription management |
+| `/(admin)/admin/analytics` | Platform analytics: KPIs, trend chart, pie chart, events table |
+| `/(admin)/admin/analytics/[id]` | Per-event deep-dive analytics |
+| `/(admin)/admin/monitoring` | Platform health (MongoDB/Redis/API) + incident alerts |
+| `/(admin)/admin/audit` | Audit log table with filters |
+| `/(admin)/admin/incidents` | Incident management (create, investigate, mitigate, resolve) |
+| `/(enterprise)/enterprise` | **NEW** Enterprise dashboard (KPI cards: views, leads, meetings) |
+| `/(enterprise)/enterprise/profile` | **NEW** Enterprise profile editor (logo, banner, branding, contact info) |
+| `/(enterprise)/enterprise/events` | **NEW** Events listing with join/pay flow + stand management |
+| `/(enterprise)/enterprise/products` | **NEW** Product & service catalog management |
+| `/(enterprise)/enterprise/product-requests` | **NEW** Incoming product/service requests from visitors |
+| `/(enterprise)/enterprise/leads` | **NEW** Lead CRM view for the enterprise |
+| `/(enterprise)/enterprise/analytics` | **NEW** Enterprise-level analytics (stand KPIs, visitor stats) |
+| `/(enterprise)/enterprise/notifications` | **NEW** Enterprise notification list |
+| `/(enterprise)/enterprise/communications` | **NEW** Chat inbox (visitor chats + B2B partner chats) |
+| `/marketplace` | **NEW** Visitor-facing marketplace (Stripe checkout) |
+| `/marketplace/success` | **NEW** Stripe checkout success page |
+| `/marketplace/cancel` | **NEW** Stripe checkout cancel page |
 
 ### 7.3 Auth Context
 
@@ -895,7 +985,7 @@ Dev: `tailwindcss@4`, `shadcn@3.8.4`, `typescript@5`, `eslint-config-next`
 **State**: `user: User | null`, `tokens: AuthTokens | null`, `isAuthenticated: boolean`, `isLoading: boolean`
 
 **Methods**:
-- `login(credentials)` → calls `authService.login()`, stores tokens + user in localStorage, redirects based on role (organizer → `/organizer`, others → `/`)
+- `login(credentials)` → calls `authService.login()`, stores tokens + user in localStorage, redirects based on role (**organizer** → `/organizer`, **enterprise** → `/enterprise`, **admin** → `/admin`, others → `/`)
 - `register(userData)` → same flow via `authService.register()`
 - `logout()` → clears state + localStorage, redirects to `/`
 
@@ -1082,13 +1172,14 @@ ENDPOINTS = {
 
 ## 9. Workers (Background Tasks)
 
-**Directory**: `backend/app/workers/tasks/`
+**Directory**: `backend/app/workers/`
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `embeddings.py` | Empty (placeholder) | Batch processing of content embeddings for RAG |
-| `recommendations.py` | Empty (placeholder) | Scheduled updates for recommendation interaction matrix |
-| `transcripts.py` | Empty (placeholder) | Async processing of long audio files |
+| `lifecycle.py` | **Active** | Auto event lifecycle loop — checks scheduled events and transitions state (e.g., `payment_done` → `live` at `start_date`, `live` → `closed` at `end_date`). Started as a background asyncio task on app startup. |
+| `tasks/embeddings.py` | Empty (placeholder) | Batch processing of content embeddings for RAG |
+| `tasks/recommendations.py` | Empty (placeholder) | Scheduled updates for recommendation interaction matrix |
+| `tasks/transcripts.py` | Empty (placeholder) | Async processing of long audio files |
 
 ---
 
@@ -1097,11 +1188,30 @@ ENDPOINTS = {
 ### Scripts
 
 **`backend/scripts/seed_data.py`**:
-- Idempotent seed script (upserts by unique fields)
-- Creates: Admin (`admin@demo.com`), Organizer (`organizer@demo.com`), Visitor (`visitor@demo.com`) — password: `Password123!`
-- Creates events: "Future Tech Expo" (LIVE), "Healthcare Innovations Summit" (APPROVED)
-- Creates stands with resources (brochure PDF + demo video)
-- Creates participant entries, notifications, favorites
+- Large idempotent seed script (upserts by unique fields)
+- Creates users: Admin (`admin@demo.com`), Organizer (`organizer@demo.com`), Visitor (`visitor@demo.com`) + Enterprise users — password: `Password123!`
+- Creates events, stands, resources, participants, notifications, favorites
+- Covers the full event lifecycle from `PENDING_APPROVAL` to `LIVE`
+
+**`backend/scripts/seed_data_2.py`** *(new)*:
+- Secondary seed script for additional test data (additional events/enterprises)
+
+**`backend/scripts/seed_enterprise_journey.py`** *(new)*:
+- Seeds and simulates the complete enterprise user journey:
+  - Enterprise joins event, pays stand fee, admin approves
+  - Visitors chat with enterprise, request meetings, request products
+  - B2B chat between enterprises
+  - Lead capture logging
+
+**`backend/scripts/simulate_journey.py`** *(new)*:
+- HTTP-based simulation script that drives the full visitor + enterprise journey via API calls
+- Useful for end-to-end smoke testing via `POST /api/v1/dev/seed-data` then chained API calls
+
+**`backend/scripts/test_marketplace.py`** *(new)*:
+- Integration test for marketplace product creation, request submission, and status update flow
+
+**`backend/scripts/patch_banners.py`** *(new)*:
+- One-off utility to patch missing `banner_url` fields on organization documents in MongoDB
 
 ### Tests
 
@@ -1322,15 +1432,27 @@ backend/
 │   │       ├── router.py
 │   │       ├── schemas.py
 │   │       └── service.py
-│   └── workers/tasks/             # Background workers (placeholders)
-│       ├── embeddings.py
-│       ├── recommendations.py
-│       └── transcripts.py
+│   └── workers/
+│       ├── lifecycle.py               # Active: auto lifecycle loop (event state transitions)
+│       └── tasks/                     # Background workers (placeholders)
+│           ├── embeddings.py
+│           ├── recommendations.py
+│           └── transcripts.py
 ├── data/chroma_db/                # ChromaDB persistent storage
 ├── docs/
-├── scripts/seed_data.py           # Database seeding script
+├── scripts/
+│   ├── seed_data.py               # Main database seeding script
+│   ├── seed_data_2.py             # Secondary seed (additional enterprises)
+│   ├── seed_enterprise_journey.py # Enterprise journey seed + simulation
+│   ├── simulate_journey.py        # HTTP-based end-to-end journey simulation
+│   ├── test_marketplace.py        # Marketplace integration test
+│   └── patch_banners.py           # One-off banner URL patcher
 ├── tests/                         # Integration tests
-└── uploads/resources/             # Local file uploads
+└── uploads/                       # Local file uploads (static served at /uploads)
+    ├── resources/
+    ├── enterprise_profile/
+    ├── product_images/
+    └── stand_resources/
 
 frontend/
 ├── src/
@@ -1344,20 +1466,33 @@ frontend/
 │   │   ├── favorites/             # /favorites
 │   │   ├── assistant/             # /assistant
 │   │   ├── webinars/              # /webinars
-│   │   │   ├── (organizer)/           # /organizer, /organizer/events, /organizer/events/new, /organizer/profile, /organizer/subscription, /organizer/notifications (NEW)
-│   │   └── (admin)/               # NEW — Admin panel (protected, requires ADMIN role)
-│   │       └── admin/
-│   │           ├── page.tsx               # Admin home (8 section cards)
-│   │           ├── layout.tsx             # Admin sidebar nav
-│   │           ├── events/                # Event review (approve/reject)
-│   │           ├── users/                 # User management (activate/suspend)
-│   │           ├── organizations/         # Org overview
-│   │           ├── subscriptions/         # Subscription management
-│   │           ├── analytics/             # Platform KPI dashboard
-│   │           │   └── [id]/              # Per-event deep-dive analytics
-│   │           ├── monitoring/            # Health + incidents
-│   │           ├── audit/                 # Audit log table
-│   │           └── incidents/             # Incident management
+│   │   ├── marketplace/           # NEW — /marketplace, /marketplace/success, /marketplace/cancel
+│   │   ├── (organizer)/           # /organizer, /organizer/events, /organizer/events/new, /organizer/profile, /organizer/subscription, /organizer/notifications
+│   │   ├── (admin)/               # Admin panel (protected, requires ADMIN role)
+│   │   │   └── admin/
+│   │   │       ├── page.tsx               # Admin home (8 section cards)
+│   │   │       ├── layout.tsx             # Admin sidebar nav
+│   │   │       ├── events/                # Event review (approve/reject)
+│   │   │       ├── users/                 # User management (activate/suspend)
+│   │   │       ├── organizations/         # Org overview
+│   │   │       ├── subscriptions/         # Subscription management
+│   │   │       ├── analytics/             # Platform KPI dashboard
+│   │   │       │   └── [id]/              # Per-event deep-dive analytics
+│   │   │       ├── monitoring/            # Health + incidents
+│   │   │       ├── audit/                 # Audit log table
+│   │   │       └── incidents/             # Incident management
+│   │   └── (enterprise)/          # NEW — Enterprise portal (protected, requires ENTERPRISE role)
+│   │       └── enterprise/
+│   │           ├── page.tsx               # Enterprise dashboard (KPI cards)
+│   │           ├── layout.tsx             # Enterprise sidebar nav
+│   │           ├── profile/               # Profile editor (logo/banner/branding)
+│   │           ├── events/                # Events list + join/pay flow + stand mgmt
+│   │           ├── products/              # Product & service catalog
+│   │           ├── product-requests/      # Incoming product/service requests
+│   │           ├── leads/                 # Lead CRM view
+│   │           ├── analytics/             # Stand KPI analytics
+│   │           ├── notifications/         # Notification list
+│   │           └── communications/        # Chat inbox (visitor + B2B)
 │   ├── components/                # UI components
 │   │   ├── assistant/             # FloatingAssistant
 │   │   ├── auth/                  # Auth forms
