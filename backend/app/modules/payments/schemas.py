@@ -27,8 +27,8 @@ class EventPaymentRead(BaseModel):
     user_id: str
     amount: float
     currency: str = "mad"
-    payzone_payment_id: Optional[str] = None
-    payzone_transaction_id: Optional[str] = None
+    stripe_session_id: Optional[str] = None
+    stripe_payment_intent_id: Optional[str] = None
     status: PaymentStatus
     created_at: datetime
     paid_at: Optional[datetime] = None
@@ -40,4 +40,4 @@ class PaymentStatusResponse(BaseModel):
     """Lightweight response for visitor payment status check."""
 
     status: str  # "none" | "pending" | "paid"
-    payzone_payment_id: Optional[str] = None
+    stripe_session_id: Optional[str] = None

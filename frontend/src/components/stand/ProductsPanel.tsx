@@ -38,6 +38,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     const [shippingAddress, setShippingAddress] = useState('');
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [buyerPhone, setBuyerPhone] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cash_on_delivery'>('stripe');
+    const [orderSuccess, setOrderSuccess] = useState(false);
 
     /* ---- Fetch products ---- */
     useEffect(() => {
@@ -108,9 +110,16 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     shipping_address: shippingAddress || undefined,
                     delivery_notes: deliveryNotes || undefined,
                     buyer_phone: buyerPhone || undefined,
+                    payment_method: paymentMethod,
                 },
             );
-            window.location.href = resp.payment_url;
+            if (resp.payment_url) {
+                window.location.href = resp.payment_url;
+            } else {
+                // Cash on delivery or other direct completion
+                setCart({});
+                setOrderSuccess(true);
+            }
         } catch (err: any) {
             alert(err?.message || 'Checkout failed. Please try again.');
         } finally {
@@ -128,7 +137,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-gray-200/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-gray-200/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-200">
 
                 {/* ---- Header ---- */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100" style={{ backgroundColor: `${themeColor}08` }}>
@@ -193,11 +202,10 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             <div className="flex gap-2 mb-5">
                                 <button
                                     onClick={() => setActiveTab('product')}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
-                                        activeTab === 'product'
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${activeTab === 'product'
                                             ? 'text-white border-transparent shadow-sm'
                                             : 'text-gray-600 border-gray-200 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                     style={activeTab === 'product' ? { backgroundColor: themeColor } : {}}
                                 >
                                     <Package className="w-4 h-4" />
@@ -205,11 +213,10 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('service')}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
-                                        activeTab === 'service'
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${activeTab === 'service'
                                             ? 'text-white border-transparent shadow-sm'
                                             : 'text-gray-600 border-gray-200 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                     style={activeTab === 'service' ? { backgroundColor: themeColor } : {}}
                                 >
                                     <Briefcase className="w-4 h-4" />
@@ -312,7 +319,26 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     {/* ====== CART VIEW ====== */}
                     {!loading && !error && view === 'cart' && (
                         <>
-                            {cartItems.length === 0 ? (
+                            {orderSuccess ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-emerald-600">
+                                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                                        <Package className="w-8 h-8 text-emerald-500" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h3>
+                                    <p className="text-sm text-gray-500 text-center max-w-md">
+                                        Your order has been received. You will pay for it on reception.
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            setOrderSuccess(false);
+                                            setView('products');
+                                        }}
+                                        className="mt-6 px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                                    >
+                                        Continue Shopping
+                                    </button>
+                                </div>
+                            ) : cartItems.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                                     <ShoppingCart className="w-10 h-10 mb-3 text-gray-300" />
                                     <p className="text-sm font-medium text-gray-500">Your cart is empty</p>
@@ -329,73 +355,73 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                 <div className="space-y-4">
                                     {/* Cart items */}
                                     <div className="space-y-3">
-                                    {cartItems.map(({ product, quantity }) => (
-                                        <div
-                                            key={product.id}
-                                            className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white shadow-sm"
-                                        >
-                                            {/* Thumbnail */}
-                                            {product.image_url && (
-                                                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                                    <img
-                                                        src={product.image_url}
-                                                        alt={product.name}
-                                                        className="w-full h-full object-cover"
-                                                        draggable={false}
-                                                    />
-                                                </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <h4 className="text-sm font-bold text-gray-900 line-clamp-1">
-                                                        {product.name}
-                                                    </h4>
-                                                    <button
-                                                        onClick={() => removeFromCart(product.id)}
-                                                        className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shrink-0"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mb-2">
-                                                    {fmt(product.price, product.currency)} each · {product.stock} in stock
-                                                </p>
-                                                {/* Quantity controls */}
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                                                        <button
-                                                            onClick={() => updateCartQty(product.id, quantity - 1)}
-                                                            className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                                                            disabled={quantity <= 1}
-                                                        >
-                                                            <Minus className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <input
-                                                            type="number"
-                                                            min={1}
-                                                            max={product.stock}
-                                                            value={quantity}
-                                                            onChange={(e) => {
-                                                                const val = parseInt(e.target.value, 10);
-                                                                if (!isNaN(val)) updateCartQty(product.id, val);
-                                                            }}
-                                                            className="w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50/50 border-x border-gray-200 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        {cartItems.map(({ product, quantity }) => (
+                                            <div
+                                                key={product.id}
+                                                className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white shadow-sm"
+                                            >
+                                                {/* Thumbnail */}
+                                                {product.image_url && (
+                                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                                                        <img
+                                                            src={product.image_url}
+                                                            alt={product.name}
+                                                            className="w-full h-full object-cover"
+                                                            draggable={false}
                                                         />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <h4 className="text-sm font-bold text-gray-900 line-clamp-1">
+                                                            {product.name}
+                                                        </h4>
                                                         <button
-                                                            onClick={() => updateCartQty(product.id, quantity + 1)}
-                                                            className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                                                            disabled={quantity >= product.stock}
+                                                            onClick={() => removeFromCart(product.id)}
+                                                            className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shrink-0"
                                                         >
-                                                            <Plus className="w-3.5 h-3.5" />
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
-                                                    <span className="text-sm font-bold" style={{ color: themeColor }}>
-                                                        {fmt(product.price * quantity, product.currency)}
-                                                    </span>
+                                                    <p className="text-xs text-gray-500 mb-2">
+                                                        {fmt(product.price, product.currency)} each · {product.stock} in stock
+                                                    </p>
+                                                    {/* Quantity controls */}
+                                                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                                            <button
+                                                                onClick={() => updateCartQty(product.id, quantity - 1)}
+                                                                className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                disabled={quantity <= 1}
+                                                            >
+                                                                <Minus className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <input
+                                                                type="number"
+                                                                min={1}
+                                                                max={product.stock}
+                                                                value={quantity}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value, 10);
+                                                                    if (!isNaN(val)) updateCartQty(product.id, val);
+                                                                }}
+                                                                className="w-12 sm:w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50/50 border-x border-gray-200 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                            />
+                                                            <button
+                                                                onClick={() => updateCartQty(product.id, quantity + 1)}
+                                                                className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                disabled={quantity >= product.stock}
+                                                            >
+                                                                <Plus className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                        <span className="text-sm font-bold ml-auto sm:ml-0" style={{ color: themeColor }}>
+                                                            {fmt(product.price * quantity, product.currency)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
                                     </div>
 
                                     {/* ---- Shipping / Delivery Info ---- */}
@@ -434,6 +460,41 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* ---- Payment Method ---- */}
+                                    <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Payment Method</h4>
+                                        <div className="space-y-3">
+                                            <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'stripe' ? 'border-indigo-500 bg-indigo-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    value="stripe"
+                                                    checked={paymentMethod === 'stripe'}
+                                                    onChange={() => setPaymentMethod('stripe')}
+                                                    className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                                />
+                                                <div className="flex-1">
+                                                    <span className="block text-sm font-semibold text-gray-900">Pay Now (Credit Card)</span>
+                                                    <span className="block text-xs text-gray-500">Secure payment via Stripe</span>
+                                                </div>
+                                            </label>
+                                            <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'cash_on_delivery' ? 'border-indigo-500 bg-indigo-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    value="cash_on_delivery"
+                                                    checked={paymentMethod === 'cash_on_delivery'}
+                                                    onChange={() => setPaymentMethod('cash_on_delivery')}
+                                                    className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                                />
+                                                <div className="flex-1">
+                                                    <span className="block text-sm font-semibold text-gray-900">Pay on Reception</span>
+                                                    <span className="block text-xs text-gray-500">Cash on delivery (COD)</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </>
@@ -441,9 +502,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 </div>
 
                 {/* ---- Footer (cart summary + checkout) ---- */}
-                {cartItems.length > 0 && (
-                    <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/60">
-                        <div className="flex items-center justify-between">
+                {cartItems.length > 0 && !orderSuccess && (
+                    <div className="border-t border-gray-100 px-4 sm:px-6 py-4 bg-gray-50/60">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                                 <p className="text-sm text-gray-500">
                                     {cartCount} item{cartCount !== 1 ? 's' : ''} in cart
@@ -455,7 +516,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             <button
                                 onClick={handleCartCheckout}
                                 disabled={checkingOut}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-60"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-60"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 {checkingOut ? (

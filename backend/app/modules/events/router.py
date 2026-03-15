@@ -6,7 +6,7 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 
 from app.core.dependencies import get_current_user, require_feature, require_role, require_roles
 from app.modules.auth.enums import Role
@@ -319,6 +319,8 @@ async def reject_event_request(
 
 # ============== Payment Endpoint ==============
 
+
+
 @router.post("/{event_id}/submit-proof", response_model=EventRead)
 async def submit_proof(
     event_id: str,
@@ -445,4 +447,5 @@ async def close_event(
 
     updated_event = await update_event_state(event_id, EventState.CLOSED)
     return EventRead(**updated_event)
+
 

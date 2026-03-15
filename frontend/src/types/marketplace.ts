@@ -41,8 +41,9 @@ export interface MarketplaceOrder {
   product_name: string;
   quantity: number;
   total_amount: number;
-  payzone_payment_id: string;
-  payzone_transaction_id: string;
+  stripe_session_id?: string;
+  stripe_payment_intent_id?: string;
+  payment_method?: 'stripe' | 'cash_on_delivery';
   status: 'pending' | 'paid' | 'cancelled';
   shipping_address?: string;
   delivery_notes?: string;
@@ -52,7 +53,7 @@ export interface MarketplaceOrder {
 }
 
 export interface CheckoutResponse {
-  payment_url: string;
+  payment_url: string | null;
   order_id: string;
 }
 
@@ -62,6 +63,6 @@ export interface CartItem {
 }
 
 export interface CartCheckoutResponse {
-  payment_url: string;
+  payment_url: string | null;
   order_ids: string[];
 }

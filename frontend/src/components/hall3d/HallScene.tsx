@@ -84,14 +84,14 @@ function ResponsiveCamera() {
         let responsiveZoom;
 
         if (size.width < 600) {
-            // Mobile (e.g. 375px) -> significantly smaller zoom
-            responsiveZoom = baseZoom * (size.width / 900);
-            // Ensure a minimum clamp so it doesn't get unreadably tiny
-            if (responsiveZoom < 10) responsiveZoom = 10;
+            // Mobile (e.g. 375px) -> significantly zoom in more than before
+            responsiveZoom = baseZoom * (size.width / 600);
+            // Ensure a minimum clamp
+            if (responsiveZoom < 12.5) responsiveZoom = 12.5;
         } else if (size.width < 1024) {
             // Tablet -> moderate scale down
-            responsiveZoom = baseZoom * (size.width / 1200);
-            if (responsiveZoom < 15) responsiveZoom = 15;
+            responsiveZoom = baseZoom * (size.width / 900);
+            if (responsiveZoom < 18) responsiveZoom = 18;
         } else {
             // Desktop
             responsiveZoom = baseZoom;

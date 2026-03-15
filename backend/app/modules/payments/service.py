@@ -31,7 +31,7 @@ async def create_payment(
     user_id: str,
     amount: float,
     currency: str = "mad",
-    payzone_payment_id: str = "",
+    stripe_session_id: str = "",
 ) -> dict:
     """Create a new pending payment record for Payzone checkout."""
     now = datetime.now(timezone.utc)
@@ -41,8 +41,8 @@ async def create_payment(
         "user_id": str(user_id),
         "amount": amount,
         "currency": currency,
-        "payzone_payment_id": payzone_payment_id,
-        "payzone_transaction_id": None,
+        "stripe_session_id": stripe_session_id,
+        "stripe_payment_intent_id": None,
         "status": PaymentStatus.PENDING,
         "created_at": now,
         "paid_at": None,
@@ -75,16 +75,16 @@ async def get_user_payment_by_status(
     return stringify_object_ids(doc) if doc else None
 
 
-async def get_payment_by_payzone_id(payment_id: str) -> Optional[dict]:
+async def get_payment_by_stripe_id(payment_id: str) -> Optional[dict]:
     """Get a payment by Payzone payment ID."""
     collection = get_payments_collection()
-    doc = await collection.find_one({"payzone_payment_id": payment_id})
+    doc = await collection.find_one({"stripe_session_id": payment_id})
     return stringify_object_ids(doc) if doc else None
 
 
 async def mark_payment_paid(
     payment_id: str,
-    payzone_transaction_id: str = "",
+    stripe_payment_intent_id: str = "",
 ) -> Optional[dict]:
     """Mark a payment as paid after Payzone confirmation."""
     collection = get_payments_collection()
@@ -93,7 +93,7 @@ async def mark_payment_paid(
         {
             "$set": {
                 "status": PaymentStatus.PAID,
-                "payzone_transaction_id": payzone_transaction_id,
+                "stripe_payment_intent_id": stripe_payment_intent_id,
                 "paid_at": datetime.now(timezone.utc),
             }
         },

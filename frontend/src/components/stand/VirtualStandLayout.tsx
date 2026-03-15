@@ -106,7 +106,7 @@ export function VirtualStandLayout({
             <img
                 src={SCENE_BG}
                 alt=""
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover object-[center_20%] sm:object-center"
                 draggable={false}
             />
             {/* CSS gradient fallback (behind image) */}
@@ -139,9 +139,9 @@ export function VirtualStandLayout({
             {/* ================ BRANDING OVERLAYS ================ */}
 
             {/* Wall banner — positioned on the back wall */}
-            <div className="absolute top-[6%] sm:top-[8%] left-1/2 -translate-x-1/2 z-10">
+            <div className="absolute top-[8%] sm:top-[8%] left-1/2 -translate-x-1/2 z-10 w-[240px] sm:w-[300px] lg:w-[380px]">
                 <div
-                    className="relative w-[200px] sm:w-[300px] lg:w-[380px] rounded-xl overflow-hidden shadow-2xl ring-2"
+                    className="relative w-full rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] ring-2"
                     style={{ borderColor: `${themeColor}88`, ['--tw-ring-color' as string]: `${themeColor}44` }}
                 >
                     {stand.stand_background_url ? (
@@ -266,7 +266,7 @@ export function VirtualStandLayout({
                 <img
                     src={presenterImg}
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
-                    className="h-56 sm:h-72 lg:h-[24rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
+                    className="h-[22rem] sm:h-[22rem] lg:h-[28rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
                     draggable={false}
                 />
             </div>
@@ -336,8 +336,8 @@ export function VirtualStandLayout({
             </div>
 
             {/* ---------- Bottom action bar ---------- */}
-            <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-3">
-                <div className="flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2.5 rounded-2xl bg-white/[0.95] backdrop-blur-xl shadow-2xl border border-white/60">
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 w-[96%] sm:w-full max-w-[96%] sm:max-w-2xl px-1 sm:px-3 text-center">
+                <div className="inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-white/[0.95] backdrop-blur-xl shadow-2xl border border-white/60">
                     {/* Resources */}
                     <ActionBarBtn
                         active={activeTab === 'resources' && showPanel}
@@ -431,7 +431,7 @@ function ActionBarBtn({
                 }}
             >
                 {icon}
-                <span className="hidden sm:inline">{label}</span>
+                <span className="hidden leading-none sm:inline">{label}</span>
             </button>
         );
     }
@@ -444,7 +444,7 @@ function ActionBarBtn({
                 style={{ backgroundColor: themeColor }}
             >
                 {icon}
-                <span className="hidden sm:inline">{label}</span>
+                <span className="hidden leading-none sm:inline">{label}</span>
             </button>
         );
     }
@@ -455,7 +455,7 @@ function ActionBarBtn({
             className={`${base} text-gray-600 hover:bg-gray-100`}
         >
             {icon}
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden leading-none sm:inline">{label}</span>
         </button>
     );
 }

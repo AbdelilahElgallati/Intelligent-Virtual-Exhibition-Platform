@@ -28,16 +28,16 @@ from app.modules.payments.schemas import (
 from app.modules.payments.service import (
     create_payment,
     get_payment_by_id,
-    get_payment_by_payzone_id,
+    get_payment_by_stripe_id,
     get_user_payment,
     get_user_payment_by_status,
     list_payments,
     mark_payment_paid,
 )
-from app.modules.marketplace.payzone_service import (
+import stripe
+from app.modules.marketplace.stripe_service import (
     create_payment_session,
-    check_payment_status,
-    verify_callback_signature,
+    construct_event
 )
 
 logger = logging.getLogger(__name__)
@@ -99,16 +99,13 @@ async def create_event_checkout(
     notification_url = f"{backend_base}/events/{event_id}/payment-callback"
 
     try:
-        pz_result = await create_payment_session(
+        st_result = create_payment_session(
             order_id=payment["_id"],
-            amount_cents=amount_cents,
-            currency=currency,
-            description=f"Ticket: {event['title']}",
-            success_url=success_url,
+            amount=amount,
+            product_name=f"Ticket: {event['title']}",
+            success_url=success_url.replace("{PAYMENT_ID}", "{CHECKOUT_SESSION_ID}"),
             cancel_url=cancel_url,
-            notification_url=notification_url,
-            customer_email=current_user.get("email"),
-            customer_name=current_user.get("full_name", current_user.get("name", "")),
+            buyer_email=current_user.get("email"),
             metadata={
                 "payment_id": payment["_id"],
                 "event_id": event_id,
@@ -116,19 +113,19 @@ async def create_event_checkout(
             },
         )
     except Exception as exc:
-        logger.error("Payzone checkout failed: %s", exc)
+        logger.error("Stripe checkout failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
-    # Update payment with payzone payment id
+    # Update payment with stripe payment id
     from app.db.mongo import get_database
     from bson import ObjectId
 
     await get_database()["event_payments"].update_one(
         {"_id": ObjectId(payment["_id"]) if ObjectId.is_valid(payment["_id"]) else payment["_id"]},
-        {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
+        {"$set": {"stripe_session_id": st_result["session_id"]}},
     )
 
-    return {"payment_url": pz_result["payment_url"], "payment_id": payment["_id"]}
+    return {"payment_url": st_result["url"], "payment_id": payment["_id"]}
 
 
 @router.post("/events/{event_id}/verify-payment")
@@ -151,7 +148,7 @@ async def verify_event_payment(
     payment = await get_payment_by_id(payment_id)
     if not payment:
         # Try by payzone payment id
-        payment = await get_payment_by_payzone_id(payment_id)
+        payment = await get_payment_by_stripe_id(payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment record not found")
 
@@ -162,18 +159,19 @@ async def verify_event_payment(
     if payment["event_id"] != event_id or payment["user_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Payment does not match")
 
-    # Check payment status with Payzone
-    pz_payment_id = payment.get("payzone_payment_id", "")
-    if pz_payment_id:
+    # Check payment status with Stripe
+    st_session_id = payment.get("stripe_session_id", "")
+    if st_session_id:
         try:
-            pz_status = await check_payment_status(pz_payment_id)
-            if pz_status.get("status") != "completed":
+            session = stripe.checkout.Session.retrieve(st_session_id)
+            if session.payment_status != "paid":
                 raise HTTPException(status_code=400, detail="Payment not completed")
-            transaction_id = pz_status.get("transaction_id", "")
-        except HTTPException:
-            raise
+            transaction_id = session.payment_intent or ""
+        except stripe.error.StripeError as exc:
+            logger.error("Failed to check Stripe status: %s", exc)
+            raise HTTPException(status_code=400, detail=f"Stripe error: {exc}")
         except Exception as exc:
-            logger.error("Failed to check Payzone status: %s", exc)
+            logger.error("Failed to check payment status: %s", exc)
             raise HTTPException(status_code=400, detail="Could not verify payment status")
     else:
         transaction_id = ""
@@ -197,7 +195,7 @@ async def verify_event_payment(
         action="event_payment_completed",
         entity="event_payment",
         entity_id=payment["_id"],
-        metadata={"event_id": event_id, "payzone_payment_id": pz_payment_id},
+        metadata={"event_id": event_id, "stripe_session_id": st_session_id},
     )
 
     # Notify visitor
@@ -215,36 +213,56 @@ async def verify_event_payment(
 @router.post("/events/{event_id}/payment-callback")
 async def event_payment_callback(event_id: str, request: Request):
     """
-    Payzone server-to-server callback for event payments.
-    No auth — Payzone signs the payload.
+    Stripe Webhook for event payments.
     """
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature', '')
+
     try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        event_obj = construct_event(payload, sig_header)
+    except Exception as e:
+        logger.warning(f"Stripe event payment callback failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature or payload")
 
-    received_sig = body.get("signature", "")
-    if not verify_callback_signature(body, received_sig):
-        logger.warning("Payzone event payment callback signature failed")
-        raise HTTPException(status_code=400, detail="Invalid signature")
+    if event_obj["type"] == "checkout.session.completed":
+        session = event_obj["data"]["object"]
+        st_session_id = session.get("id")
+        transaction_id = session.get("payment_intent", "")
+        metadata = session.get("metadata", {})
+        order_id = metadata.get("payment_id")
 
-    payment_status = body.get("status", "")
-    pz_payment_id = body.get("payment_id", "")
-    transaction_id = body.get("transaction_id", "")
-    order_id = body.get("order_id", "")
-
-    if payment_status == "completed":
-        # Find payment record
-        payment = None
+        source = metadata.get("source")
+        
+        if source == "enterprise_stand_fee":
+            participant_id = metadata.get("participant_id")
+            if participant_id:
+                from app.db.mongo import get_database
+                from pymongo import ReturnDocument
+                from bson import ObjectId
+                from app.modules.participants.schemas import ParticipantStatus
+                db = get_database()
+                pid = ObjectId(participant_id) if ObjectId.is_valid(participant_id) else participant_id
+                updated = await db.participants.find_one_and_update(
+                    {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT},
+                    {"$set": {
+                        "stand_fee_paid": True,
+                        "payment_reference": transaction_id,
+                        "status": ParticipantStatus.APPROVED,
+                    }},
+                    return_document=ReturnDocument.AFTER,
+                )
+                if updated:
+                    logger.info("Enterprise stand fee paid for participant %s", participant_id)
+            return {"status": "ok"}
+            
         if order_id:
             payment = await get_payment_by_id(order_id)
-        if not payment and pz_payment_id:
-            payment = await get_payment_by_payzone_id(pz_payment_id)
+        else:
+            payment = await get_payment_by_stripe_id(st_session_id)
 
         if payment and payment["status"] != PaymentStatus.PAID:
             await mark_payment_paid(payment["_id"], transaction_id)
-
-            # Auto-approve participant
+            
             user_id = payment["user_id"]
             ev_id = payment["event_id"]
             existing = await get_user_participation(ev_id, user_id)
@@ -256,7 +274,7 @@ async def event_payment_callback(event_id: str, request: Request):
                 from app.modules.participants.service import approve_participant
                 await approve_participant(existing["_id"])
 
-            logger.info("Event payment %s confirmed via Payzone callback", payment["_id"])
+            logger.info("Event payment %s confirmed via Stripe callback", payment["_id"])
 
     return {"status": "ok"}
 
@@ -277,7 +295,7 @@ async def get_my_payment_status(
 
     return PaymentStatusResponse(
         status=payment["status"],
-        payzone_payment_id=payment.get("payzone_payment_id"),
+        stripe_session_id=payment.get("stripe_session_id"),
     )
 
 
@@ -307,8 +325,8 @@ async def get_my_receipt(
         "currency": payment.get("currency", "MAD").upper(),
         "status": payment["status"],
         "payment_method": "Payzone",
-        "payzone_payment_id": payment.get("payzone_payment_id", ""),
-        "payzone_transaction_id": payment.get("payzone_transaction_id", ""),
+        "stripe_session_id": payment.get("stripe_session_id", ""),
+        "stripe_payment_intent_id": payment.get("stripe_payment_intent_id", ""),
         "created_at": payment["created_at"].isoformat() if hasattr(payment.get("created_at", ""), "isoformat") else str(payment.get("created_at", "")),
         "paid_at": payment["paid_at"].isoformat() if payment.get("paid_at") and hasattr(payment["paid_at"], "isoformat") else str(payment.get("paid_at", "")),
     }

@@ -1,5 +1,5 @@
 """
-Marketplace router — stand product/service CRUD, Payzone checkout, callback, orders, receipts.
+Marketplace router — stand product/service CRUD, Stripe checkout, callback, orders, receipts.
 Completely isolated from the existing event payment system.
 """
 
@@ -9,8 +9,10 @@ import os
 import shutil
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+import stripe
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
 
+from app.core.config import settings
 from app.core.dependencies import get_current_user
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
@@ -25,10 +27,7 @@ from app.modules.marketplace.schemas import (
     ProductOut,
     ProductUpdate,
 )
-from app.modules.marketplace.payzone_service import (
-    create_payment_session,
-    verify_callback_signature,
-)
+from app.modules.marketplace.stripe_service import create_payment_session, construct_event
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +151,7 @@ async def upload_product_image(
     return {"image_url": f"/uploads/product_images/{safe_name}"}
 
 
-# ── Payzone Checkout ────────────────────────────────────────────────
+# ── Stripe & COD Checkout ────────────────────────────────────────────────
 
 @router.post(
     "/stands/{stand_id}/products/{product_id}/checkout",
@@ -166,8 +165,8 @@ async def checkout_product(
     user: dict = Depends(get_current_user),
 ):
     """
-    Authenticated visitor — create a Payzone payment session for a single product/service.
-    Returns the Payzone payment URL to redirect the browser to.
+    Authenticated visitor — create a Stripe payment session or process COD for a single product/service.
+    Returns the Stripe payment URL or successfully registers the order for COD.
     """
     product = await mkt_svc.get_product(product_id)
     if not product:
@@ -179,7 +178,11 @@ async def checkout_product(
 
     total = round(product["price"] * body.quantity, 2)
 
-    # Create pending order
+    if body.payment_method == "cash_on_delivery":
+        # Deduct stock immediately since it's a confirmed order type
+        await mkt_svc.decrement_stock(product["id"], body.quantity)
+
+    # Create order
     order = await mkt_svc.create_order(
         product_id=product_id,
         stand_id=stand_id,
@@ -187,47 +190,43 @@ async def checkout_product(
         product_name=product["name"],
         quantity=body.quantity,
         total_amount=total,
+        payment_method=body.payment_method,
         shipping_address=body.shipping_address,
         delivery_notes=body.delivery_notes,
         buyer_phone=body.buyer_phone,
     )
 
-    # Build URLs
-    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
-    origin = origin.rstrip("/")
-    backend_base = str(request.base_url).rstrip("/")
-    success_url = f"{origin}/marketplace/success?payment_id={{PAYMENT_ID}}"
-    cancel_url = f"{origin}/marketplace/cancel"
-    notification_url = f"{backend_base}/marketplace/callback/payzone"
+    if body.payment_method == "cash_on_delivery":
+        return CheckoutResponse(payment_url=None, order_id=order["id"])
 
-    amount_cents = int(math.ceil(total * 100))
+    # Stripe URL building
+    origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
+    origin = origin.rstrip("/")
+    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/marketplace/cancel"
 
     try:
-        pz_result = await create_payment_session(
+        stripe_result = create_payment_session(
             order_id=order["id"],
-            amount_cents=amount_cents,
-            currency=product.get("currency", "MAD"),
-            description=f"Purchase: {product['name']} x{body.quantity}",
+            amount=total,
+            product_name=f"Purchase: {product['name']} x{body.quantity}",
+            buyer_email=user.get("email"),
             success_url=success_url,
             cancel_url=cancel_url,
-            notification_url=notification_url,
-            customer_email=user.get("email"),
-            customer_name=user.get("full_name", user.get("name", "")),
-            metadata={"order_id": order["id"], "stand_id": stand_id},
         )
     except Exception as exc:
-        logger.error("Payzone checkout failed: %s", exc)
+        logger.error("Stripe checkout failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
-    # Update order with payzone payment id
+    # Update order with stripe session id
     from bson import ObjectId
 
     await get_database().stand_orders.update_one(
         {"_id": ObjectId(order["id"])},
-        {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
+        {"$set": {"stripe_session_id": stripe_result["session_id"]}},
     )
 
-    return CheckoutResponse(payment_url=pz_result["payment_url"], order_id=order["id"])
+    return CheckoutResponse(payment_url=stripe_result["url"], order_id=order["id"])
 
 
 # ── Cart Checkout (multiple products) ───────────────────────────────
@@ -244,20 +243,13 @@ async def cart_checkout(
 ):
     """
     Authenticated visitor — checkout multiple products/services from the same stand.
-    Creates one Payzone payment session for the total cart amount.
+    Creates one Stripe payment session for the total cart amount or processes COD.
     """
     await _get_stand(stand_id)  # validate stand exists
 
     order_ids: list[str] = []
     total_cart_amount = 0.0
     product_names: list[str] = []
-
-    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
-    origin = origin.rstrip("/")
-    backend_base = str(request.base_url).rstrip("/")
-    success_url = f"{origin}/marketplace/success?payment_id={{PAYMENT_ID}}"
-    cancel_url = f"{origin}/marketplace/cancel"
-    notification_url = f"{backend_base}/marketplace/callback/payzone"
 
     for cart_item in body.items:
         product = await mkt_svc.get_product(cart_item.product_id)
@@ -269,6 +261,10 @@ async def cart_checkout(
             raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
         total = round(product["price"] * cart_item.quantity, 2)
+        
+        if body.payment_method == "cash_on_delivery":
+            await mkt_svc.decrement_stock(product["id"], cart_item.quantity)
+
         order = await mkt_svc.create_order(
             product_id=cart_item.product_id,
             stand_id=stand_id,
@@ -276,6 +272,7 @@ async def cart_checkout(
             product_name=product["name"],
             quantity=cart_item.quantity,
             total_amount=total,
+            payment_method=body.payment_method,
             shipping_address=body.shipping_address,
             delivery_notes=body.delivery_notes,
             buyer_phone=body.buyer_phone,
@@ -284,83 +281,74 @@ async def cart_checkout(
         total_cart_amount += total
         product_names.append(product["name"])
 
-    amount_cents = int(math.ceil(total_cart_amount * 100))
+    if body.payment_method == "cash_on_delivery":
+        return CartCheckoutResponse(payment_url=None, order_ids=order_ids)
+
+    origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
+    origin = origin.rstrip("/")
+    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/marketplace/cancel"
 
     try:
-        pz_result = await create_payment_session(
+        stripe_result = create_payment_session(
             order_id=",".join(order_ids),
-            amount_cents=amount_cents,
-            currency="MAD",
-            description=f"Cart: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+            amount=total_cart_amount,
+            product_name=f"Cart: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+            buyer_email=user.get("email"),
             success_url=success_url,
             cancel_url=cancel_url,
-            notification_url=notification_url,
-            customer_email=user.get("email"),
-            customer_name=user.get("full_name", user.get("name", "")),
-            metadata={"order_ids": ",".join(order_ids), "stand_id": stand_id},
         )
     except Exception as exc:
-        logger.error("Payzone cart checkout failed: %s", exc)
+        logger.error("Stripe cart checkout failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
-    # Update all orders with payzone payment id
+    # Update all orders with stripe session id
     try:
         from bson import ObjectId as _OID
 
         for oid in order_ids:
             await get_database().stand_orders.update_one(
                 {"_id": _OID(oid)},
-                {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
+                {"$set": {"stripe_session_id": stripe_result["session_id"]}},
             )
     except Exception as exc:
-        logger.error("Failed to update orders with payment id: %s", exc)
+        logger.error("Failed to update orders with session id: %s", exc)
 
-    return CartCheckoutResponse(payment_url=pz_result["payment_url"], order_ids=order_ids)
+    return CartCheckoutResponse(payment_url=stripe_result["url"], order_ids=order_ids)
 
 
-# ── Payzone Callback (server-to-server notification) ────────────────
+# ── Stripe Webhook (server-to-server notification) ────────────────
 
-@router.post("/callback/payzone")
-async def payzone_callback(request: Request):
+@router.post("/webhook/stripe")
+async def stripe_webhook(request: Request, stripe_signature: str = Header(None)):
     """
-    Payzone sends payment notifications here.
+    Stripe sends payment notifications here.
     Verifies signature, handles completed payments.
-    No auth — Payzone signs the payload.
     """
+    payload = await request.body()
     try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
-
-    # Verify signature
-    received_sig = body.get("signature", "")
-    if not verify_callback_signature(body, received_sig):
-        logger.warning("Payzone callback signature verification failed")
+        event = construct_event(payload, stripe_signature)
+    except stripe.error.SignatureVerificationError as e:
+        logger.warning("Stripe webhook signature verification failed")
         raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    payment_status = body.get("status", "")
-    payment_id = body.get("payment_id", "")
-    transaction_id = body.get("transaction_id", "")
-    order_id_str = body.get("order_id", "")
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # Payment is successful
+        order_id_str = session.get('client_reference_id', '')
+        payment_intent_id = session.get('payment_intent', '')
 
-    if payment_status == "completed":
-        # Handle single or multiple order IDs (comma-separated)
         ids_to_process = [oid.strip() for oid in order_id_str.split(",") if oid.strip()]
-
         for oid in ids_to_process:
-            order = await mkt_svc.mark_order_paid(oid, transaction_id)
+            order = await mkt_svc.mark_order_paid(oid, payment_intent_id)
             if order:
                 await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
-                logger.info("Order %s paid via Payzone payment %s", oid, payment_id)
+                logger.info("Order %s paid via Stripe intent %s", oid, payment_intent_id)
 
-        if not ids_to_process and payment_id:
-            # Fallback: find order by payzone payment id
-            order = await mkt_svc.get_order_by_payzone_payment(payment_id)
-            if order and order["status"] != "paid":
-                await mkt_svc.mark_order_paid(order["id"], transaction_id)
-                await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
-
-    return {"status": "ok"}
+    return {"status": "success"}
 
 
 # ── Orders ──────────────────────────────────────────────────────────
@@ -418,9 +406,9 @@ async def get_order_receipt(
         "amount": order.get("total_price", order.get("price", 0)),
         "currency": order.get("currency", "MAD").upper(),
         "status": order.get("status", "unknown"),
-        "payment_method": "Payzone",
-        "payzone_payment_id": order.get("payzone_payment_id", ""),
-        "payzone_transaction_id": order.get("payzone_transaction_id", ""),
+        "payment_method": order.get("payment_method", "stripe"),
+        "stripe_session_id": order.get("stripe_session_id", ""),
+        "stripe_payment_intent_id": order.get("stripe_payment_intent_id", ""),
         "buyer_name": user.get("full_name", user.get("name", "")),
         "buyer_email": user.get("email", ""),
         "shipping_address": order.get("shipping_address", ""),

@@ -95,7 +95,8 @@ async def create_order(
     product_name: str,
     quantity: int,
     total_amount: float,
-    payzone_payment_id: str = "",
+    payment_method: str = "stripe",
+    stripe_session_id: str = "",
     shipping_address: str = "",
     delivery_notes: str = "",
     buyer_phone: str = "",
@@ -107,11 +108,12 @@ async def create_order(
         "product_name": product_name,
         "quantity": quantity,
         "total_amount": total_amount,
-        "payzone_payment_id": payzone_payment_id,
-        "payzone_transaction_id": "",
-        "status": "pending",
+        "payment_method": payment_method,
+        "stripe_session_id": stripe_session_id,
+        "stripe_payment_intent_id": "",
+        "status": "pending" if payment_method == "stripe" else "paid", # We will use paid or pending based on COD
         "created_at": datetime.now(timezone.utc),
-        "paid_at": None,
+        "paid_at": datetime.now(timezone.utc) if payment_method == "cash_on_delivery" else None,
         "shipping_address": shipping_address,
         "delivery_notes": delivery_notes,
         "buyer_phone": buyer_phone,
@@ -121,25 +123,21 @@ async def create_order(
     return _serialize(doc)
 
 
-async def get_order_by_payzone_payment(payment_id: str) -> Optional[dict]:
-    doc = await _db().stand_orders.find_one({"payzone_payment_id": payment_id})
+async def get_order_by_stripe_session(session_id: str) -> Optional[dict]:      
+    doc = await _db().stand_orders.find_one({"stripe_session_id": session_id}) 
     return _serialize(doc) if doc else None
 
 
-async def mark_order_paid(order_id: str, transaction_id: str = "") -> Optional[dict]:
+async def mark_order_paid(order_id: str, payment_intent_id: str = "") -> Optional[dict]:
     await _db().stand_orders.update_one(
         {"_id": _oid(order_id)},
-        {
-            "$set": {
-                "status": "paid",
-                "payzone_transaction_id": transaction_id,
-                "paid_at": datetime.now(timezone.utc),
-            }
-        },
+        {"$set": {
+            "status": "paid",
+            "stripe_payment_intent_id": payment_intent_id,
+        }}
     )
     doc = await _db().stand_orders.find_one({"_id": _oid(order_id)})
     return _serialize(doc) if doc else None
-
 
 async def list_orders_for_stand(stand_id: str) -> list[dict]:
     cursor = _db().stand_orders.find({"stand_id": _oid(stand_id)}).sort("created_at", -1)

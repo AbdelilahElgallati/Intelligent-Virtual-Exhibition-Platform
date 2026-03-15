@@ -53,8 +53,9 @@ class OrderOut(BaseModel):
     product_name: str = ""
     quantity: int
     total_amount: float
-    payzone_payment_id: str = ""
-    payzone_transaction_id: str = ""
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
+    stripe_session_id: str = ""
+    stripe_payment_intent_id: str = ""
     status: Literal["pending", "paid", "cancelled"] = "pending"
     created_at: datetime
     paid_at: Optional[datetime] = None
@@ -71,6 +72,7 @@ class CheckoutRequest(BaseModel):
     shipping_address: str = Field("", max_length=500)
     delivery_notes: str = Field("", max_length=500)
     buyer_phone: str = Field("", max_length=30)
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
 
 
 class CartItem(BaseModel):
@@ -83,13 +85,14 @@ class CartCheckoutRequest(BaseModel):
     shipping_address: str = Field("", max_length=500)
     delivery_notes: str = Field("", max_length=500)
     buyer_phone: str = Field("", max_length=30)
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
 
 
 class CheckoutResponse(BaseModel):
-    payment_url: str
+    payment_url: Optional[str] = None
     order_id: str
 
 
 class CartCheckoutResponse(BaseModel):
-    payment_url: str
+    payment_url: Optional[str] = None
     order_ids: list[str]

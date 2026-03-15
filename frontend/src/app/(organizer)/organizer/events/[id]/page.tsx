@@ -188,7 +188,7 @@ export default function EventDetailPage() {
     fetchEvent();
   }, [eventId]);
 
-  const handleConfirmPayment = async () => {
+const handleConfirmPayment = async () => {
     if (!proofFile) {
       setError("Please select a payment proof file first.");
       return;
@@ -461,15 +461,7 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            <Button
-              className="bg-orange-500 hover:bg-orange-600 shrink-0 self-end"
-              isLoading={paymentLoading}
-              disabled={!proofFile}
-              onClick={handleConfirmPayment}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Submit Proof
-            </Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 shrink-0 self-end" isLoading={paymentLoading} disabled={!proofFile} onClick={handleConfirmPayment}><FileText className="w-4 h-4 mr-2" />Submit Proof</Button>
           </div>
         </Card>
       )}
@@ -654,3 +646,5 @@ export default function EventDetailPage() {
     </div>
   );
 }
+
+

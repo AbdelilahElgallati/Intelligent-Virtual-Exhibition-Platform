@@ -49,7 +49,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
         }
     }, [id]);
 
-    // Verify payment after Payzone redirect
+    // Verify payment after Stripe redirect
     useEffect(() => {
         if (isSuccess && paymentId && id && !verifying && paymentStatus !== 'paid') {
             setVerifying(true);
@@ -96,7 +96,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
             const res = await apiClient.post<{ payment_url: string }>(
                 ENDPOINTS.PAYMENTS.CHECKOUT(id)
             );
-            // Redirect to Payzone Checkout
+            // Redirect to Stripe Checkout
             window.location.href = res.payment_url;
         } catch (err: any) {
             console.error('Checkout failed:', err);
@@ -220,15 +220,15 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                 </div>
             )}
 
-            {/* Pay with Payzone (show when not yet paid and not verifying) */}
+            {/* Pay with Stripe (show when not yet paid and not verifying) */}
             {paymentStatus !== 'paid' && !verifying && (
                 <div className="border rounded-xl p-6">
                     <h3 className="font-semibold text-lg mb-4">Secure Payment</h3>
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
                         <p>
-                            Click the button below to securely pay <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong> via Payzone.
-                            You will be redirected to Payzone&apos;s secure checkout page.
+                            Click the button below to securely pay <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong> via Stripe.
+                            You will be redirected to Stripe&apos;s secure checkout page.
                         </p>
                     </div>
 
@@ -241,11 +241,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                                 : 'bg-indigo-600 hover:bg-indigo-700'
                         }`}
                     >
-                        {checkoutLoading ? 'Redirecting to Payzone...' : 'Pay Now'}
+                        {checkoutLoading ? 'Redirecting to Stripe...' : 'Pay Now'}
                     </button>
 
                     <p className="text-xs text-muted-foreground mt-3 text-center">
-                        Powered by Payzone. Your payment information is handled securely.
+                        Powered by Stripe. Your payment information is handled securely.
                     </p>
                 </div>
             )}

@@ -37,11 +37,10 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     EMBEDDING_MODEL: str = "multilingual-e5-small"
 
-    # Payzone.ma payment gateway (replaces Stripe — loaded from .env)
-    PAYZONE_API_URL: str = "https://checkout.payzone.ma/api"
-    PAYZONE_MERCHANT_ID: str = ""
-    PAYZONE_API_KEY: str = ""
-    PAYZONE_SECRET_KEY: str = ""
+    # Stripe Payment Gateway
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # Pydantic Config
     class Config:

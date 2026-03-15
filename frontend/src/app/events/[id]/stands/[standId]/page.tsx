@@ -163,7 +163,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             {/* Assistant */}
             {isAssistantOpen && (
                 <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm">
-                    <div className="w-full sm:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
+                    <div className="w-[90%] sm:w-[480px] md:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
                         <ChatShell
                             scope={`stand-${standId}`}
                             title={`${stand.name} Assistant`}

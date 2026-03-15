@@ -409,12 +409,12 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
                 fontSize={0.35}
                 maxWidth={BOOTH_W * 0.95}
                 textAlign="center"
-                color={hovered ? getContrastColor(themeColor) : '#F0E6D0'}
+                color={hovered ? '#FFFFFF' : '#F0E6D0'}
                 anchorX="center"
                 anchorY="middle"
                 fontWeight="bold"
-                outlineWidth={0.015}
-                outlineColor={hovered ? (getContrastColor(themeColor) === '#ffffff' ? '#000000' : '#ffffff') : '#000000'}
+                outlineWidth={hovered ? 0.025 : 0.015}
+                outlineColor={hovered ? '#000000' : '#000000'}
                 letterSpacing={0.02}
                 font={undefined}
             >
@@ -439,12 +439,12 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
                     fontSize={0.33}
                     maxWidth={BOOTH_W * 0.9}
                     textAlign="center"
-                    color={hovered ? getContrastColor(themeColor) : '#C0B8A8'}
+                    color={hovered ? '#FFFFFF' : '#C0B8A8'}
                     anchorX="center"
                     anchorY="middle"
                     fontWeight="bold"
-                    outlineWidth={0.008}
-                    outlineColor={hovered ? (getContrastColor(themeColor) === '#ffffff' ? '#000000' : '#ffffff') : '#000000'}
+                    outlineWidth={hovered ? 0.018 : 0.008}
+                    outlineColor={hovered ? '#000000' : '#000000'}
                     letterSpacing={0.015}
                     font={undefined}
                 >

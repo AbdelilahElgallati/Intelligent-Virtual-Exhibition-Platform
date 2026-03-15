@@ -346,7 +346,7 @@ async def enterprise_pay_stand_fee(
 ):
     """Create Payzone payment session for stand fee: returns payment_url for redirect."""
     import math
-    from app.modules.marketplace.payzone_service import create_payment_session as pz_create
+    from app.modules.marketplace.stripe_service import create_payment_session as st_create
 
     org = await get_enterprise_org(current_user)
     org_id = str(org["id"])
@@ -372,7 +372,7 @@ async def enterprise_pay_stand_fee(
             {"$set": {
                 "stand_fee_paid": True,
                 "payment_reference": payment_ref,
-                "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
+                "status": ParticipantStatus.APPROVED,
             }},
             return_document=ReturnDocument.AFTER,
         )
@@ -389,68 +389,71 @@ async def enterprise_pay_stand_fee(
     notification_url = f"{backend_base}/enterprise/events/{event_id}/pay-callback"
 
     try:
-        pz_result = await pz_create(
+        st_result = st_create(
             order_id=participant_id,
-            amount_cents=amount_cents,
-            currency="MAD",
-            description=f"Stand Fee: {event['title']}",
+            amount=stand_fee,
+            product_name=f"Stand Fee: {event['title']}",
             success_url=success_url,
             cancel_url=cancel_url,
-            notification_url=notification_url,
-            customer_email=current_user.get("email"),
-            customer_name=current_user.get("full_name", current_user.get("name", "")),
-            metadata={"event_id": event_id, "org_id": org_id, "participant_id": participant_id},
+            buyer_email=current_user.get("email"),
+            metadata={
+                "event_id": event_id, 
+                "org_id": org_id, 
+                "participant_id": participant_id,
+                "source": "enterprise_stand_fee"
+            },
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
-    # Store payzone payment id on participant
+    # Store stripe session id on participant
     db = get_database()
     await db.participants.update_one(
         {"_id": participant["_id"]},
-        {"$set": {"payzone_payment_id": pz_result["payment_id"]}},
+        {"$set": {"stripe_session_id": st_result["payment_id"]}},
     )
 
-    return {"payment_url": pz_result["payment_url"], "participant_id": participant_id}
+    return {"payment_url": st_result["payment_url"], "participant_id": participant_id}
 
 
 @router.post("/events/{event_id}/pay-callback")
 async def enterprise_pay_callback(event_id: str, request: "Request"):
-    """Payzone server-to-server callback for enterprise stand fee payments."""
-    from app.modules.marketplace.payzone_service import verify_callback_signature
+    """Stripe Webhook callback for enterprise stand fee payments."""
+    from app.modules.marketplace.stripe_service import construct_event
     import logging
 
     logger = logging.getLogger(__name__)
 
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature', '')
 
-    received_sig = body.get("signature", "")
-    if not verify_callback_signature(body, received_sig):
-        logger.warning("Payzone enterprise callback signature failed")
+    try:
+        event_obj = construct_event(payload, sig_header)
+    except Exception as e:
+        logger.warning(f"Stripe enterprise callback failed: {e}")
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    payment_status = body.get("status", "")
-    transaction_id = body.get("transaction_id", "")
-    order_id = body.get("order_id", "")  # participant_id
+    if event_obj["type"] == "checkout.session.completed":
+        session = event_obj["data"]["object"]
+        transaction_id = session.get("payment_intent", "")
+        metadata = session.get("metadata", {})
+        order_id = metadata.get("participant_id")  # participant_id
 
-    if payment_status == "completed" and order_id:
-        db = get_database()
-        from pymongo import ReturnDocument
-        pid = ObjectId(order_id) if ObjectId.is_valid(order_id) else order_id
-        updated = await db.participants.find_one_and_update(
-            {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT},
-            {"$set": {
-                "stand_fee_paid": True,
-                "payment_reference": transaction_id,
-                "status": ParticipantStatus.PENDING_ADMIN_APPROVAL,
-            }},
-            return_document=ReturnDocument.AFTER,
-        )
-        if updated:
-            logger.info("Enterprise stand fee paid for participant %s", order_id)
+        if order_id:
+            db = get_database()
+            from pymongo import ReturnDocument
+            pid = ObjectId(order_id) if ObjectId.is_valid(order_id) else order_id
+            updated = await db.participants.find_one_and_update(
+                {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT},
+                {"$set": {
+                    "stand_fee_paid": True,
+                    "payment_reference": transaction_id,
+                    "status": ParticipantStatus.APPROVED,
+                }},
+                return_document=ReturnDocument.AFTER,
+            )
+            if updated:
+                logger.info("Enterprise stand fee paid for participant %s", order_id)
 
     return {"status": "ok"}
 

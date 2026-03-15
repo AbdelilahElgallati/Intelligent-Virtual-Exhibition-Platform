@@ -109,6 +109,7 @@ export const Navbar: React.FC = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -149,11 +150,10 @@ export const Navbar: React.FC = () => {
                                     <Link
                                         key={link.href}
                                         href={link.href}
-                                        className={`text-sm font-medium transition-colors ${
-                                            isActive
+                                        className={`text-sm font-medium transition-colors ${isActive
                                                 ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5'
                                                 : 'text-zinc-600 hover:text-indigo-600'
-                                        }`}
+                                            }`}
                                     >
                                         {link.label}
                                     </Link>
@@ -242,8 +242,47 @@ export const Navbar: React.FC = () => {
                                 </Link>
                             </div>
                         )}
+                        {/* Mobile menu toggle */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
+                            aria-expanded={mobileMenuOpen}
+                        >
+                            <span className="sr-only">Open main menu</span>
+                            {mobileMenuOpen ? (
+                                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Menu Expansion */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden border-t border-zinc-100 py-3 space-y-1">
+                        {navLinks.map((link) => {
+                            const isActive = pathname === link.href;
+                            return (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive
+                                            ? 'bg-indigo-50 text-indigo-700'
+                                            : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
+                                        }`}
+                                >
+                                    {link.label}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </Container>
         </nav>
     );

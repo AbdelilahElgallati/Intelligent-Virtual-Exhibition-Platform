@@ -21,3 +21,4 @@ langdetect
 transformers
 accelerate
 openai-whisper
+stripe==7.*
