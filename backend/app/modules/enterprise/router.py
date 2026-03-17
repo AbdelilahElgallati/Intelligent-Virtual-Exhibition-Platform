@@ -361,7 +361,7 @@ async def enterprise_pay_stand_fee(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    stand_fee = event.get("stand_fee", 0) or event.get("ticket_price", 0) or 0
+    stand_fee = event.get("stand_price", 0) or 0
     if stand_fee <= 0:
         # Free stand fee — just approve directly
         payment_ref = str(uuid.uuid4())
@@ -384,7 +384,7 @@ async def enterprise_pay_stand_fee(
     origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
     origin = origin.rstrip("/")
     backend_base = str(request.base_url).rstrip("/")
-    success_url = f"{origin}/enterprise/events?payment_success=true&event_id={event_id}"
+    success_url = f"{origin}/enterprise/events/payment-success?event_id={event_id}&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/enterprise/events?payment_cancelled=true&event_id={event_id}"
     notification_url = f"{backend_base}/enterprise/events/{event_id}/pay-callback"
 
@@ -402,6 +402,13 @@ async def enterprise_pay_stand_fee(
                 "participant_id": participant_id,
                 "source": "enterprise_stand_fee"
             },
+            line_items=[{
+                'name': f"Stand Fee: {event['title']}",
+                'description': f"Stand participation fee for event: {event['title']}",
+                'unit_amount': amount_cents,
+                'currency': 'mad',
+                'quantity': 1,
+            }],
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
@@ -410,10 +417,69 @@ async def enterprise_pay_stand_fee(
     db = get_database()
     await db.participants.update_one(
         {"_id": participant["_id"]},
-        {"$set": {"stripe_session_id": st_result["payment_id"]}},
+        {"$set": {"stripe_session_id": st_result["session_id"]}},
     )
 
-    return {"payment_url": st_result["payment_url"], "participant_id": participant_id}
+    return {"payment_url": st_result["url"], "participant_id": participant_id}
+
+
+@router.post("/events/{event_id}/verify-payment")
+async def enterprise_verify_payment(
+    event_id: str,
+    request: "Request",
+    current_user: dict = Depends(require_role(Role.ENTERPRISE)),
+):
+    """Pull-based verification: frontend calls this after Stripe redirects back to success page."""
+    import stripe
+    from app.modules.marketplace.stripe_service import create_payment_session as _  # ensure stripe api_key is set
+    from app.core.config import settings
+    import logging
+    logger = logging.getLogger(__name__)
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id required")
+
+    org = await get_enterprise_org(current_user)
+    org_id = str(org["id"])
+
+    participant = await get_enterprise_participant(event_id, org_id)
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participation not found")
+
+    # Already approved — idempotent
+    if participant.get("status") == ParticipantStatus.APPROVED:
+        return {"status": "approved"}
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status != "paid":
+            raise HTTPException(status_code=400, detail="Payment not completed on Stripe")
+        transaction_id = session.payment_intent or ""
+    except stripe.error.StripeError as exc:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {exc}")
+
+    db = get_database()
+    from pymongo import ReturnDocument
+    pid = participant["_id"]
+    if isinstance(pid, str) and ObjectId.is_valid(pid):
+        pid = ObjectId(pid)
+    updated = await db.participants.find_one_and_update(
+        {"_id": pid},
+        {"$set": {
+            "stand_fee_paid": True,
+            "payment_reference": transaction_id,
+            "stripe_session_id": session_id,
+            "status": ParticipantStatus.APPROVED,
+        }},
+        return_document=ReturnDocument.AFTER,
+    )
+    if updated:
+        logger.info("Enterprise stand fee verified for %s in event %s", org_id, event_id)
+        return {"status": "approved"}
+    raise HTTPException(status_code=500, detail="Failed to update participant status")
 
 
 @router.post("/events/{event_id}/pay-callback")

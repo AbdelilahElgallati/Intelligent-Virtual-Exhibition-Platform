@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/Button';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
     Loader, Settings, AlertCircle, Globe, Users, DollarSign,
-    Building2, X, Tag, ChevronRight, BarChart3, MessageSquare
+    Building2, X, Tag, ChevronRight, BarChart3, MessageSquare,
+    Download
 } from 'lucide-react';
+import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -244,14 +246,6 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                         </div>
                     )}
 
-                    {/* Payment receipt */}
-                    {participation?.payment_reference && (
-                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                            <p className="text-xs font-semibold text-emerald-700 mb-1">Payment Reference</p>
-                            <p className="font-mono text-sm text-emerald-900">{participation.payment_reference}</p>
-                        </div>
-                    )}
-
                     {/* Rejection reason */}
                     {partStatus === 'rejected' && participation?.rejection_reason && (
                         <div className="p-4 bg-red-50 rounded-xl border border-red-100">
@@ -312,6 +306,26 @@ function EnterpriseEventCard({
     const partStatus = participation?.status;
     const statusConf = partStatus ? STATUS_CONFIG[partStatus] : null;
     const standPrice = getStandPrice(ev);
+
+    const downloadReceipt = async () => {
+        try {
+            const user = await http.get<any>('/users/me').catch(() => null);
+            await downloadEnterpriseStandFeeReceiptPdf({
+                eventId: String(evId),
+                eventTitle: ev.title || 'Event',
+                organizerName: ev.organizer_name || '',
+                buyerName: user?.full_name || user?.name || 'Enterprise',
+                buyerEmail: user?.email || '',
+                amount: Number(standPrice || 0),
+                paidAt: participation?.updated_at,
+                paymentReference: participation?.payment_reference || 'N/A',
+                paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+            });
+        } catch (error) {
+            console.error('Error generating receipt:', error);
+            alert('Could not generate receipt.');
+        }
+    };
 
     const fmtDate = (d?: string) => d
         ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -458,6 +472,17 @@ function EnterpriseEventCard({
                         </div>
                     )}
 
+                    {partStatus === 'approved' && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={downloadReceipt}
+                            className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-emerald-200 text-emerald-700 font-semibold hover:bg-emerald-50"
+                        >
+                            <Download size={13} /> Download Receipt
+                        </Button>
+                    )}
+
                     {(partStatus === 'pending_admin_approval' || partStatus === 'rejected') && (
                         <Button size="sm" variant="outline" disabled className="w-full text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100">
                             {partStatus === 'rejected' ? 'Request Rejected' : 'Waiting for Approval…'}
@@ -511,7 +536,7 @@ export default function EnterpriseEventsPage() {
     const handlePay = async (eventId: string) => {
         setActionLoading(eventId + '_pay');
         try {
-            const res = await http.post(`/enterprise/events/${eventId}/pay`, {});
+            const res = await http.post<any>(`/enterprise/events/${eventId}/pay`, {});
             // If Payzone returns a payment_url, redirect to it
             if (res.payment_url) {
                 window.location.href = res.payment_url;
@@ -539,7 +564,7 @@ export default function EnterpriseEventsPage() {
             {paymentSuccess && (
                 <div className="rounded-xl p-4 text-sm font-medium bg-green-50 text-green-700 border border-green-200">
                     <p className="font-bold">Stand Fee Payment Successful!</p>
-                    <p className="mt-1">Your payment has been confirmed. Your stand request is now pending admin approval.</p>
+                    <p className="mt-1">Your payment has been confirmed. Your participation is approved and you can access your stand now.</p>
                 </div>
             )}
             {paymentCancelled && (

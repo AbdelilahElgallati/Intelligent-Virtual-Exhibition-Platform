@@ -13,6 +13,8 @@ import { SectionTitle } from '@/components/common/SectionTitle';
 import { useAuth } from '@/context/AuthContext';
 import { favoritesService } from '@/services/favorites.service';
 import { Button } from '@/components/ui/Button';
+import { Download } from 'lucide-react';
+import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 
 interface EventPageProps {
   params: Promise<{ id?: string }> | { id?: string };
@@ -129,6 +131,28 @@ export default function EventDetailsPage({ params }: EventPageProps) {
     }
   };
 
+  const downloadReceipt = async () => {
+    if (!id || !event) return;
+    try {
+      // Fetch receipt details from backend
+      const res = await apiClient.get<any>(ENDPOINTS.PAYMENTS.RECEIPT(id));
+      if (!res) throw new Error('No receipt found');
+      await downloadEventTicketReceiptPdf({
+        eventId: id,
+        eventTitle: event.title || 'Event',
+        payerName: res.payer_name || 'Visitor',
+        payerEmail: res.payer_email || '',
+        amount: Number(res.amount || (event as any).ticket_price || 0),
+        currency: res.currency || 'MAD',
+        paidAt: res.paid_at,
+        reference: res.stripe_payment_intent_id || res.receipt_id || 'N/A',
+      });
+    } catch (err) {
+      console.error('Failed to download receipt', err);
+      alert('Could not download receipt. You might not have a paid receipt for this event.');
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -151,6 +175,8 @@ export default function EventDetailsPage({ params }: EventPageProps) {
     );
   }
 
+  const isPaidEvent = !!(event as any).is_paid && ((event as any).ticket_price || (event as any).price) > 0;
+
   return (
     <div className="pb-20">
       <EventDetailsHeader event={event} />
@@ -158,11 +184,18 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       <Container className="py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <SectionTitle title="About this Event" align="left" className="mb-0" />
-              <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
-                {favoriteId ? 'Favorited' : 'Add to favorites'}
-              </Button>
+              <div className="flex items-center gap-3">
+                {status === 'APPROVED' && isPaidEvent && (
+                  <Button size="sm" variant="outline" onClick={downloadReceipt} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                    <Download size={16} /> Download Receipt
+                  </Button>
+                )}
+                <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
+                  {favoriteId ? 'Favorited' : 'Add to favorites'}
+                </Button>
+              </div>
             </div>
             <section>
               <div className="mt-6 prose prose-indigo max-w-none text-muted-foreground">

@@ -52,7 +52,9 @@ class OrderOut(BaseModel):
     buyer_id: str
     product_name: str = ""
     quantity: int
+    unit_price: float = 0
     total_amount: float
+    currency: str = "MAD"
     payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
     stripe_session_id: str = ""
     stripe_payment_intent_id: str = ""

@@ -11,9 +11,14 @@ def create_payment_session(
     success_url: str,
     cancel_url: str,
     metadata: dict = None,
+    line_items: list[dict] | None = None,
 ) -> dict:
     """
     Creates a Stripe Checkout session.
+
+    If *line_items* is provided each entry must contain:
+        name, unit_amount (cents), currency, quantity  (and optionally description).
+    Otherwise a single line item is built from amount / product_name.
     """
     try:
         session_metadata = {
@@ -22,20 +27,37 @@ def create_payment_session(
         }
         if metadata:
             session_metadata.update(metadata)
-            
+
+        # Build Stripe line_items payload
+        if line_items:
+            stripe_line_items = []
+            for li in line_items:
+                product_data: dict = {'name': li['name']}
+                if li.get('description'):
+                    product_data['description'] = li['description']
+                stripe_line_items.append({
+                    'price_data': {
+                        'currency': li.get('currency', 'mad').lower(),
+                        'product_data': product_data,
+                        'unit_amount': int(li['unit_amount']),
+                    },
+                    'quantity': int(li['quantity']),
+                })
+        else:
+            # Fallback: single aggregated line item
+            stripe_line_items = [{
+                'price_data': {
+                    'currency': 'mad',
+                    'product_data': {'name': product_name},
+                    'unit_amount': int(amount * 100),
+                },
+                'quantity': 1,
+            }]
+
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             customer_email=buyer_email if buyer_email else None,
-            line_items=[{
-                'price_data': {
-                    'currency': 'mad',
-                    'product_data': {
-                        'name': product_name,
-                    },
-                    'unit_amount': int(amount * 100), # Cents
-                },
-                'quantity': 1,
-            }],
+            line_items=stripe_line_items,
             mode='payment',
             success_url=success_url,
             cancel_url=cancel_url,

@@ -111,6 +111,13 @@ async def create_event_checkout(
                 "event_id": event_id,
                 "user_id": str(current_user["_id"]),
             },
+            line_items=[{
+                'name': f"Event Ticket: {event['title']}",
+                'description': f"Admission ticket for {event['title']}",
+                'unit_amount': amount_cents,
+                'currency': currency.lower(),
+                'quantity': 1,
+            }],
         )
     except Exception as exc:
         logger.error("Stripe checkout failed: %s", exc)
@@ -308,8 +315,13 @@ async def get_my_receipt(
     Generate a receipt for a paid event payment.
     Returns receipt data that the frontend can display/download.
     """
-    payment = await get_user_payment(event_id, current_user["_id"])
-    if not payment or payment["status"] != PaymentStatus.PAID:
+    # Prefer an explicitly paid record. The latest record can be pending if user started
+    # another checkout after already paying.
+    payment = await get_user_payment_by_status(event_id, current_user["_id"], PaymentStatus.PAID)
+    if not payment:
+        payment = await get_user_payment(event_id, current_user["_id"])
+    payment_status = str(payment.get("status", "")).lower() if payment else ""
+    if not payment or payment_status != str(PaymentStatus.PAID.value):
         raise HTTPException(status_code=404, detail="No paid payment found for this event")
 
     event = await get_event_by_id(event_id)
@@ -324,7 +336,7 @@ async def get_my_receipt(
         "amount": payment["amount"],
         "currency": payment.get("currency", "MAD").upper(),
         "status": payment["status"],
-        "payment_method": "Payzone",
+        "payment_method": "stripe",
         "stripe_session_id": payment.get("stripe_session_id", ""),
         "stripe_payment_intent_id": payment.get("stripe_payment_intent_id", ""),
         "created_at": payment["created_at"].isoformat() if hasattr(payment.get("created_at", ""), "isoformat") else str(payment.get("created_at", "")),

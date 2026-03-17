@@ -1,55 +1,100 @@
-﻿import re
+import re
 
-with open(r'.\backend\app\modules\payments\router.py', 'r', encoding='utf-8') as f:
-    text = f.read()
+with open(r"backend\app\modules\marketplace\router.py", "r", encoding="utf-8") as f:
+    content = f.read()
 
-pattern = re.compile(r'@router\.post\(\"/events/\{event_id\}/payment-callback\"\).*?return \{\"status\": \"ok\"\}', re.DOTALL)
+old_logic = """    order_ids: list[str] = []
+    total_cart_amount = 0.0
+    product_names: list[str] = []
 
-new_fn = '''@router.post(\"/events/{event_id}/payment-callback\")
-async def event_payment_callback(event_id: str, request: Request):
-    \"\"\"
-    Stripe Webhook for event payments.
-    \"\"\"
-    payload = await request.body()
-    sig_header = request.headers.get('stripe-signature', '')
+    for cart_item in body.items:
+        product = await mkt_svc.get_product(cart_item.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product {cart_item.product_id} not found")
+        if product["stand_id"] != stand_id:
+            raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
+        if product["stock"] < cart_item.quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
-    try:
-        event_obj = construct_event(payload, sig_header)
-    except Exception as e:
-        logger.warning(f\"Stripe event payment callback failed: {e}\")
-        raise HTTPException(status_code=400, detail=\"Invalid signature or payload\")
+        total = round(product["price"] * cart_item.quantity, 2)
 
-    if event_obj[\"type\"] == \"checkout.session.completed\":
-        session = event_obj[\"data\"][\"object\"]
-        st_session_id = session.get(\"id\")
-        transaction_id = session.get(\"payment_intent\", \"\")
-        metadata = session.get(\"metadata\", {})
-        order_id = metadata.get(\"payment_id\")
+        if body.payment_method == "cash_on_delivery":
+            await mkt_svc.decrement_stock(product["id"], cart_item.quantity)
 
-        if order_id:
-            payment = await get_payment_by_id(order_id)
-        else:
-            payment = await get_payment_by_stripe_id(st_session_id)
+        order = await mkt_svc.create_order(
+            product_id=cart_item.product_id,
+            stand_id=stand_id,
+            buyer_id=str(user["_id"]),
+            product_name=product["name"],
+            quantity=cart_item.quantity,
+            total_amount=total,
+            payment_method=body.payment_method,
+            shipping_address=body.shipping_address,
+            delivery_notes=body.delivery_notes,
+            buyer_phone=body.buyer_phone,
+        )
+        order_ids.append(order["id"])
+        total_cart_amount += total
+        product_names.append(product["name"])"""
 
-        if payment and payment[\"status\"] != PaymentStatus.PAID:
-            await mark_payment_paid(payment[\"_id\"], transaction_id)
-            
-            user_id = payment[\"user_id\"]
-            ev_id = payment[\"event_id\"]
-            existing = await get_user_participation(ev_id, user_id)
-            if not existing:
-                participant = await request_to_join(ev_id, user_id)
-                from app.modules.participants.service import approve_participant
-                await approve_participant(participant[\"_id\"])
-            elif existing[\"status\"] != ParticipantStatus.APPROVED:
-                from app.modules.participants.service import approve_participant
-                await approve_participant(existing[\"_id\"])
+new_logic = """    order_ids: list[str] = []
+    total_cart_amount = 0.0
+    product_names: list[str] = []
+    stripe_items = []
 
-            logger.info(\"Event payment %s confirmed via Stripe callback\", payment[\"_id\"])
+    for cart_item in body.items:
+        product = await mkt_svc.get_product(cart_item.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product {cart_item.product_id} not found")
+        if product["stand_id"] != stand_id:
+            raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
+        if product["stock"] < cart_item.quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
-    return {\"status\": \"ok\"}'''
+        total = round(product["price"] * cart_item.quantity, 2)
 
-text = pattern.sub(new_fn, text)
+        if body.payment_method == "cash_on_delivery":
+            await mkt_svc.decrement_stock(product["id"], cart_item.quantity)
 
-with open(r'.\backend\app\modules\payments\router.py', 'w', encoding='utf-8') as f:
-    f.write(text)
+        order = await mkt_svc.create_order(
+            product_id=cart_item.product_id,
+            stand_id=stand_id,
+            buyer_id=str(user["_id"]),
+            product_name=product["name"],
+            quantity=cart_item.quantity,
+            total_amount=total,
+            payment_method=body.payment_method,
+            shipping_address=body.shipping_address,
+            delivery_notes=body.delivery_notes,
+            buyer_phone=body.buyer_phone,
+        )
+        order_ids.append(order["id"])
+        total_cart_amount += total
+        product_names.append(product["name"])
+        stripe_items.append({"name": product["name"], "amount": product["price"], "quantity": cart_item.quantity})"""
+
+content = content.replace(old_logic, new_logic)
+
+old_st = """    try:
+        stripe_result = create_payment_session(
+            order_id=",".join(order_ids),
+            amount=total_cart_amount,
+            product_name=f"Cart: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+            buyer_email=user.get("email"),
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )"""
+
+new_st = """    try:
+        stripe_result = create_payment_session(
+            order_id=",".join(order_ids),
+            buyer_email=user.get("email"),
+            success_url=success_url,
+            cancel_url=cancel_url,
+            items=stripe_items,
+        )"""
+
+content = content.replace(old_st, new_st)
+
+with open(r"backend\app\modules\marketplace\router.py", "w", encoding="utf-8") as f:
+    f.write(content)

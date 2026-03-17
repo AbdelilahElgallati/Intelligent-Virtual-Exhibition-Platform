@@ -95,6 +95,8 @@ async def create_order(
     product_name: str,
     quantity: int,
     total_amount: float,
+    unit_price: float,
+    currency: str = "MAD",
     payment_method: str = "stripe",
     stripe_session_id: str = "",
     shipping_address: str = "",
@@ -107,7 +109,9 @@ async def create_order(
         "buyer_id": _oid(buyer_id),
         "product_name": product_name,
         "quantity": quantity,
+        "unit_price": unit_price,
         "total_amount": total_amount,
+        "currency": (currency or "MAD").upper(),
         "payment_method": payment_method,
         "stripe_session_id": stripe_session_id,
         "stripe_payment_intent_id": "",
@@ -144,6 +148,9 @@ async def list_orders_for_stand(stand_id: str) -> list[dict]:
     return [_serialize(d) async for d in cursor]
 
 
-async def list_orders_for_buyer(buyer_id: str) -> list[dict]:
-    cursor = _db().stand_orders.find({"buyer_id": _oid(buyer_id)}).sort("created_at", -1)
+async def list_orders_for_buyer(buyer_id: str, session_id: str = None) -> list[dict]:
+    query = {"buyer_id": _oid(buyer_id)}
+    if session_id:
+        query["stripe_session_id"] = session_id
+    cursor = _db().stand_orders.find(query).sort("created_at", -1)
     return [_serialize(d) async for d in cursor]

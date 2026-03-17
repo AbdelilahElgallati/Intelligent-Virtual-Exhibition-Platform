@@ -40,7 +40,9 @@ export interface MarketplaceOrder {
   buyer_id: string;
   product_name: string;
   quantity: number;
+  unit_price?: number;
   total_amount: number;
+  currency?: string;
   stripe_session_id?: string;
   stripe_payment_intent_id?: string;
   payment_method?: 'stripe' | 'cash_on_delivery';

@@ -8,6 +8,7 @@ import { Event } from '@/types/event';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Container } from '@/components/common/Container';
 import { useAuth } from '@/context/AuthContext';
+import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 
 interface PaymentPageProps {
     params: Promise<{ id?: string }> | { id?: string };
@@ -195,18 +196,22 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                         </button>
                         {receiptData && (
                             <button
-                                onClick={() => {
-                                    const blob = new Blob([JSON.stringify(receiptData, null, 2)], { type: 'application/json' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `receipt-${receiptData.receipt_id || 'event'}.json`;
-                                    a.click();
-                                    URL.revokeObjectURL(url);
+                                onClick={async () => {
+                                    if (!id) return;
+                                    await downloadEventTicketReceiptPdf({
+                                        eventId: id,
+                                        eventTitle: receiptData.event_title || event?.title || 'Event',
+                                        payerName: receiptData.payer_name || 'Visitor',
+                                        payerEmail: receiptData.payer_email || '',
+                                        amount: Number(receiptData.amount || 0),
+                                        currency: receiptData.currency || 'MAD',
+                                        paidAt: receiptData.paid_at,
+                                        reference: receiptData.stripe_payment_intent_id || receiptData.receipt_id || 'N/A',
+                                    });
                                 }}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 border border-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white border border-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
                             >
-                                Download Receipt
+                                Download Invoice (PDF)
                             </button>
                         )}
                     </div>

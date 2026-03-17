@@ -250,6 +250,30 @@ export function VirtualStandLayout({
                 </div>
             </div>
 
+            {/* Mobile-only welcome card (below banner) */}
+            <div className="absolute top-[34%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
+                <div className="bg-white/[0.92] backdrop-blur rounded-xl shadow-lg p-3 border border-white/60">
+                    <h3 className="font-semibold text-gray-800 mb-1 text-[10px] uppercase tracking-wider">
+                        Welcome
+                    </h3>
+                    <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-3">
+                        {stand.description ||
+                            'Welcome to our virtual stand. Explore our resources and connect with our team.'}
+                    </p>
+                    {stand.website_url && (
+                        <a
+                            href={stand.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] mt-1.5 inline-block font-medium hover:underline"
+                            style={{ color: themeColor }}
+                        >
+                            Visit website →
+                        </a>
+                    )}
+                </div>
+            </div>
+
             {/* ================ PRESENTER ================ */}
             <div className="absolute bottom-[5%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center">
                 {/* Name badge ABOVE the presenter */}
@@ -266,7 +290,7 @@ export function VirtualStandLayout({
                 <img
                     src={presenterImg}
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
-                    className="h-[22rem] sm:h-[22rem] lg:h-[28rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
+                    className="h-72 sm:h-72 lg:h-[26rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
                     draggable={false}
                 />
             </div>

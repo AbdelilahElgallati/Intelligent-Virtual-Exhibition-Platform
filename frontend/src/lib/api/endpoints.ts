@@ -40,6 +40,7 @@ export const ENDPOINTS = {
     PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
     CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/cart/checkout`,
     MY_ORDERS: '/marketplace/orders',
+    ORDERS_BY_SESSION: (sessionId: string) => `/marketplace/orders/by-session?session_id=${sessionId}`,
     ORDER_RECEIPT: (orderId: string) => `/marketplace/orders/${orderId}/receipt`,
     PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
     CHECKOUT: (standId: string, productId: string) =>

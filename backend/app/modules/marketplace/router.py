@@ -168,6 +168,7 @@ async def checkout_product(
     Authenticated visitor — create a Stripe payment session or process COD for a single product/service.
     Returns the Stripe payment URL or successfully registers the order for COD.
     """
+    stand = await _get_stand(stand_id)
     product = await mkt_svc.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -190,6 +191,8 @@ async def checkout_product(
         product_name=product["name"],
         quantity=body.quantity,
         total_amount=total,
+        unit_price=float(product["price"]),
+        currency=product.get("currency", "MAD"),
         payment_method=body.payment_method,
         shipping_address=body.shipping_address,
         delivery_notes=body.delivery_notes,
@@ -202,10 +205,14 @@ async def checkout_product(
     # Stripe URL building
     origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
     origin = origin.rstrip("/")
-    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    success_url = (
+        f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+        f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
+    )
     cancel_url = f"{origin}/marketplace/cancel"
 
     try:
+        stripe_currency = 'mad'
         stripe_result = create_payment_session(
             order_id=order["id"],
             amount=total,
@@ -213,6 +220,13 @@ async def checkout_product(
             buyer_email=user.get("email"),
             success_url=success_url,
             cancel_url=cancel_url,
+            line_items=[{
+                'name': product['name'],
+                'description': (product.get('description') or '')[:200],
+                'unit_amount': int(product['price'] * 100),
+                'currency': stripe_currency,
+                'quantity': body.quantity,
+            }],
         )
     except Exception as exc:
         logger.error("Stripe checkout failed: %s", exc)
@@ -245,7 +259,7 @@ async def cart_checkout(
     Authenticated visitor — checkout multiple products/services from the same stand.
     Creates one Stripe payment session for the total cart amount or processes COD.
     """
-    await _get_stand(stand_id)  # validate stand exists
+    stand = await _get_stand(stand_id)  # validate stand exists
 
     order_ids: list[str] = []
     total_cart_amount = 0.0
@@ -272,6 +286,8 @@ async def cart_checkout(
             product_name=product["name"],
             quantity=cart_item.quantity,
             total_amount=total,
+            unit_price=float(product["price"]),
+            currency=product.get("currency", "MAD"),
             payment_method=body.payment_method,
             shipping_address=body.shipping_address,
             delivery_notes=body.delivery_notes,
@@ -286,8 +302,24 @@ async def cart_checkout(
 
     origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
     origin = origin.rstrip("/")
-    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    success_url = (
+        f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+        f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
+    )
     cancel_url = f"{origin}/marketplace/cancel"
+
+    # Build detailed line items for Stripe
+    cart_line_items = []
+    for cart_item in body.items:
+        product = await mkt_svc.get_product(cart_item.product_id)
+        if product:
+            cart_line_items.append({
+                'name': product['name'],
+                'description': (product.get('description') or '')[:200],
+                'unit_amount': int(product['price'] * 100),
+                'currency': 'mad',
+                'quantity': cart_item.quantity,
+            })
 
     try:
         stripe_result = create_payment_session(
@@ -297,6 +329,7 @@ async def cart_checkout(
             buyer_email=user.get("email"),
             success_url=success_url,
             cancel_url=cancel_url,
+            line_items=cart_line_items if cart_line_items else None,
         )
     except Exception as exc:
         logger.error("Stripe cart checkout failed: %s", exc)
@@ -371,6 +404,15 @@ async def list_my_orders(
     return await mkt_svc.list_orders_for_buyer(str(user["_id"]))
 
 
+@router.get("/orders/by-session", response_model=list[OrderOut])
+async def list_orders_by_session(
+    session_id: str = Query(..., description="Stripe session ID"),
+    user: dict = Depends(get_current_user),
+):
+    """Return only orders that belong to a specific Stripe checkout session."""
+    return await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+
+
 @router.get("/orders/{order_id}/receipt")
 async def get_order_receipt(
     order_id: str,
@@ -397,22 +439,56 @@ async def get_order_receipt(
         if product:
             product = stringify_object_ids(product)
 
+    # Resolve seller details (enterprise owning this stand)
+    seller_name = ""
+    seller_email = ""
+    stand = None
+    org = None
+    stand_id = order.get("stand_id")
+    if stand_id and ObjectId.is_valid(stand_id):
+        stand = await db.stands.find_one({"_id": ObjectId(stand_id)})
+    if stand and stand.get("organization_id"):
+        org_id = str(stand.get("organization_id"))
+        if ObjectId.is_valid(org_id):
+            org = await db.organizations.find_one({"_id": ObjectId(org_id)})
+        else:
+            org = await db.organizations.find_one({"_id": org_id})
+    if org:
+        org = stringify_object_ids(org)
+        seller_name = org.get("name", "")
+        owner_id = str(org.get("owner_id", ""))
+        if owner_id and ObjectId.is_valid(owner_id):
+            seller_user = await db.users.find_one({"_id": ObjectId(owner_id)})
+            if seller_user:
+                seller_user = stringify_object_ids(seller_user)
+                seller_email = seller_user.get("email", "")
+
+    quantity = int(order.get("quantity", 1) or 1)
+    total_amount = float(order.get("total_amount", 0) or 0)
+    unit_price = float(order.get("unit_price", 0) or 0)
+    if unit_price <= 0 and quantity > 0 and total_amount > 0:
+        unit_price = round(total_amount / quantity, 2)
+
     receipt = {
         "receipt_id": order["_id"],
         "order_id": order["_id"],
         "product_name": product["name"] if product else order.get("product_name", "Unknown"),
         "product_type": product.get("type", "product") if product else "product",
-        "quantity": order.get("quantity", 1),
-        "amount": order.get("total_price", order.get("price", 0)),
-        "currency": order.get("currency", "MAD").upper(),
+        "quantity": quantity,
+        "unit_price": unit_price,
+        "amount": total_amount,
+        "currency": (order.get("currency") or (product.get("currency") if product else "MAD") or "MAD").upper(),
         "status": order.get("status", "unknown"),
         "payment_method": order.get("payment_method", "stripe"),
         "stripe_session_id": order.get("stripe_session_id", ""),
         "stripe_payment_intent_id": order.get("stripe_payment_intent_id", ""),
         "buyer_name": user.get("full_name", user.get("name", "")),
         "buyer_email": user.get("email", ""),
+        "seller_name": seller_name,
+        "seller_email": seller_email,
         "shipping_address": order.get("shipping_address", ""),
         "delivery_notes": order.get("delivery_notes", ""),
+        "buyer_phone": order.get("buyer_phone", ""),
         "created_at": order["created_at"].isoformat() if hasattr(order.get("created_at", ""), "isoformat") else str(order.get("created_at", "")),
         "paid_at": order["paid_at"].isoformat() if order.get("paid_at") and hasattr(order["paid_at"], "isoformat") else str(order.get("paid_at", "")),
     }
