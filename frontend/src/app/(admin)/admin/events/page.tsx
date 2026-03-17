@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
+import { resolveMediaUrl } from '@/lib/media';
 import {
     CalendarCheck, RefreshCw, CheckCircle2, XCircle, AlertCircle, X,
     MapPin, Calendar, Tag, Users, DollarSign, Clock, FileText,
@@ -171,7 +172,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
                     {/* Banner */}
                     {event.banner_url && (
                         <div className="rounded-xl overflow-hidden border border-zinc-200 aspect-video bg-zinc-100">
-                            <img src={event.banner_url} alt="Event banner" className="w-full h-full object-cover" />
+                            <img src={resolveMediaUrl(event.banner_url)} alt="Event banner" className="w-full h-full object-cover" />
                         </div>
                     )}
 
@@ -193,7 +194,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
                             <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-3">
                                 <p className="text-xs text-indigo-700 font-medium">Organizer has submitted a proof of payment.</p>
                                 <a
-                                    href={event.payment_proof_url}
+                                    href={resolveMediaUrl(event.payment_proof_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"

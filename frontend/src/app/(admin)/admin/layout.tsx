@@ -20,6 +20,7 @@ import {
     AlertTriangle,
     UserCheck,
     Briefcase,
+    ChevronRight,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -54,9 +55,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const initials = (user?.full_name || user?.email || 'AD')
         .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+    const currentNav = NAV_ITEMS.find((item) => pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href)));
+    const pageLabel = currentNav?.label || 'Admin Workspace';
 
     return (
-        <div className="min-h-screen bg-zinc-50">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,#f8fafc_0%,#f3f6fb_100%)]">
             {/* Mobile backdrop */}
             {isSidebarOpen && (
                 <div
@@ -108,19 +111,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
-                {/* ── Footer: avatar + sign-out — pinned to bottom ─────── */}
-                <div className="border-t border-zinc-200 px-3 py-4 flex-shrink-0 space-y-1">
-                    {/* Avatar card */}
-                    {/* <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                            {initials}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold text-zinc-900 truncate">{user?.full_name || user?.email}</p>
-                            <p className="text-xs text-zinc-500 capitalize">{user?.role}</p>
-                        </div>
-                    </div> */}
-                    {/* Sign out */}
+                {/* ── Footer: sign-out — pinned to bottom ───────────────── */}
+                <div className="border-t border-zinc-200 px-3 py-4 flex-shrink-0">
                     <button
                         onClick={logout}
                         className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-600 hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -145,7 +137,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <span className="text-sm font-semibold text-zinc-900">Admin Panel</span>
                 </header>
 
-                <main className="flex-1 p-6 lg:p-8">
+                <header className="hidden lg:flex sticky top-0 z-20 items-center justify-between border-b border-white/70 bg-white/75 px-8 py-4 backdrop-blur-xl">
+                    <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                            <span>Admin</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                            <span>{pageLabel}</span>
+                        </div>
+                        <h1 className="mt-1 text-xl font-bold text-zinc-900">{pageLabel}</h1>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-3 py-2 shadow-sm">
+                        <div className="text-right">
+                            <p className="text-sm font-semibold text-zinc-900">{user?.full_name || 'Administrator'}</p>
+                            <p className="text-xs text-zinc-500">{user?.role}</p>
+                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sm font-bold text-sky-700">
+                            {initials}
+                        </div>
+                    </div>
+                </header>
+
+                <main className="flex-1 p-4 sm:p-6 lg:p-8">
                     {children}
                 </main>
             </div>

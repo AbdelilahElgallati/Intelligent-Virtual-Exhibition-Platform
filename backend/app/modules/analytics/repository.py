@@ -194,22 +194,83 @@ class AnalyticsRepository:
     # ── Stand-level (keep for backward compat) ───────────────────────────────
 
     async def get_stand_analytics(self, stand_id: str, days: int = 30) -> Dict[str, Any]:
-        """Kept for backward compat; returns mocked data for stand-level."""
+        """Real MongoDB aggregations for stand-level KPIs."""
+        db = self.db
+        now = datetime.utcnow()
+        start_date = now - timedelta(days=days)
+
+        # 1. KPI Aggregations
+        total_visits = await db["analytics_events"].count_documents({
+            "stand_id": stand_id,
+            "type": "stand_visit",
+            "created_at": {"$gte": start_date}
+        })
+        
+        unique_visitors_pipeline = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": start_date}
+            }},
+            {"$group": {"_id": "$user_id"}},
+            {"$count": "total"}
+        ]
+        unique_visitors_res = await db["analytics_events"].aggregate(unique_visitors_pipeline).to_list(length=1)
+        unique_visitors = unique_visitors_res[0]["total"] if unique_visitors_res else 0
+
+        leads_generated = await db["leads"].count_documents({
+            "stand_id": stand_id,
+            "created_at": {"$gte": start_date}
+        })
+
+        # 2. Main Chart (Visits trend)
+        pipeline_trend = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": start_date}
+            }},
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        trend_docs = await db["analytics_events"].aggregate(pipeline_trend).to_list(length=100)
+        trend_map = {d["_id"]: d["count"] for d in trend_docs}
+        
+        main_chart = [
+            {
+                "timestamp": (start_date + timedelta(days=i)).strftime("%Y-%m-%d") + "T00:00:00Z",
+                "value": trend_map.get((start_date + timedelta(days=i)).strftime("%Y-%m-%d"), 0)
+            }
+            for i in range(days + 1)
+        ]
+
+        # 3. Distribution (Interaction types)
+        pipeline_dist = [
+            {"$match": {
+                "stand_id": stand_id,
+                "created_at": {"$gte": start_date}
+            }},
+            {"$group": {"_id": "$type", "count": {"$sum": 1}}}
+        ]
+        dist_docs = await db["analytics_events"].aggregate(pipeline_dist).to_list(length=50)
+        distribution = {d["_id"]: float(d["count"]) for d in dist_docs}
+        if not distribution:
+            distribution = {"Visits": float(total_visits or 1)}
+
         return {
             "kpis": [
-                {"label": "Total Visits", "value": 1240.0, "trend": 12.5},
-                {"label": "Unique Visitors", "value": 850.0, "trend": 8.2},
-                {"label": "Leads Generated", "value": 45.0, "trend": -2.4},
-                {"label": "Avg. Engagement", "value": 4.5, "unit": "min", "trend": 15.0},
+                {"label": "Total Visits", "value": float(total_visits), "trend": None},
+                {"label": "Unique Visitors", "value": float(unique_visitors), "trend": None},
+                {"label": "Leads Generated", "value": float(leads_generated), "trend": None},
+                {"label": "Avg. Engagement", "value": 0.0, "unit": "min", "trend": None}, # Placeholder
             ],
-            "main_chart": [
-                {
-                    "timestamp": (datetime.utcnow() - timedelta(days=i)).isoformat() + "Z",
-                    "value": 30 + i * 2,
-                }
-                for i in range(days, 0, -1)
-            ],
-            "distribution": {"Resources": 40.0, "Chat": 35.0, "Video": 25.0},
+            "main_chart": main_chart,
+            "distribution": distribution,
             "recent_activity": [],
         }
 

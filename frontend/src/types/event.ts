@@ -13,6 +13,12 @@ export interface EventScheduleSlot {
     start_time: string;    // "HH:MM" e.g. "09:00"
     end_time: string;    // "HH:MM" e.g. "17:00"
     label: string;    // Activity description
+    // Conference fields (optional)
+    is_conference?: boolean;
+    assigned_enterprise_id?: string;
+    assigned_enterprise_name?: string;
+    speaker_name?: string;
+    conference_id?: string;
 }
 
 export interface EventScheduleDay {
@@ -72,7 +78,6 @@ export interface EventCreatePayload {
     location?: string;
     banner_url?: string;
     tags?: string[];
-    organizer_name?: string;
     // Required request fields
     num_enterprises: number;
     event_timeline: string;           // JSON-serialised EventScheduleDay[]
@@ -94,7 +99,6 @@ export interface EventUpdatePayload {
     location?: string;
     banner_url?: string;
     tags?: string[];
-    organizer_name?: string;
     num_enterprises?: number;
     event_timeline?: string;
     extended_details?: string;

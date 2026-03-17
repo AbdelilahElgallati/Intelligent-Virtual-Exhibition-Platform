@@ -13,10 +13,9 @@ import {
     XCircle,
     ArrowRight,
     Search,
-    Filter,
-    Users
+    Users,
+    ChevronLeft,
 } from 'lucide-react';
-import { Container } from '@/components/common/Container';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 
@@ -185,6 +184,11 @@ export default function EnterpriseCommunicationsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
 
+    const fetchRooms = async () => {
+        const roomsData = await http.get<ChatRoom[]>('/chat/rooms');
+        setRooms(roomsData);
+    };
+
     const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -201,8 +205,7 @@ export default function EnterpriseCommunicationsPage() {
             setStands(standResults);
 
             // 3. Fetch Chat Rooms
-            const roomsData = await http.get<ChatRoom[]>('/chat/rooms');
-            setRooms(roomsData);
+            await fetchRooms();
 
             // 4. Fetch Meetings for each stand
             const meetingPromises = standResults.map(s =>
@@ -223,6 +226,14 @@ export default function EnterpriseCommunicationsPage() {
 
     useEffect(() => { fetchData(); }, []);
 
+    useEffect(() => {
+        const timer = setInterval(() => {
+            fetchRooms().catch((err) => console.error('Failed to refresh rooms', err));
+        }, 5000);
+
+        return () => clearInterval(timer);
+    }, []);
+
     const handleUpdateMeetingStatus = async (id: string, status: string) => {
         try {
             await http.patch(`/meetings/${id}`, { status });
@@ -234,6 +245,7 @@ export default function EnterpriseCommunicationsPage() {
     };
 
     const activeRoom = rooms.find(r => (r.id || r._id) === selectedRoomId);
+    const showMobileRoom = Boolean(selectedRoomId);
 
     const getMessageTime = (message?: any) => {
         if (!message) return null;
@@ -303,9 +315,12 @@ export default function EnterpriseCommunicationsPage() {
             </div>
 
             {activeTab === 'chats' ? (
-                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm">
+                <Card className="flex-1 overflow-hidden border-zinc-200 shadow-sm">
                     {/* Sidebar */}
-                    <div className="w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30">
+                    <div className={clsx(
+                        "h-full w-full flex-col border-r border-zinc-100 bg-zinc-50/30 md:flex md:w-80",
+                        showMobileRoom ? 'hidden' : 'flex'
+                    )}>
                         <div className="p-4 border-b border-zinc-100 bg-white">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
@@ -356,10 +371,21 @@ export default function EnterpriseCommunicationsPage() {
                     </div>
 
                     {/* Chat Window */}
-                    <div className="flex-1 bg-white relative">
+                    <div className={clsx('h-full flex-1 bg-white relative', !showMobileRoom && 'hidden md:block')}>
                         {selectedRoomId ? (
                             <div className="h-full flex flex-col">
-                                {/* Use ChatPanel logic but inlined or adapted */}
+                                <div className="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 md:hidden">
+                                    <button
+                                        onClick={() => setSelectedRoomId(null)}
+                                        className="rounded-xl border border-zinc-200 p-2 text-zinc-500 transition-colors hover:bg-zinc-50"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Conversation</p>
+                                        <p className="text-sm font-semibold text-zinc-900">{activeRoom?.name || 'Member'}</p>
+                                    </div>
+                                </div>
                                 <ChatPanel
                                     initialRoomId={selectedRoomId!}
                                     standName={activeRoom?.name || "Member"}
@@ -367,10 +393,6 @@ export default function EnterpriseCommunicationsPage() {
                                     disableMessageLimit={true}
                                     onClose={() => setSelectedRoomId(null)}
                                 />
-                                {/* Note: ChatPanel in this project is 'fixed' and right-positioned. 
-                                    For the Hub, we should ideally have an 'InPageChat' component. 
-                                    I will adapt ChatPanel or create a specialized one if needed.
-                                */}
                             </div>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center p-10 text-center">

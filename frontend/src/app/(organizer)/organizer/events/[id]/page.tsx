@@ -24,8 +24,10 @@ import {
   FileText,
   Upload,
   ExternalLink,
+  Video,
 } from "lucide-react";
 import { organizerService } from "@/services/organizer.service";
+import OrganizerEventConferences from "@/components/conferences/OrganizerEventConferences";
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
@@ -74,13 +76,23 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
             </div>
             <div className="p-3 space-y-2">
               {day.slots.map((slot, si) => (
-                <div key={si} className="flex items-start gap-3 p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
-                  <span className="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-1 whitespace-nowrap tabular-nums">
+                <div key={si} className={`flex items-start gap-3 p-2.5 rounded-lg border ${slot.is_conference ? 'border-violet-200 bg-violet-50/50' : 'border-indigo-100 bg-indigo-50/50'}`}>
+                  <span className={`shrink-0 text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap tabular-nums ${slot.is_conference ? 'text-violet-700 bg-violet-100 border border-violet-200' : 'text-indigo-700 bg-indigo-100 border border-indigo-200'}`}>
                     {slot.start_time} → {slot.end_time}
                   </span>
-                  <p className="text-sm text-zinc-700 leading-snug pt-0.5">
-                    {slot.label || <em className="text-zinc-400">No description</em>}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-700 leading-snug pt-0.5">
+                      {slot.label || <em className="text-zinc-400">No description</em>}
+                    </p>
+                    {slot.is_conference && (
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-violet-700 bg-violet-100 border border-violet-200 rounded-full px-2 py-0.5">🎙️ Conference</span>
+                        {slot.assigned_enterprise_name && (
+                          <span className="text-xs text-violet-600">Speaker: {slot.speaker_name || slot.assigned_enterprise_name}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
               {day.slots.length === 0 && (
@@ -601,6 +613,11 @@ const handleConfirmPayment = async () => {
             />
           </div>
         </Card>
+      )}
+
+      {/* Conference Management — visible once event is approved / live */}
+      {['payment_done', 'live', 'closed'].includes(event.state) && (
+        <OrganizerEventConferences eventId={eventId} event={event} onEventUpdated={fetchEvent} />
       )}
 
       {/* Request details */}

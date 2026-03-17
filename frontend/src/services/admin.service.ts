@@ -94,6 +94,12 @@ export const adminService = {
     // ── Analytics (Day 6–7) ───────────────────────────────────────────
 
     async getPlatformAnalytics(): Promise<DashboardData> {
+        try {
+            const live = await http.get<{ dashboard?: DashboardData }>('/analytics/live/platform');
+            if (live?.dashboard) return live.dashboard;
+        } catch {
+            // Fallback to non-live endpoint for backward compatibility.
+        }
         return http.get('/analytics/platform');
     },
 

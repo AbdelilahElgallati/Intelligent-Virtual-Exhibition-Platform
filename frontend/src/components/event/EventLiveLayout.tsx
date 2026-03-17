@@ -53,6 +53,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
         { name: 'Recommended', id: 'overview', href: `/events/${eventId}/live` },
         { name: 'All Stands', id: 'stands', href: `/events/${eventId}/live?tab=stands` },
         { name: 'Schedule', id: 'schedule', href: `/events/${eventId}/live?tab=schedule` },
+        { name: '🎙️ Conferences', id: 'conferences', href: `/events/${eventId}/live?tab=conferences` },
         { name: 'Networking', id: 'networking', href: `/events/${eventId}/live?tab=networking` },
     ];
 

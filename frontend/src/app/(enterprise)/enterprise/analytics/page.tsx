@@ -32,6 +32,30 @@ interface Stand {
     event_id: string;
 }
 
+function mapDashboardToStandAnalytics(payload: any): StandAnalytics {
+    const dashboard = payload?.dashboard ?? payload ?? {};
+    const kpis = Array.isArray(dashboard.kpis) ? dashboard.kpis : [];
+    const byLabel = new Map<string, number>();
+    for (const k of kpis) {
+        const key = String(k?.label || '').toLowerCase();
+        byLabel.set(key, Number(k?.value || 0));
+    }
+
+    const totalVisits = byLabel.get('total visits') ?? byLabel.get('stand visits') ?? 0;
+    const uniqueVisitors = byLabel.get('unique visitors') ?? 0;
+    const distribution = dashboard?.distribution && typeof dashboard.distribution === 'object' ? dashboard.distribution : {};
+    const interactionCount = Object.values(distribution).reduce((sum: number, v: any) => sum + Number(v || 0), 0);
+
+    return {
+        total_visits: Number(totalVisits || 0),
+        unique_visitors: Number(uniqueVisitors || 0),
+        interaction_count: Number(interactionCount || 0),
+        interaction_breakdown: Object.fromEntries(
+            Object.entries(distribution).map(([k, v]) => [k, Number(v || 0)])
+        ),
+    };
+}
+
 const MetricCard = ({ title, value, subValue, icon: Icon, trend, color }: any) => (
     <Card className="border-zinc-200 shadow-sm overflow-hidden group">
         <div className={`h-1 w-full ${color}`} />
@@ -89,8 +113,13 @@ export default function EnterpriseAnalyticsPage() {
             const analyticsMap: Record<string, StandAnalytics> = {};
             await Promise.all(standResults.map(async (s) => {
                 try {
-                    const data = await http.get<StandAnalytics>(`/analytics/stand/${s.id}`);
-                    analyticsMap[s.id] = data;
+                    try {
+                        const liveData = await http.get<any>(`/analytics/live/stands/${s.id}`);
+                        analyticsMap[s.id] = mapDashboardToStandAnalytics(liveData);
+                    } catch {
+                        const data = await http.get<any>(`/analytics/stand/${s.id}`);
+                        analyticsMap[s.id] = mapDashboardToStandAnalytics(data);
+                    }
                 } catch (e) {
                     analyticsMap[s.id] = { total_visits: 0, unique_visitors: 0, interaction_count: 0, interaction_breakdown: {} };
                 }

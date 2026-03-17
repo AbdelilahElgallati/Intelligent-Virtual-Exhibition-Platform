@@ -4,6 +4,7 @@ Participants module router for IVEP.
 Handles participant invitations and join requests.
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -235,7 +236,7 @@ async def get_event_enterprise_participants(
     # Only approved enterprises
     cursor = collection.find({
         "event_id": str(event_id),
-        "status": ParticipantStatus.APPROVED
+        "status": ParticipantStatus.APPROVED.value
     })
     docs = await cursor.to_list(length=1000)
     
@@ -243,7 +244,7 @@ async def get_event_enterprise_participants(
     for doc in docs:
         user_id = doc.get("user_id")
         
-        # Don't include the current enterprise in the B2B list
+        # Don't include the current enterprise in the B2B list (skip for organizers/admins)
         if str(user_id) == str(current_user["_id"]):
             continue
             
@@ -307,6 +308,14 @@ async def get_event_enterprise_participants(
         if org_doc:
             organization_name = org_doc.get("name", organization_name)
             organization_id = str(org_doc.get("_id", org_doc.get("id")))
+        organization_description = org_doc.get("description") if org_doc else None
+        organization_industry = org_doc.get("industry") if org_doc else None
+        organization_website = org_doc.get("website") if org_doc else None
+        organization_logo_url = org_doc.get("logo_url") if org_doc else None
+        organization_contact_email = org_doc.get("contact_email") if org_doc else None
+        organization_contact_phone = org_doc.get("contact_phone") if org_doc else None
+        organization_city = (org_doc.get("city") if org_doc else None) or user_doc.get("org_city")
+        organization_country = (org_doc.get("country") if org_doc else None) or user_doc.get("org_country")
         
         # Find stand_id for this participant
         stand_id = None
@@ -316,11 +325,30 @@ async def get_event_enterprise_participants(
             if stand_doc:
                 stand_id = str(stand_doc.get("_id", stand_doc.get("id")))
 
-        doc["organization_name"] = organization_name
-        doc["organization_id"] = organization_id
-        doc["stand_id"] = stand_id
-        if "role" not in doc:
-            doc["role"] = "enterprise" # It's from /enterprises endpoint
-        enriched.append(EnrichedParticipantRead(**stringify_object_ids(doc)))
+        # Construct explicitly to ensure No PII leakage
+        try:
+            enriched_item = EnrichedParticipantRead(
+                id=str(doc["_id"]),
+                event_id=str(event_id),
+                user_id=str(user_id),
+                status=doc.get("status", ParticipantStatus.APPROVED.value),
+                role="enterprise",
+                created_at=doc.get("created_at", datetime.now(timezone.utc)),
+                organization_id=organization_id,
+                organization_name=organization_name,
+                stand_id=stand_id,
+                description=organization_description,
+                industry=organization_industry,
+                website=organization_website,
+                logo_url=organization_logo_url,
+                contact_email=organization_contact_email,
+                contact_phone=organization_contact_phone,
+                location_city=organization_city,
+                location_country=organization_country,
+            )
+            enriched.append(enriched_item)
+        except Exception as e:
+            print(f"Error constructing EnrichedParticipantRead for {user_id}: {e}")
+            continue
         
     return enriched

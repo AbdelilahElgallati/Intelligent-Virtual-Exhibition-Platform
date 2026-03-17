@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import {
     Package, Plus, Trash2, Edit2, X, Image as ImageIcon,
     Upload

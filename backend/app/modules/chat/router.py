@@ -8,8 +8,11 @@ from datetime import datetime
 import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
-from app.modules.leads.repository import lead_repo
+from app.modules.leads.service import lead_service
 from app.modules.leads.schemas import LeadInteraction
+from app.modules.participants.service import get_user_participation
+from app.modules.analytics.service import log_event_persistent
+from app.modules.analytics.schemas import AnalyticsEventType
 
 router = APIRouter()
 
@@ -27,20 +30,33 @@ async def get_my_rooms(
     
     # Enrich rooms with member names
     from app.modules.users.service import get_user_by_id
+    from app.db.mongo import get_database
+    db = get_database()
     enriched_rooms = []
     for room in rooms:
         other_member_id = next((m for m in room.members if m != str(current_user["_id"])), None)
         if other_member_id:
-            other_user = await get_user_by_id(other_member_id)
-            if other_user:
-                name = other_user.get('username')
-                if not name:
-                    name = other_user.get('full_name')
-                if not name and other_user.get('email'):
-                    name = other_user.get('email').split('@')[0]
-                room.name = name or "Visitor"
+            if room.room_category == "b2b":
+                org_doc = await db.organizations.find_one({"owner_id": other_member_id})
+                if org_doc:
+                    room.name = org_doc.get("name") or "Enterprise"
+                else:
+                    other_user = await get_user_by_id(other_member_id)
+                    if other_user:
+                        room.name = other_user.get('full_name') or other_user.get('username') or "Enterprise"
+                    else:
+                        room.name = f"Enterprise #{other_member_id[:4]}"
             else:
-                room.name = f"Member #{other_member_id[:4]}"
+                other_user = await get_user_by_id(other_member_id)
+                if other_user:
+                    name = other_user.get('username')
+                    if not name:
+                        name = other_user.get('full_name')
+                    if not name and other_user.get('email'):
+                        name = other_user.get('email').split('@')[0]
+                    room.name = name or "Visitor"
+                else:
+                    room.name = f"Member #{other_member_id[:4]}"
         else:
             room.name = "Unknown"
         enriched_rooms.append(room)
@@ -54,6 +70,9 @@ async def get_room_history(
     skip: int = 0,
     current_user: dict = Depends(get_current_user)
 ):
+    room = await chat_repo.get_room_for_member(room_id, str(current_user["_id"]))
+    if not room:
+        raise HTTPException(status_code=404, detail="Chat room not found")
     return await chat_repo.get_room_messages(room_id, limit, skip)
 
 @router.post("/rooms/stand/{stand_id}", response_model=ChatRoomSchema)
@@ -83,7 +102,7 @@ async def initiate_chat_with_stand(
     # Log lead interaction
     if current_user.get("role") == "visitor":
         try:
-            await lead_repo.log_interaction(LeadInteraction(
+            await lead_service.log_interaction(LeadInteraction(
                 visitor_id=str(current_user["_id"]),
                 stand_id=stand_id,
                 interaction_type="chat",
@@ -93,10 +112,27 @@ async def initiate_chat_with_stand(
             pass
 
     event_id = stand.get("event_id")
-    return await chat_repo.get_or_create_direct_room(
+    room = await chat_repo.get_or_create_direct_room(
         str(current_user["_id"]), owner_id,
         room_category="visitor", event_id=str(event_id) if event_id else None,
     )
+
+    # Best-effort analytics instrumentation.
+    try:
+        await log_event_persistent(
+            type=AnalyticsEventType.CHAT_OPENED,
+            user_id=str(current_user["_id"]),
+            event_id=str(event_id) if event_id else None,
+            stand_id=str(stand_id),
+            metadata={
+                "room_id": str(room.id) if room.id else None,
+                "room_category": "visitor",
+            },
+        )
+    except Exception:
+        pass
+
+    return room
 
 @router.post("/rooms/b2b/{partner_org_id}", response_model=ChatRoomSchema)
 async def initiate_b2b_chat(
@@ -108,10 +144,30 @@ async def initiate_b2b_chat(
     Start a B2B chat between current user (enterprise) and another organization owner.
     """
     from app.modules.organizations.service import get_organization_by_id
+    from app.db.mongo import get_database
+
+    if current_user.get("role") != "enterprise":
+        raise HTTPException(status_code=403, detail="Only enterprise users can start B2B chats")
+    if not event_id:
+        raise HTTPException(status_code=400, detail="event_id is required for B2B chats")
+
+    db = get_database()
+    member_doc = await db.organization_members.find_one({"user_id": str(current_user["_id"])})
+    if not member_doc or not member_doc.get("organization_id"):
+        raise HTTPException(status_code=403, detail="Your enterprise organization could not be resolved")
+
+    current_org_id = str(member_doc["organization_id"])
+    current_participation = await get_user_participation(event_id, organization_id=current_org_id)
+    if not current_participation or current_participation.get("status") != "approved":
+        raise HTTPException(status_code=403, detail="Your enterprise is not approved for this event")
     
     partner_org = await get_organization_by_id(partner_org_id)
     if not partner_org:
         raise HTTPException(status_code=404, detail="Partner organization not found")
+
+    partner_participation = await get_user_participation(event_id, organization_id=str(partner_org_id))
+    if not partner_participation or partner_participation.get("status") != "approved":
+        raise HTTPException(status_code=403, detail="The partner enterprise is not approved for this event")
     
     owner_id = partner_org.get("owner_id")
     if not owner_id:
@@ -120,10 +176,27 @@ async def initiate_b2b_chat(
     if owner_id == str(current_user["_id"]):
         raise HTTPException(status_code=400, detail="Cannot start a B2B chat with yourself")
 
-    return await chat_repo.get_or_create_direct_room(
+    room = await chat_repo.get_or_create_direct_room(
         str(current_user["_id"]), owner_id,
         room_category="b2b", event_id=event_id,
     )
+
+    # Best-effort analytics instrumentation.
+    try:
+        await log_event_persistent(
+            type=AnalyticsEventType.CHAT_OPENED,
+            user_id=str(current_user["_id"]),
+            event_id=str(event_id),
+            metadata={
+                "room_id": str(room.id) if room.id else None,
+                "room_category": "b2b",
+                "partner_org_id": str(partner_org_id),
+            },
+        )
+    except Exception:
+        pass
+
+    return room
 
 @router.websocket("/ws/chat/{room_id}")
 async def websocket_endpoint(

@@ -34,6 +34,30 @@ interface Stand {
     event_id: string;
 }
 
+function mapDashboardToStandAnalytics(payload: any): StandAnalytics {
+    const dashboard = payload?.dashboard ?? payload ?? {};
+    const kpis = Array.isArray(dashboard.kpis) ? dashboard.kpis : [];
+    const byLabel = new Map<string, number>();
+    for (const k of kpis) {
+        const key = String(k?.label || '').toLowerCase();
+        byLabel.set(key, Number(k?.value || 0));
+    }
+
+    const totalVisits = byLabel.get('total visits') ?? byLabel.get('stand visits') ?? 0;
+    const uniqueVisitors = byLabel.get('unique visitors') ?? 0;
+    const distribution = dashboard?.distribution && typeof dashboard.distribution === 'object' ? dashboard.distribution : {};
+    const interactionCount = Object.values(distribution).reduce((sum: number, v: any) => sum + Number(v || 0), 0);
+
+    return {
+        total_visits: Number(totalVisits || 0),
+        unique_visitors: Number(uniqueVisitors || 0),
+        interaction_count: Number(interactionCount || 0),
+        interaction_breakdown: Object.fromEntries(
+            Object.entries(distribution).map(([k, v]) => [k, Number(v || 0)])
+        ),
+    };
+}
+
 const MetricCard = ({ title, value, subValue, icon: Icon, trend, color }: any) => (
     <Card className="border-zinc-200 shadow-sm overflow-hidden group">
         <div className={`h-1 w-full ${color}`} />
@@ -73,30 +97,67 @@ export default function EventAnalyticsPage() {
     const [stand, setStand] = useState<Stand | null>(null);
     const [analytics, setAnalytics] = useState<StandAnalytics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isForbidden, setIsForbidden] = useState(false);
 
     const fetchData = async () => {
         setIsLoading(true);
+        setIsForbidden(false);
         try {
             // 1. Fetch stand for this event
             const standData = await http.get<Stand>(`/enterprise/events/${eventId}/stand`);
             setStand(standData);
 
-            // 2. Fetch Analytics for this stand
-            const data = await http.get<StandAnalytics>(`/analytics/stand/${standData.id}`);
-            setAnalytics(data);
-        } catch (err) {
+            // 2. Fetch live analytics for this stand (with fallback)
+            try {
+                const liveData = await http.get<any>(`/analytics/live/stands/${standData.id}`);
+                setAnalytics(mapDashboardToStandAnalytics(liveData));
+            } catch {
+                const data = await http.get<any>(`/analytics/stand/${standData.id}`);
+                setAnalytics(mapDashboardToStandAnalytics(data));
+            }
+        } catch (err: any) {
             console.error('Failed to fetch event analytics', err);
+            if (err.status === 403) {
+                setIsForbidden(true);
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
-    useEffect(() => { if (eventId) fetchData(); }, [eventId]);
+    useEffect(() => {
+        if (!eventId) return;
+        fetchData();
+        const interval = setInterval(fetchData, 20000);
+        return () => clearInterval(interval);
+    }, [eventId]);
 
-    if (isLoading && !stand) {
+    if (isLoading && !stand && !isForbidden) {
         return (
             <div className="h-[60vh] flex items-center justify-center">
                 <Loader2 className="animate-spin text-indigo-600" size={40} />
+            </div>
+        );
+    }
+
+    if (isForbidden) {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
+                    <Clock size={48} className="text-amber-500 animate-pulse" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">Analytics Pending</h2>
+                <p className="text-zinc-500 max-w-md leading-relaxed mb-10">
+                    Your stand analytics will be available once your participation is approved by the organizers.
+                </p>
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh Status
+                    </Button>
+                </div>
             </div>
         );
     }

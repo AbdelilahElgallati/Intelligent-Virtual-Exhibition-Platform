@@ -17,7 +17,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         ...headers,
     };
 
-    if (!isFormData && !defaultHeaders['Content-Type']) {
+    const methodUpper = method.toUpperCase();
+    const shouldSendJsonContentType = !isFormData && methodUpper !== 'GET' && methodUpper !== 'HEAD';
+
+    if (shouldSendJsonContentType && !defaultHeaders['Content-Type']) {
         defaultHeaders['Content-Type'] = 'application/json';
     } else if (isFormData && defaultHeaders['Content-Type']) {
         delete defaultHeaders['Content-Type'];
@@ -56,13 +59,31 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     }
 
     if (!response.ok) {
-        let errorData;
+        let errorData: any;
         try {
             errorData = await response.json();
         } catch {
             errorData = { message: 'An unknown error occurred' };
         }
-        throw new Error(errorData.message || errorData.detail || `Error: ${response.status}`);
+
+        const detail = errorData?.detail;
+        let message = errorData?.message;
+
+        if (!message && typeof detail === 'string') {
+            message = detail;
+        }
+
+        if (!message && Array.isArray(detail)) {
+            // FastAPI/Pydantic validation format: [{ msg, loc, ... }]
+            const parts = detail
+                .map((item: any) => item?.msg)
+                .filter((item: unknown) => typeof item === 'string');
+            if (parts.length > 0) {
+                message = parts.join('; ');
+            }
+        }
+
+        throw new Error(message || `Error: ${response.status}`);
     }
 
     // Handle empty responses (like 204 No Content)

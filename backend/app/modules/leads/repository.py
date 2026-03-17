@@ -18,19 +18,24 @@ class LeadRepository:
         return self.db.leads
 
     async def log_interaction(self, interaction: LeadInteraction):
-        await self.interactions.insert_one(interaction.model_dump())
+        data = interaction.model_dump()
+        # Ensure IDs are strings for consistent querying
+        v_id = str(data["visitor_id"])
+        s_id = str(data["stand_id"])
+        data["visitor_id"] = v_id
+        data["stand_id"] = s_id
+        
+        await self.interactions.insert_one(data)
         
         # Update or create lead entry
-        # In a real app, we'd fetch actual visitor info
-        # Interaction types: visit, resource_download, chat, meeting, product_request
         await self.leads.update_one(
-            {"visitor_id": interaction.visitor_id, "stand_id": interaction.stand_id},
+            {"visitor_id": v_id, "stand_id": s_id},
             {
                 "$inc": {"interactions_count": 1, "score": 10},
                 "$set": {"last_interaction": datetime.utcnow()},
                 "$setOnInsert": {
-                    "visitor_name": f"Visitor {interaction.visitor_id[-4:]}",
-                    "email": f"user_{interaction.visitor_id[-4:]}@example.com",
+                    "visitor_name": f"Visitor {v_id[-4:]}",
+                    "email": f"user_{v_id[-4:]}@example.com",
                     "tags": []
                 }
             },

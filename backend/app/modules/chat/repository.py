@@ -16,9 +16,34 @@ class ChatRepository:
     def rooms(self):
         return self.db.chat_rooms
 
+    async def get_room_for_member(self, room_id: str, user_id: str) -> dict | None:
+        query: dict = {"members": str(user_id)}
+        if ObjectId.is_valid(room_id):
+            query["_id"] = ObjectId(room_id)
+        else:
+            query["id"] = room_id
+        return await self.rooms.find_one(query)
+
     async def create_message(self, message_data: dict) -> MessageSchema:
         result = await self.messages.insert_one(message_data)
         message_data["_id"] = result.inserted_id
+        room_query = {"_id": ObjectId(message_data["room_id"])} if ObjectId.is_valid(message_data["room_id"]) else {"id": message_data["room_id"]}
+        await self.rooms.update_one(
+            room_query,
+            {
+                "$set": {
+                    "last_message": {
+                        "_id": str(result.inserted_id),
+                        "sender_id": message_data.get("sender_id"),
+                        "sender_name": message_data.get("sender_name"),
+                        "content": message_data.get("content"),
+                        "type": message_data.get("type", "text"),
+                        "timestamp": message_data.get("timestamp"),
+                    },
+                    "updated_at": message_data.get("timestamp"),
+                }
+            },
+        )
         return MessageSchema(**message_data)
 
     async def get_room_messages(self, room_id: str, limit: int = 50, skip: int = 0) -> List[MessageSchema]:
@@ -33,7 +58,7 @@ class ChatRepository:
         # Build query — match members + category + event
         query: dict = {
             "type": "direct",
-            "members": {"$all": [user1_id, user2_id]}
+            "members": {"$all": [user1_id, user2_id], "$size": 2}
         }
         if room_category:
             query["room_category"] = room_category
@@ -49,8 +74,10 @@ class ChatRepository:
             "type": "direct",
             "members": [user1_id, user2_id],
             "created_at": ObjectId().generation_time,
+            "updated_at": ObjectId().generation_time,
             "room_category": room_category,
             "event_id": event_id,
+            "last_message": None,
         }
         result = await self.rooms.insert_one(new_room)
         new_room["_id"] = result.inserted_id
@@ -65,7 +92,7 @@ class ChatRepository:
             query["event_id"] = event_id
         if room_category:
             query["room_category"] = room_category
-        cursor = self.rooms.find(query).sort("created_at", -1)
+        cursor = self.rooms.find(query).sort("updated_at", -1)
         rooms = await cursor.to_list(length=100)
         return [ChatRoomSchema(**room) for room in rooms]
 

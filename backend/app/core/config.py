@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # LiveKit (self-hosted — run livekit-server.exe --dev)
+    LIVEKIT_URL: str = "http://localhost:7880"
+    LIVEKIT_WS_URL: str = "ws://localhost:7880"
+    LIVEKIT_API_KEY: str = "devkey"
+    LIVEKIT_API_SECRET: str = "secret"
+
     # Pydantic Config
     class Config:
         env_file = ".env"

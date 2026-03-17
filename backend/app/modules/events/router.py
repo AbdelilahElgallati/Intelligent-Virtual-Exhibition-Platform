@@ -18,6 +18,7 @@ from app.modules.events.schemas import (
     EventState,
     EventUpdate,
     EventsResponse,
+    ScheduleSlotConferenceAssign,
 )
 from app.modules.events.service import (
     approve_event,
@@ -98,7 +99,7 @@ async def join_event(
     if payment and payment["status"] == "paid":
         # Payment completed via Stripe → ensure participant exists and is approved
         if existing:
-            if existing["status"] == ParticipantStatus.APPROVED:
+            if existing["status"] == ParticipantStatus.APPROVED.value:
                 return ParticipantRead(**existing)
             from app.modules.participants.service import approve_participant
             approved = await approve_participant(existing["_id"])
@@ -139,6 +140,9 @@ async def submit_event_request(
     The event is created directly in PENDING_APPROVAL state — no DRAFT step.
     Requires ORGANIZER role.
     """
+    # Auto-populate organizer_name from the user's profile
+    if not data.organizer_name:
+        data.organizer_name = current_user.get("full_name")
     event = await create_event(data, current_user["_id"])
     return EventRead(**event)
 
@@ -193,6 +197,155 @@ async def update_existing_event(
 
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)
+
+
+@router.patch("/{event_id}/schedule/assign-conference")
+async def assign_conference_to_slot(
+    event_id: str,
+    data: ScheduleSlotConferenceAssign,
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+):
+    """
+    Assign or unassign a conference on a schedule slot.
+
+    Works in PAYMENT_DONE or LIVE states. Creates/removes conference records automatically.
+    """
+    from bson import ObjectId as _OID
+    from datetime import datetime as _dt, timezone as _tz
+    from app.db.mongo import get_database
+
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=403, detail="Not your event")
+    if event["state"] not in (EventState.PAYMENT_DONE, EventState.LIVE):
+        raise HTTPException(status_code=400, detail="Schedule can only be updated when event is in payment_done or live state")
+
+    days = event.get("schedule_days")
+    if not days or data.day_index >= len(days):
+        raise HTTPException(status_code=400, detail="Invalid day_index")
+    day = days[data.day_index]
+    slots = day.get("slots", [])
+    if data.slot_index >= len(slots):
+        raise HTTPException(status_code=400, detail="Invalid slot_index")
+
+    slot = slots[data.slot_index]
+    db = get_database()
+
+    if data.is_conference:
+        # Validate enterprise exists and is approved for this event
+        if not data.assigned_enterprise_id:
+            raise HTTPException(status_code=400, detail="assigned_enterprise_id is required for conference slots")
+
+        participant = await db.participants.find_one({
+            "event_id": event_id,
+            "user_id": data.assigned_enterprise_id,
+            "status": ParticipantStatus.APPROVED.value,
+        })
+        if not participant:
+            raise HTTPException(status_code=400, detail="Enterprise is not an approved participant of this event")
+
+        # Look up enterprise name
+        ent_user = None
+        if _OID.is_valid(data.assigned_enterprise_id):
+            ent_user = await db.users.find_one({"_id": _OID(data.assigned_enterprise_id)})
+        enterprise_name = (ent_user.get("full_name") or ent_user.get("email", "")) if ent_user else ""
+
+        # Build conference start/end from event start_date + slot times
+        event_date = event.get("start_date")
+        if isinstance(event_date, str):
+            event_date = _dt.fromisoformat(event_date)
+        # Use day offset
+        from datetime import timedelta
+        day_offset = timedelta(days=data.day_index)
+        base_date = event_date + day_offset
+
+        sh, sm = (int(x) for x in slot["start_time"].split(":"))
+        eh, em = (int(x) for x in slot["end_time"].split(":"))
+        conf_start = base_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
+        conf_end = base_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+
+        conf_title = data.title or slot.get("label") or "Conference"
+
+        # Create or update conference
+        old_conf_id = slot.get("conference_id")
+        if old_conf_id and _OID.is_valid(old_conf_id):
+            # Update existing conference
+            await db.conferences.update_one(
+                {"_id": _OID(old_conf_id)},
+                {"$set": {
+                    "title": conf_title,
+                    "assigned_enterprise_id": data.assigned_enterprise_id,
+                    "speaker_name": data.speaker_name or enterprise_name,
+                    "start_time": conf_start,
+                    "end_time": conf_end,
+                    "updated_at": _dt.now(_tz.utc),
+                }},
+            )
+            conf_id_str = old_conf_id
+        else:
+            # Create new conference
+            conf_doc = {
+                "title": conf_title,
+                "description": "",
+                "speaker_name": data.speaker_name or enterprise_name,
+                "assigned_enterprise_id": data.assigned_enterprise_id,
+                "organizer_id": str(current_user["_id"]),
+                "event_id": event_id,
+                "start_time": conf_start,
+                "end_time": conf_end,
+                "status": "scheduled",
+                "livekit_room_name": None,
+                "max_attendees": 0,
+                "attendee_count": 0,
+                "chat_enabled": True,
+                "qa_enabled": True,
+                "created_at": _dt.now(_tz.utc),
+                "updated_at": _dt.now(_tz.utc),
+            }
+            result = await db.conferences.insert_one(conf_doc)
+            conf_id_str = str(result.inserted_id)
+
+            # Notify enterprise
+            try:
+                await create_notification(
+                    user_id=data.assigned_enterprise_id,
+                    type=NotificationType.CONFERENCE_ASSIGNED,
+                    message=f'You have been assigned to host: "{conf_title}"',
+                )
+            except Exception:
+                pass
+
+        # Update slot in schedule_days
+        slot["is_conference"] = True
+        slot["assigned_enterprise_id"] = data.assigned_enterprise_id
+        slot["assigned_enterprise_name"] = enterprise_name
+        slot["speaker_name"] = data.speaker_name or enterprise_name
+        slot["conference_id"] = conf_id_str
+    else:
+        # Remove conference assignment
+        old_conf_id = slot.get("conference_id")
+        if old_conf_id and _OID.is_valid(old_conf_id):
+            await db.conferences.update_one(
+                {"_id": _OID(old_conf_id)},
+                {"$set": {"status": "canceled", "updated_at": _dt.now(_tz.utc)}},
+            )
+        slot["is_conference"] = False
+        slot["assigned_enterprise_id"] = None
+        slot["assigned_enterprise_name"] = None
+        slot["speaker_name"] = None
+        slot["conference_id"] = None
+
+    # Persist updated schedule_days
+    from app.modules.events.service import get_events_collection
+    collection = get_events_collection()
+    await collection.update_one(
+        {"_id": _OID(event_id) if _OID.is_valid(event_id) else event_id},
+        {"$set": {"schedule_days": days}},
+    )
+
+    return {"detail": "Schedule slot updated", "slot": slot}
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)

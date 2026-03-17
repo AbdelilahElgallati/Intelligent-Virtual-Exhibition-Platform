@@ -25,7 +25,6 @@ export default function NewEventRequestPage() {
         start_date: '',   // YYYY-MM-DD (date only)
         end_date: '',     // YYYY-MM-DD (date only)
         location: 'Virtual Platform',
-        organizer_name: '',
         tags: '',
         banner_url: '',
         num_enterprises: '',
@@ -100,7 +99,6 @@ export default function NewEventRequestPage() {
                 start_date: form.start_date ? `${form.start_date}T00:00:00` : undefined,
                 end_date: form.end_date ? `${form.end_date}T23:59:59` : undefined,
                 location: form.location.trim() || undefined,
-                organizer_name: form.organizer_name.trim() || undefined,
                 banner_url: form.banner_url.trim() || undefined,
                 tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
                 num_enterprises: parseInt(form.num_enterprises),
@@ -200,7 +198,6 @@ export default function NewEventRequestPage() {
                         )}
 
                         <Input label="Location" name="location" placeholder="Virtual Platform" value={form.location} onChange={handleChange} />
-                        <Input label="Organizer Display Name" name="organizer_name" placeholder="Your company or organization name" value={form.organizer_name} onChange={handleChange} />
                         <Input label="Tags (comma-separated)" name="tags" placeholder="e.g. AI, Tech, Startup" value={form.tags} onChange={handleChange} />
                         <Input label="Banner Image URL" name="banner_url" type="url" placeholder="https://example.com/banner.jpg" value={form.banner_url} onChange={handleChange} />
                     </div>

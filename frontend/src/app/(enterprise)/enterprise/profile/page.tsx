@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import {
     Mail, User, Shield, Building2, MapPin, Globe, Calendar,
@@ -143,7 +144,7 @@ export default function EnterpriseProfilePage() {
             <div className="relative group rounded-[2.5rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm h-48 sm:h-72">
                 {profile.banner_url ? (
                     <img
-                        src={`${API_BASE}${profile.banner_url}`}
+                        src={resolveMediaUrl(profile.banner_url)}
                         alt="Banner"
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
@@ -174,7 +175,7 @@ export default function EnterpriseProfilePage() {
                             <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-white flex items-center justify-center relative shadow-inner">
                                 {profile.logo_url ? (
                                     <img
-                                        src={`${API_BASE}${profile.logo_url}`}
+                                        src={resolveMediaUrl(profile.logo_url)}
                                         alt="Logo"
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover/logo:scale-110"
                                     />

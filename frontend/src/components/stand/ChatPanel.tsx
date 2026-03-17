@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { apiClient } from '@/lib/api/client';
@@ -36,13 +36,34 @@ function hexToRgb(hex: string) {
     };
 }
 
+function mergeChatHistory(existing: any[], incoming: any[]) {
+    const merged = [...existing];
+
+    for (const message of incoming) {
+        const idx = merged.findIndex((item) => {
+            if (item._id && message._id) return item._id === message._id;
+            return item.sender_id === message.sender_id
+                && item.timestamp === message.timestamp
+                && item.content === message.content;
+        });
+
+        if (idx === -1) {
+            merged.push(message);
+        } else {
+            merged[idx] = { ...merged[idx], ...message };
+        }
+    }
+
+    return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}
+
 export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId, isEmbedded, themeColor = '#4f46e5', onMeetingOpen, disableMessageLimit = false }: ChatPanelProps) {
     const { user, isAuthenticated } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(initialRoomId || null);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(!initialRoomId);
 
-    const { messages, setMessages, isConnected, sendMessage } = useChatWebSocket(roomId);
+    const { messages, setMessages, isConnected, error, sendMessage } = useChatWebSocket(roomId);
     const [myMessageCount, setMyMessageCount] = useState(0);
     const [limitReached, setLimitReached] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -84,11 +105,15 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
         const initChat = async () => {
             if (!isAuthenticated) return;
 
+            setIsLoading(true);
+            setInput('');
+            setMessages([]);
+
             if (initialRoomId) {
                 setRoomId(initialRoomId);
                 try {
                     const history = await apiClient.get<any[]>(ENDPOINTS.CHAT.HISTORY(initialRoomId));
-                    setMessages(history.reverse());
+                    setMessages((prev) => mergeChatHistory(prev, history.reverse()));
                 } catch (error) {
                     console.error("Failed to fetch history", error);
                 } finally {
@@ -104,7 +129,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                 const actualRoomId = room._id || (room as any).id;
                 setRoomId(actualRoomId);
                 const history = await apiClient.get<any[]>(ENDPOINTS.CHAT.HISTORY(actualRoomId));
-                setMessages(history.reverse());
+                setMessages((prev) => mergeChatHistory(prev, history.reverse()));
             } catch (error) {
                 console.error("Failed to init chat", error);
             } finally {
@@ -112,14 +137,14 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
             }
         };
         initChat();
-    }, [standId, initialRoomId, isAuthenticated]);
+    }, [standId, initialRoomId, isAuthenticated, setMessages]);
 
     /* ---- Scroll to bottom ---- */
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = (e: React.FormEvent) => {
+    const handleSend = (e: FormEvent) => {
         e.preventDefault();
         if (!input.trim() || !isConnected || (!disableMessageLimit && limitReached)) return;
         sendMessage(input);
@@ -241,6 +266,11 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     function renderBody() {
         return (
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/80" style={{ minHeight: 200 }}>
+                {error && !isConnected && (
+                    <div className="px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg text-[11px] text-amber-700 mb-2">
+                        Live sync is reconnecting. You can keep typing and send when the connection returns.
+                    </div>
+                )}
                 {isLoading ? (
                     <div className="flex justify-center py-10">
                         <Loader2 className="animate-spin" style={{ color: themeColor }} />
@@ -348,7 +378,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type a message..."
+                        placeholder={isConnected ? 'Type a message...' : 'Connection is recovering...'}
                         className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
                         style={{ ['--tw-ring-color' as string]: `${themeColor}66` }}
                         disabled={!isConnected}

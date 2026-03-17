@@ -41,6 +41,8 @@ from app.modules.sessions.router import router as sessions_router
 from app.modules.organizer_report.router import router as organizer_report_router
 # Week 7 additions
 from app.modules.enterprise.router import router as enterprise_router
+# Conferences & Meetings video system
+from app.modules.conferences.router import router as conferences_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
@@ -121,6 +123,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(organizer_report_router, prefix=api_prefix)
     # Week 7: Enterprise Ecosystem
     app.include_router(enterprise_router, prefix=api_prefix)
+    # Conferences & Meetings video system
+    app.include_router(conferences_router, prefix=api_prefix)
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
     app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])

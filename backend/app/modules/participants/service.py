@@ -33,7 +33,7 @@ async def invite_participant(event_id, user_id) -> dict:
     participant = {
         "event_id": str(event_id),
         "user_id": str(user_id),
-        "status": ParticipantStatus.INVITED,
+        "status": ParticipantStatus.INVITED.value,
         "created_at": now,
     }
 
@@ -51,7 +51,7 @@ async def request_to_join(event_id, user_id) -> dict:
     participant = {
         "event_id": str(event_id),
         "user_id": str(user_id),
-        "status": ParticipantStatus.REQUESTED,
+        "status": ParticipantStatus.REQUESTED.value,
         "created_at": now,
     }
 
@@ -66,13 +66,16 @@ async def get_participant_by_id(participant_id) -> Optional[dict]:
     doc = await collection.find_one(_id_query(participant_id))
     return stringify_object_ids(doc) if doc else None
 
-async def get_user_participation(event_id, user_id) -> Optional[dict]:
-    """Get participant record for a specific user and event."""
+async def get_user_participation(event_id: str, user_id: Optional[str] = None, organization_id: Optional[str] = None) -> Optional[dict]:
+    """Get participant record for a specific user OR organization and event."""
     collection = get_participants_collection()
-    doc = await collection.find_one({
-        "event_id": str(event_id),
-        "user_id": str(user_id)
-    })
+    query = {"event_id": str(event_id)}
+    if user_id:
+        query["user_id"] = str(user_id)
+    if organization_id:
+        query["organization_id"] = str(organization_id)
+        
+    doc = await collection.find_one(query)
     return stringify_object_ids(doc) if doc else None
 
 async def list_event_participants(event_id) -> List[dict]:
@@ -93,7 +96,7 @@ async def list_event_attendees(event_id: str) -> List[dict]:
 
     cursor = participants_col.find({
         "event_id": str(event_id),
-        "status": ParticipantStatus.APPROVED,
+        "status": ParticipantStatus.APPROVED.value,
     })
     participants = await cursor.to_list(length=1000)
     participants = stringify_object_ids(participants)
@@ -146,7 +149,7 @@ async def approve_participant(participant_id) -> Optional[dict]:
     collection = get_participants_collection()
     updated = await collection.find_one_and_update(
         _id_query(participant_id),
-        {"$set": {"status": ParticipantStatus.APPROVED}},
+        {"$set": {"status": ParticipantStatus.APPROVED.value}},
         return_document=True,
     )
     return stringify_object_ids(updated) if updated else None
@@ -158,7 +161,7 @@ async def reject_participant(participant_id) -> Optional[dict]:
     collection = get_participants_collection()
     updated = await collection.find_one_and_update(
         _id_query(participant_id),
-        {"$set": {"status": ParticipantStatus.REJECTED}},
+        {"$set": {"status": ParticipantStatus.REJECTED.value}},
         return_document=True,
     )
     return stringify_object_ids(updated) if updated else None
@@ -169,7 +172,7 @@ async def reject_participant_with_reason(participant_id, reason: Optional[str] =
     Reject a participant and optionally store a rejection reason.
     """
     collection = get_participants_collection()
-    update_fields: dict = {"status": ParticipantStatus.REJECTED}
+    update_fields: dict = {"status": ParticipantStatus.REJECTED.value}
     if reason:
         update_fields["rejection_reason"] = reason
     updated = await collection.find_one_and_update(
@@ -328,7 +331,7 @@ async def get_joined_events(user_id) -> List[dict]:
     collection = get_participants_collection()
     cursor = collection.find({
         "user_id": str(user_id),
-        "status": ParticipantStatus.APPROVED,
+        "status": ParticipantStatus.APPROVED.value,
     })
     docs = await cursor.to_list(length=1000)
     return stringify_object_ids(docs)

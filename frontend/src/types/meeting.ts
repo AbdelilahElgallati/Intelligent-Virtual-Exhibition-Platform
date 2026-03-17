@@ -1,0 +1,35 @@
+// TypeScript types for the video meeting system
+
+export type MeetingType = 'one_to_one' | 'b2b';
+export type SessionStatus = 'scheduled' | 'live' | 'ended';
+export type MeetingStatus = 'pending' | 'approved' | 'rejected' | 'canceled' | 'completed';
+
+export interface Meeting {
+    _id: string;
+    visitor_id: string;
+    stand_id: string;
+    start_time: string;
+    end_time: string;
+    purpose?: string;
+    status: MeetingStatus;
+    created_at: string;
+    updated_at: string;
+
+    // Enriched
+    requester_name?: string;
+    requester_role?: string;
+    requester_org_name?: string;
+    receiver_org_name?: string;
+
+    // Video session (new)
+    meeting_type: MeetingType;
+    initiator_id?: string;
+    session_status: SessionStatus;
+    livekit_room_name?: string;
+}
+
+export interface MeetingJoinResponse {
+    token: string;
+    livekit_url: string;
+    room_name: string;
+}

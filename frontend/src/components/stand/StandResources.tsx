@@ -7,6 +7,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FileText, Film, Download } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
 
 interface StandResourcesProps {
     standId: string;
@@ -62,9 +63,11 @@ export function StandResources({ standId }: StandResourcesProps) {
                             </div>
                         </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
-                    </Button>
+                    <a href={resolveMediaUrl(resource.file_path)} target="_blank" rel="noopener noreferrer">
+                        <Button variant="ghost" size="sm">
+                            <Download className="w-4 h-4" />
+                        </Button>
+                    </a>
                 </Card>
             ))}
         </div>

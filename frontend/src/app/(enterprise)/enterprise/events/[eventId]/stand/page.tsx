@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { http } from '@/lib/http';
+import { resolveMediaUrl } from '@/lib/media';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -308,7 +309,14 @@ export default function StandConfigPage() {
                                     <FileText size={18} className="text-zinc-400 shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-zinc-900 text-sm truncate">{r.title}</p>
-                                        <p className="text-xs text-zinc-400 truncate">{r.file_path}</p>
+                                        <a
+                                            href={resolveMediaUrl(r.file_path)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-indigo-600 hover:underline truncate block"
+                                        >
+                                            {r.file_path}
+                                        </a>
                                     </div>
                                     <span className="text-xs bg-zinc-100 text-zinc-600 px-2 py-1 rounded font-medium">{r.type}</span>
                                 </div>
