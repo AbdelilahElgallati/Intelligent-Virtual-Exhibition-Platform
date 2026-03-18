@@ -22,6 +22,7 @@ from app.modules.marketplace.schemas import (
     CartCheckoutResponse,
     CheckoutRequest,
     CheckoutResponse,
+    OrderFulfillmentUpdate,
     OrderOut,
     ProductCreate,
     ProductOut,
@@ -76,8 +77,14 @@ async def list_products(
     type: str | None = Query(None, description="Filter by type: product or service"),
 ):
     """Public — list all products/services for a stand. Optionally filter by ?type=product or ?type=service."""
-    await _get_stand(stand_id)  # validates stand exists
-    products = await mkt_svc.list_products(stand_id, product_type=type)
+    stand = await _get_stand(stand_id)  # validates stand exists
+    selected_links = stand.get("product_links") or []
+    source_product_ids = [str(link.get("product_id")) for link in selected_links if isinstance(link, dict) and link.get("product_id")]
+    products = await mkt_svc.list_products(
+        stand_id,
+        product_type=type,
+        source_product_ids=source_product_ids or None,
+    )
     return products
 
 
@@ -174,12 +181,13 @@ async def checkout_product(
         raise HTTPException(status_code=404, detail="Product not found")
     if product["stand_id"] != stand_id:
         raise HTTPException(status_code=400, detail="Product does not belong to this stand")
-    if product["stock"] < body.quantity:
+    is_service = str(product.get("type") or "product") == "service"
+    if not is_service and product["stock"] < body.quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
     total = round(product["price"] * body.quantity, 2)
 
-    if body.payment_method == "cash_on_delivery":
+    if body.payment_method == "cash_on_delivery" and not is_service:
         # Deduct stock immediately since it's a confirmed order type
         await mkt_svc.decrement_stock(product["id"], body.quantity)
 
@@ -271,12 +279,13 @@ async def cart_checkout(
             raise HTTPException(status_code=404, detail=f"Product {cart_item.product_id} not found")
         if product["stand_id"] != stand_id:
             raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
-        if product["stock"] < cart_item.quantity:
+        is_service = str(product.get("type") or "product") == "service"
+        if not is_service and product["stock"] < cart_item.quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
         total = round(product["price"] * cart_item.quantity, 2)
         
-        if body.payment_method == "cash_on_delivery":
+        if body.payment_method == "cash_on_delivery" and not is_service:
             await mkt_svc.decrement_stock(product["id"], cart_item.quantity)
 
         order = await mkt_svc.create_order(
@@ -378,7 +387,9 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
         for oid in ids_to_process:
             order = await mkt_svc.mark_order_paid(oid, payment_intent_id)
             if order:
-                await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
+                product = await mkt_svc.get_product(order["product_id"])
+                if product and str(product.get("type") or "product") != "service":
+                    await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
                 logger.info("Order %s paid via Stripe intent %s", oid, payment_intent_id)
 
     return {"status": "success"}
@@ -402,6 +413,24 @@ async def list_my_orders(
 ):
     """Authenticated user — list their own marketplace orders."""
     return await mkt_svc.list_orders_for_buyer(str(user["_id"]))
+
+
+@router.patch("/orders/{order_id}/fulfillment-status", response_model=OrderOut)
+async def update_order_fulfillment_status(
+    order_id: str,
+    body: OrderFulfillmentUpdate,
+    user: dict = Depends(get_current_user),
+):
+    """Stand owner / admin — update fulfillment workflow status for one order."""
+    order = await mkt_svc.get_order(order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    await _require_stand_owner(order["stand_id"], user)
+    updated = await mkt_svc.update_order_fulfillment_status(order_id, body.fulfillment_status, body.note)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return updated
 
 
 @router.get("/orders/by-session", response_model=list[OrderOut])

@@ -5,20 +5,49 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Event } from '@/types/event';
 import { formatDate } from '@/lib/utils';
+import { resolveMediaUrl } from '@/lib/media';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { CheckCircle2, CircleOff, Clock3 } from 'lucide-react';
 
 interface EventCardProps {
   event: Event;
   showStatus?: boolean;
+  isRegistered?: boolean;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, isRegistered }) => {
   const eventId = (event as any)?.id || (event as any)?._id;
+  const lifecycle = getEventLifecycle(event);
+  const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+  const lifecycleLabel = !lifecycle.hasScheduleSlots
+    ? 'TIMELINE TBD'
+    : isBetweenSlots
+      ? 'IN PROGRESS'
+      : lifecycle.status === 'live'
+      ? 'LIVE'
+      : lifecycle.status === 'upcoming'
+        ? 'UPCOMING'
+        : 'ENDED';
+  const lifecycleClass =
+    !lifecycle.hasScheduleSlots
+      ? 'bg-amber-100 text-amber-700 border-amber-200'
+      : isBetweenSlots
+        ? 'bg-blue-100 text-blue-700 border-blue-200'
+      : lifecycle.status === 'live'
+      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      : lifecycle.status === 'upcoming'
+        ? 'bg-cyan-100 text-cyan-700 border-cyan-200'
+        : 'bg-slate-100 text-slate-600 border-slate-200';
+
+  const actionHref = lifecycle.status === 'live' ? `/events/${eventId}/live` : `/events/${eventId}`;
+  const actionLabel = lifecycle.status === 'live' ? 'Enter Live Event' : lifecycle.status === 'upcoming' ? 'View Details' : 'View Summary';
+
   return (
     <Card className="overflow-hidden flex flex-col h-full group">
       {event.banner_url ? (
         <div className="h-40 w-full relative overflow-hidden">
           <img
-            src={event.banner_url}
+            src={resolveMediaUrl(event.banner_url)}
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
@@ -29,19 +58,49 @@ export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
         </div>
       )}
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start gap-2">
           <CardTitle className="text-xl line-clamp-1 group-hover:text-primary transition-colors">
             {event.title}
           </CardTitle>
-          {showStatus && event.state && (
-            <Badge variant={event.state === 'approved' || event.state === 'live' ? 'success' : 'secondary'}>
-              {event.state.toUpperCase()}
+          <div className="flex flex-col items-end gap-1">
+            <Badge className={`border whitespace-nowrap text-[11px] font-semibold tracking-wide ${lifecycleClass}`}>
+              {lifecycleLabel}
             </Badge>
-          )}
+          </div>
         </div>
         <div className="text-sm text-muted-foreground">
           {formatDate(event.start_date)} - {formatDate(event.end_date)}
         </div>
+        {!lifecycle.hasScheduleSlots && (
+          <div className="text-xs text-amber-700 mt-1 font-medium inline-flex items-center gap-1">
+            <CircleOff className="h-3.5 w-3.5" /> Schedule timeline not published yet
+          </div>
+        )}
+        {lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.nextSlotStart && (
+          <div className={`text-xs mt-1 font-medium ${isBetweenSlots ? 'text-blue-700' : 'text-cyan-700'}`}>
+            {isBetweenSlots ? `Next slot ${formatTimeToStart(lifecycle.nextSlotStart).replace('Starts in ', 'in ')}` : formatTimeToStart(lifecycle.nextSlotStart)}
+          </div>
+        )}
+        {lifecycle.hasScheduleSlots && lifecycle.status === 'live' && lifecycle.activeSlotLabel && (
+          <div className="text-xs text-emerald-700 mt-1 font-medium">
+            Live slot: {lifecycle.activeSlotLabel}
+          </div>
+        )}
+
+        {typeof isRegistered === 'boolean' && (
+          <div className="mt-2">
+            <span
+              className={
+                isRegistered
+                  ? 'inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700'
+                  : 'inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-600'
+              }
+            >
+              {isRegistered ? <CheckCircle2 className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
+              {isRegistered ? 'Registered' : 'Not registered'}
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
@@ -57,7 +116,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, showStatus }) => {
       </CardContent>
       <CardFooter className="pt-0">
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/events/${eventId}`}>View Details</Link>
+          <Link href={actionHref}>{actionLabel}</Link>
         </Button>
       </CardFooter>
     </Card>

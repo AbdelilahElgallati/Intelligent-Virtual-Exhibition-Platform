@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { resolveMediaUrl } from '@/lib/media';
 import {
-    Package, Tag, DollarSign, ShoppingCart, X,
+    Package, Tag, ShoppingCart, X,
     CheckCircle2, Send, Hash, Wrench, Image as ImageIcon
 } from 'lucide-react';
 
@@ -135,7 +136,7 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
                                     </button>
                                     {product.price && (
                                         <span className="ml-auto text-sm font-bold text-indigo-600">
-                                            ${(product.price * quantity).toFixed(2)}
+                                            {formatMAD(product.price * quantity)}
                                         </span>
                                     )}
                                 </div>
@@ -187,6 +188,10 @@ interface StandCatalogProps {
     isLoggedIn?: boolean;
 }
 
+function formatMAD(amount: number): string {
+    return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(amount);
+}
+
 export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCatalogProps) {
     const [requestingProduct, setRequestingProduct] = useState<Product | null>(null);
 
@@ -204,9 +209,12 @@ export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCata
                         <div className="w-16 h-16 rounded-xl bg-zinc-50 border border-zinc-100 flex-shrink-0 overflow-hidden">
                             {product.images?.[0] ? (
                                 <img
-                                    src={`${API_BASE}${product.images[0]}`}
+                                    src={resolveMediaUrl(product.images[0])}
                                     alt={product.name}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.src = '/stands/office-bg.jpg';
+                                    }}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -227,9 +235,7 @@ export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCata
                                     </span>
                                 </div>
                                 {product.price !== undefined && product.price !== null && (
-                                    <span className="text-sm font-bold text-indigo-600 flex items-center gap-0.5 flex-shrink-0">
-                                        <DollarSign size={12} />{product.price}
-                                    </span>
+                                    <span className="text-sm font-bold text-indigo-600 flex items-center gap-0.5 flex-shrink-0">{formatMAD(product.price)}</span>
                                 )}
                             </div>
 

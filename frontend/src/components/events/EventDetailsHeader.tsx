@@ -3,12 +3,22 @@ import { Event } from '@/lib/api/types';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import { Container } from '@/components/common/Container';
+import { resolveMediaUrl } from '@/lib/media';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
 interface EventDetailsHeaderProps {
   event: Event;
 }
 
 export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event }) => {
+  const lifecycle = getEventLifecycle(event);
+  const statusClass =
+    lifecycle.status === 'live'
+      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      : lifecycle.status === 'upcoming'
+        ? 'bg-cyan-100 text-cyan-700 border-cyan-200'
+        : 'bg-slate-100 text-slate-700 border-slate-200';
+
   return (
     <div className="bg-muted/30 border-b">
       <Container className="py-12">
@@ -16,7 +26,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
           {event.banner_url && (
             <div className="w-full md:w-1/3 rounded-xl overflow-hidden shadow-lg aspect-video">
               <img
-                src={event.banner_url}
+                src={resolveMediaUrl(event.banner_url)}
                 alt={event.title}
                 className="w-full h-full object-cover"
               />
@@ -24,6 +34,9 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
           )}
           <div className="flex-grow space-y-4">
             <div className="flex flex-wrap gap-2">
+              <Badge className={`border ${statusClass}`}>
+                {lifecycle.status.toUpperCase()}
+              </Badge>
               <Badge variant="outline">{event.category || 'Exhibition'}</Badge>
               {event.tags?.map((tag) => (
                 <Badge key={tag} variant="secondary">
@@ -31,6 +44,11 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
                 </Badge>
               ))}
             </div>
+            {lifecycle.status === 'upcoming' && (
+              <p className="text-sm font-medium text-cyan-700">
+                {formatTimeToStart(lifecycle.nextSlotStart || lifecycle.startsAt || null)}
+              </p>
+            )}
             <h1 className="text-4xl font-bold tracking-tight">{event.title}</h1>
             <p className="text-xl text-muted-foreground max-w-2xl">
               {event.description}

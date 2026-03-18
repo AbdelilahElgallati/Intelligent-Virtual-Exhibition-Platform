@@ -6,6 +6,8 @@ export type MeetingStatus = 'pending' | 'approved' | 'rejected' | 'canceled' | '
 
 export interface Meeting {
     _id: string;
+    id?: string;
+    event_id?: string;
     visitor_id: string;
     stand_id: string;
     start_time: string;
@@ -32,4 +34,5 @@ export interface MeetingJoinResponse {
     token: string;
     livekit_url: string;
     room_name: string;
+    ends_at?: string;
 }

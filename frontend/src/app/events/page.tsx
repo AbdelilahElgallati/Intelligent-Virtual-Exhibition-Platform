@@ -7,22 +7,45 @@ import { EventsFilters } from '@/components/events/EventsFilters';
 import { EventsGrid } from '@/components/events/EventsGrid';
 import { eventsService } from '@/services/events.service';
 import { Event } from '@/types/event';
+import { useAuth } from '@/context/AuthContext';
+import { apiClient } from '@/lib/api/client';
+import { ENDPOINTS } from '@/lib/api/endpoints';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
+
+type TimelineFilter = 'all' | 'live' | 'in_progress' | 'upcoming' | 'ended' | 'timeline_tbd';
 
 export default function EventsPage() {
+    const { isAuthenticated } = useAuth();
     const [events, setEvents] = useState<Event[]>([]);
+    const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
+    const [timelineFilter, setTimelineFilter] = useState<TimelineFilter>('all');
 
     useEffect(() => {
         async function fetchEvents() {
             setIsLoading(true);
             setError(null);
             try {
-                const response = await eventsService.getEvents();
-                // Assuming response structure correctly returns events array
-                setEvents((response as any).items || (response as any).events || []);
+                const eventsPromise = eventsService.getEvents();
+                const joinedPromise = isAuthenticated
+                    ? apiClient.get<any>(ENDPOINTS.EVENTS.JOINED).catch(() => ({ items: [] }))
+                    : Promise.resolve({ items: [] });
+
+                const [eventsResponse, joinedResponse] = await Promise.all([eventsPromise, joinedPromise]);
+
+                const allEvents = (eventsResponse as any).items || (eventsResponse as any).events || [];
+                setEvents(allEvents);
+
+                const joinedItems = (joinedResponse as any).items || (joinedResponse as any).events || [];
+                const joinedSet = new Set<string>(
+                    (joinedItems as any[])
+                        .map((ev) => String(ev?.id || ev?._id || ''))
+                        .filter((id) => id.length > 0)
+                );
+                setRegisteredEventIds(joinedSet);
             } catch (err) {
                 console.error('Failed to fetch events', err);
                 setError('Could not load events. Please try again later.');
@@ -42,7 +65,7 @@ export default function EventsPage() {
         }
 
         fetchEvents();
-    }, []);
+    }, [isAuthenticated]);
 
     const normalizedCategory = category.trim().toLowerCase();
 
@@ -51,10 +74,18 @@ export default function EventsPage() {
         const description = event.description || '';
         const eventCategory = (event.category || '').toLowerCase();
 
+        const lifecycle = getEventLifecycle(event);
+        const timelineStatus: TimelineFilter = !lifecycle.hasScheduleSlots
+            ? 'timeline_tbd'
+            : lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
+              ? 'in_progress'
+              : lifecycle.status;
+
         const matchesSearch = title.toLowerCase().includes(search.toLowerCase()) ||
             description.toLowerCase().includes(search.toLowerCase());
         const matchesCategory = !normalizedCategory || eventCategory === normalizedCategory;
-        return matchesSearch && matchesCategory;
+        const matchesTimeline = timelineFilter === 'all' || timelineStatus === timelineFilter;
+        return matchesSearch && matchesCategory && matchesTimeline;
     });
 
     const categories = Array.from(
@@ -70,8 +101,8 @@ export default function EventsPage() {
         <div className="py-12 bg-zinc-50 min-h-screen">
             <Container>
                 <SectionTitle
-                    title="Upcoming Events"
-                    subtitle="Discover immersive virtual exhibitions and connect with industry leaders."
+                    title="Events"
+                    subtitle="Track upcoming, live, and ended exhibitions with timeline-aware access."
                     align="left"
                 />
 
@@ -82,13 +113,41 @@ export default function EventsPage() {
                     selectedCategory={category}
                 />
 
+                <div className="mb-6 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mr-1">Timeline</span>
+                    {([
+                        { id: 'all', label: 'All' },
+                        { id: 'live', label: 'Live' },
+                        { id: 'in_progress', label: 'In Progress' },
+                        { id: 'upcoming', label: 'Upcoming' },
+                        { id: 'ended', label: 'Ended' },
+                        { id: 'timeline_tbd', label: 'Timeline TBD' },
+                    ] as Array<{ id: TimelineFilter; label: string }>).map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setTimelineFilter(item.id)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                                timelineFilter === item.id
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'bg-white text-zinc-600 border-zinc-300 hover:border-indigo-400 hover:text-indigo-600'
+                            }`}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-8">
                         {error}
                     </div>
                 )}
 
-                <EventsGrid events={filteredEvents} isLoading={isLoading} />
+                <EventsGrid
+                    events={filteredEvents}
+                    isLoading={isLoading}
+                    registeredEventIds={isAuthenticated ? registeredEventIds : undefined}
+                />
             </Container>
         </div>
     );

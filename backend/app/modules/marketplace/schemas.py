@@ -8,6 +8,17 @@ from typing import Optional, Literal
 from pydantic import BaseModel, Field
 
 
+FulfillmentStatus = Literal[
+    "requested",
+    "processing",
+    "packed",
+    "shipped",
+    "delivered",
+    "completed",
+    "cancelled",
+]
+
+
 # ── Product ─────────────────────────────────────────────────────────
 
 class ProductCreate(BaseModel):
@@ -59,12 +70,25 @@ class OrderOut(BaseModel):
     stripe_session_id: str = ""
     stripe_payment_intent_id: str = ""
     status: Literal["pending", "paid", "cancelled"] = "pending"
+    fulfillment_status: FulfillmentStatus = "requested"
+    fulfillment_note: str = ""
+    fulfillment_updated_at: Optional[datetime] = None
+    fulfillment_history: list[dict] = Field(default_factory=list)
     created_at: datetime
     paid_at: Optional[datetime] = None
     # Delivery / address info
     shipping_address: str = ""
     delivery_notes: str = ""
     buyer_phone: str = ""
+    # Enriched display fields for stand owners
+    buyer_name: str = ""
+    buyer_email: str = ""
+    product_type: str = "product"
+
+
+class OrderFulfillmentUpdate(BaseModel):
+    fulfillment_status: FulfillmentStatus
+    note: Optional[str] = Field(None, max_length=500)
 
 
 # ── Checkout ────────────────────────────────────────────────────────

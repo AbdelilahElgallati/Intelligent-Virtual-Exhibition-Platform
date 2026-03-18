@@ -39,9 +39,11 @@ import {
     FileText,
     Phone,
     MapPin,
+    Package,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
 
@@ -670,19 +672,11 @@ export default function EventManagementHub() {
     const eventTimeline = useMemo(() => {
         if (!eventData) return null;
         const now = Date.now();
-        const scheduleWindow = getEventScheduleWindow(eventData);
-        const start = scheduleWindow.start?.getTime() ?? new Date(eventData.start_date).getTime();
-        const end = scheduleWindow.end?.getTime() ?? new Date(eventData.end_date).getTime();
         const state = eventData.state;
-
-        // Compute remaining time for countdown
-        const diffMs = start - now;
-        const days = Math.floor(diffMs / 86400000);
-        const hours = Math.floor((diffMs % 86400000) / 3600000);
-        const mins = Math.floor((diffMs % 3600000) / 60000);
+        const lifecycle = getEventLifecycle(eventData);
 
         if (state === 'closed') {
-            return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
         }
         if (state === 'rejected') {
             return { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
@@ -690,23 +684,32 @@ export default function EventManagementHub() {
         if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
             return { gate: 'not-ready' as const, title: eventData.title, state };
         }
-        if (state === 'approved' || state === 'payment_done') {
-            if (now < start) {
-                return { gate: 'not-started' as const, title: eventData.title, countdown: { days, hours, mins }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+        if (state === 'approved' || state === 'payment_done' || state === 'live') {
+            if (!lifecycle.hasScheduleSlots) {
+                return { gate: 'timeline-missing' as const, title: eventData.title };
             }
-            if (now > end) {
-                return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            if (lifecycle.status === 'live') {
+                return { gate: 'active' as const, title: eventData.title };
             }
-            return { gate: 'not-started' as const, title: eventData.title, countdown: { days: 0, hours: 0, mins: 0 }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
-        }
-        if (state === 'live') {
-            if (now < start) {
-                return { gate: 'not-started' as const, title: eventData.title, countdown: { days, hours, mins }, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            if (lifecycle.status === 'ended') {
+                return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
             }
-            if (now > end) {
-                return { gate: 'ended' as const, title: eventData.title, startDate: scheduleWindow.start?.toISOString() || eventData.start_date, endDate: scheduleWindow.end?.toISOString() || eventData.end_date };
+            if (lifecycle.withinScheduleWindow) {
+                return {
+                    gate: 'between-slots' as const,
+                    title: eventData.title,
+                    nextSlotStart: lifecycle.nextSlotStart?.toISOString() || null,
+                    startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
+                    endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
+                };
             }
-            return { gate: 'active' as const, title: eventData.title };
+            return {
+                gate: 'not-started' as const,
+                title: eventData.title,
+                nextSlotStart: lifecycle.nextSlotStart?.toISOString() || null,
+                startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
+                endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
+            };
         }
         return { gate: 'not-ready' as const, title: eventData.title, state };
     }, [eventData]);
@@ -745,7 +748,6 @@ export default function EventManagementHub() {
     {/* ── Event Timeline Gate Screens ────────────────────────────────────── */}
 
     if (eventTimeline && eventTimeline.gate === 'not-started') {
-        const ct = (eventTimeline as any).countdown || { days: 0, hours: 0, mins: 0 };
         return (
             <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
                 <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center mb-8">
@@ -757,25 +759,9 @@ export default function EventManagementHub() {
                     This event hasn&apos;t opened yet. All features — meetings, chats, conferences, and partner interactions — will be available once the event goes live.
                 </p>
 
-                {/* Countdown */}
-                {(ct.days > 0 || ct.hours > 0 || ct.mins > 0) && (
-                    <div className="flex gap-4 mb-8">
-                        {ct.days > 0 && (
-                            <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
-                                <span className="text-3xl font-black text-indigo-600">{ct.days}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Days</span>
-                            </div>
-                        )}
-                        <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
-                            <span className="text-3xl font-black text-indigo-600">{ct.hours}</span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Hours</span>
-                        </div>
-                        <div className="flex flex-col items-center px-5 py-3 rounded-2xl bg-indigo-50 border border-indigo-100">
-                            <span className="text-3xl font-black text-indigo-600">{ct.mins}</span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Min</span>
-                        </div>
-                    </div>
-                )}
+                <div className="mb-8 inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700">
+                    {formatTimeToStart((eventTimeline as any).nextSlotStart ? new Date((eventTimeline as any).nextSlotStart) : null)}
+                </div>
 
                 {/* Event dates */}
                 <div className="flex items-center gap-3 text-sm text-zinc-400 mb-10">
@@ -785,6 +771,55 @@ export default function EventManagementHub() {
                     <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
 
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (eventTimeline && eventTimeline.gate === 'between-slots') {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center mb-8">
+                    <Hourglass size={48} className="text-blue-500" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event In Progress</h2>
+                <p className="text-lg font-semibold text-blue-600 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-500 max-w-lg leading-relaxed mb-6">
+                    The event is currently between schedule slots. Management features are temporarily locked and reopen automatically at the next live slot.
+                </p>
+                <div className="mb-8 inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+                    {formatTimeToStart((eventTimeline as any).nextSlotStart ? new Date((eventTimeline as any).nextSlotStart) : null)}
+                </div>
+                <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
+                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    </Button>
+                    <Button onClick={() => fetchData()}>
+                        <Loader2 size={16} className="mr-2" /> Refresh
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (eventTimeline && eventTimeline.gate === 'timeline-missing') {
+        return (
+            <div className="h-[70vh] flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-500">
+                <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
+                    <AlertTriangle size={48} className="text-amber-500" />
+                </div>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Timeline Not Published Yet</h2>
+                <p className="text-lg font-semibold text-amber-600 mb-2">{eventTimeline.title}</p>
+                <p className="text-zinc-500 max-w-lg leading-relaxed mb-10">
+                    This event does not have published schedule slots yet. Meetings, conferences, and live interactions unlock only during live slots.
+                </p>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
                         <ArrowLeft size={16} className="mr-2" /> Back to Events
@@ -908,6 +943,9 @@ export default function EventManagementHub() {
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
                         <LayoutDashboard size={14} className="mr-2" /> Analytics
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
+                        <Package size={14} className="mr-2" /> Requests
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
                         <Calendar size={14} className="mr-2" /> Config

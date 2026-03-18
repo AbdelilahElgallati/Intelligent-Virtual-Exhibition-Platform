@@ -617,7 +617,7 @@ export default function AdminEventDetailPage() {
                         {event.payment_amount != null && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-600">
                                 <DollarSign className="w-4 h-4 text-zinc-400" />
-                                Payment: <span className="font-semibold text-zinc-800">${event.payment_amount.toFixed(2)}</span>
+                                Payment: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} MAD</span>
                             </div>
                         )}
                         {event.payment_proof_url && (

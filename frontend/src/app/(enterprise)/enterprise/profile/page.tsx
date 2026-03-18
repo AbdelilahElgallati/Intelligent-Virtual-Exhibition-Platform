@@ -9,7 +9,7 @@ import { resolveMediaUrl } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import {
     Mail, User, Shield, Building2, MapPin, Globe, Calendar,
-    Linkedin, Palette, Save, CheckCircle2, Phone, UserCircle,
+    Linkedin, Save, CheckCircle2, Phone,
     Upload, X, Camera, Image as ImageIcon, Briefcase
 } from 'lucide-react';
 
@@ -348,89 +348,6 @@ export default function EnterpriseProfilePage() {
                                             placeholder="https://linkedin.com/company/acme"
                                         />
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Branding & Avatar */}
-                        <Card className="border-zinc-200 shadow-sm">
-                            <CardHeader className="border-b border-zinc-100 px-8 py-5">
-                                <CardTitle className="text-lg font-bold text-zinc-900">Visual Identity</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-8 space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Theme Color */}
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Palette size={14} className="text-indigo-500" /> Theme Accent
-                                        </label>
-                                        <div className="flex gap-4 items-center p-3 bg-zinc-50 rounded-2xl border border-zinc-100 shadow-inner">
-                                            <input
-                                                type="color"
-                                                name="theme_color"
-                                                value={profile.theme_color}
-                                                onChange={handleChange}
-                                                className="w-12 h-12 rounded-xl cursor-pointer border-2 border-white p-0.5 bg-white shadow-sm ring-1 ring-zinc-200"
-                                            />
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-mono uppercase tracking-wider text-zinc-900">
-                                                    {profile.theme_color}
-                                                </span>
-                                                <span className="text-[10px] text-zinc-400 italic">Used for buttons & highlights</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Branding Style */}
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Shield size={14} className="text-indigo-500" /> Branding Style
-                                        </label>
-                                        <select
-                                            name="branding_theme"
-                                            value={profile.branding_theme}
-                                            onChange={handleChange}
-                                            className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner"
-                                        >
-                                            <option>Modern</option>
-                                            <option>Classic</option>
-                                            <option>Creative</option>
-                                            <option>Tech-Focused</option>
-                                            <option>Minimalist</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Avatar Selection */}
-                                <div className="space-y-4">
-                                    <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                        <UserCircle size={14} className="text-indigo-500" /> Virtual Representative Gender
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setProfile(p => ({ ...p, avatar_gender: 'male' }))}
-                                            className={`flex items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all ${profile.avatar_gender === 'male'
-                                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-md'
-                                                : 'bg-white border-zinc-100 text-zinc-500 hover:border-zinc-200'
-                                                }`}
-                                        >
-                                            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-xl">👨‍💼</div>
-                                            <span className="font-bold text-sm">Male Avatar</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setProfile(p => ({ ...p, avatar_gender: 'female' }))}
-                                            className={`flex items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all ${profile.avatar_gender === 'female'
-                                                ? 'bg-pink-50 border-pink-500 text-pink-700 shadow-md'
-                                                : 'bg-white border-zinc-100 text-zinc-500 hover:border-zinc-200'
-                                                }`}
-                                        >
-                                            <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-xl">👩‍💼</div>
-                                            <span className="font-bold text-sm">Female Avatar</span>
-                                        </button>
-                                    </div>
-                                    <p className="text-[10px] text-zinc-400 italic text-center">This chooses the 3D model representing your company in the exhibition hall.</p>
                                 </div>
                             </CardContent>
                         </Card>

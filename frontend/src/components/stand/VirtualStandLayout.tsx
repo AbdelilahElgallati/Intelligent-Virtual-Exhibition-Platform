@@ -15,6 +15,7 @@ import {
     ShoppingBag,
     X,
 } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -55,6 +56,7 @@ function hexToRgb(hex: string) {
 const SCENE_BG = '/stands/office-stand.jpeg';
 const PRESENTER_MALE = '/stands/male-presenter.png';
 const PRESENTER_FEMALE = '/stands/female-presenter.png';
+const STAND_BANNER_FALLBACK = '/stands/stand_background.jpg';
 
 function hashStandId(id: string): number {
     let hash = 0;
@@ -85,7 +87,16 @@ export function VirtualStandLayout({
     const [showPanel, setShowPanel] = useState(false);
     const { r, g, b } = hexToRgb(themeColor);
     const standId = stand.id || (stand as any)._id || stand.name || '';
-    const presenterImg = hashStandId(standId) % 2 === 0 ? PRESENTER_MALE : PRESENTER_FEMALE;
+    const fallbackPresenterImg = hashStandId(standId) % 2 === 0 ? PRESENTER_MALE : PRESENTER_FEMALE;
+    const presenterImg = stand.presenter_avatar_url
+        ? resolveMediaUrl(stand.presenter_avatar_url) || fallbackPresenterImg
+        : fallbackPresenterImg;
+    const profileBannerImage = stand.banner_url
+        ? resolveMediaUrl(stand.banner_url) || ''
+        : '';
+    const sceneBgImage = stand.stand_background_url
+        ? resolveMediaUrl(stand.stand_background_url) || SCENE_BG
+        : SCENE_BG;
     const presenterLabel = hashStandId(standId) % 2 === 0 ? 'male' : 'female';
 
     const handleTabClick = (tab: 'resources' | 'about') => {
@@ -104,10 +115,14 @@ export function VirtualStandLayout({
 
             {/* Booth scene image */}
             <img
-                src={SCENE_BG}
+                src={sceneBgImage}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover object-[center_20%] sm:object-center"
                 draggable={false}
+                onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = SCENE_BG;
+                }}
             />
             {/* CSS gradient fallback (behind image) */}
             <div
@@ -144,12 +159,16 @@ export function VirtualStandLayout({
                     className="relative w-full rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] ring-2"
                     style={{ borderColor: `${themeColor}88`, ['--tw-ring-color' as string]: `${themeColor}44` }}
                 >
-                    {stand.stand_background_url ? (
+                    {(profileBannerImage || stand.stand_background_url) ? (
                         <img
-                            src={stand.stand_background_url}
+                            src={profileBannerImage || resolveMediaUrl(stand.stand_background_url) || STAND_BANNER_FALLBACK}
                             alt=""
                             className="w-full aspect-[16/7] object-cover"
                             draggable={false}
+                            onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = STAND_BANNER_FALLBACK;
+                            }}
                         />
                     ) : (
                         <div
@@ -158,10 +177,14 @@ export function VirtualStandLayout({
                         >
                             {stand.logo_url ? (
                                 <img
-                                    src={stand.logo_url}
+                                    src={resolveMediaUrl(stand.logo_url) || STAND_BANNER_FALLBACK}
                                     alt={stand.name}
                                     className="h-10 sm:h-14 w-auto object-contain"
                                     draggable={false}
+                                    onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = STAND_BANNER_FALLBACK;
+                                    }}
                                 />
                             ) : (
                                 <Building2 className="w-8 h-8 text-white/70" />
@@ -187,10 +210,14 @@ export function VirtualStandLayout({
                     <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 shadow-inner">
                         {stand.logo_url ? (
                             <img
-                                src={stand.logo_url}
+                                src={resolveMediaUrl(stand.logo_url) || STAND_BANNER_FALLBACK}
                                 alt={stand.name}
                                 className="w-full h-full object-cover rounded-xl"
                                 draggable={false}
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = STAND_BANNER_FALLBACK;
+                                }}
                             />
                         ) : (
                             <Building2 className="w-7 h-7 text-gray-400" />
@@ -292,6 +319,10 @@ export function VirtualStandLayout({
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
                     className="h-72 sm:h-72 lg:h-[26rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
                     draggable={false}
+                    onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = fallbackPresenterImg;
+                    }}
                 />
             </div>
 

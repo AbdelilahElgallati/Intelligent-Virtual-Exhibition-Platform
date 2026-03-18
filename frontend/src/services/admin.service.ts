@@ -103,6 +103,10 @@ export const adminService = {
         return http.get('/analytics/platform');
     },
 
+    async getEventAnalytics(eventId: string): Promise<DashboardData> {
+        return http.get(`/analytics/event/${eventId}`);
+    },
+
     // ── Health (Day 8) ────────────────────────────────────────────────
 
     async getHealth(): Promise<PlatformHealth> {
@@ -300,11 +304,12 @@ export const adminService = {
             a.click();
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(href), 1000);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('PDF Export Error:', error);
-            throw new Error(error.message === 'Failed to fetch'
+            const message = error instanceof Error ? error.message : 'Unknown export error';
+            throw new Error(message === 'Failed to fetch'
                 ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
-                : error.message);
+                : message);
         }
     },
     /**
@@ -322,7 +327,7 @@ export const adminService = {
         return http.post(`/events/${eventId}/close`, {});
     },
 
-    async createAdminAccount(data: any): Promise<User> {
+    async createAdminAccount(data: Record<string, unknown>): Promise<User> {
         return http.post('/users/admin/create', data);
     },
 };

@@ -17,6 +17,7 @@ class ParticipantStatus(str, Enum):
     INVITED = "invited"
     REQUESTED = "requested"
     APPROVED = "approved"
+    GUEST_APPROVED = "guest_approved"
     REJECTED = "rejected"
     # Enterprise-specific statuses (Week 2)
     PENDING_PAYMENT = "pending_payment"

@@ -5,6 +5,7 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 """
 
 from typing import Optional
+from urllib.parse import urlparse, parse_qs
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 
@@ -41,6 +42,27 @@ from app.modules.audit.service import log_audit
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
+
+
+def _extract_legacy_invite_token(link: Optional[str]) -> Optional[str]:
+    """Read token from legacy invite links that embed it in query params."""
+    if not link:
+        return None
+    parsed = urlparse(link)
+    return parse_qs(parsed.query).get("token", [None])[0]
+
+
+def _is_valid_invite_token(event: dict, token: str, kind: str) -> bool:
+    """Validate an invite token against explicit or legacy event fields."""
+    field_name = f"{kind}_invite_token"
+    stored = event.get(field_name)
+    if stored and token == stored:
+        return True
+
+    # Backward compatibility for links that stored the token in the URL itself.
+    legacy_link = event.get(f"{kind}_link")
+    legacy_token = _extract_legacy_invite_token(legacy_link)
+    return bool(legacy_token and token == legacy_token)
 
 
 # ============== Visitor / Public Endpoints ==============
@@ -99,7 +121,7 @@ async def join_event(
     if payment and payment["status"] == "paid":
         # Payment completed via Stripe → ensure participant exists and is approved
         if existing:
-            if existing["status"] == ParticipantStatus.APPROVED.value:
+            if existing["status"] in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
                 return ParticipantRead(**existing)
             from app.modules.participants.service import approve_participant
             approved = await approve_participant(existing["_id"])
@@ -116,6 +138,40 @@ async def join_event(
         "payment_status": payment_status,
         "ticket_price": event.get("ticket_price"),
     }
+
+
+@router.post("/{event_id}/accept-visitor-invite", response_model=ParticipantRead)
+async def accept_visitor_invite(
+    event_id: str,
+    token: Optional[str] = Query(None, min_length=8),
+    current_user: dict = Depends(require_role(Role.VISITOR)),
+):
+    """Accept organizer visitor invite and grant guest-approved access without payment."""
+    event = await get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    stored_token = event.get("visitor_invite_token")
+    legacy_token = _extract_legacy_invite_token(event.get("visitor_link"))
+
+    if token:
+        if not _is_valid_invite_token(event, token, "visitor"):
+            raise HTTPException(status_code=403, detail="Invalid or expired visitor invite token")
+    elif stored_token or legacy_token:
+        raise HTTPException(status_code=403, detail="Invite token is required for this event")
+
+    existing = await get_user_participation(event_id, current_user["_id"])
+    from app.modules.participants.service import approve_participant
+
+    if existing:
+        if existing["status"] in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
+            return ParticipantRead(**existing)
+        updated = await approve_participant(existing["_id"], ParticipantStatus.GUEST_APPROVED.value)
+        return ParticipantRead(**updated)
+
+    participant = await request_to_join(event_id, current_user["_id"])
+    approved = await approve_participant(participant["_id"], ParticipantStatus.GUEST_APPROVED.value)
+    return ParticipantRead(**approved)
 
 
 # ============== Organizer Endpoints ==============
@@ -241,7 +297,7 @@ async def assign_conference_to_slot(
         participant = await db.participants.find_one({
             "event_id": event_id,
             "user_id": data.assigned_enterprise_id,
-            "status": ParticipantStatus.APPROVED.value,
+            "status": {"$in": [ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value]},
         })
         if not participant:
             raise HTTPException(status_code=400, detail="Enterprise is not an approved participant of this event")

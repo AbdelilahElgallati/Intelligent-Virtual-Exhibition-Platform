@@ -108,30 +108,19 @@ async def approve_event_participant(
     if str(participant.get("event_id")) != str(event_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Participant does not belong to this event")
 
-    updated = await approve_participant(participant_id)
+    is_enterprise_participant = (participant.get("role") == Role.ENTERPRISE.value)
+    target_status = ParticipantStatus.PENDING_PAYMENT.value if is_enterprise_participant else ParticipantStatus.APPROVED.value
+    updated = await approve_participant(participant_id, target_status=target_status)
 
-    # Trigger stand creation for enterprises
-    if updated and updated.get("role") == Role.ENTERPRISE.value:
-        from app.modules.stands.service import get_stand_by_org, create_stand
-        from app.modules.organizations.service import get_organization_by_id
-        
-        org_id = updated.get("organization_id")
-        if org_id:
-            existing_stand = await get_stand_by_org(event_id, org_id)
-            if not existing_stand:
-                org = await get_organization_by_id(org_id)
-                stand_name = org.get("name", "Enterprise Stand") if org else "Enterprise Stand"
-                await create_stand(
-                    event_id=event_id,
-                    organization_id=org_id,
-                    name=stand_name,
-                    description=org.get("description") if org else None
-                )
+    if is_enterprise_participant:
+        message = f"Your request to join '{event['title']}' has been approved. Please pay the stand fee to activate access."
+    else:
+        message = f"Your request to join '{event['title']}' has been approved."
 
     await create_notification(
         user_id=participant["user_id"],
         type=NotificationType.PARTICIPANT_ACCEPTED,
-        message=f"Your request to join '{event['title']}' has been approved.",
+        message=message,
     )
 
     # Audit log

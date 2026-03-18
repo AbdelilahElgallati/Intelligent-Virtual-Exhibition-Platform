@@ -1,20 +1,138 @@
-import { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Button } from '@/components/ui/Button';
-import { X, Calendar, Clock, CheckCircle, Info } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import clsx from 'clsx';
+import {
+    X,
+    Calendar,
+    Clock,
+    Info,
+    AlertTriangle,
+    CheckCircle2,
+    Ban,
+    CircleDot,
+    Hourglass,
+    Timer,
+    Video,
+    Loader2,
+    ArrowRight,
+    MessageSquare,
+} from 'lucide-react';
 import { EventScheduleDay } from '@/types/event';
+import { Meeting } from '@/types/meeting';
 
 interface MeetingRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
     standId: string;
     standName: string;
+    eventId: string;
     /** Optional event boundaries — when provided the pickers are constrained */
     eventStartDate?: string;
     eventEndDate?: string;
     scheduleDays?: EventScheduleDay[];
+}
+
+interface BusySlot {
+    start_time: string;
+    end_time: string;
+    type: string;
+    label: string;
+}
+
+type TimelineStatus = 'upcoming' | 'starting-soon' | 'live' | 'ended' | 'expired';
+
+function getMeetingTimeline(m: Meeting): { status: TimelineStatus; label: string; color: string; bgColor: string; icon: typeof Clock } {
+    const now = Date.now();
+    const start = new Date(m.start_time).getTime();
+    const end = new Date(m.end_time).getTime();
+    const minsUntilStart = Math.round((start - now) / 60000);
+
+    if (m.status === 'rejected') return { status: 'ended', label: 'Rejected', color: 'text-red-600', bgColor: 'bg-red-50 border-red-100', icon: Ban };
+    if (m.status === 'canceled') return { status: 'ended', label: 'Canceled', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: Ban };
+    if (m.status === 'completed' || m.session_status === 'ended') return { status: 'ended', label: 'Completed', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: CheckCircle2 };
+    if (m.session_status === 'live') return { status: 'live', label: 'Live Now', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: CircleDot };
+    if (now > end) return { status: 'expired', label: 'Expired', color: 'text-red-500', bgColor: 'bg-red-50/50 border-red-100', icon: Timer };
+    if (now >= start && now <= end) return { status: 'live', label: 'Ready to Join', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: Video };
+    if (minsUntilStart <= 15 && minsUntilStart > 0) return { status: 'starting-soon', label: `In ${minsUntilStart} min`, color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: Hourglass };
+    if (minsUntilStart <= 60) return { status: 'upcoming', label: `In ${minsUntilStart} min`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    const hoursUntil = Math.floor(minsUntilStart / 60);
+    if (hoursUntil < 24) return { status: 'upcoming', label: `In ${hoursUntil}h`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    return { status: 'upcoming', label: `In ${Math.floor(hoursUntil / 24)}d`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+}
+
+function formatLocalDate(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function parseClockTime(value?: string): [number, number] | null {
+    if (!value || !value.includes(':')) return null;
+    const [hours, minutes] = value.split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return [hours, minutes];
+}
+
+function timeToMinutes(value: string): number | null {
+    const parsed = parseClockTime(value);
+    if (!parsed) return null;
+    return parsed[0] * 60 + parsed[1];
+}
+
+function minutesToTime(totalMinutes: number): string {
+    const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+    const minutes = String(totalMinutes % 60).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+type ScheduleSegment = { start: string; end: string };
+
+function buildScheduleSegments(slots: { start_time: string; end_time: string }[]): ScheduleSegment[] {
+    const parsed = slots
+        .map((slot) => {
+            const start = timeToMinutes(slot.start_time);
+            const end = timeToMinutes(slot.end_time);
+            if (start === null || end === null || end <= start) return null;
+            return { start, end };
+        })
+        .filter((slot): slot is { start: number; end: number } => slot !== null)
+        .sort((a, b) => a.start - b.start);
+
+    if (parsed.length === 0) return [];
+
+    const merged: { start: number; end: number }[] = [];
+    for (const slot of parsed) {
+        const last = merged[merged.length - 1];
+        if (!last || slot.start > last.end) {
+            merged.push({ ...slot });
+            continue;
+        }
+        last.end = Math.max(last.end, slot.end);
+    }
+
+    return merged.map((slot) => ({
+        start: minutesToTime(slot.start),
+        end: minutesToTime(slot.end),
+    }));
+}
+
+function buildHalfHourSteps(startTime: string, endTime: string, includeEnd: boolean): string[] {
+    const start = timeToMinutes(startTime);
+    const end = timeToMinutes(endTime);
+    if (start === null || end === null || end <= start) return [];
+
+    const values: string[] = [];
+    for (let current = start; current < end; current += 30) {
+        values.push(minutesToTime(current));
+    }
+    if (includeEnd) {
+        values.push(minutesToTime(end));
+    }
+    return values;
 }
 
 export function MeetingRequestModal({
@@ -22,67 +140,198 @@ export function MeetingRequestModal({
     onClose,
     standId,
     standName,
+    eventId,
     eventStartDate,
     eventEndDate,
     scheduleDays,
 }: MeetingRequestModalProps) {
-    const { user } = useAuth();
-    const [step, setStep] = useState<'form' | 'success'>('form');
+    const router = useRouter();
+    const [activeView, setActiveView] = useState<'list' | 'request'>('list');
+
+    const [meetings, setMeetings] = useState<Meeting[]>([]);
+    const [loadingMeetings, setLoadingMeetings] = useState(false);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
+
     const [loading, setLoading] = useState(false);
+    const [meetingError, setMeetingError] = useState<string | null>(null);
 
-    const [date, setDate] = useState('');
-    const [time, setTime] = useState('');
-    const [message, setMessage] = useState('');
+    const [meetingForm, setMeetingForm] = useState({
+        date: '',
+        startTime: '',
+        endTime: '',
+        purpose: '',
+    });
 
-    /* ── Compute allowed dates ── */
-    const allowedDates = useMemo(() => {
-        if (!eventStartDate || !eventEndDate) return null;
-        const dates: string[] = [];
+    const fetchMeetings = useCallback(async () => {
+        setLoadingMeetings(true);
+        try {
+            const all = await apiClient.get<Meeting[]>('/meetings/my-meetings');
+            const filtered = (all || [])
+                .filter((m) => m.stand_id === standId && m.event_id === eventId)
+                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+            setMeetings(filtered);
+        } catch (error) {
+            console.error('Failed to fetch visitor meetings', error);
+        } finally {
+            setLoadingMeetings(false);
+        }
+    }, [standId, eventId]);
+
+    const fetchBusySlots = useCallback(async () => {
+        setLoadingSlots(true);
+        try {
+            const slots = await apiClient.get<BusySlot[]>(`/meetings/busy-slots?event_id=${encodeURIComponent(eventId)}&partner_stand_id=${encodeURIComponent(standId)}`);
+            setBusySlots(Array.isArray(slots) ? slots : []);
+        } catch (error) {
+            console.error('Failed to fetch busy meeting slots', error);
+            setBusySlots([]);
+        } finally {
+            setLoadingSlots(false);
+        }
+    }, [eventId, standId]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setActiveView('list');
+        setMeetingError(null);
+        setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+        fetchMeetings();
+        fetchBusySlots();
+    }, [isOpen, fetchMeetings, fetchBusySlots]);
+
+    const nowIsoDate = useMemo(() => formatLocalDate(new Date()), []);
+
+    const eventDays = useMemo(() => {
+        if (!eventStartDate || !eventEndDate) return [];
+
+        if (scheduleDays && scheduleDays.length > 0) {
+            return scheduleDays.map((sd) => {
+                const base = new Date(eventStartDate);
+                base.setDate(base.getDate() + sd.day_number - 1);
+                return {
+                    dateStr: formatLocalDate(base),
+                    label: sd.date_label || `Day ${sd.day_number}`,
+                    slots: sd.slots,
+                };
+            });
+        }
+
+        const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
         const start = new Date(eventStartDate);
         const end = new Date(eventEndDate);
-        const cursor = new Date(start);
-        while (cursor <= end) {
-            dates.push(cursor.toISOString().split('T')[0]);
-            cursor.setDate(cursor.getDate() + 1);
+        const d = new Date(start);
+        let index = 1;
+        while (d <= end) {
+            days.push({
+                dateStr: formatLocalDate(d),
+                label: `Day ${index} — ${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`,
+                slots: [{ start_time: '09:00', end_time: '18:00' }],
+            });
+            d.setDate(d.getDate() + 1);
+            index += 1;
         }
-        return dates;
-    }, [eventStartDate, eventEndDate]);
+        return days;
+    }, [eventStartDate, eventEndDate, scheduleDays]);
 
-    const minDate = allowedDates?.[0] ?? new Date().toISOString().split('T')[0];
-    const maxDate = allowedDates?.[allowedDates.length - 1] ?? undefined;
+    const getDateTimeValue = useCallback((dateStr: string, time: string) => {
+        return new Date(`${dateStr}T${time}:00`).getTime();
+    }, []);
 
-    /* ── Compute time slots for selected date ── */
-    const timeSlots = useMemo(() => {
-        if (!scheduleDays || scheduleDays.length === 0 || !date) return null;
+    const isPastDate = useCallback((dateStr: string) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(`${dateStr}T00:00:00`);
+        return target.getTime() < today.getTime();
+    }, []);
 
-        // Match by day index: first allowed date → day 1, etc.
-        const dayIndex = allowedDates
-            ? allowedDates.indexOf(date) + 1
-            : undefined;
+    const isPastDateTime = useCallback((dateStr: string, time: string) => {
+        return getDateTimeValue(dateStr, time) <= Date.now() + 30000;
+    }, [getDateTimeValue]);
 
-        const day = scheduleDays.find((d) => d.day_number === dayIndex);
-        if (!day || day.slots.length === 0) return null;
+    const dayAvailability = useMemo(() => {
+        return eventDays.map((day) => {
+            const segments = buildScheduleSegments(day.slots);
+            const hasFutureStart = segments.some((segment) =>
+                buildHalfHourSteps(segment.start, segment.end, false).some((time) => !isPastDateTime(day.dateStr, time))
+            );
+            return {
+                ...day,
+                disabled: isPastDate(day.dateStr) || !hasFutureStart,
+            };
+        });
+    }, [eventDays, isPastDate, isPastDateTime]);
 
-        // Build 30-min slots within each schedule slot
-        const slots: { value: string; label: string }[] = [];
-        for (const slot of day.slots) {
-            const [sh, sm] = slot.start_time.split(':').map(Number);
-            const [eh, em] = slot.end_time.split(':').map(Number);
-            const startMin = sh * 60 + sm;
-            const endMin = eh * 60 + em;
-            for (let m = startMin; m + 30 <= endMin; m += 30) {
-                const hh = String(Math.floor(m / 60)).padStart(2, '0');
-                const mm = String(m % 60).padStart(2, '0');
-                slots.push({ value: `${hh}:${mm}`, label: `${hh}:${mm}` });
+    const selectedDay = useMemo(() => {
+        return dayAvailability.find((day) => day.dateStr === meetingForm.date) || null;
+    }, [dayAvailability, meetingForm.date]);
+
+    const selectedDaySegments = useMemo(() => {
+        return selectedDay ? buildScheduleSegments(selectedDay.slots) : [];
+    }, [selectedDay]);
+
+    const startTimeOptions = useMemo(() => {
+        if (!selectedDay) return [];
+        return selectedDaySegments.flatMap((segment) =>
+            buildHalfHourSteps(segment.start, segment.end, false).map((time) => ({
+                time,
+                disabled: isPastDateTime(selectedDay.dateStr, time),
+            }))
+        );
+    }, [selectedDay, selectedDaySegments, isPastDateTime]);
+
+    const endTimeOptions = useMemo(() => {
+        if (!selectedDay || !meetingForm.startTime) return [];
+        const startMinutes = timeToMinutes(meetingForm.startTime);
+        if (startMinutes === null) return [];
+
+        const segment = selectedDaySegments.find((item) => {
+            const segmentStart = timeToMinutes(item.start);
+            const segmentEnd = timeToMinutes(item.end);
+            return segmentStart !== null && segmentEnd !== null && startMinutes >= segmentStart && startMinutes < segmentEnd;
+        });
+        if (!segment) return [];
+
+        return buildHalfHourSteps(meetingForm.startTime, segment.end, true)
+            .slice(1)
+            .map((time) => ({
+                time,
+                disabled: isPastDateTime(selectedDay.dateStr, time),
+            }));
+    }, [selectedDay, selectedDaySegments, meetingForm.startTime, isPastDateTime]);
+
+    useEffect(() => {
+        if (!meetingForm.startTime || !meetingForm.endTime) return;
+        const stillValid = endTimeOptions.some((option) => option.time === meetingForm.endTime && !option.disabled);
+        if (!stillValid) {
+            setMeetingForm((prev) => ({ ...prev, endTime: '' }));
+        }
+    }, [meetingForm.startTime, meetingForm.endTime, endTimeOptions]);
+
+    const isSlotBusy = useCallback((time: string, isEnd = false) => {
+        if (!meetingForm.date) return null;
+        const dt = new Date(`${meetingForm.date}T${time}:00`);
+        for (const bs of busySlots) {
+            const bsStart = new Date(bs.start_time);
+            const bsEnd = new Date(bs.end_time);
+            if (isEnd) {
+                const startDt = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
+                if (dt > bsStart && startDt < bsEnd) return bs;
+            } else if (dt >= bsStart && dt < bsEnd) {
+                return bs;
             }
         }
-        return slots.length > 0 ? slots : null;
-    }, [scheduleDays, date, allowedDates]);
+        return null;
+    }, [meetingForm.date, meetingForm.startTime, busySlots]);
 
-    // Reset time when date changes (slot list may differ)
-    const handleDateChange = (newDate: string) => {
-        setDate(newDate);
-        setTime('');
+    const handleUpdateMeetingStatus = async (meetingId: string, status: 'canceled') => {
+        try {
+            await apiClient.patch(`/meetings/${meetingId}`, { status });
+            await Promise.all([fetchMeetings(), fetchBusySlots()]);
+        } catch (error) {
+            console.error('Failed to update meeting status', error);
+            setMeetingError((error as Error)?.message || 'Failed to update meeting');
+        }
     };
 
     if (!isOpen) return null;
@@ -90,174 +339,340 @@ export function MeetingRequestModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setMeetingError(null);
 
         try {
-            const startTime = new Date(`${date}T${time}`);
-            const endTime = new Date(startTime.getTime() + 30 * 60000);
+            if (!eventId) {
+                throw new Error('Missing event id for meeting request');
+            }
+
+            if (!meetingForm.date || !meetingForm.startTime || !meetingForm.endTime) {
+                throw new Error('Please select date and time');
+            }
+
+            const startTime = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
+            const endTime = new Date(`${meetingForm.date}T${meetingForm.endTime}:00`);
+            const now = Date.now();
+
+            if (!(startTime instanceof Date) || Number.isNaN(startTime.getTime())) {
+                throw new Error('Invalid meeting start time');
+            }
+            if (startTime.getTime() <= now + 30000) {
+                throw new Error('Meeting time must be in the future');
+            }
+
+            if (endTime <= startTime) {
+                throw new Error('End time must be after start time');
+            }
+
+            if (eventStartDate && eventEndDate) {
+                const eventStart = new Date(eventStartDate);
+                const eventEnd = new Date(eventEndDate);
+                if (startTime < eventStart || endTime > eventEnd) {
+                    throw new Error('Meeting must be within event schedule dates');
+                }
+            }
 
             await apiClient.post(ENDPOINTS.MEETINGS.REQUEST, {
-                visitor_id: user?._id || (user as any)?.id,
+                visitor_id: 'SELF',
                 stand_id: standId,
+                event_id: eventId,
                 start_time: startTime.toISOString(),
                 end_time: endTime.toISOString(),
-                purpose: message || 'General Inquiry',
+                purpose: meetingForm.purpose || 'General Inquiry',
             });
-            setStep('success');
+
+            setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+            await Promise.all([fetchMeetings(), fetchBusySlots()]);
+            setActiveView('list');
         } catch (error) {
             console.error('Failed to request meeting', error);
-            alert('Failed to send request. Please try again.');
+            setMeetingError((error as Error)?.message || 'Failed to send request. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
+    const categorizedMeetings = meetings.map((m) => ({ ...m, timeline: getMeetingTimeline(m) }));
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {step === 'form' ? (
-                    <>
-                        <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-900">Request Meeting</h3>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                                <X size={20} />
-                            </button>
-                        </div>
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                    <div>
+                        <h3 className="font-bold text-gray-900">Meetings with {standName}</h3>
+                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints</p>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {/* Hint about schedule constraint */}
-                            {allowedDates && (
-                                <div className="flex items-start gap-2 p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700">
-                                    <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>
-                                        Meetings are limited to the event schedule
-                                        ({allowedDates[0]} – {allowedDates[allowedDates.length - 1]}).
-                                    </span>
+                <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-76px)]">
+                    <div className="flex items-center gap-2 bg-zinc-100 p-1 rounded-xl w-fit">
+                        <button
+                            onClick={() => setActiveView('list')}
+                            className={clsx(
+                                'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
+                                activeView === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                            )}
+                        >
+                            <MessageSquare size={14} className="inline mr-1.5 -mt-0.5" /> My Meetings
+                        </button>
+                        <button
+                            onClick={() => setActiveView('request')}
+                            className={clsx(
+                                'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
+                                activeView === 'request' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                            )}
+                        >
+                            <Calendar size={14} className="inline mr-1.5 -mt-0.5" /> Request New
+                        </button>
+                    </div>
+
+                    {meetingError && (
+                        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                            <span>{meetingError}</span>
+                        </div>
+                    )}
+
+                    {activeView === 'list' ? (
+                        <div className="space-y-3">
+                            {loadingMeetings ? (
+                                <div className="h-40 flex items-center justify-center text-zinc-400 text-sm">
+                                    <Loader2 size={18} className="mr-2 animate-spin" /> Loading your meetings...
+                                </div>
+                            ) : categorizedMeetings.length === 0 ? (
+                                <div className="h-40 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-2xl border border-zinc-200">
+                                    <Calendar size={36} className="text-zinc-300 mb-2" />
+                                    <p className="font-semibold text-zinc-500">No meetings with this enterprise in this event yet.</p>
+                                    <Button className="mt-3 bg-indigo-600 hover:bg-indigo-700" onClick={() => setActiveView('request')}>
+                                        Request a Meeting
+                                    </Button>
+                                </div>
+                            ) : (
+                                categorizedMeetings.map((m) => {
+                                    const tl = m.timeline;
+                                    const TlIcon = tl.icon;
+                                    const canJoin = m.status === 'approved' && (tl.status === 'live' || tl.status === 'starting-soon');
+                                    const canCancel = (m.status === 'pending' || m.status === 'approved') && tl.status !== 'ended' && tl.status !== 'expired';
+
+                                    return (
+                                        <div key={m.id || m._id} className="border rounded-xl p-4 bg-white">
+                                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                        <span className={clsx('text-[11px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide', tl.bgColor, tl.color)}>
+                                                            <TlIcon size={12} className="inline mr-1 -mt-0.5" /> {tl.label}
+                                                        </span>
+                                                        <span className={clsx(
+                                                            'text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide',
+                                                            m.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                                            m.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                                            m.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                            'bg-zinc-100 text-zinc-600'
+                                                        )}>
+                                                            {m.status}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-zinc-900">{m.purpose || 'General discussion'}</p>
+                                                    <p className="text-xs text-zinc-500 mt-1">
+                                                        {new Date(m.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                        {' · '}
+                                                        {new Date(m.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {' - '}
+                                                        {new Date(m.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-2 w-full md:w-auto">
+                                                    {canJoin && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                            onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}
+                                                        >
+                                                            <Video size={13} className="mr-1.5" /> Join
+                                                        </Button>
+                                                    )}
+                                                    {canCancel && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="border-red-200 text-red-600 hover:bg-red-50"
+                                                            onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'canceled')}
+                                                        >
+                                                            <Ban size={13} className="mr-1.5" /> Cancel
+                                                        </Button>
+                                                    )}
+                                                    {!canJoin && !canCancel && (
+                                                        <span className="text-xs text-zinc-400 flex items-center">
+                                                            <CheckCircle2 size={13} className="mr-1.5" /> No actions available
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="flex items-start gap-2 p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700">
+                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                <span>
+                                    Meeting requests are constrained by event schedule, your availability, enterprise availability, and conference overlaps.
+                                </span>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase text-zinc-400">Event Day</label>
+                                {dayAvailability.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {dayAvailability.map((day) => (
+                                            <button
+                                                type="button"
+                                                key={day.dateStr}
+                                                disabled={day.disabled}
+                                                onClick={() => {
+                                                    setMeetingForm((f) => ({ ...f, date: day.dateStr, startTime: '', endTime: '' }));
+                                                    setMeetingError(null);
+                                                }}
+                                                className={clsx(
+                                                    'px-4 py-2 rounded-xl text-sm font-semibold border transition-all',
+                                                    meetingForm.date === day.dateStr
+                                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                                        : day.disabled
+                                                            ? 'bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed'
+                                                            : 'bg-white text-zinc-700 border-zinc-200 hover:border-indigo-300'
+                                                )}
+                                            >
+                                                {day.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-zinc-400 italic">No schedule available for this event.</p>
+                                )}
+                            </div>
+
+                            {meetingForm.date && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-zinc-400">Start Time</label>
+                                    {loadingSlots ? (
+                                        <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                            <Loader2 size={14} className="animate-spin" /> Checking availability...
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                            {startTimeOptions.map(({ time, disabled }) => {
+                                                const conflict = disabled ? null : isSlotBusy(time);
+                                                const isDisabled = disabled || !!conflict;
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={time}
+                                                        disabled={isDisabled}
+                                                        title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
+                                                        onClick={() => {
+                                                            setMeetingForm((f) => ({ ...f, startTime: time, endTime: '' }));
+                                                            setMeetingError(null);
+                                                        }}
+                                                        className={clsx(
+                                                            'px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all',
+                                                            isDisabled
+                                                                ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
+                                                                : meetingForm.startTime === time
+                                                                    ? 'bg-indigo-600 text-white'
+                                                                    : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                                        )}
+                                                    >
+                                                        {time}
+                                                    </button>
+                                                );
+                                            })}
+                                            {startTimeOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">No start slots available.</p>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* Date picker */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
-                                {allowedDates ? (
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <select
-                                            required
-                                            value={date}
-                                            onChange={(e) => handleDateChange(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
-                                        >
-                                            <option value="">Choose a date…</option>
-                                            {allowedDates.map((d) => {
-                                                const dayMatch = scheduleDays?.find(
-                                                    (sd) => sd.day_number === allowedDates.indexOf(d) + 1,
-                                                );
-                                                const label = dayMatch?.date_label
-                                                    ? `${d} — ${dayMatch.date_label}`
-                                                    : d;
-                                                return (
-                                                    <option key={d} value={d}>
-                                                        {label}
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
+                            {meetingForm.startTime && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-zinc-400">End Time</label>
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                                        {endTimeOptions.map(({ time, disabled }) => {
+                                            const conflict = disabled ? null : isSlotBusy(time, true);
+                                            const isDisabled = disabled || !!conflict;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={time}
+                                                    disabled={isDisabled}
+                                                    title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
+                                                    onClick={() => {
+                                                        setMeetingForm((f) => ({ ...f, endTime: time }));
+                                                        setMeetingError(null);
+                                                    }}
+                                                    className={clsx(
+                                                        'px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all',
+                                                        isDisabled
+                                                            ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
+                                                            : meetingForm.endTime === time
+                                                                ? 'bg-emerald-600 text-white'
+                                                                : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-emerald-300 hover:bg-emerald-50'
+                                                    )}
+                                                >
+                                                    {time}
+                                                </button>
+                                            );
+                                        })}
+                                        {endTimeOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">Select a start time first.</p>}
                                     </div>
-                                ) : (
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <input
-                                            type="date"
-                                            required
-                                            min={minDate}
-                                            max={maxDate}
-                                            value={date}
-                                            onChange={(e) => handleDateChange(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
-                            {/* Time picker */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Select Time</label>
-                                {timeSlots ? (
-                                    <div className="relative">
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <select
-                                            required
-                                            value={time}
-                                            onChange={(e) => setTime(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
-                                        >
-                                            <option value="">Choose a time slot…</option>
-                                            {timeSlots.map((s) => (
-                                                <option key={s.value} value={s.value}>
-                                                    {s.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ) : (
-                                    <div className="relative">
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <input
-                                            type="time"
-                                            required
-                                            value={time}
-                                            onChange={(e) => setTime(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                        />
-                                        {date && scheduleDays && scheduleDays.length > 0 && (
-                                            <p className="mt-1 text-xs text-amber-600">
-                                                No scheduled slots found for this date. You may pick any time.
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            {meetingForm.startTime && meetingForm.endTime && (
+                                <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl text-sm text-indigo-700 font-medium">
+                                    <Clock size={16} />
+                                    {meetingForm.startTime} <ArrowRight size={12} /> {meetingForm.endTime}
+                                </div>
+                            )}
 
-                            {/* Message */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Message (Optional)</label>
                                 <textarea
                                     rows={3}
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
+                                    value={meetingForm.purpose}
+                                    onChange={(e) => setMeetingForm((f) => ({ ...f, purpose: e.target.value }))}
                                     placeholder="Briefly describe what you'd like to discuss..."
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                                 />
                             </div>
 
-                            <div className="pt-2">
+                            <div className="pt-2 flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-40"
+                                    onClick={() => setActiveView('list')}
+                                >
+                                    Back to Meetings
+                                </Button>
                                 <Button
                                     type="submit"
-                                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
                                     disabled={loading}
                                 >
                                     {loading ? 'Sending Request...' : 'Send Request'}
                                 </Button>
                             </div>
                         </form>
-                    </>
-                ) : (
-                    <div className="p-8 text-center">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Request Sent!</h3>
-                        <p className="text-gray-500 mb-6">
-                            Your meeting request has been sent to <strong>{standName}</strong>. You will be notified when
-                            they respond.
-                        </p>
-                        <Button onClick={onClose} variant="outline" className="w-full">
-                            Close
-                        </Button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

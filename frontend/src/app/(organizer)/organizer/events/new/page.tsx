@@ -226,7 +226,7 @@ export default function NewEventRequestPage() {
 
                         {/* Stand price */}
                         <Input
-                            label="Stand Price per Enterprise ($) *"
+                            label="Stand Price per Enterprise (MAD) *"
                             name="stand_price"
                             type="number"
                             min="0"
@@ -271,7 +271,7 @@ export default function NewEventRequestPage() {
                         {form.is_paid && (
                             <div className="pl-4 border-l-2 border-indigo-100 space-y-1">
                                 <Input
-                                    label="Visitor Ticket Price ($) *"
+                                    label="Visitor Ticket Price (MAD) *"
                                     name="ticket_price"
                                     type="number"
                                     min="0"

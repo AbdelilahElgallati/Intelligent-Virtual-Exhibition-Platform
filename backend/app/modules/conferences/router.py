@@ -8,6 +8,8 @@ Three role groups:
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
+from datetime import datetime, timedelta, timezone
+import json
 
 from app.core.dependencies import get_current_user, require_role
 from app.core.config import settings
@@ -23,6 +25,7 @@ from app.db.mongo import get_database
 from app.modules.livekit import service as lk
 from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
+from app.modules.events.service import get_event_by_id
 
 router = APIRouter(tags=["conferences"])
 
@@ -41,6 +44,102 @@ async def _assert_assigned_enterprise(conf: dict, current_user: dict):
         raise HTTPException(
             status_code=403,
             detail="Only the assigned enterprise can perform this action"
+        )
+
+
+def _parse_hhmm_to_minutes(value: Optional[str]) -> Optional[int]:
+    if not value or ":" not in value:
+        return None
+    try:
+        h_str, m_str = value.split(":", 1)
+        h = int(h_str)
+        m = int(m_str)
+        if h < 0 or h > 23 or m < 0 or m > 59:
+            return None
+        return h * 60 + m
+    except Exception:
+        return None
+
+
+def _parse_utc_datetime(value) -> Optional[datetime]:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+
+def _extract_schedule_days(event: dict) -> list[dict]:
+    days = event.get("schedule_days")
+    if isinstance(days, list) and days:
+        return days
+
+    timeline = event.get("event_timeline")
+    if isinstance(timeline, str) and timeline.strip():
+        try:
+            parsed = json.loads(timeline)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            return []
+    return []
+
+
+def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
+    days = _extract_schedule_days(event)
+    start_date = _parse_utc_datetime(event.get("start_date"))
+
+    if days and start_date:
+        base = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
+        windows: list[tuple[datetime, datetime]] = []
+
+        for idx, day in enumerate(days):
+            day_num = int(day.get("day_number") or (idx + 1))
+            day_offset = max(0, day_num - 1)
+            day_date = base + timedelta(days=day_offset)
+
+            for slot in day.get("slots") or []:
+                start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
+                end_minutes = _parse_hhmm_to_minutes(slot.get("end_time"))
+                if start_minutes is None or end_minutes is None or end_minutes <= start_minutes:
+                    continue
+
+                slot_start = day_date + timedelta(minutes=start_minutes)
+                slot_end = day_date + timedelta(minutes=end_minutes)
+                windows.append((slot_start, slot_end))
+
+        if windows:
+            return any(start <= now_utc <= end for start, end in windows)
+
+    event_start = _parse_utc_datetime(event.get("start_date"))
+    event_end = _parse_utc_datetime(event.get("end_date"))
+    if event_start and now_utc < event_start:
+        return False
+    if event_end and now_utc > event_end:
+        return False
+    return True
+
+
+async def _ensure_conference_event_live(conf: dict):
+    event_id = conf.get("event_id")
+    if not event_id:
+        return
+    event = await get_event_by_id(str(event_id))
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    if not _is_event_live_by_timeline(event, datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=403,
+            detail="Conference access is allowed only during live event schedule slots",
         )
 
 
@@ -352,6 +451,7 @@ async def get_audience_token(
     current_user: dict = Depends(get_current_user),
 ):
     conf = await _get_conf_or_404(conf_id)
+    await _ensure_conference_event_live(conf)
 
     if conf["status"] != "live":
         raise HTTPException(status_code=400, detail="Conference is not live yet")

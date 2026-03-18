@@ -15,6 +15,30 @@ import { favoritesService } from '@/services/favorites.service';
 import { Button } from '@/components/ui/Button';
 import { Download } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
+import { StandsListResponse } from '@/types/stand';
+
+interface EnterprisePreview {
+  id?: string;
+  _id?: string;
+  user_id?: string;
+  organization_name?: string;
+  full_name?: string;
+}
+
+interface ScheduleSlotPreview {
+  dayNumber: number;
+  dateLabel?: string;
+  startTime?: string;
+  endTime?: string;
+  label: string;
+}
+
+interface StandPreview {
+  id?: string;
+  _id?: string;
+  name?: string;
+  organization_name?: string;
+}
 
 interface EventPageProps {
   params: Promise<{ id?: string }> | { id?: string };
@@ -33,6 +57,8 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const [joinLoading, setJoinLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
+  const [enterprisesPreview, setEnterprisesPreview] = useState<EnterprisePreview[]>([]);
+  const [standPreview, setStandPreview] = useState<StandPreview[]>([]);
 
   const fetchData = useCallback(async () => {
     if (!id) {
@@ -51,10 +77,25 @@ export default function EventDetailsPage({ params }: EventPageProps) {
         ? apiClient.get<{ status: ParticipantStatus }>(ENDPOINTS.EVENTS.MY_STATUS(id))
         : Promise.resolve({ status: 'NOT_JOINED' as ParticipantStatus });
 
-      const [eventData, statusData] = await Promise.all([eventPromise, statusPromise]);
+      const enterprisesPromise = apiClient
+        .get<EnterprisePreview[]>(ENDPOINTS.PARTICIPANTS.ENTERPRISES(id))
+        .catch(() => [] as EnterprisePreview[]);
+
+      const standsPromise = apiClient
+        .get<StandsListResponse>(ENDPOINTS.STANDS.LIST(id))
+        .catch(() => ({ items: [], total: 0, limit: 0, skip: 0 } as StandsListResponse));
+
+      const [eventData, statusData, enterprisesData, standsData] = await Promise.all([
+        eventPromise,
+        statusPromise,
+        enterprisesPromise,
+        standsPromise,
+      ]);
 
       setEvent(eventData);
       setStatus(statusData.status);
+      setEnterprisesPreview(Array.isArray(enterprisesData) ? enterprisesData : []);
+      setStandPreview(Array.isArray(standsData?.items) ? (standsData.items as StandPreview[]) : []);
 
       if (isAuthenticated) {
         try {
@@ -176,6 +217,71 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   }
 
   const isPaidEvent = !!(event as any).is_paid && ((event as any).ticket_price || (event as any).price) > 0;
+  const isApprovedVisitor = status === 'APPROVED' || status === 'GUEST_APPROVED';
+
+  const parseScheduleHighlights = (ev: Event): ScheduleSlotPreview[] => {
+    const days = Array.isArray((ev as any).schedule_days)
+      ? ((ev as any).schedule_days as Array<any>)
+      : (() => {
+          if (!(ev as any).event_timeline || typeof (ev as any).event_timeline !== 'string') return [] as Array<any>;
+          try {
+            const parsed = JSON.parse((ev as any).event_timeline);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [] as Array<any>;
+          }
+        })();
+
+    const flat: ScheduleSlotPreview[] = [];
+    days.forEach((day: any, dayIndex: number) => {
+      const dayNumber = day?.day_number || dayIndex + 1;
+      const dateLabel = day?.date_label;
+      const slots = Array.isArray(day?.slots) ? day.slots : [];
+      slots.forEach((slot: any) => {
+        flat.push({
+          dayNumber,
+          dateLabel,
+          startTime: slot?.start_time,
+          endTime: slot?.end_time,
+          label: slot?.label || 'Session',
+        });
+      });
+    });
+
+    return flat
+      .sort((a, b) => {
+        if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
+        const aTime = a.startTime || '99:99';
+        const bTime = b.startTime || '99:99';
+        return aTime.localeCompare(bTime);
+      })
+      .slice(0, 6);
+  };
+
+  const scheduleHighlights = parseScheduleHighlights(event);
+  const resolvedEnterpriseNames = (() => {
+    const fromParticipants = enterprisesPreview
+      .map((ent) => (ent.organization_name || ent.full_name || '').trim())
+      .filter((name) => name.length > 0);
+
+    if (fromParticipants.length > 0) {
+      return Array.from(new Set(fromParticipants));
+    }
+
+    // Fallback: use stand names when enterprise participant list is empty.
+    const fromStands = standPreview
+      .map((s) => (s.organization_name || s.name || '').trim())
+      .filter((name) => name.length > 0);
+
+    return Array.from(new Set(fromStands));
+  })();
+
+  const totalSlots = (() => {
+    const days = Array.isArray((event as any).schedule_days)
+      ? ((event as any).schedule_days as Array<any>)
+      : [];
+    return days.reduce((sum, d) => sum + (Array.isArray(d?.slots) ? d.slots.length : 0), 0);
+  })();
 
   return (
     <div className="pb-20">
@@ -187,7 +293,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <SectionTitle title="About this Event" align="left" className="mb-0" />
               <div className="flex items-center gap-3">
-                {status === 'APPROVED' && isPaidEvent && (
+                {isApprovedVisitor && isPaidEvent && (
                   <Button size="sm" variant="outline" onClick={downloadReceipt} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                     <Download size={16} /> Download Receipt
                   </Button>
@@ -203,34 +309,92 @@ export default function EventDetailsPage({ params }: EventPageProps) {
               </div>
             </section>
 
-            {status === 'APPROVED' && (
-              <>
-                <section>
-                  <SectionTitle title="Exhibition Stands" align="left" className="mb-4" />
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-6 border rounded-xl bg-muted/20 text-center">
-                      <p className="text-muted-foreground italic">Stands preview will be available soon.</p>
-                    </div>
-                  </div>
-                </section>
+            <section>
+              <SectionTitle title="Event Insights" align="left" className="mb-4" />
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 border rounded-xl bg-cyan-50/60 border-cyan-200">
+                  <p className="text-xs uppercase tracking-wide text-cyan-700 font-semibold">Attending Enterprises</p>
+                  <p className="text-2xl font-bold text-cyan-900 mt-1">{resolvedEnterpriseNames.length}</p>
+                  <p className="text-sm text-cyan-800 mt-1">Companies ready to connect during the event.</p>
+                </div>
 
-                <section>
-                  <SectionTitle title="Resources & Schedule" align="left" className="mb-4" />
-                  <div className="mt-6 p-6 border rounded-xl bg-muted/20 text-center">
-                    <p className="text-muted-foreground italic">Resources and schedule will be available soon.</p>
-                  </div>
-                </section>
-              </>
-            )}
+                <div className="p-5 border rounded-xl bg-indigo-50/60 border-indigo-200">
+                  <p className="text-xs uppercase tracking-wide text-indigo-700 font-semibold">Schedule Sessions</p>
+                  <p className="text-2xl font-bold text-indigo-900 mt-1">{totalSlots}</p>
+                  <p className="text-sm text-indigo-800 mt-1">Planned activities across the event timeline.</p>
+                </div>
 
-            {status !== 'APPROVED' && (
-              <section className="p-8 border rounded-2xl bg-muted/10 text-center border-dashed">
-                <h3 className="text-xl font-semibold mb-2">Exclusive Content</h3>
-                <p className="text-muted-foreground">
-                  Register for this event to view exhibition stands, schedules, and downloadable resources.
-                </p>
-              </section>
-            )}
+                <div className="p-5 border rounded-xl bg-emerald-50/70 border-emerald-200">
+                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Experience Focus</p>
+                  <p className="text-base font-semibold text-emerald-900 mt-1">
+                    Networking, showcases, and live knowledge sessions
+                  </p>
+                  <p className="text-sm text-emerald-800 mt-1">Designed for discovery and real business conversations.</p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <SectionTitle title="Who You Can Meet" align="left" className="mb-4" />
+              <div className="mt-6 p-6 border rounded-xl bg-white">
+                {resolvedEnterpriseNames.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(isApprovedVisitor ? resolvedEnterpriseNames : resolvedEnterpriseNames.slice(0, 6)).map((name, idx) => {
+                      const key = `ent-name-${idx}-${name}`;
+                      return (
+                        <div key={key} className="px-3 py-2 rounded-lg border bg-zinc-50 text-sm text-zinc-700">
+                          {name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Enterprise lineup is being finalized. Check again soon for participating companies and stands.
+                  </p>
+                )}
+
+                {!isApprovedVisitor && resolvedEnterpriseNames.length > 6 && (
+                  <p className="mt-3 text-xs text-zinc-500">
+                    Register to unlock the full participant list and direct live access.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <SectionTitle title="Schedule Highlights" align="left" className="mb-4" />
+              <div className="mt-6 p-6 border rounded-xl bg-white">
+                {scheduleHighlights.length > 0 ? (
+                  <div className="space-y-3">
+                    {(isApprovedVisitor ? scheduleHighlights : scheduleHighlights.slice(0, 4)).map((slot, idx) => (
+                      <div key={`${slot.dayNumber}-${slot.startTime}-${idx}`} className="rounded-lg border bg-zinc-50 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-semibold text-zinc-900">{slot.label}</p>
+                          <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                            Day {slot.dayNumber}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-zinc-600">
+                          {slot.dateLabel ? `${slot.dateLabel} • ` : ''}
+                          {slot.startTime || '--:--'}{slot.endTime ? ` - ${slot.endTime}` : ''}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Full schedule details will appear here as soon as timeline slots are published.
+                  </p>
+                )}
+
+                {!isApprovedVisitor && scheduleHighlights.length > 4 && (
+                  <p className="mt-3 text-xs text-zinc-500">
+                    Register to unlock the complete schedule and all live sections.
+                  </p>
+                )}
+              </div>
+            </section>
           </div>
 
           <div className="lg:col-span-1">

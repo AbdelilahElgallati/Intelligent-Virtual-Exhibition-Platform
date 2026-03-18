@@ -52,7 +52,7 @@ function KpiCard({ label, value, icon, colour, format = 'number' }: KpiCardProps
         switch (format) {
             case 'percent': return `${animated.toFixed(0)}%`;
             case 'score': return `${animated}/100`;
-            case 'currency': return `$${animated.toLocaleString()}`;
+            case 'currency': return `${animated.toLocaleString()} MAD`;
             default: return animated.toLocaleString();
         }
     })();

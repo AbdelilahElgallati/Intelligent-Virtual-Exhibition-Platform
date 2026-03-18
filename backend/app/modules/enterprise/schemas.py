@@ -76,6 +76,10 @@ class ProductRequestRead(BaseModel):
     visitor_name: Optional[str] = None
     visitor_email: Optional[str] = None
     visitor_phone: Optional[str] = None
+    visitor_company: Optional[str] = None
+    visitor_city: Optional[str] = None
+    visitor_country: Optional[str] = None
+    visitor_location: Optional[str] = None
     product_name: Optional[str] = None
     product_is_service: Optional[bool] = None  # kept for backward compat
     product_type: Optional[str] = None  # "product" or "service"
