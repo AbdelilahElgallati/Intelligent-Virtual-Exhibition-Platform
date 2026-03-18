@@ -20,6 +20,7 @@ import {
     AlertTriangle,
     UserCheck,
     Briefcase,
+    Wallet,
     ChevronRight,
 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
     { label: 'Enterprises', href: '/admin/enterprises', icon: Briefcase },
     { label: 'Organizer Approvals', href: '/admin/organizer-registrations', icon: UserCheck },
     { label: 'Enterprise Approvals', href: '/admin/event-join-requests', icon: Briefcase },
+    { label: 'Finance', href: '/admin/finance', icon: Wallet },
     { label: 'Monitoring', href: '/admin/monitoring', icon: Activity },
     { label: 'Audit Logs', href: '/admin/audit', icon: ScrollText },
     { label: 'Incidents', href: '/admin/incidents', icon: AlertTriangle },

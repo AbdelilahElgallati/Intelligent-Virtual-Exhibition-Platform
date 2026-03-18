@@ -9,8 +9,25 @@ import { EnterpriseRequestsResponse, RejectBody } from '@/types/participant';
 import { LiveMetrics } from '@/types/monitoring';
 import { PartnerDashboardRead } from '@/types/admin';
 import { OrganizerSummary } from '@/types/organizer';
+import {
+    CreatePayoutResponse,
+    DeletePayoutResponse,
+    FinancialTransactionListResponse,
+    PayoutListResponse,
+    PayoutStatus,
+    ReceiverType,
+    SourceType,
+    UpdatePayoutPayload,
+} from '@/types/finance';
 import { getApiUrl } from '@/lib/config';
 import { ENDPOINTS } from '@/lib/api/endpoints';
+
+type AdminAccountPayload = {
+    full_name: string;
+    email: string;
+    password: string;
+    [key: string]: unknown;
+};
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
 
@@ -199,6 +216,39 @@ export const adminService = {
         return http.get(`/admin/events/${eventId}/live-metrics`);
     },
 
+    // ── Finance (Unified Transactions + Payouts) ─────────────────────────
+
+    async getFinanceTransactions(params: {
+        source_type?: SourceType;
+        payout_status?: PayoutStatus;
+        receiver_type?: ReceiverType;
+    } = {}): Promise<FinancialTransactionListResponse> {
+        const query = new URLSearchParams();
+        if (params.source_type) query.set('source_type', params.source_type);
+        if (params.payout_status) query.set('payout_status', params.payout_status);
+        if (params.receiver_type) query.set('receiver_type', params.receiver_type);
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        return http.get(`${ENDPOINTS.ADMIN.FINANCE_TRANSACTIONS}${qs}`);
+    },
+
+    async markFinancePayout(transactionId: string, note?: string): Promise<CreatePayoutResponse> {
+        return http.post(ENDPOINTS.ADMIN.MARK_FINANCE_PAYOUT(transactionId), {
+            note: note || null,
+        });
+    },
+
+    async getFinancePayouts(): Promise<PayoutListResponse> {
+        return http.get(ENDPOINTS.ADMIN.FINANCE_PAYOUTS);
+    },
+
+    async updateFinancePayout(payoutId: string, payload: UpdatePayoutPayload): Promise<import('@/types/finance').PayoutRecord> {
+        return http.patch(ENDPOINTS.ADMIN.UPDATE_FINANCE_PAYOUT(payoutId), payload);
+    },
+
+    async deleteFinancePayout(payoutId: string): Promise<DeletePayoutResponse> {
+        return http.delete(ENDPOINTS.ADMIN.DELETE_FINANCE_PAYOUT(payoutId));
+    },
+
     // ── Sessions (Week 5) ──────────────────────────────────────────────
 
     async getSessions(eventId: string): Promise<import('@/types/sessions').Session[]> {
@@ -300,11 +350,12 @@ export const adminService = {
             a.click();
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(href), 1000);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('PDF Export Error:', error);
-            throw new Error(error.message === 'Failed to fetch'
+            const message = error instanceof Error ? error.message : '';
+            throw new Error(message === 'Failed to fetch'
                 ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
-                : error.message);
+                : (message || 'PDF export failed'));
         }
     },
     /**
@@ -322,7 +373,7 @@ export const adminService = {
         return http.post(`/events/${eventId}/close`, {});
     },
 
-    async createAdminAccount(data: any): Promise<User> {
+    async createAdminAccount(data: AdminAccountPayload): Promise<User> {
         return http.post('/users/admin/create', data);
     },
 };

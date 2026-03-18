@@ -138,10 +138,33 @@ async def mark_order_paid(order_id: str, payment_intent_id: str = "") -> Optiona
         {"$set": {
             "status": "paid",
             "stripe_payment_intent_id": payment_intent_id,
+            "paid_at": datetime.now(timezone.utc),
         }}
     )
     doc = await _db().stand_orders.find_one({"_id": _oid(order_id)})
     return _serialize(doc) if doc else None
+
+
+async def mark_order_paid_if_pending(order_id: str, payment_intent_id: str = "") -> tuple[Optional[dict], bool]:
+    """Mark order as paid only if it is not already paid.
+
+    Returns (order, changed) where changed=True means this call performed the status transition.
+    """
+    result = await _db().stand_orders.update_one(
+        {
+            "_id": _oid(order_id),
+            "status": {"$ne": "paid"},
+        },
+        {
+            "$set": {
+                "status": "paid",
+                "stripe_payment_intent_id": payment_intent_id,
+                "paid_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+    doc = await _db().stand_orders.find_one({"_id": _oid(order_id)})
+    return (_serialize(doc) if doc else None, result.modified_count == 1)
 
 async def list_orders_for_stand(stand_id: str) -> list[dict]:
     cursor = _db().stand_orders.find({"stand_id": _oid(stand_id)}).sort("created_at", -1)

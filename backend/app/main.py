@@ -56,6 +56,7 @@ from app.modules.recommendations.router import router as recommendations_router
 from app.modules.favorites.router import router as favorites_router
 from app.modules.payments.router import router as payments_router
 from app.modules.marketplace.router import router as marketplace_router
+from app.modules.finance.router import router as finance_router
 
 
 @asynccontextmanager
@@ -115,6 +116,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(payments_router, prefix=api_prefix)
     # Stand Marketplace (isolated from event payments)
     app.include_router(marketplace_router, prefix=api_prefix)
+    app.include_router(finance_router, prefix=api_prefix)
     # Week 3: Live Monitoring
     app.include_router(monitoring_router, prefix=api_prefix)
     # Week 5: Conference Session Orchestration

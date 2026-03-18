@@ -376,8 +376,8 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
 
         ids_to_process = [oid.strip() for oid in order_id_str.split(",") if oid.strip()]
         for oid in ids_to_process:
-            order = await mkt_svc.mark_order_paid(oid, payment_intent_id)
-            if order:
+            order, changed = await mkt_svc.mark_order_paid_if_pending(oid, payment_intent_id)
+            if order and changed:
                 await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
                 logger.info("Order %s paid via Stripe intent %s", oid, payment_intent_id)
 
@@ -410,7 +410,30 @@ async def list_orders_by_session(
     user: dict = Depends(get_current_user),
 ):
     """Return only orders that belong to a specific Stripe checkout session."""
-    return await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+    orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+
+    # Webhook may be delayed in local/dev setups; perform a safe status sync from Stripe session.
+    has_pending_stripe_orders = any(
+        o.get("payment_method") == "stripe" and o.get("status") == "pending"
+        for o in orders
+    )
+    if has_pending_stripe_orders:
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            if session and session.payment_status == "paid":
+                payment_intent_id = session.payment_intent or ""
+                for order in orders:
+                    if order.get("payment_method") == "stripe" and order.get("status") == "pending":
+                        updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
+                        if updated_order and changed:
+                            await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
+
+                # Return refreshed state after sync
+                orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+        except Exception as exc:
+            logger.warning("Session status sync skipped for %s: %s", session_id, exc)
+
+    return orders
 
 
 @router.get("/orders/{order_id}/receipt")

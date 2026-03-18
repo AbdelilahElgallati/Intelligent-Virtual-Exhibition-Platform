@@ -23,6 +23,11 @@ export const ENDPOINTS = {
   ADMIN: {
     PENDING_EVENTS: '/events?state=pending_approval',
     EVENT_PAYMENTS: '/admin/event-payments',
+    FINANCE_TRANSACTIONS: '/admin/finance/transactions',
+    FINANCE_PAYOUTS: '/admin/finance/payouts',
+    MARK_FINANCE_PAYOUT: (transactionId: string) => `/admin/finance/payouts/${transactionId}`,
+    UPDATE_FINANCE_PAYOUT: (payoutId: string) => `/admin/finance/payouts/${payoutId}`,
+    DELETE_FINANCE_PAYOUT: (payoutId: string) => `/admin/finance/payouts/${payoutId}`,
   },
   PARTICIPANTS: {
     LIST: (eventId: string) => `/participants/event/${eventId}/`,

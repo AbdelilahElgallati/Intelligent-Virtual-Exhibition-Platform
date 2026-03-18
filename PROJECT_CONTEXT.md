@@ -1,99 +1,126 @@
 # PROJECT_CONTEXT.md - Intelligent Virtual Exhibition Platform (IVEP)
 
-Generated: 2026-03-15
-Purpose: Updated code-verified project context snapshot.
+Generated: 2026-03-18
+Purpose: Full, code-verified project context snapshot up to current state, including latest modifications.
 
 ---
 
-## 1. Project Overview
+## 1) Executive Summary
 
-IVEP is an AI-enabled virtual exhibition platform with role-based portals (admin, organizer, enterprise, visitor) supporting:
+IVEP is a multi-role virtual exhibition platform that combines event management, enterprise stands, audience interaction, analytics, and AI-powered capabilities.
 
-- Event lifecycle management with admin approval and payment gates
-- Virtual stands, resources, chat, meetings, and conference streaming
-- AI assistant (RAG), translation, transcription, and recommendations
-- Governance features: audit logs, incidents, platform monitoring
-- Marketplace and event payment capabilities via Stripe
+Primary personas:
+- Admin
+- Organizer
+- Enterprise
+- Visitor
+
+Core capability areas:
+- Event lifecycle and approval workflows
+- Paid/free participation flows
+- Virtual stands and product marketplace
+- Real-time communication (chat, meetings, conferences)
+- AI assistant (RAG), translation, and transcription
+- Governance and operations (audit, incidents, monitoring)
 
 ---
 
-## 2. Tech Stack
+## 2) Current Workspace Structure (Top-Level)
+
+Main workspace root:
+- `backend/` - FastAPI backend (API, modules, workers, data, uploads)
+- `frontend/` - Next.js frontend (App Router, role-based portals)
+- `PROJECT_CONTEXT.md` - this context file
+- `backend_api_guide.md`, `backend_implementation_details.md`, `discution_about_project.md`
+- `fix_*.py` helper/fix scripts used during iterative maintenance
+- `livekit_1.9.12_windows_amd64/` binaries
+- `Ressources/`
+
+Backend notable folders:
+- `backend/app/` application package
+- `backend/app/modules/` domain modules
+- `backend/data/chroma_db/` local vector DB storage
+- `backend/uploads/` uploaded files (enterprise profile, payments, resources, product images)
+- `backend/scripts/` scripts (including test data seeding)
+
+Frontend notable folders:
+- `frontend/src/app/` route tree (public + admin/organizer/enterprise groups)
+- `frontend/src/components/`, `src/context/`, `src/hooks/`, `src/services/`, `src/types/`, `src/lib/`
+
+---
+
+## 3) Technology Stack
 
 ### Backend
-
 - Python 3.10+
-- FastAPI
-- MongoDB (Motor async client)
-- Redis
-- JWT auth (`python-jose`) and password hashing (`argon2-cffi`)
-- Stripe
-- LiveKit API integration
-- ChromaDB + sentence-transformers + Ollama (RAG/embeddings)
-- Whisper (transcription)
-- Transformers + MarianMT components (translation path)
+- FastAPI + Uvicorn
+- MongoDB (async access)
+- Redis (optional/cache-related flows)
+- JWT auth + RBAC
+- Stripe for payments (event ticket + marketplace checkout)
+- LiveKit-related integration modules
+- AI stack components for RAG, translation, transcription
 
 ### Frontend
-
-- Next.js 16.1.6 (App Router)
-- React 19.2.3 + TypeScript 5
-- Tailwind CSS 4 + shadcn
-- TanStack Query v5
-- LiveKit React components + livekit-client
-- Three.js (`three`, `@react-three/fiber`, `@react-three/drei`)
-- Recharts
+- Next.js App Router (TypeScript)
+- React
+- Tailwind CSS + component system
+- Client API/service layer abstraction
+- Pages for public, admin, organizer, and enterprise experiences
 
 ---
 
-## 3. Backend Architecture
+## 4) Backend Application Architecture
 
-### 3.1 Core App
-
-Main file: `backend/app/main.py`
+Main entrypoint:
+- `backend/app/main.py`
 
 Startup lifecycle:
-- Setup logging
-- Connect to MongoDB
-- Ensure indexes
-- Start `lifecycle_loop()` background worker
+1. Configure logging
+2. Connect to MongoDB
+3. Ensure DB indexes
+4. Start background lifecycle task (`lifecycle_loop()`)
 
 Shutdown lifecycle:
-- Cancel lifecycle worker
-- Close MongoDB connection
+1. Cancel lifecycle background task
+2. Close MongoDB connection
 
-CORS allowlist includes localhost and LAN dev origins on ports 3000/3001.
+Infrastructure configuration:
+- CORS allowlist includes localhost and LAN dev origins on ports 3000/3001
+- Static mounting: `/uploads` -> `backend/uploads`
 
-Static files:
-- `/uploads` mounted from `backend/uploads`
+Health/root endpoints:
+- `GET /` returns welcome message
+- `GET /health` returns health status
 
-Root endpoints:
-- `GET /` -> welcome message
-- `GET /health` -> health status
+---
 
-### 3.2 Router Registration (Actual Current State)
+## 5) Backend Router Registration (Current Reality)
 
-Registered under `API_V1_STR` (default `/api/v1`):
+All primary routers are mounted under API prefix (default `/api/v1`).
 
-- `/auth` auth router
-- `/users` users router
-- `/organizations` organizations router
-- `/events` events router
-- `/participants/event/{event_id}` participants router
-- `/events/{event_id}/stands` stands router
-- `/analytics` analytics router
-- `/notifications` notifications router
-- `/favorites` favorites router
-- `/admin` admin router
-- `/audit` audit router
-- `/incidents` incidents router
-- payments router (paths include `/events/{event_id}/checkout`, `/admin/event-payments`)
-- `/marketplace` marketplace router
-- `/admin/events/{event_id}/live-metrics` monitoring router
-- sessions router (`/admin/events/{event_id}/sessions`, `/events/{event_id}/sessions`)
-- organizer-report router (mixed `/admin/...` and `/organizer/...` paths)
-- `/enterprise` enterprise router
-- conferences router (mixed organizer, enterprise, and public conference paths)
+Mounted core routers:
+- auth
+- users
+- organizations
+- events
+- participants
+- stands
+- analytics
+- notifications
+- favorites
+- admin
+- audit
+- incidents
+- payments
+- marketplace
+- monitoring
+- sessions
+- organizer_report
+- enterprise
+- conferences
 
-Legacy/extra mounted with explicit prefixes:
+Mounted legacy/extra routers with explicit sub-prefixes:
 - `/chat`
 - `/assistant`
 - `/translation`
@@ -103,300 +130,242 @@ Legacy/extra mounted with explicit prefixes:
 - `/leads`
 - `/recommendations`
 
-Dev router:
-- `/dev` is mounted only in `dev` or `DEBUG=true`
+Conditional router:
+- `dev` router only when environment is dev or debug is enabled
 
-Important note:
-- Subscriptions router exists but is currently not mounted in `main.py` (disabled include).
-
-### 3.3 Auth, Roles, Dependencies
-
-Role enum (`auth/enums.py`):
-- `admin`, `organizer`, `enterprise`, `visitor`
-
-Auth dependency behavior (`core/dependencies.py`):
-- Bearer token auth via `HTTPBearer`
-- Access token verification with legacy decode fallback
-- `test-token` bypass returns synthetic visitor in dev path
-- RBAC helpers: `require_role`, `require_roles`
-- Subscription feature gate helper exists (`require_feature`) and still references subscription plan features
+Important current note:
+- subscriptions module router exists in codebase but is commented/disabled in `main.py` and therefore not active in runtime routing.
 
 ---
 
-## 4. Backend Modules (Current)
+## 6) Backend Modules Inventory
 
-Current module routers in `backend/app/modules/*/router.py`:
+Modules present in `backend/app/modules/`:
+- admin
+- ai_rag
+- ai_translation
+- analytics
+- audit
+- auth
+- chat
+- conferences
+- dev
+- enterprise
+- events
+- favorites
+- incidents
+- leads
+- livekit
+- marketplace
+- meetings
+- monitoring
+- notifications
+- organizations
+- organizer_report
+- participants
+- payments
+- recommendations
+- resources
+- sessions
+- stands
+- subscriptions
+- transcripts
+- users
 
-- `admin`
-- `ai_rag`
-- `ai_translation`
-- `analytics`
-- `audit`
-- `auth`
-- `chat`
-- `conferences`
-- `dev`
-- `enterprise`
-- `events`
-- `favorites`
-- `incidents`
-- `leads`
-- `marketplace`
-- `meetings`
-- `monitoring`
-- `notifications`
-- `organizations`
-- `organizer_report`
-- `participants`
-- `payments`
-- `recommendations`
-- `resources`
-- `sessions`
-- `stands`
-- `subscriptions` (present but not mounted)
-- `transcripts`
-- `users`
-
----
-
-## 5. Key Domain States and Enums
-
-### Event states (`events/schemas.py`)
-
-- `pending_approval`
-- `approved`
-- `rejected`
-- `waiting_for_payment`
-- `payment_proof_submitted`
-- `payment_done`
-- `live`
-- `closed`
-
-Legacy `draft` is coerced to `pending_approval`.
-
-### Participant statuses (`participants/schemas.py`)
-
-- `invited`
-- `requested`
-- `approved`
-- `rejected`
-- `pending_payment`
-- `pending_admin_approval`
-
-### Notification types (`notifications/schemas.py`)
-
-Includes event/payment lifecycle and conference/meeting notifications, notably:
-- `conference_assigned`, `conference_live`
-- `meeting_approved`, `meeting_rejected`
-- `payment_proof_submitted`, `visitor_payment_approved`, `visitor_payment_rejected`
-
-### Conference status (`conferences/schemas.py`)
-
-- `scheduled`, `live`, `ended`, `canceled`
-
-### Analytics event types (`analytics/schemas.py`)
-
-- `event_view`, `stand_visit`, `chat_opened`
-- `meeting_booked`, `payment_confirmed`, `conference_joined`
+Router coverage:
+- 29 module routers currently exist under `backend/app/modules/**/router.py`
+- all major business modules are routable except subscriptions (present but currently disabled in app registration)
 
 ---
 
-## 6. API Surface Summary (Current)
+## 7) Key Domain Flows and Features
 
-### Auth (`/api/v1/auth`)
-- Login/register/refresh
-- Role test routes
+### Authentication and Access
+- Role-based authentication and authorization for admin/organizer/enterprise/visitor
+- Token-based auth with dependency guards
 
-### Users (`/api/v1/users`)
-- `GET/PUT /me`
-- Admin user operations under `/users/admin/...` including list, activate, suspend, create
+### Events and Participation
+- Event creation and moderation lifecycle
+- Participant invitation/request/approval flows
+- Event lifecycle transitions (approval, live, close)
 
-### Events (`/api/v1/events`)
-- Public list/detail
-- Organizer create/update/delete own events
-- Join/status/joined list
-- Admin approve/reject
-- Payment flow endpoints including `submit-proof`, `confirm-payment`
-- Lifecycle transitions `start`, `close`
-- Schedule conference assignment endpoint exists
+### Payments
+- Event ticket checkout and verification endpoints in payments module
+- Marketplace checkout and webhook handling in marketplace module
+- Stripe-backed payment sessions and payment status checks
 
-### Participants (`/api/v1/participants/event/{event_id}`)
-- invite/request/approve/reject
-- list attendees and enterprise participants
+### Enterprise Ecosystem
+- Enterprise profile and media management
+- Product catalog and product requests
+- Enterprise event participation and stand management
 
-### Stands (`/api/v1/events/{event_id}/stands`)
-- create/list/detail/update
+### Conferences, Meetings, and Real-Time
+- Conference create/manage/start/end with role-specific operations
+- Meeting booking and meeting room experiences
+- Chat and monitoring websocket-enabled experiences
 
-### Organizations (`/api/v1/organizations`)
-- create/invite/list/get
-- admin moderation: verify/flag/suspend organization
+### AI and Knowledge Features
+- AI assistant (RAG query/ingest/stats flows)
+- Translation endpoints
+- Transcription endpoints (including websocket-related flows)
+- Recommendation endpoints and interaction logging
 
-### Notifications (`/api/v1/notifications`)
-- list, mark single read, mark all read
-
-### Analytics (`/api/v1/analytics`)
-- event logging and dashboards
-- report export and role-specific report endpoints
-- live analytics endpoints for platform/event/stand
-
-### Governance
-
-Admin (`/api/v1/admin`):
-- health
-- enterprise request workflows
-- force lifecycle transitions
-- organizer/enterprise registration approvals and rejections
-- detailed organization and enterprise dashboards
-
-Audit (`/api/v1/audit`):
-- list logs + list actions
-
-Incidents (`/api/v1/incidents`):
-- create/list/update incidents
-- content flag create/list
-
-Monitoring (`/api/v1/admin/events/{event_id}/...`):
-- REST live metrics
-- WebSocket monitoring feed
-
-### Enterprise (`/api/v1/enterprise`)
-- profile read/update/logo/banner upload
-- product CRUD and product image management
-- incoming product requests + status updates
-- public product request endpoint for visitors
-- enterprise event join/pay flow
-- stand management and assistant enable/status
-
-### Marketplace (`/api/v1/marketplace`)
-- stand products and checkout flows
-- Stripe webhook path
-- stand orders and user order queries
-
-### Payments (visitor ticket payments)
-- `POST /events/{event_id}/checkout`
-- `POST /events/{event_id}/verify-payment`
-- `GET /events/{event_id}/my-payment-status`
-- `GET /events/{event_id}/my-receipt`
-- `GET /admin/event-payments`
-
-### Conferences (video and Q&A)
-
-Organizer:
-- create/list/update/cancel event conferences
-
-Enterprise host:
-- list assigned conferences
-- start/end conference
-- get speaker token
-
-Audience/public:
-- list/get conference
-- register/unregister
-- get audience token
-- Q&A create/list/answer/upvote
-
-### Sessions
-
-Admin:
-- create/sync/list sessions for event
-- start/end session
-
-Authenticated users:
-- list event sessions
-
-### Additional modules
-- chat (rooms/messages/ws)
-- meetings (book/list/status + token/start/end)
-- resources (upload/list/track)
-- leads (list/interactions/export)
-- recommendations (event/user/enterprise/similar + interaction logging)
-- assistant (RAG query/ingest/stats/session)
-- translation (translate/detect)
-- transcripts (transcribe/file/detect/languages/ws)
+### Governance and Operations
+- Audit logs and action tracking
+- Incident/content flag management
+- Live monitoring metrics endpoints
 
 ---
 
-## 7. Frontend Architecture (Current)
+## 8) Frontend Architecture and Route Coverage
 
-### 7.1 Route Groups and Layouts
+Primary app structure:
+- Root app router under `frontend/src/app`
+- Role-separated route groups:
+  - `(admin)`
+  - `(organizer)`
+  - `(enterprise)`
 
-Layouts:
-- root layout: `src/app/layout.tsx`
-- admin layout: `src/app/(admin)/admin/layout.tsx`
-- organizer layout: `src/app/(organizer)/organizer/layout.tsx`
-- enterprise layout: `src/app/(enterprise)/enterprise/layout.tsx`
+Public/common routes include:
+- landing page
+- auth (login/register)
+- events list and event details
+- event live pages and stand detail pages
+- event payment page
+- dashboard/profile/favorites/assistant/webinars
+- meetings room page
 
-Root layout uses:
-- `AuthProvider`
-- `ClientLayout`
-- Inter font
-
-### 7.2 Current Page Inventory (high-level)
-
-Public/common:
-- `/`, `/events`, `/events/[id]`, `/events/[id]/live`, stand pages, payment page
-- `/auth/login`, `/auth/register`
-- `/dashboard`, `/profile`, `/favorites`, `/assistant`, `/webinars`
-- meeting room page (`/meetings/[meetingId]/room`)
-
-Admin:
-- dashboard, events list/detail, event sessions, event monitoring, event enterprises
-- analytics platform + per-event
+Admin pages include:
+- dashboard
 - users, organizations, subscriptions, payments
 - incidents, audit, monitoring
-- organizer registrations, event join requests, enterprises listing
-- organizer report page
+- events list/detail, per-event sessions, monitoring, enterprises, organizer report
+- analytics overview and per-event analytics
+- organizer registrations and event join requests
 
-Organizer:
-- dashboard, events list/new/detail/analytics
-- profile, subscription, notifications
+Organizer pages include:
+- dashboard
+- event list/new/detail/analytics
+- profile, notifications, subscription
 
-Enterprise:
+Enterprise pages include:
 - dashboard, profile, notifications, communications
-- events list + per-event manage/stand/analytics/conferences/live
-- products, product requests, leads, analytics, conferences list
+- events list and per-event manage/stand/analytics/conferences/live pages
+- products and product requests
+- leads and analytics
+- conferences overview
 
-Marketplace pages:
-- currently `success` and `cancel` pages are present
-- no `src/app/marketplace/page.tsx` exists in current tree
+Marketplace frontend route status:
+- `frontend/src/app/marketplace/success/page.tsx` exists
+- `frontend/src/app/marketplace/cancel/page.tsx` exists
+- `frontend/src/app/marketplace/page.tsx` is still not present
 
-### 7.3 Frontend API Layer and Services
+Current route density signal:
+- 61 `page.tsx` files found under `frontend/src/app/**/page.tsx`
 
-HTTP clients:
-- `src/lib/http.ts`
-- `src/lib/api/client.ts`
+---
 
-API helpers:
-- `src/lib/api/endpoints.ts`
-- typed API modules: `events.ts`, `notifications.ts`, `organizations.ts`, `organizer.ts`
+## 9) Frontend Data/API Layer Snapshot
 
-Services in use:
-- `auth.service.ts`
-- `events.service.ts`
-- `favorites.service.ts`
-- `assistant.service.ts`
-- `admin.service.ts`
-- `organizer.service.ts`
+API client and endpoint layers exist in:
+- `frontend/src/lib/http.ts`
+- `frontend/src/lib/api/client.ts`
+- `frontend/src/lib/api/endpoints.ts`
 
-Placeholder/empty service files still present:
+Service layer currently includes (non-exhaustive):
+- auth service
+- events service
+- favorites service
+- assistant service
+- admin service
+- organizer service
+
+Known placeholder service/hook areas still present:
 - `chat.service.ts`
 - `stands.service.ts`
+- `useChat.ts`
+- `useEvents.ts`
+- `useNotifications.ts`
+- `useStands.ts`
 
-### 7.4 Hooks
+---
 
-Current hooks:
-- `useAuth.ts`
-- `useChatWebSocket.ts`
-- `useChat.ts` (placeholder)
-- `useEvents.ts` (placeholder)
-- `useNotifications.ts` (placeholder)
-- `useStands.ts` (placeholder)
+## 10) Data, Assets, and Runtime Storage
 
-### 7.5 Types
+Persistent and media storage seen in workspace:
+- `backend/data/chroma_db/` for local embedding/vector data persistence
+- `backend/uploads/` for user and business uploads
+  - enterprise profile assets
+  - payment-related uploads
+  - product images
+  - resources
 
-Current `src/types` files include:
-- `admin`, `analytics`, `audit`, `chat`, `conference`, `event`, `incident`, `marketplace`
-- `meeting`, `monitoring`, `organization`, `organizer`, `participant`, `sessions`, `stand`, `user`
+---
+
+## 11) Current Development Notes
+
+Backend local boot baseline:
+1. Create and activate virtual environment
+2. Install requirements
+3. Run backend with Uvicorn
+
+Frontend local boot baseline:
+1. Install Node dependencies
+2. Configure environment (API base URL)
+3. Run development server
+
+Observed in workspace context:
+- Multiple fix scripts indicate ongoing iterative stabilization on routers/payment/webhook/service paths.
+
+---
+
+## 12) Known Gaps / Technical Debt (Current)
+
+- subscriptions router is present but not mounted in backend application registration
+- some frontend hooks/services are placeholders and may not yet be wired to complete flows
+- marketplace landing/index route is absent (only success/cancel routes exist)
+
+---
+
+## 13) Change Log (Latest Verified Modifications)
+
+### 2026-03-18 - Backend startup ImportError fix
+
+Issue observed during backend startup:
+- ImportError in payments router: attempted to import `_configure` from marketplace stripe service, but symbol did not exist.
+
+Applied modification:
+- In `backend/app/modules/payments/router.py`, removed invalid/unused import:
+  - `from app.modules.marketplace.stripe_service import _configure as _stripe_configure`
+
+Validation performed:
+- Direct module import check succeeded:
+  - `import app.modules.payments.router`
+- Confirms previous startup blocker was removed.
+
+### Context correction included in this snapshot
+
+Updated documentation statement:
+- Frontend marketplace route folder exists with success and cancel pages.
+- There is still no standalone marketplace index page.
+
+---
+
+## 14) Reference Files for Ongoing Maintenance
+
+Primary reference files:
+- `PROJECT_CONTEXT.md` (this document)
+- `backend_api_guide.md`
+- `backend_implementation_details.md`
+- `docs/backend_routes_postman.md`
+
+Operationally useful scripts/docs in root:
+- `fix_*.py` scripts (hotfix helpers)
+- payload samples for login/registration under `backend/`
+
+---
+
+This snapshot is intended to be maintained as the single source of truth for current structure, implemented capabilities, and recently applied changes.
 
 Important state note:
 - `src/types/chat.ts` exists but is currently empty.

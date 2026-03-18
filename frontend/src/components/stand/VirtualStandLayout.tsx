@@ -168,15 +168,6 @@ export function VirtualStandLayout({
                             )}
                         </div>
                     )}
-                    {/* Stand name strip */}
-                    <div
-                        className="px-3 py-1.5 text-center"
-                        style={{ backgroundColor: `${themeColor}ee` }}
-                    >
-                        <p className="text-white font-bold text-[10px] sm:text-xs lg:text-sm drop-shadow truncate">
-                            {stand.name}
-                        </p>
-                    </div>
                 </div>
             </div>
 
@@ -251,7 +242,7 @@ export function VirtualStandLayout({
             </div>
 
             {/* Mobile-only welcome card (below banner) */}
-            <div className="absolute top-[34%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
+            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
                 <div className="bg-white/[0.92] backdrop-blur rounded-xl shadow-lg p-3 border border-white/60">
                     <h3 className="font-semibold text-gray-800 mb-1 text-[10px] uppercase tracking-wider">
                         Welcome
@@ -279,7 +270,7 @@ export function VirtualStandLayout({
                 {/* Name badge ABOVE the presenter */}
                 {stand.presenter_name && (
                     <div
-                        className="mb-1.5 px-3.5 py-1 rounded-full shadow-lg text-center backdrop-blur-sm"
+                        className="mb-[-6rem] sm:mb-[-0.5rem] px-3.5 py-1 rounded-full shadow-lg text-center backdrop-blur-sm"
                         style={{ backgroundColor: `${themeColor}dd` }}
                     >
                         <p className="text-[11px] sm:text-xs font-medium text-white whitespace-nowrap">
@@ -290,7 +281,7 @@ export function VirtualStandLayout({
                 <img
                     src={presenterImg}
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
-                    className="h-72 sm:h-72 lg:h-[26rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
+                    className="h-[36rem] sm:h-72 lg:h-[26rem] w-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
                     draggable={false}
                 />
             </div>
