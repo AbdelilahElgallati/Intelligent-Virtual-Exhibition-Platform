@@ -786,7 +786,11 @@ async def link_products_to_stand(
         product_type = str(prod.get("type") or "product")
         quantity = None
         if product_type != "service":
-            quantity = max(1, selected_quantity or int(prod.get("stock") or 1))
+            available_stock = max(0, int(prod.get("stock") or 0))
+            if available_stock <= 0:
+                continue
+            requested_qty = selected_quantity if selected_quantity is not None else available_stock
+            quantity = min(max(1, int(requested_qty)), available_stock)
 
         valid_ids.append(str(pid))
         product_links.append({"product_id": str(pid), "quantity": quantity})

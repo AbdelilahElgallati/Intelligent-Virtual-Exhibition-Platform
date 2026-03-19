@@ -22,6 +22,7 @@ from app.modules.marketplace.schemas import (
     CartCheckoutResponse,
     CheckoutRequest,
     CheckoutResponse,
+    OrderCancelRequest,
     OrderFulfillmentUpdate,
     OrderOut,
     ProductCreate,
@@ -428,6 +429,29 @@ async def update_order_fulfillment_status(
 
     await _require_stand_owner(order["stand_id"], user)
     updated = await mkt_svc.update_order_fulfillment_status(order_id, body.fulfillment_status, body.note)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return updated
+
+
+@router.patch("/orders/{order_id}/cancel", response_model=OrderOut)
+async def cancel_order(
+    order_id: str,
+    body: OrderCancelRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Stand owner / admin — cancel an order and restore stock when applicable."""
+    order = await mkt_svc.get_order(order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    await _require_stand_owner(order["stand_id"], user)
+
+    current_status = str(order.get("fulfillment_status") or "requested")
+    if current_status == "completed":
+        raise HTTPException(status_code=400, detail="Completed orders cannot be cancelled")
+
+    updated = await mkt_svc.cancel_order(order_id, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
     return updated

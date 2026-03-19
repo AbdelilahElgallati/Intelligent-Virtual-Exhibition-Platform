@@ -55,6 +55,7 @@ export const ENDPOINTS = {
       `/marketplace/stands/${standId}/products/${productId}/checkout`,
     STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
     UPDATE_ORDER_FULFILLMENT: (orderId: string) => `/marketplace/orders/${orderId}/fulfillment-status`,
+    CANCEL_ORDER: (orderId: string) => `/marketplace/orders/${orderId}/cancel`,
   },
   NOTIFICATIONS: {
     LIST: '/notifications',

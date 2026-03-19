@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import {
     Users, Calendar, MessageCircle, Search, Briefcase, Target,
-    Mail, Sparkles, UserCircle,
+    Mail, Sparkles, UserCircle, X, ExternalLink,
 } from 'lucide-react';
 
 /* ── Types ── */
@@ -20,6 +20,7 @@ interface NetworkingTabProps {
 
 interface Attendee {
     id: string;
+    _id?: string;
     full_name?: string;
     email: string;
     avatar_url?: string;
@@ -28,6 +29,12 @@ interface Attendee {
     job_title?: string;
     company?: string;
     industry?: string;
+    org_name?: string;
+    org_website?: string;
+    org_contact_email?: string;
+    org_contact_phone?: string;
+    org_city?: string;
+    org_country?: string;
     interests?: string[];
     networking_goals?: string[];
 }
@@ -52,13 +59,22 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
     const [loadingAttendees, setLoadingAttendees] = useState(true);
     const [loadingMeetings, setLoadingMeetings] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedAttendee, setSelectedAttendee] = useState<Attendee | null>(null);
 
     // Fetch attendees
     useEffect(() => {
         const fetchAttendees = async () => {
             try {
                 const data = await apiClient.get<Attendee[]>(ENDPOINTS.PARTICIPANTS.ATTENDEES(eventId));
-                setAttendees(data || []);
+                const raw = Array.isArray(data) ? data : [];
+                const normalized = raw
+                    .map((item, index) => ({
+                        ...item,
+                        id: String(item?.id || item?._id || item?.email || `attendee-${index}`),
+                    }))
+                    // Guard against duplicate records for the same user participation.
+                    .filter((item, index, arr) => arr.findIndex((x) => x.id === item.id) === index);
+                setAttendees(normalized);
             } catch (error) {
                 console.error('Failed to fetch attendees:', error);
                 setAttendees([]);
@@ -163,8 +179,12 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
                     </div>
                 ) : filtered.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {filtered.map((attendee) => (
-                            <AttendeeCard key={attendee.id} attendee={attendee} />
+                        {filtered.map((attendee, idx) => (
+                            <AttendeeCard
+                                key={`${attendee.id || attendee.email}-${idx}`}
+                                attendee={attendee}
+                                onReachOut={() => setSelectedAttendee(attendee)}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -198,8 +218,13 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
                     </div>
                 ) : meetings.length > 0 ? (
                     <div className="space-y-3">
-                        {meetings.map((meeting) => (
-                            <MeetingCard key={meeting.id} meeting={meeting} stands={stands} eventId={eventId} />
+                        {meetings.map((meeting, idx) => (
+                            <MeetingCard
+                                key={`${meeting.id || meeting.start_time}-${idx}`}
+                                meeting={meeting}
+                                stands={stands}
+                                eventId={eventId}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -234,13 +259,20 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
                     </li>
                 </ul>
             </section>
+
+            {selectedAttendee && (
+                <AttendeeReachOutModal
+                    attendee={selectedAttendee}
+                    onClose={() => setSelectedAttendee(null)}
+                />
+            )}
         </div>
     );
 }
 
 /* ── Attendee Card ── */
 
-function AttendeeCard({ attendee }: { attendee: Attendee }) {
+function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut: () => void }) {
     const initials = (attendee.full_name || attendee.email)
         .split(/[\s@]+/)
         .slice(0, 2)
@@ -326,13 +358,121 @@ function AttendeeCard({ attendee }: { attendee: Attendee }) {
 
             {/* Contact action */}
             <div className="mt-auto pt-3 border-t border-gray-100">
-                <a
-                    href={`mailto:${attendee.email}`}
+                <button
+                    type="button"
+                    onClick={onReachOut}
                     className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition"
                 >
                     <Mail className="h-3.5 w-3.5" />
                     Reach out
-                </a>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onClose: () => void }) {
+    const identity = attendee.full_name || attendee.company || attendee.email;
+    const location = [attendee.org_city, attendee.org_country].filter(Boolean).join(', ');
+    const roleLabel = attendee.role ? `${attendee.role[0].toUpperCase()}${attendee.role.slice(1)}` : 'Attendee';
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-indigo-50/60">
+                    <div>
+                        <h4 className="text-base font-bold text-gray-900">Connect with {identity}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">Networking profile and contact options</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-white"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+
+                <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <div className="flex items-start gap-3">
+                        {attendee.avatar_url ? (
+                            <img src={attendee.avatar_url} alt={identity} className="w-14 h-14 rounded-full object-cover" />
+                        ) : (
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center">
+                                {(identity || 'A').slice(0, 1).toUpperCase()}
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{identity}</p>
+                            <p className="text-xs text-gray-500">{roleLabel}</p>
+                            {(attendee.job_title || attendee.company) && (
+                                <p className="text-xs text-gray-600 mt-1 truncate">
+                                    {[attendee.job_title, attendee.company || attendee.org_name].filter(Boolean).join(' · ')}
+                                </p>
+                            )}
+                            {attendee.industry && (
+                                <p className="text-xs text-gray-500 mt-0.5">Industry: {attendee.industry}</p>
+                            )}
+                            {location && <p className="text-xs text-gray-500 mt-0.5">Location: {location}</p>}
+                        </div>
+                    </div>
+
+                    {attendee.bio && (
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">About</p>
+                            <p className="text-sm text-gray-600 leading-relaxed">{attendee.bio}</p>
+                        </div>
+                    )}
+
+                    {attendee.interests && attendee.interests.length > 0 && (
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Interests</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {attendee.interests.map((item, idx) => (
+                                    <span key={`${item}-${idx}`} className="px-2 py-0.5 rounded-full text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {attendee.networking_goals && attendee.networking_goals.length > 0 && (
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Networking goals</p>
+                            <p className="text-sm text-gray-600">{attendee.networking_goals.join(', ')}</p>
+                        </div>
+                    )}
+
+                    <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
+                        <a
+                            href={`mailto:${attendee.email}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                        >
+                            <Mail className="h-3.5 w-3.5" /> Email
+                        </a>
+
+                        {attendee.org_contact_email && attendee.org_contact_email !== attendee.email && (
+                            <a
+                                href={`mailto:${attendee.org_contact_email}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-50"
+                            >
+                                <Mail className="h-3.5 w-3.5" /> Org Email
+                            </a>
+                        )}
+
+                        {attendee.org_website && (
+                            <a
+                                href={attendee.org_website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50"
+                            >
+                                <ExternalLink className="h-3.5 w-3.5" /> Website
+                            </a>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

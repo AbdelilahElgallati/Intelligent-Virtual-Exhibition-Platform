@@ -149,6 +149,24 @@ export default function StandConfigPage() {
     const saveProducts = async () => {
         setIsSaving(true); setMessage(null);
         try {
+            const invalid = linkedProducts.find((entry) => {
+                const prod = myProducts.find((p) => (p.id || p._id) === entry.product_id);
+                if (!prod) return false;
+                const isService = (prod.type || 'product') === 'service';
+                if (isService) return false;
+                const stock = Math.max(0, Number(prod.stock || 0));
+                const qty = Number(entry.quantity || 0);
+                return qty < 1 || qty > stock;
+            });
+            if (invalid) {
+                const prod = myProducts.find((p) => (p.id || p._id) === invalid.product_id);
+                setMessage({
+                    type: 'error',
+                    text: `Invalid quantity for ${prod?.name || 'a product'}. Please choose a value between 1 and available stock.`,
+                });
+                return;
+            }
+
             await http.patch(`/enterprise/events/${eventId}/stand/products`, linkedProducts);
             setMessage({ type: 'success', text: 'Products linked!' });
         } catch (err: any) {
@@ -161,12 +179,16 @@ export default function StandConfigPage() {
     const toggleProductLink = (product: any) => {
         const pid = product.id || product._id;
         const isService = (product.type || 'product') === 'service';
+        const stock = Math.max(0, Number(product.stock || 0));
         setLinkedProducts((prev) => {
             const exists = prev.some((entry) => entry.product_id === pid);
             if (exists) {
                 return prev.filter((entry) => entry.product_id !== pid);
             }
-            return [...prev, { product_id: pid, quantity: isService ? null : Math.max(1, Number(product.stock || 1)) }];
+            if (!isService && stock <= 0) {
+                return prev;
+            }
+            return [...prev, { product_id: pid, quantity: isService ? null : stock }];
         });
     };
 
@@ -174,7 +196,9 @@ export default function StandConfigPage() {
         setLinkedProducts((prev) =>
             prev.map((entry) => {
                 if (entry.product_id !== productId) return entry;
-                return { ...entry, quantity: Math.max(1, nextQuantity) };
+                const prod = myProducts.find((p) => (p.id || p._id) === productId);
+                const stock = Math.max(0, Number(prod?.stock || 0));
+                return { ...entry, quantity: Math.min(Math.max(1, nextQuantity), Math.max(1, stock)) };
             })
         );
     };
@@ -379,6 +403,7 @@ export default function StandConfigPage() {
                                 const pid = prod.id || prod._id;
                                 const isLinked = isProductLinked(pid);
                                 const isService = (prod.type || 'product') === 'service';
+                                const stock = Math.max(0, Number(prod.stock || 0));
                                 const linkedEntry = linkedProducts.find((entry) => entry.product_id === pid);
                                 return (
                                     <div key={pid} onClick={() => toggleProductLink(prod)}
@@ -389,17 +414,22 @@ export default function StandConfigPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-zinc-900 text-sm">{prod.name}</h4>
-                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `${prod.price} MAD` : 'Quote Only'} · {(prod.type || 'product') === 'service' ? 'Service' : 'Product'}</p>
+                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `${prod.price} MAD` : 'Quote Only'} · {(prod.type || 'product') === 'service' ? 'Service' : `Product · ${stock} available`}</p>
+                                            {!isService && stock <= 0 && (
+                                                <p className="text-[11px] text-red-600 mt-1 font-semibold">Out of stock — cannot be selected</p>
+                                            )}
                                             {!isService && isLinked && (
                                                 <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                     <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Quantity</label>
                                                     <input
                                                         type="number"
                                                         min={1}
-                                                        value={linkedEntry?.quantity ?? 1}
+                                                        max={Math.max(1, stock)}
+                                                        value={Math.min(linkedEntry?.quantity ?? 1, Math.max(1, stock))}
                                                         onChange={(e) => updateLinkedQuantity(pid, parseInt(e.target.value || '1', 10) || 1)}
                                                         className="h-8 w-24 rounded-md border border-indigo-200 bg-white px-2 text-xs font-semibold text-zinc-700"
                                                     />
+                                                    <span className="text-[11px] text-zinc-500">Max {stock}</span>
                                                 </div>
                                             )}
                                         </div>

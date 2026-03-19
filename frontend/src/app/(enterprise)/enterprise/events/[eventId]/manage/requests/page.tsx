@@ -153,6 +153,7 @@ export default function EnterpriseEventRequestsPage() {
 
     const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
     const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null);
+    const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
     const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | FulfillmentStatus>("all");
     const [requestStatusFilter, setRequestStatusFilter] = useState<"all" | RequestStatus>("all");
     const [dateFilter, setDateFilter] = useState<DateFilter>("all");
@@ -234,6 +235,29 @@ export default function EnterpriseEventRequestsPage() {
             console.error("Failed to update request status", err);
         } finally {
             setUpdatingRequestId(null);
+        }
+    };
+
+    const handleCancelOrder = async (order: MarketplaceOrder) => {
+        const orderId = order.id;
+        if (!orderId) return;
+        const confirmed = window.confirm(
+            `Cancel order for "${order.product_name}"? This will mark the order as cancelled and restore stock for product items.`
+        );
+        if (!confirmed) return;
+
+        const note = window.prompt("Optional cancellation note", "Cancelled by enterprise: false order") || undefined;
+
+        try {
+            setCancellingOrderId(orderId);
+            await http.patch(ENDPOINTS.MARKETPLACE.CANCEL_ORDER(orderId), {
+                note,
+            });
+            await fetchData();
+        } catch (err) {
+            console.error("Failed to cancel order", err);
+        } finally {
+            setCancellingOrderId(null);
         }
     };
 
@@ -507,7 +531,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     <Button
                                                         size="sm"
                                                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                                                        disabled={updatingOrderId === orderId}
+                                                        disabled={updatingOrderId === orderId || cancellingOrderId === orderId}
                                                         onClick={() => handleOrderStatusUpdate(orderId, nextStatus)}
                                                     >
                                                         {updatingOrderId === orderId ? (
@@ -517,6 +541,23 @@ export default function EnterpriseEventRequestsPage() {
                                                         )}
                                                         Mark as {titleCase(nextStatus)}
                                                     </Button>
+
+                                                    {status !== "cancelled" && status !== "completed" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="w-full border-red-200 text-red-700 hover:bg-red-50"
+                                                            disabled={cancellingOrderId === orderId || updatingOrderId === orderId}
+                                                            onClick={() => handleCancelOrder(order)}
+                                                        >
+                                                            {cancellingOrderId === orderId ? (
+                                                                <Loader2 size={14} className="mr-1.5 animate-spin" />
+                                                            ) : (
+                                                                <Clock size={14} className="mr-1.5" />
+                                                            )}
+                                                            Cancel checkout order
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <span className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700">

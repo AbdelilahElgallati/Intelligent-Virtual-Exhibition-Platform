@@ -101,10 +101,82 @@ async def delete_product(product_id: str) -> bool:
 
 
 async def decrement_stock(product_id: str, qty: int) -> None:
-    await _db().stand_products.update_one(
+    if qty <= 0:
+        return
+
+    stand_product = await _db().stand_products.find_one(
         {"_id": _oid(product_id)},
+        {"stock": 1, "type": 1, "source_product_id": 1, "stand_id": 1},
+    )
+    if not stand_product:
+        return
+
+    if str(stand_product.get("type") or "product") == "service":
+        return
+
+    await _db().stand_products.update_one(
+        {"_id": stand_product["_id"]},
         {"$inc": {"stock": -qty}},
     )
+
+    source_product_id = stand_product.get("source_product_id")
+    if source_product_id:
+        source_oid = source_product_id if isinstance(source_product_id, ObjectId) else _to_object_id(str(source_product_id))
+        if source_oid:
+            # Keep enterprise catalog stock aligned when stand products are linked to source catalog items.
+            await _db().products.update_one(
+                {"_id": source_oid},
+                {"$inc": {"stock": -qty}},
+            )
+
+            stand_id = stand_product.get("stand_id")
+            if stand_id:
+                await _db().stands.update_one(
+                    {
+                        "_id": stand_id,
+                        "product_links.product_id": str(source_oid),
+                    },
+                    {"$inc": {"product_links.$.quantity": -qty}},
+                )
+
+
+async def increment_stock(product_id: str, qty: int) -> None:
+    if qty <= 0:
+        return
+
+    stand_product = await _db().stand_products.find_one(
+        {"_id": _oid(product_id)},
+        {"stock": 1, "type": 1, "source_product_id": 1, "stand_id": 1},
+    )
+    if not stand_product:
+        return
+
+    if str(stand_product.get("type") or "product") == "service":
+        return
+
+    await _db().stand_products.update_one(
+        {"_id": stand_product["_id"]},
+        {"$inc": {"stock": qty}},
+    )
+
+    source_product_id = stand_product.get("source_product_id")
+    if source_product_id:
+        source_oid = source_product_id if isinstance(source_product_id, ObjectId) else _to_object_id(str(source_product_id))
+        if source_oid:
+            await _db().products.update_one(
+                {"_id": source_oid},
+                {"$inc": {"stock": qty}},
+            )
+
+            stand_id = stand_product.get("stand_id")
+            if stand_id:
+                await _db().stands.update_one(
+                    {
+                        "_id": stand_id,
+                        "product_links.product_id": str(source_oid),
+                    },
+                    {"$inc": {"product_links.$.quantity": qty}},
+                )
 
 
 # ── Orders ──────────────────────────────────────────────────────────
@@ -222,6 +294,50 @@ async def update_order_fulfillment_status(
             "$push": {
                 "fulfillment_history": {
                     "status": fulfillment_status,
+                    "note": clean_note,
+                    "changed_at": now,
+                }
+            },
+        },
+    )
+    doc = await _db().stand_orders.find_one({"_id": _oid(order_id)})
+    return _serialize(doc) if doc else None
+
+
+async def cancel_order(
+    order_id: str,
+    note: Optional[str] = None,
+) -> Optional[dict]:
+    existing = await _db().stand_orders.find_one({"_id": _oid(order_id)})
+    if not existing:
+        return None
+
+    # Idempotent: if already cancelled, just return the current state.
+    if str(existing.get("status") or "") == "cancelled":
+        return _serialize(existing)
+
+    now = datetime.now(timezone.utc)
+    clean_note = (note or "Cancelled by stand owner").strip()
+    qty = int(existing.get("quantity") or 0)
+    product_id = existing.get("product_id")
+    was_paid = str(existing.get("status") or "") == "paid"
+
+    # Restore stock only for already-paid product orders.
+    if was_paid and product_id and qty > 0:
+        await increment_stock(str(product_id), qty)
+
+    await _db().stand_orders.update_one(
+        {"_id": _oid(order_id)},
+        {
+            "$set": {
+                "status": "cancelled",
+                "fulfillment_status": "cancelled",
+                "fulfillment_note": clean_note,
+                "fulfillment_updated_at": now,
+            },
+            "$push": {
+                "fulfillment_history": {
+                    "status": "cancelled",
                     "note": clean_note,
                     "changed_at": now,
                 }

@@ -91,6 +91,10 @@ class OrderFulfillmentUpdate(BaseModel):
     note: Optional[str] = Field(None, max_length=500)
 
 
+class OrderCancelRequest(BaseModel):
+    note: Optional[str] = Field(None, max_length=500)
+
+
 # ── Checkout ────────────────────────────────────────────────────────
 
 class CheckoutRequest(BaseModel):

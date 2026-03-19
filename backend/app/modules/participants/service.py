@@ -124,6 +124,11 @@ async def list_event_attendees(event_id: str) -> List[dict]:
                     org_info = {
                         "name": org_doc.get("name"),
                         "industry": org_doc.get("industry"),
+                        "website": org_doc.get("website"),
+                        "contact_email": org_doc.get("contact_email"),
+                        "contact_phone": org_doc.get("contact_phone"),
+                        "city": org_doc.get("city"),
+                        "country": org_doc.get("country"),
                     }
 
         prof = user_doc.get("professional_info") or {}
@@ -137,6 +142,12 @@ async def list_event_attendees(event_id: str) -> List[dict]:
             "job_title": prof.get("job_title"),
             "company": prof.get("company") or (org_info.get("name") if org_info else None),
             "industry": prof.get("industry") or (org_info.get("industry") if org_info else None),
+            "org_name": org_info.get("name") if org_info else None,
+            "org_website": org_info.get("website") if org_info else None,
+            "org_contact_email": org_info.get("contact_email") if org_info else None,
+            "org_contact_phone": org_info.get("contact_phone") if org_info else None,
+            "org_city": org_info.get("city") if org_info else user_doc.get("org_city"),
+            "org_country": org_info.get("country") if org_info else user_doc.get("org_country"),
             "interests": user_doc.get("interests") or [],
             "networking_goals": user_doc.get("networking_goals") or [],
         })
