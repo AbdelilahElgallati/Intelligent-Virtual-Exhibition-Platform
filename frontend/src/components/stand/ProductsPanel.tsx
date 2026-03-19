@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { X, ShoppingBag, ShoppingCart, Package, Minus, Plus, Loader2, Trash2, AlertCircle, Briefcase } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -40,6 +40,15 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     const [buyerPhone, setBuyerPhone] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cash_on_delivery'>('stripe');
     const [orderSuccess, setOrderSuccess] = useState(false);
+    const [placedOrderIds, setPlacedOrderIds] = useState<string[]>([]);
+    const [validationToast, setValidationToast] = useState<string | null>(null);
+    const deliveryInfoRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!validationToast) return;
+        const t = window.setTimeout(() => setValidationToast(null), 3200);
+        return () => window.clearTimeout(t);
+    }, [validationToast]);
 
     /* ---- Fetch products ---- */
     useEffect(() => {
@@ -97,6 +106,18 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     /* ---- Cart checkout ---- */
     const handleCartCheckout = async () => {
         if (cartItems.length === 0) return;
+        const shipping = shippingAddress.trim();
+        const phone = buyerPhone.trim();
+        const notes = deliveryNotes.trim();
+        if (!shipping || !phone || !notes) {
+            setView('cart');
+            setValidationToast('Please fill all required delivery information fields.');
+            window.setTimeout(() => {
+                deliveryInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 50);
+            return;
+        }
+
         setCheckingOut(true);
         try {
             const items = cartItems.map((c) => ({
@@ -107,9 +128,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 ENDPOINTS.MARKETPLACE.CART_CHECKOUT(standId),
                 {
                     items,
-                    shipping_address: shippingAddress || undefined,
-                    delivery_notes: deliveryNotes || undefined,
-                    buyer_phone: buyerPhone || undefined,
+                    shipping_address: shipping,
+                    delivery_notes: notes,
+                    buyer_phone: phone,
                     payment_method: paymentMethod,
                 },
             );
@@ -117,6 +138,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 window.location.href = resp.payment_url;
             } else {
                 // Cash on delivery or other direct completion
+                setPlacedOrderIds(Array.isArray(resp.order_ids) ? resp.order_ids : []);
                 setCart({});
                 setOrderSuccess(true);
             }
@@ -131,6 +153,109 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     const fmt = (amount: number, currency: string = 'MAD') =>
         new Intl.NumberFormat('fr-MA', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
 
+    const downloadReceipt = async () => {
+        if (placedOrderIds.length === 0) {
+            alert('No order receipt available yet.');
+            return;
+        }
+
+        const { default: jsPDF } = await import('jspdf');
+        const autoTable = (await import('jspdf-autotable')).default;
+
+        const receiptPairs = await Promise.all(
+            placedOrderIds.map(async (orderId) => {
+                try {
+                    const receipt = await apiClient.get<any>(ENDPOINTS.MARKETPLACE.ORDER_RECEIPT(orderId));
+                    return receipt;
+                } catch {
+                    return null;
+                }
+            })
+        );
+
+        const validReceipts = receiptPairs.filter(Boolean) as any[];
+        if (validReceipts.length === 0) {
+            alert('Unable to fetch receipt details. Please try again later.');
+            return;
+        }
+
+        const firstReceipt = validReceipts[0] || {};
+        const currency = (firstReceipt.currency || 'MAD').toUpperCase();
+        const grandTotal = validReceipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const now = new Date();
+        const receiptNo = `RCPT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.setTextColor(79, 70, 229);
+        doc.text('ORDER RECEIPT', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Receipt #: ${receiptNo}`, 14, 32);
+        doc.text(`Date: ${now.toLocaleDateString()}`, 14, 38);
+        doc.text(`Status: ORDER PLACED`, 14, 44);
+
+        doc.setFontSize(12);
+        doc.setTextColor(30);
+        doc.text('Intelligent Virtual Exhibition Platform', 112, 22);
+
+        doc.setDrawColor(200);
+        doc.line(14, 52, 196, 52);
+
+        doc.setFontSize(10);
+        doc.setTextColor(60);
+        doc.text(`Buyer: ${firstReceipt.buyer_name || 'Visitor'}`, 14, 60);
+        if (firstReceipt.buyer_email) doc.text(`Email: ${firstReceipt.buyer_email}`, 14, 66);
+        if (firstReceipt.buyer_phone) doc.text(`Phone: ${firstReceipt.buyer_phone}`, 14, 72);
+        doc.text(`Seller: ${firstReceipt.seller_name || 'Enterprise Stand'}`, 112, 60);
+        doc.text(`Shipping: ${firstReceipt.shipping_address || 'Not provided'}`, 14, 80);
+        doc.text(`Delivery Notes: ${firstReceipt.delivery_notes || '—'}`, 14, 86);
+
+        const rows = validReceipts.map((r: any, i: number) => {
+            const qty = Number(r.quantity || 1);
+            const amount = Number(r.amount || 0);
+            const unitPrice = qty > 0 ? amount / qty : amount;
+            return [
+                String(i + 1),
+                r.product_name || 'Item',
+                String(qty),
+                `${unitPrice.toFixed(2)} ${currency}`,
+                `${amount.toFixed(2)} ${currency}`,
+                r.payment_method === 'cash_on_delivery' ? 'Pay on Reception (COD)' : 'Stripe',
+            ];
+        });
+
+        autoTable(doc, {
+            startY: 94,
+            head: [['#', 'Item', 'Qty', 'Unit Price', 'Subtotal', 'Payment']],
+            body: rows,
+            theme: 'striped',
+            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', fontSize: 10 },
+            styles: { fontSize: 9, cellPadding: 4 },
+            columnStyles: {
+                0: { cellWidth: 12, halign: 'center' },
+                2: { cellWidth: 14, halign: 'center' },
+                3: { cellWidth: 34, halign: 'right' },
+                4: { cellWidth: 34, halign: 'right' },
+            },
+        });
+
+        const finalY = (doc as any).lastAutoTable?.finalY || 140;
+        doc.setFontSize(12);
+        doc.setTextColor(30);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Grand Total: ${grandTotal.toFixed(2)} ${currency}`, 196, finalY + 14, { align: 'right' });
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120);
+        doc.text(`Order IDs: ${placedOrderIds.join(', ')}`, 14, finalY + 14);
+        doc.text('This is an automatically generated receipt.', 14, 285);
+
+        doc.save(`order-receipt-${receiptNo}.pdf`);
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
@@ -138,6 +263,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
             {/* Modal */}
             <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-gray-200/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+                {validationToast && (
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-md rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 shadow-lg">
+                        {validationToast}
+                    </div>
+                )}
 
                 {/* ---- Header ---- */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100" style={{ backgroundColor: `${themeColor}08` }}>
@@ -329,6 +459,12 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         Your order has been received. You will pay for it on reception.
                                     </p>
                                     <button
+                                        onClick={downloadReceipt}
+                                        className="mt-4 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+                                    >
+                                        Download Receipt
+                                    </button>
+                                    <button
                                         onClick={() => {
                                             setOrderSuccess(false);
                                             setView('products');
@@ -425,36 +561,39 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     </div>
 
                                     {/* ---- Shipping / Delivery Info ---- */}
-                                    <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Delivery Information (optional)</h4>
+                                    <div ref={deliveryInfoRef} className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Delivery Information (required)</h4>
                                         <div className="space-y-3">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Shipping Address</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Shipping Address *</label>
                                                 <input
                                                     type="text"
                                                     value={shippingAddress}
                                                     onChange={(e) => setShippingAddress(e.target.value)}
                                                     placeholder="Enter your full shipping address"
+                                                    required
                                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Phone Number</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Phone Number *</label>
                                                 <input
                                                     type="tel"
                                                     value={buyerPhone}
                                                     onChange={(e) => setBuyerPhone(e.target.value)}
                                                     placeholder="+212 6XX XXX XXX"
+                                                    required
                                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Delivery Notes</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Delivery Notes *</label>
                                                 <textarea
                                                     value={deliveryNotes}
                                                     onChange={(e) => setDeliveryNotes(e.target.value)}
                                                     placeholder="Any special instructions for delivery..."
                                                     rows={2}
+                                                    required
                                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent resize-none"
                                                 />
                                             </div>
@@ -513,24 +652,35 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     Total: {fmt(cartTotal)}
                                 </p>
                             </div>
-                            <button
-                                onClick={handleCartCheckout}
-                                disabled={checkingOut}
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-60"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                {checkingOut ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Processing…
-                                    </>
-                                ) : (
-                                    <>
-                                        <ShoppingBag className="w-4 h-4" />
-                                        Checkout · {fmt(cartTotal)}
-                                    </>
-                                )}
-                            </button>
+                            {view === 'cart' ? (
+                                <button
+                                    onClick={handleCartCheckout}
+                                    disabled={checkingOut}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-60"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    {checkingOut ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Processing…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ShoppingBag className="w-4 h-4" />
+                                            Checkout · {fmt(cartTotal)}
+                                        </>
+                                    )}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setView('cart')}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    <ShoppingCart className="w-4 h-4" />
+                                    Go to Cart
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

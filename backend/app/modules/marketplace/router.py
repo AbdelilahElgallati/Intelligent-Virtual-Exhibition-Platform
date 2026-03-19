@@ -209,7 +209,7 @@ async def checkout_product(
         f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
         f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
     )
-    cancel_url = f"{origin}/marketplace/cancel"
+    cancel_url = f"{origin}/marketplace/cancel?stand_id={stand_id}&event_id={stand.get('event_id', '')}"
 
     try:
         stripe_currency = 'mad'
@@ -306,7 +306,7 @@ async def cart_checkout(
         f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
         f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
     )
-    cancel_url = f"{origin}/marketplace/cancel"
+    cancel_url = f"{origin}/marketplace/cancel?stand_id={stand_id}&event_id={stand.get('event_id', '')}"
 
     # Build detailed line items for Stripe
     cart_line_items = []

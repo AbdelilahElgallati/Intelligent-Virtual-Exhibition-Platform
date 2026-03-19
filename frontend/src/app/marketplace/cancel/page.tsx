@@ -2,8 +2,16 @@
 
 import Link from 'next/link';
 import { XCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function MarketplaceCancelPage() {
+    const searchParams = useSearchParams();
+    const standIdFromUrl = searchParams.get('stand_id');
+    const eventIdFromUrl = searchParams.get('event_id');
+    const backToStandHref = (standIdFromUrl && eventIdFromUrl)
+        ? `/events/${eventIdFromUrl}/stands/${standIdFromUrl}`
+        : '/events';
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center p-4">
             <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
@@ -18,10 +26,10 @@ export default function MarketplaceCancelPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Link
-                        href="/events"
+                        href={backToStandHref}
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                        Browse Events
+                        Go Back to Stand
                     </Link>
                     <Link
                         href="/dashboard"
