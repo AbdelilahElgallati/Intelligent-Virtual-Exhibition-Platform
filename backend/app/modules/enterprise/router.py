@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
-from typing import List, Optional
+from typing import Any, List, Optional
 from datetime import datetime, timezone
 import uuid
 import os
 import shutil
+from urllib.parse import urlparse, parse_qs
 
 from app.core.dependencies import require_role
 from app.modules.auth.enums import Role
@@ -22,10 +23,9 @@ from app.modules.enterprise.schemas import (
 from app.modules.enterprise.repository import enterprise_repo
 from app.modules.leads.service import lead_service
 from app.modules.leads.schemas import LeadInteraction
-from app.modules.stands.service import get_stand_by_org
 from app.modules.participants.schemas import ParticipantStatus
 from app.modules.events.service import get_event_by_id
-from app.modules.stands.service import get_stand_by_org, update_stand
+from app.modules.stands.service import get_stand_by_org, update_stand, create_stand
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from bson import ObjectId
@@ -124,10 +124,29 @@ async def get_enterprise_participant(event_id: str, org_id: str) -> Optional[dic
     return stringify_object_ids(doc) if doc else None
 
 
+def _is_accepted_participant_status(status_value: Optional[str]) -> bool:
+    return status_value in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value)
+
+
+def _event_token_is_valid(event: dict, token: str, kind: str) -> bool:
+    token_field = f"{kind}_invite_token"
+    stored = event.get(token_field)
+    if stored and token == stored:
+        return True
+
+    # Backward compatibility with old links where token lived in the URL query.
+    link = event.get(f"{kind}_link")
+    if not link:
+        return False
+    parsed = urlparse(link)
+    legacy_token = parse_qs(parsed.query).get("token", [None])[0]
+    return bool(legacy_token and token == legacy_token)
+
+
 async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> dict:
     """Guard helper — returns stand only if enterprise is APPROVED for the event."""
     participant = await get_enterprise_participant(event_id, org_id)
-    if not participant or participant.get("status") != ParticipantStatus.APPROVED.value:
+    if not participant or not _is_accepted_participant_status(participant.get("status")):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Enterprise not approved for this event",
@@ -136,6 +155,31 @@ async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> 
     if not stand:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
     return stand
+
+
+async def ensure_enterprise_stand(event_id: str, org_id: str, org_hint: Optional[dict] = None) -> dict:
+    """Ensure an enterprise stand exists once participation becomes APPROVED."""
+    stand = await get_stand_by_org(event_id, org_id)
+    if stand:
+        return stand
+
+    org_doc = org_hint
+    if not org_doc:
+        db = get_database()
+        org_doc = await db.organizations.find_one({"_id": ObjectId(org_id)}) if ObjectId.is_valid(org_id) else None
+        if not org_doc:
+            org_doc = await db.organizations.find_one({"_id": org_id})
+        if org_doc:
+            org_doc = stringify_object_ids(org_doc)
+
+    stand_name = (org_doc or {}).get("name") or "Enterprise Stand"
+    stand_description = (org_doc or {}).get("description")
+    return await create_stand(
+        event_id=event_id,
+        organization_id=org_id,
+        name=stand_name,
+        description=stand_description,
+    )
 
 
 # ─── Week 1: Profile, Products, Product Requests ─────────────────────────────
@@ -360,7 +404,7 @@ async def enterprise_join_event(
     event_id: str,
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    """Enterprise requests to join an event (status = PENDING_PAYMENT)."""
+    """Enterprise requests to join an event (status = PENDING_ADMIN_APPROVAL)."""
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -389,13 +433,86 @@ async def enterprise_join_event(
         "organization_id": org_id,
         "user_id": str(current_user["_id"]),
         "role": Role.ENTERPRISE.value,
-        "status": ParticipantStatus.PENDING_PAYMENT.value,
+        "status": ParticipantStatus.PENDING_ADMIN_APPROVAL.value,
         "stand_fee_paid": False,
         "payment_reference": None,
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.participants.insert_one(doc)
     doc["_id"] = result.inserted_id
+    return stringify_object_ids(doc)
+
+
+@router.post("/events/{event_id}/accept-invite")
+async def enterprise_accept_invite(
+    event_id: str,
+    token: Optional[str] = Query(None, min_length=8),
+    current_user: dict = Depends(require_role(Role.ENTERPRISE)),
+):
+    """Accept organizer enterprise invite and grant guest-approved access without payment."""
+    event = await get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    stored_token = event.get("enterprise_invite_token")
+    legacy_link = event.get("enterprise_link")
+    legacy_token = None
+    if legacy_link:
+        parsed = urlparse(legacy_link)
+        legacy_token = parse_qs(parsed.query).get("token", [None])[0]
+
+    if token:
+        if not _event_token_is_valid(event, token, "enterprise"):
+            raise HTTPException(status_code=403, detail="Invalid or expired enterprise invite token")
+    elif stored_token or legacy_token:
+        raise HTTPException(status_code=403, detail="Invite token is required for this event")
+
+    org = await get_enterprise_org(current_user)
+    org_id = str(org["id"])
+    db = get_database()
+    now = datetime.now(timezone.utc)
+
+    existing = await get_enterprise_participant(event_id, org_id)
+    if existing:
+        if _is_accepted_participant_status(existing.get("status")):
+            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+            return existing
+
+        from pymongo import ReturnDocument
+        pid = existing.get("_id")
+        if isinstance(pid, str) and ObjectId.is_valid(pid):
+            pid = ObjectId(pid)
+
+        updated = await db.participants.find_one_and_update(
+            {"_id": pid},
+            {"$set": {
+                "status": ParticipantStatus.GUEST_APPROVED.value,
+                "stand_fee_paid": True,
+                "payment_reference": "invite_guest_access",
+                "updated_at": now,
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        if updated:
+            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+            return stringify_object_ids(updated)
+        raise HTTPException(status_code=500, detail="Failed to accept invite")
+
+    doc = {
+        "event_id": str(event_id),
+        "organization_id": org_id,
+        "user_id": str(current_user["_id"]),
+        "role": Role.ENTERPRISE.value,
+        "status": ParticipantStatus.GUEST_APPROVED.value,
+        "stand_fee_paid": True,
+        "payment_reference": "invite_guest_access",
+        "created_at": now,
+        "updated_at": now,
+    }
+    result = await db.participants.insert_one(doc)
+    doc["_id"] = result.inserted_id
+
+    await ensure_enterprise_stand(event_id, org_id, org_hint=org)
     return stringify_object_ids(doc)
 
 
@@ -424,7 +541,7 @@ async def enterprise_pay_stand_fee(
 
     stand_fee = event.get("stand_price", 0) or 0
     if stand_fee <= 0:
-        # Free stand fee — just approve directly
+        # Free stand fee — approve directly and provision stand access
         payment_ref = str(uuid.uuid4())
         db = get_database()
         from pymongo import ReturnDocument
@@ -433,10 +550,13 @@ async def enterprise_pay_stand_fee(
             {"$set": {
                 "stand_fee_paid": True,
                 "payment_reference": payment_ref,
-                "status": ParticipantStatus.APPROVED,
+                "status": ParticipantStatus.APPROVED.value,
+                "updated_at": datetime.now(timezone.utc),
             }},
             return_document=ReturnDocument.AFTER,
         )
+        if updated:
+            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
         return stringify_object_ids(updated)
 
     amount_cents = int(math.ceil(stand_fee * 100))
@@ -511,7 +631,8 @@ async def enterprise_verify_payment(
         raise HTTPException(status_code=404, detail="Participation not found")
 
     # Already approved — idempotent
-    if participant.get("status") == ParticipantStatus.APPROVED:
+    if _is_accepted_participant_status(participant.get("status")):
+        await ensure_enterprise_stand(event_id, org_id, org_hint=org)
         return {"status": "approved"}
 
     try:
@@ -533,11 +654,13 @@ async def enterprise_verify_payment(
             "stand_fee_paid": True,
             "payment_reference": transaction_id,
             "stripe_session_id": session_id,
-            "status": ParticipantStatus.APPROVED,
+            "status": ParticipantStatus.APPROVED.value,
+            "updated_at": datetime.now(timezone.utc),
         }},
         return_document=ReturnDocument.AFTER,
     )
     if updated:
+        await ensure_enterprise_stand(event_id, org_id, org_hint=org)
         logger.info("Enterprise stand fee verified for %s in event %s", org_id, event_id)
         return {"status": "approved"}
     raise HTTPException(status_code=500, detail="Failed to update participant status")
@@ -571,15 +694,19 @@ async def enterprise_pay_callback(event_id: str, request: "Request"):
             from pymongo import ReturnDocument
             pid = ObjectId(order_id) if ObjectId.is_valid(order_id) else order_id
             updated = await db.participants.find_one_and_update(
-                {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT},
+                {"_id": pid, "status": ParticipantStatus.PENDING_PAYMENT.value},
                 {"$set": {
                     "stand_fee_paid": True,
                     "payment_reference": transaction_id,
-                    "status": ParticipantStatus.APPROVED,
+                    "status": ParticipantStatus.APPROVED.value,
+                    "updated_at": datetime.now(timezone.utc),
                 }},
                 return_document=ReturnDocument.AFTER,
             )
             if updated:
+                org_id = str(updated.get("organization_id") or "")
+                if org_id:
+                    await ensure_enterprise_stand(event_id, org_id)
                 logger.info("Enterprise stand fee paid for participant %s", order_id)
 
     return {"status": "ok"}
@@ -608,7 +735,7 @@ async def update_enterprise_stand(
     stand = await get_approved_stand(event_id, str(org["id"]), current_user)
 
     allowed_fields = {"name", "description", "logo_url", "theme_color", "stand_background_url",
-                      "presenter_name", "presenter_avatar_url", "tags", "category"}
+                      "presenter_name", "presenter_avatar_url", "presenter_avatar_bg", "tags", "category"}
     update_data = {k: v for k, v in data.items() if k in allowed_fields and v is not None}
     if not update_data:
         return stand
@@ -618,29 +745,104 @@ async def update_enterprise_stand(
 @router.patch("/events/{event_id}/stand/products")
 async def link_products_to_stand(
     event_id: str,
-    product_ids: List[str],
+    payload: List[Any],
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    """Link enterprise products to the stand (deduplication + ownership check)."""
+    """Link enterprise catalog products/services to stand and sync marketplace catalog entries."""
     org = await get_enterprise_org(current_user)
     stand = await get_approved_stand(event_id, str(org["id"]), current_user)
 
     db = get_database()
-    valid_ids = []
-    for pid in product_ids:
-        if ObjectId.is_valid(pid):
-            prod = await db.products.find_one({
-                "_id": ObjectId(pid),
-                "enterprise_id": str(current_user["_id"]),
-                "is_active": True,
-            })
-            if prod:
-                valid_ids.append(str(pid))
+    valid_ids: List[str] = []
+    product_links: List[dict] = []
+    synced_docs: List[dict] = []
+
+    for item in payload:
+        pid: Optional[str] = None
+        selected_quantity: Optional[int] = None
+
+        if isinstance(item, str):
+            pid = item
+        elif isinstance(item, dict):
+            pid = str(item.get("product_id") or item.get("id") or "")
+            raw_qty = item.get("quantity")
+            if raw_qty is not None:
+                try:
+                    selected_quantity = int(raw_qty)
+                except (TypeError, ValueError):
+                    selected_quantity = None
+
+        if not pid or not ObjectId.is_valid(pid):
+            continue
+
+        prod = await db.products.find_one({
+            "_id": ObjectId(pid),
+            "enterprise_id": str(current_user["_id"]),
+            "is_active": True,
+        })
+        if not prod:
+            continue
+
+        product_type = str(prod.get("type") or "product")
+        quantity = None
+        if product_type != "service":
+            quantity = max(1, selected_quantity or int(prod.get("stock") or 1))
+
+        valid_ids.append(str(pid))
+        product_links.append({"product_id": str(pid), "quantity": quantity})
+        synced_docs.append(
+            {
+                "source_product_id": ObjectId(pid),
+                "name": str(prod.get("name") or ""),
+                "description": str(prod.get("description") or ""),
+                "price": float(prod.get("price") or 0),
+                "currency": str(prod.get("currency") or "MAD"),
+                "image_url": str(prod.get("image_url") or ""),
+                "stock": 0 if product_type == "service" else int(quantity or 1),
+                "type": product_type,
+            }
+        )
 
     from pymongo import ReturnDocument
+    stand_oid = ObjectId(stand["id"]) if ObjectId.is_valid(stand["id"]) else stand["id"]
+
+    for sync_doc in synced_docs:
+        await db.stand_products.update_one(
+            {
+                "stand_id": stand_oid,
+                "source_product_id": sync_doc["source_product_id"],
+            },
+            {
+                "$set": {
+                    "name": sync_doc["name"],
+                    "description": sync_doc["description"],
+                    "price": sync_doc["price"],
+                    "currency": sync_doc["currency"],
+                    "image_url": sync_doc["image_url"],
+                    "stock": sync_doc["stock"],
+                    "type": sync_doc["type"],
+                },
+                "$setOnInsert": {
+                    "stand_id": stand_oid,
+                    "source_product_id": sync_doc["source_product_id"],
+                    "created_at": datetime.now(timezone.utc),
+                },
+            },
+            upsert=True,
+        )
+
+    source_oids = [doc["source_product_id"] for doc in synced_docs]
+    cleanup_filter: dict[str, Any] = {
+        "stand_id": stand_oid,
+        "source_product_id": {"$exists": True},
+    }
+    if source_oids:
+        cleanup_filter["source_product_id"] = {"$nin": source_oids}
+    await db.stand_products.delete_many(cleanup_filter)
+
     updated = await db.stands.find_one_and_update(
-        {"_id": ObjectId(stand["id"])},
-        {"$set": {"products": valid_ids}},
+        {"_id": stand_oid},
+        {"$set": {"products": valid_ids, "product_links": product_links}},
         return_document=ReturnDocument.AFTER,
     )
     return stringify_object_ids(updated)

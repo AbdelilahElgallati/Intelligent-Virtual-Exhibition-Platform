@@ -14,6 +14,7 @@ import {
     CalendarClock, Lock, CalendarCheck,
 } from 'lucide-react';
 import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -32,6 +33,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; badgeClass: 
     },
     approved: {
         label: 'Stand Approved',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        icon: <CheckCircle2 size={13} />,
+    },
+    guest_approved: {
+        label: 'Guest Approved',
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
         icon: <CheckCircle2 size={13} />,
@@ -192,156 +199,279 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const evId = ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
+    const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';
     const statusConf = partStatus ? STATUS_CONFIG[partStatus] : null;
     const standPrice = getStandPrice(ev);
-    const now = new Date();
     const evState = ev.state || '';
-    const scheduleWindow = getEventScheduleWindow(ev);
-    const isEventEnded = evState === 'closed' || (scheduleWindow.end !== null && now > scheduleWindow.end);
-    const canConfigure = partStatus === 'approved' && !isEventEnded;
+    const lifecycle = getEventLifecycle(ev);
+    const isEventEnded = evState === 'closed' || lifecycle.status === 'ended';
+    const isEventLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+    const isEventUpcoming = lifecycle.status === 'upcoming';
+    const canConfigure = isAccepted && !isEventEnded;
+    const canManage = isAccepted && isEventLive;
+    const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
+
+    const fmtDate = (d?: string) => d
+        ? new Date(d).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+        : null;
+    const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
+    const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
+
+    // Accent color based on event lifecycle
+    const accentColor = isEventLive
+        ? 'from-emerald-500 to-teal-500'
+        : isEventEnded
+            ? 'from-zinc-400 to-zinc-500'
+            : isEventUpcoming
+                ? 'from-indigo-500 to-purple-500'
+                : 'from-amber-500 to-orange-500';
+
+    const accentText = isEventLive ? 'text-emerald-600' : isEventEnded ? 'text-zinc-500' : isEventUpcoming ? 'text-indigo-600' : 'text-amber-600';
+    const accentBg = isEventLive ? 'bg-emerald-50' : isEventEnded ? 'bg-zinc-50' : isEventUpcoming ? 'bg-indigo-50' : 'bg-amber-50';
+    const accentBorder = isEventLive ? 'border-emerald-200' : isEventEnded ? 'border-zinc-200' : isEventUpcoming ? 'border-indigo-200' : 'border-amber-200';
+
+    const downloadReceipt = async () => {
+        try {
+            const user = await http.get<any>('/users/me').catch(() => null);
+            await downloadEnterpriseStandFeeReceiptPdf({
+                eventId: String(evId),
+                eventTitle: ev.title || 'Event',
+                organizerName: ev.organizer_name || '',
+                buyerName: user?.full_name || user?.name || 'Enterprise',
+                buyerEmail: user?.email || '',
+                amount: Number(standPrice || 0),
+                paidAt: participation?.updated_at,
+                paymentReference: participation?.payment_reference || 'N/A',
+                paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+            });
+        } catch (error) {
+            console.error('Error generating receipt:', error);
+            alert('Could not generate receipt.');
+        }
+    };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
             onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
                 onClick={e => e.stopPropagation()}>
 
-                {/* Banner / Header */}
-                <div className="relative">
-                    {ev.banner_url ? (
-                        <div className="h-44 w-full overflow-hidden rounded-t-2xl">
-                            <img src={resolveMediaUrl(ev.banner_url)} alt={ev.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-t-2xl" />
-                        </div>
-                    ) : (
-                        <div className="h-44 w-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl" />
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                        <div className="flex items-end justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-bold drop-shadow">{ev.title}</h2>
-                                <p className="text-white/80 text-sm mt-0.5 capitalize">
-                                    {(ev.state || ev.status || '').replace(/_/g, ' ')}
-                                </p>
-                            </div>
-                            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0">
-                                <X size={20} />
-                            </button>
-                        </div>
-                    </div>
-                    {statusConf && (
-                        <span className={`absolute top-4 right-14 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${statusConf.color}`}>
-                            {statusConf.icon} {statusConf.label}
-                        </span>
-                    )}
+                {/* Accent bar */}
+                <div className={`h-1.5 bg-gradient-to-r ${accentColor} flex-shrink-0`}>
+                    {isEventLive && <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-teal-400 animate-pulse" />}
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Description */}
-                    {ev.description && (
-                        <p className="text-zinc-600 text-sm leading-relaxed">{ev.description}</p>
-                    )}
+                {/* Scrollable content */}
+                <div className="overflow-y-auto flex-1">
+                    {/* Banner */}
+                    <div className="relative">
+                        {ev.banner_url ? (
+                            <div className="h-48 w-full overflow-hidden">
+                                <img src={resolveMediaUrl(ev.banner_url)} alt={ev.title} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                            </div>
+                        ) : (
+                            <div className={`h-48 w-full bg-gradient-to-br ${accentColor} opacity-90`} />
+                        )}
 
-                    {/* Key Info Grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        {ev.organizer_name && (
-                            <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl">
-                                <Building2 size={16} className="text-indigo-600 flex-shrink-0" />
-                                <div>
-                                    <p className="text-xs text-zinc-500">Organizer</p>
-                                    <p className="text-sm font-semibold text-zinc-900">{ev.organizer_name}</p>
-                                </div>
-                            </div>
+                        {/* Close button */}
+                        <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 rounded-full text-white transition-colors backdrop-blur-sm">
+                            <X size={18} />
+                        </button>
+
+                        {/* Title overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                            <h2 className="text-2xl font-bold tracking-tight drop-shadow-lg">{ev.title}</h2>
+                            {(startDate || endDate) && (
+                                <p className="text-white/80 text-sm mt-1 flex items-center gap-1.5">
+                                    <Calendar size={13} />
+                                    {startDate}{endDate && startDate !== endDate ? ` — ${endDate}` : ''}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Status hero strip */}
+                    <div className={`px-6 py-3 ${accentBg} border-b ${accentBorder} flex items-center justify-between flex-wrap gap-2`}>
+                        <div className="flex items-center gap-3">
+                            {/* Event status */}
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${accentText}`}>
+                                {isEventLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                                {isEventLive ? 'Live Now' : isEventEnded ? 'Event Ended' : isEventUpcoming ? 'Upcoming' : (evState || '').replace(/_/g, ' ')}
+                            </span>
+                            {/* Participation status */}
+                            {statusConf && (
+                                <>
+                                    <span className="text-zinc-300">•</span>
+                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
+                                        {statusConf.icon} {statusConf.label}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                        {/* Countdown / live slot */}
+                        {isEventLive && lifecycle.activeSlotLabel && (
+                            <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                                {lifecycle.activeSlotLabel}
+                            </span>
                         )}
-                        {ev.location && (
-                            <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl">
-                                <MapPin size={16} className="text-indigo-600 flex-shrink-0" />
-                                <div>
-                                    <p className="text-xs text-zinc-500">Location</p>
-                                    <p className="text-sm font-semibold text-zinc-900">{ev.location}</p>
-                                </div>
-                            </div>
-                        )}
-                        {(ev.max_stands || ev.num_enterprises) && (
-                            <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl">
-                                <Users size={16} className="text-indigo-600 flex-shrink-0" />
-                                <div>
-                                    <p className="text-xs text-zinc-500">Enterprise Slots</p>
-                                    <p className="text-sm font-semibold text-zinc-900">
-                                        {ev.stands_left !== undefined
-                                            ? `${ev.stands_left} of ${ev.max_stands || ev.num_enterprises} remaining`
-                                            : `${ev.max_stands || ev.num_enterprises} stands`
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                        {standPrice !== null && (
-                            <div className={`flex items-center gap-3 p-3 rounded-xl border ${standPrice > 0 ? 'bg-amber-50 border-amber-100' : 'bg-zinc-50 border-zinc-100'}`}>
-                                <DollarSign size={16} className={standPrice > 0 ? 'text-amber-600 flex-shrink-0' : 'text-zinc-400 flex-shrink-0'} />
-                                <div>
-                                    <p className={`text-xs ${standPrice > 0 ? 'text-amber-600' : 'text-zinc-500'}`}>Stand Fee</p>
-                                    <p className={`text-sm font-bold ${standPrice > 0 ? 'text-amber-800' : 'text-zinc-600'}`}>
-                                        {standPrice > 0 ? `$${standPrice}` : 'Free'}
-                                    </p>
-                                </div>
-                            </div>
+                        {isEventUpcoming && lifecycle.nextSlotStart && (
+                            <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full">
+                                {formatTimeToStart(lifecycle.nextSlotStart)}
+                            </span>
                         )}
                     </div>
 
-                    {/* Day-by-Day Schedule */}
-                    <ScheduleSection ev={ev} />
+                    <div className="p-6 space-y-5">
+                        {/* Description */}
+                        {ev.description && (
+                            <p className="text-zinc-600 text-sm leading-relaxed">{ev.description}</p>
+                        )}
 
-                    {/* Tags */}
-                    {ev.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {ev.tags.map((tag: string) => (
-                                <span key={tag} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full border border-indigo-100">
-                                    <Tag size={10} /> {tag}
-                                </span>
-                            ))}
+                        {/* Info grid — compact */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                            {ev.organizer_name && (
+                                <div className="flex items-center gap-2.5 p-3 bg-zinc-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                        <Building2 size={14} className="text-indigo-600" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Organizer</p>
+                                        <p className="text-sm font-semibold text-zinc-900 truncate">{ev.organizer_name}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {ev.location && (
+                                <div className="flex items-center gap-2.5 p-3 bg-zinc-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                        <MapPin size={14} className="text-indigo-600" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Location</p>
+                                        <p className="text-sm font-semibold text-zinc-900 truncate">{ev.location}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {(ev.max_stands || ev.num_enterprises) && (
+                                <div className="flex items-center gap-2.5 p-3 bg-zinc-50 rounded-xl">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                        <Users size={14} className="text-indigo-600" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Enterprise Slots</p>
+                                        <p className="text-sm font-semibold text-zinc-900">
+                                            {ev.stands_left !== undefined
+                                                ? `${ev.stands_left} of ${ev.max_stands || ev.num_enterprises} left`
+                                                : `${ev.max_stands || ev.num_enterprises} stands`
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            {standPrice !== null && (
+                                <div className={`flex items-center gap-2.5 p-3 rounded-xl ${standPrice > 0 ? 'bg-amber-50' : 'bg-zinc-50'}`}>
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${standPrice > 0 ? 'bg-amber-100' : 'bg-zinc-100'}`}>
+                                        <DollarSign size={14} className={standPrice > 0 ? 'text-amber-600' : 'text-zinc-400'} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className={`text-[10px] uppercase tracking-wider font-semibold ${standPrice > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>Stand Fee</p>
+                                        <p className={`text-sm font-bold ${standPrice > 0 ? 'text-amber-800' : 'text-zinc-600'}`}>
+                                            {standPrice > 0 ? `${standPrice} MAD` : 'Free'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
 
-                    {/* Rejection reason */}
-                    {partStatus === 'rejected' && participation?.rejection_reason && (
-                        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-                            <p className="text-xs font-semibold text-red-700 mb-1">Rejection Reason</p>
-                            <p className="text-sm text-red-800">{participation.rejection_reason}</p>
-                        </div>
-                    )}
+                        {/* Tags */}
+                        {ev.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {ev.tags.map((tag: string) => (
+                                    <span key={tag} className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
-                        {!participation && !isEventEnded && (
-                            <Button onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1">
-                                Request to Join
-                            </Button>
+                        {/* Day-by-Day Schedule */}
+                        <ScheduleSection ev={ev} />
+
+                        {/* Rejection reason */}
+                        {partStatus === 'rejected' && participation?.rejection_reason && (
+                            <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+                                <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-xs font-bold text-red-700 mb-0.5">Rejection Reason</p>
+                                    <p className="text-sm text-red-800">{participation.rejection_reason}</p>
+                                </div>
+                            </div>
                         )}
-                        {partStatus === 'pending_payment' && !isEventEnded && (
-                            <Button
-                                onClick={() => onPay(evId)}
-                                isLoading={actionLoading === evId + '_pay'}
-                                className={`flex-1 ${standPrice === 0 ? 'bg-zinc-600 hover:bg-zinc-700' : 'bg-amber-600 hover:bg-amber-700'}`}
-                            >
-                                <CreditCard size={16} className="mr-2" />
-                                {standPrice === 0 ? 'Confirm (Free Stand)' : `Pay Stand Fee (${standPrice} MAD)`}
-                            </Button>
+
+                        {/* Quick navigation — for accepted users */}
+                        {isAccepted && (
+                            <div className="grid grid-cols-3 gap-2">
+                                {canManage && (
+                                    <Link href={`/enterprise/events/${evId}/manage`}>
+                                        <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
+                                            <MessageSquare size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Manage</span>
+                                        </div>
+                                    </Link>
+                                )}
+                                {canAnalytics && (
+                                    <Link href={`/enterprise/events/${evId}/analytics`}>
+                                        <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
+                                            <BarChart3 size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Analytics</span>
+                                        </div>
+                                    </Link>
+                                )}
+                                {canConfigure && (
+                                    <Link href={`/enterprise/events/${evId}/stand`}>
+                                        <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
+                                            <Settings size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Configure</span>
+                                        </div>
+                                    </Link>
+                                )}
+                            </div>
                         )}
-                        {partStatus === 'pending_admin_approval' && (
-                            <Button disabled className="flex-1 opacity-60 cursor-not-allowed">
-                                Waiting for Admin Approval…
-                            </Button>
-                        )}
-                        {canConfigure && (
-                            <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
-                                <Button className="w-full flex items-center gap-2">
-                                    <Settings size={16} /> Configure Stand
-                                </Button>
-                            </Link>
-                        )}
-                        <Button variant="outline" onClick={onClose} className="px-5">Close</Button>
                     </div>
+                </div>
+
+                {/* Sticky action footer */}
+                <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/80 flex gap-3 flex-shrink-0">
+                    {!participation && !isEventEnded && (
+                        <Button onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm shadow-indigo-200">
+                            Request to Join
+                        </Button>
+                    )}
+                    {partStatus === 'pending_payment' && !isEventEnded && (
+                        <Button
+                            onClick={() => onPay(evId)}
+                            isLoading={actionLoading === evId + '_pay'}
+                            className={`flex-1 h-11 font-bold shadow-sm ${standPrice === 0 ? 'bg-zinc-600 hover:bg-zinc-700 shadow-zinc-200' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'}`}
+                        >
+                            <CreditCard size={16} className="mr-2" />
+                            {standPrice === 0 ? 'Confirm Free Stand' : `Pay Stand Fee (${standPrice} MAD)`}
+                        </Button>
+                    )}
+                    {partStatus === 'pending_admin_approval' && (
+                        <Button disabled className="flex-1 h-11 opacity-60 cursor-not-allowed font-bold">
+                            <Loader size={16} className="mr-2 animate-spin" /> Waiting for Admin Approval
+                        </Button>
+                    )}
+                    {isAccepted && (
+                        <button
+                            onClick={downloadReceipt}
+                            title="Download Receipt"
+                            className="h-11 px-4 flex items-center gap-2 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold transition-colors"
+                        >
+                            <Download size={14} /> Receipt
+                        </button>
+                    )}
+                    <Button variant="outline" onClick={onClose} className="px-5 h-11 border-zinc-200 font-bold">Close</Button>
                 </div>
             </div>
         </div>
@@ -361,6 +491,7 @@ function EnterpriseEventCard({
     const evId = ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
+    const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';
     const statusConf = partStatus ? STATUS_CONFIG[partStatus] : null;
     const standPrice = getStandPrice(ev);
 
@@ -391,107 +522,123 @@ function EnterpriseEventCard({
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
 
     // Timeline status
-    const now = new Date();
     const evState = ev.state || '';
-    const scheduleWindow = getEventScheduleWindow(ev);
-    const evStart = scheduleWindow.start;
-    const evEnd = scheduleWindow.end;
-    const isEventEnded = evState === 'closed' || (evEnd !== null && now > evEnd);
-    const isEventLive = evState === 'live' && evStart !== null && evEnd !== null && now >= evStart && now <= evEnd;
-    const isEventUpcoming = !isEventEnded && evStart !== null && now < evStart;
+    const lifecycle = getEventLifecycle(ev);
+    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+    const isEventEnded = evState === 'closed' || lifecycle.status === 'ended';
+    const isEventLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+    const isEventUpcoming = lifecycle.status === 'upcoming' && !isBetweenSlots;
     const isEventNotReady = ['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(evState);
-    const canManage = partStatus === 'approved' && isEventLive;
-    const canAnalytics = partStatus === 'approved' && (isEventLive || isEventEnded);
-    const canConfigure = partStatus === 'approved' && !isEventEnded;
+    const canManage = isAccepted && lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+    const canConfigure = isAccepted && !isEventEnded;
+
+    // Single status label for the card
+    const timelineBadge = isEventLive
+        ? { label: 'Live', class: 'bg-emerald-500 text-white', pulse: true }
+        : isEventEnded
+            ? { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false }
+            : isBetweenSlots
+                ? { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false }
+                : isEventUpcoming && !isEventNotReady
+                    ? { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false }
+                    : isEventNotReady
+                        ? { label: (evState || '').replace(/_/g, ' '), class: 'bg-amber-100 text-amber-700', pulse: false }
+                        : null;
+
+    // Primary action
+    const primaryAction = canManage
+        ? { label: 'Manage Event', href: `/enterprise/events/${evId}/manage`, icon: <MessageSquare size={14} /> }
+        : canConfigure
+            ? { label: 'Configure Stand', href: `/enterprise/events/${evId}/stand`, icon: <Settings size={14} /> }
+            : null;
 
     return (
-        <div className={`bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col group ${isEventEnded ? 'opacity-75' : ''}`}>
-            {/* Banner */}
-            <div className="relative h-44 w-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-600 flex-shrink-0">
+        <div
+            className={`bg-white rounded-2xl border overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 ${
+                isEventEnded
+                    ? 'opacity-70 border-zinc-200'
+                    : isEventLive
+                        ? 'border-emerald-200 shadow-md shadow-emerald-50 hover:shadow-lg hover:shadow-emerald-100'
+                        : 'border-zinc-200 shadow-sm hover:shadow-lg hover:border-indigo-200'
+            }`}
+            onClick={onDetails}
+        >
+            {/* Banner — clean with just one status pill */}
+            <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0">
                 {ev.banner_url ? (
                     <img
                         src={resolveMediaUrl(ev.banner_url)}
                         alt={ev.title}
-                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${isEventEnded ? 'grayscale-[40%]' : ''}`}
+                        className={`w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ${isEventEnded ? 'grayscale-[40%]' : ''}`}
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center opacity-30">
-                        <Globe size={48} className="text-white" />
+                        <Globe size={40} className="text-white" />
                     </div>
                 )}
-                {/* Status badge — participation */}
-                {statusConf ? (
-                    <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${statusConf.badgeClass}`}>
-                        {statusConf.icon} {statusConf.label}
-                    </span>
-                ) : (
-                    <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/90 text-zinc-600 border border-zinc-200 capitalize">
-                        {(ev.state || '').replace(/_/g, ' ')}
-                    </span>
-                )}
-                {/* Timeline badge — top-left */}
-                {isEventLive && (
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500 text-white border border-emerald-400 shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
-                    </span>
-                )}
-                {isEventUpcoming && !isEventNotReady && (
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500 text-white border border-indigo-400 shadow-sm">
-                        <CalendarClock size={11} /> Upcoming
-                    </span>
-                )}
-                {isEventEnded && (
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full bg-zinc-600 text-white border border-zinc-500 shadow-sm">
-                        <CalendarCheck size={11} /> Ended
-                    </span>
-                )}
-                {/* Stand fee badge — only show when there's an actual price */}
-                {standPrice !== null && (
-                    <span className={`absolute bottom-3 left-3 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${standPrice > 0 ? 'bg-amber-500 text-white' : 'bg-white/90 text-zinc-600 border border-zinc-200'}`}>
-                        <DollarSign size={9} />
-                        {standPrice > 0 ? `$${standPrice} stand fee` : 'Free stand'}
+                {/* Subtle gradient overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+                {/* Single timeline badge */}
+                {timelineBadge && (
+                    <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${timelineBadge.class}`}>
+                        {timelineBadge.pulse && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                        {timelineBadge.label}
                     </span>
                 )}
             </div>
 
             {/* Body */}
-            <div className="p-5 flex flex-col flex-1 gap-3">
-                <div>
-                    <h3 className="font-bold text-zinc-900 text-base leading-snug group-hover:text-indigo-700 transition-colors line-clamp-1">
-                        {ev.title}
-                    </h3>
-                    {ev.description && (
-                        <p className="text-sm text-zinc-500 mt-1 line-clamp-2 leading-relaxed">{ev.description}</p>
-                    )}
-                </div>
+            <div className="p-5 flex flex-col flex-1 gap-2.5">
+                {/* Title */}
+                <h3 className="font-bold text-zinc-900 text-[15px] leading-snug group-hover:text-indigo-700 transition-colors line-clamp-1">
+                    {ev.title}
+                </h3>
 
-                {/* Meta */}
-                <div className="flex flex-col gap-1.5 text-xs text-zinc-400">
-                    {ev.organizer_name && (
-                        <span className="flex items-center gap-1.5">
-                            <Building2 size={12} className="text-indigo-400 flex-shrink-0" />
-                            <span className="truncate font-medium text-zinc-600">{ev.organizer_name}</span>
+                {/* Date line */}
+                {(startDate || endDate) && (
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                        <Calendar size={12} className="text-indigo-400 flex-shrink-0" />
+                        <span>{startDate}{endDate && startDate !== endDate ? ` - ${endDate}` : ''}</span>
+                    </div>
+                )}
+
+                {/* Lifecycle timing */}
+                {isEventLive && lifecycle.activeSlotLabel && (
+                    <div className="text-[11px] font-semibold text-emerald-600">
+                        Live slot: {lifecycle.activeSlotLabel}
+                    </div>
+                )}
+                {lifecycle.status === 'upcoming' && lifecycle.nextSlotStart && (
+                    <div className="text-[11px] font-semibold text-indigo-600">
+                        {formatTimeToStart(lifecycle.nextSlotStart)}
+                    </div>
+                )}
+
+                {/* Participation status */}
+                {statusConf && (
+                    <div className={`flex items-center gap-1.5 text-[11px] font-semibold w-fit`}>
+                        <span className={`inline-flex items-center gap-1 ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
+                            {statusConf.icon} {statusConf.label}
                         </span>
-                    )}
-                    {(startDate || endDate) && (
-                        <span className="flex items-center gap-1.5">
-                            <Calendar size={12} className="text-indigo-400 flex-shrink-0" />
-                            {startDate}{endDate && startDate !== endDate ? ` → ${endDate}` : ''}
-                        </span>
-                    )}
-                    {ev.location && (
-                        <span className="flex items-center gap-1.5">
-                            <MapPin size={12} className="text-indigo-400 flex-shrink-0" />
-                            <span className="truncate">{ev.location}</span>
-                        </span>
-                    )}
-                </div>
+                    </div>
+                )}
+                {!participation && !isEventEnded && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                        <Clock size={11} /> Not registered
+                    </div>
+                )}
+
+                {/* Description */}
+                {ev.description && (
+                    <p className="text-[13px] text-zinc-500 line-clamp-2 leading-relaxed">{ev.description}</p>
+                )}
 
                 {/* Tags */}
                 {ev.tags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 mt-0.5">
                         {ev.tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">
+                            <span key={tag} className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">
                                 {tag}
                             </span>
                         ))}
@@ -499,14 +646,11 @@ function EnterpriseEventCard({
                     </div>
                 )}
 
-                {/* Stands left indicator */}
+                {/* Stands left (only for non-participants) */}
                 {ev.stands_left !== undefined && ev.num_enterprises > 0 && !participation && (
-                    <div className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border w-fit ${ev.stands_left === 0
-                        ? 'bg-red-50 text-red-600 border-red-200'
-                        : ev.stands_left <= 2
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        }`}>
+                    <div className={`flex items-center gap-1.5 text-[10px] font-bold w-fit ${
+                        ev.stands_left === 0 ? 'text-red-500' : ev.stands_left <= 2 ? 'text-amber-600' : 'text-emerald-600'
+                    }`}>
                         <Users size={10} />
                         {ev.stands_left === 0 ? 'Fully Booked' : `${ev.stands_left} stand${ev.stands_left > 1 ? 's' : ''} left`}
                     </div>
@@ -514,16 +658,20 @@ function EnterpriseEventCard({
 
                 <div className="flex-1" />
 
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2 pt-4 mt-auto border-t border-zinc-100">
-                    {/* Row 1: Primary actions */}
+                {/* Actions */}
+                <div className="flex flex-col gap-2 pt-3 mt-auto border-t border-zinc-100" onClick={e => e.stopPropagation()}>
+                    {/* Row 1: View Details + primary CTA */}
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
                             View Details
                         </Button>
-                        {/* Join: available when not participated and event not ended */}
                         {!participation && !isEventEnded && ev.stands_left !== 0 && (
-                            <Button size="sm" onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold">
+                            <Button
+                                size="sm"
+                                onClick={() => onJoin(evId)}
+                                isLoading={actionLoading === evId}
+                                className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold"
+                            >
                                 Join Event
                             </Button>
                         )}
@@ -532,13 +680,12 @@ function EnterpriseEventCard({
                                 Fully Booked
                             </Button>
                         )}
-                        {/* Pay fee: only before event ends */}
                         {partStatus === 'pending_payment' && !isEventEnded && (
-                            <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-200 font-bold">
+                            <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-100 font-bold">
+                                <CreditCard size={14} className="mr-1.5" />
                                 {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
                             </Button>
                         )}
-                        {/* Manage Event: only when live */}
                         {canManage && (
                             <Link href={`/enterprise/events/${evId}/manage`} className="flex-1">
                                 <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
@@ -546,43 +693,48 @@ function EnterpriseEventCard({
                                 </Button>
                             </Link>
                         )}
+                        {!canManage && isAccepted && !isEventEnded && !canConfigure && (
+                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100 text-zinc-400">
+                                Scheduled
+                            </Button>
+                        )}
+                        {(partStatus === 'pending_admin_approval') && (
+                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100">
+                                Awaiting Approval
+                            </Button>
+                        )}
+                        {partStatus === 'rejected' && (
+                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-red-50 border-red-100 text-red-400">
+                                Rejected
+                            </Button>
+                        )}
                     </div>
 
-                    {/* Row 2: Configure + Analytics */}
-                    {(canConfigure || canAnalytics) && (
-                        <div className="flex gap-2">
-                            {canAnalytics && (
+                    {/* Row 2: Quick-access icon buttons — Analytics, Configure, Receipt */}
+                    {isAccepted && (
+                        <div className="flex gap-1.5">
+                            {(lifecycle.status === 'live' || lifecycle.status === 'ended') && (
                                 <Link href={`/enterprise/events/${evId}/analytics`} className="flex-1">
-                                    <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                    <button className="w-full h-9 flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 text-xs font-semibold text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
                                         <BarChart3 size={13} /> Analytics
-                                    </Button>
+                                    </button>
                                 </Link>
                             )}
                             {canConfigure && (
                                 <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
-                                    <Button size="sm" variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-zinc-200 font-semibold text-zinc-600">
+                                    <button className="w-full h-9 flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 text-xs font-semibold text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
                                         <Settings size={13} /> Configure
-                                    </Button>
+                                    </button>
                                 </Link>
                             )}
+                            <button
+                                onClick={downloadReceipt}
+                                title="Download Receipt"
+                                className="h-9 w-9 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-colors flex-shrink-0"
+                            >
+                                <Download size={14} />
+                            </button>
                         </div>
-                    )}
-
-                    {partStatus === 'approved' && (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={downloadReceipt}
-                            className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-emerald-200 text-emerald-700 font-semibold hover:bg-emerald-50"
-                        >
-                            <Download size={13} /> Download Receipt
-                        </Button>
-                    )}
-
-                    {(partStatus === 'pending_admin_approval' || partStatus === 'rejected') && (
-                        <Button size="sm" variant="outline" disabled className="w-full text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100">
-                            {partStatus === 'rejected' ? 'Request Rejected' : 'Waiting for Approval…'}
-                        </Button>
                     )}
                 </div>
             </div>

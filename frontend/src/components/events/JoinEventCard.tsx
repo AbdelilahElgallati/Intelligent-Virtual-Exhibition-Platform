@@ -2,15 +2,16 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { ParticipantStatus } from '@/lib/api/types';
+import { Event, ParticipantStatus } from '@/lib/api/types';
 import Link from 'next/link';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
 interface JoinEventCardProps {
   status: ParticipantStatus;
   onJoin: () => void;
   loading: boolean;
   eventId: string;
-  event?: { is_paid?: boolean; ticket_price?: number } | null;
+  event?: Event | null;
 }
 
 export const JoinEventCard: React.FC<JoinEventCardProps> = ({
@@ -20,13 +21,65 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
   eventId,
   event,
 }) => {
+  const lifecycle = event ? getEventLifecycle(event) : null;
+  const isBetweenSlots = !!(lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow);
+  const isAccepted = status === 'APPROVED' || status === 'GUEST_APPROVED';
+
   const renderContent = () => {
     switch (status) {
       case 'APPROVED':
+      case 'GUEST_APPROVED':
+        if (lifecycle && !lifecycle.hasScheduleSlots) {
+          return (
+            <>
+              <div className="bg-amber-50 text-amber-700 p-4 rounded-lg mb-4 text-sm font-medium">
+                Your registration is approved, but the event timeline is not published yet.
+                <span className="block mt-1 font-semibold">Access will open when schedule slots are published.</span>
+              </div>
+              <Button disabled className="w-full h-12 text-lg">
+                Waiting for Timeline
+              </Button>
+            </>
+          );
+        }
+
+        if (lifecycle?.status === 'upcoming') {
+          return (
+            <>
+              <div className={`${isBetweenSlots ? 'bg-blue-50 text-blue-700' : 'bg-cyan-50 text-cyan-700'} p-4 rounded-lg mb-4 text-sm font-medium`}>
+                {isBetweenSlots
+                  ? 'Event timeline is in progress. Live access opens at the next active slot.'
+                  : 'You are approved. Event access opens when the timeline goes live.'}
+                <span className="block mt-1 font-semibold">
+                  {isBetweenSlots
+                    ? `Next slot ${formatTimeToStart(lifecycle.nextSlotStart || null).replace('Starts in ', 'in ')}`
+                    : formatTimeToStart(lifecycle.nextSlotStart || null)}
+                </span>
+              </div>
+              <Button disabled className="w-full h-12 text-lg">
+                {isBetweenSlots ? 'Next Slot Soon' : 'Access Opens Soon'}
+              </Button>
+            </>
+          );
+        }
+
+        if (lifecycle?.status === 'ended') {
+          return (
+            <>
+              <div className="bg-slate-100 text-slate-700 p-4 rounded-lg mb-4 text-sm font-medium">
+                This event timeline has ended. Live access is now closed.
+              </div>
+              <Button disabled variant="outline" className="w-full h-12 text-lg">
+                Event Ended
+              </Button>
+            </>
+          );
+        }
+
         return (
           <>
             <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-4 text-sm font-medium">
-              Your registration is approved! You can now access the event.
+              Your registration is approved. You can access the live event now.
             </div>
             <Button asChild className="w-full h-12 text-lg">
               <Link href={`/events/${eventId}/live`}>Enter Event</Link>
@@ -34,6 +87,19 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
           </>
         );
       case 'PAYMENT_REQUIRED':
+        if (lifecycle?.status === 'ended') {
+          return (
+            <>
+              <div className="bg-slate-100 text-slate-700 p-4 rounded-lg mb-4 text-sm font-medium">
+                This event has ended. New paid access is closed.
+              </div>
+              <Button disabled variant="outline" className="w-full h-12 text-lg">
+                Event Ended
+              </Button>
+            </>
+          );
+        }
+
         return (
           <>
             <div className="bg-orange-50 text-orange-700 p-4 rounded-lg mb-4 text-sm font-medium">
@@ -50,6 +116,19 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
           </>
         );
       case 'PAYMENT_PENDING':
+        if (lifecycle?.status === 'ended') {
+          return (
+            <>
+              <div className="bg-slate-100 text-slate-700 p-4 rounded-lg mb-4 text-sm font-medium">
+                Payment review exists, but live access is closed because the event ended.
+              </div>
+              <Button disabled variant="outline" className="w-full h-12 text-lg">
+                Event Ended
+              </Button>
+            </>
+          );
+        }
+
         return (
           <>
             <div className="bg-amber-50 text-amber-700 p-4 rounded-lg mb-4 text-sm font-medium">
@@ -84,6 +163,19 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
           </>
         );
       default:
+        if (lifecycle?.status === 'ended') {
+          return (
+            <>
+              <p className="text-muted-foreground mb-6">
+                This event timeline has ended. New registrations are closed.
+              </p>
+              <Button disabled variant="outline" className="w-full h-12 text-lg">
+                Event Ended
+              </Button>
+            </>
+          );
+        }
+
         return (
           <>
             <p className="text-muted-foreground mb-6">
@@ -107,8 +199,17 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
   };
 
   const getBadge = () => {
+    if (isAccepted && lifecycle) {
+      if (!lifecycle.hasScheduleSlots) return <Badge className="bg-amber-500 text-amber-900">TIMELINE PENDING</Badge>;
+      if (lifecycle.status === 'live') return <Badge className="bg-green-500">LIVE ACCESS</Badge>;
+      if (isBetweenSlots) return <Badge className="bg-blue-500">IN PROGRESS</Badge>;
+      if (lifecycle.status === 'upcoming') return <Badge className="bg-cyan-500">UPCOMING</Badge>;
+      return <Badge className="bg-slate-500">ENDED</Badge>;
+    }
+
     switch (status) {
       case 'APPROVED':
+      case 'GUEST_APPROVED':
         return <Badge className="bg-green-500">APPROVED</Badge>;
       case 'PAYMENT_REQUIRED':
         return <Badge className="bg-orange-500 text-white">PAYMENT REQUIRED</Badge>;

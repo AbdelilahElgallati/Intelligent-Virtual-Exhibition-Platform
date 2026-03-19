@@ -215,8 +215,6 @@ export default function EnterpriseProductsPage() {
                                         className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                                     >
                                         <option value="MAD">MAD</option>
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
                                     </select>
                                 </div>
 
@@ -392,7 +390,7 @@ export default function EnterpriseProductsPage() {
                                             )}
                                             <span className="font-bold text-indigo-600 text-sm flex items-center gap-0.5 ml-auto">
                                                 {p.price
-                                                    ? <>{p.price.toLocaleString()} {p.currency || 'MAD'}</>
+                                                    ? <>{p.price.toLocaleString()} MAD</>
                                                     : <span className="text-zinc-400 font-normal text-xs">No price</span>}
                                             </span>
                                         </div>

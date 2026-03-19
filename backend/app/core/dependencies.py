@@ -92,22 +92,11 @@ async def verify_jwt_token(token: str) -> dict:
     user = await get_user_by_id(user_id)
 
     if user is None:
-        # Synthetic fallback from token payload (development convenience)
-        try:
-            role_val = payload.get("role")
-            role_enum = Role(role_val) if role_val in [r.value for r in Role] else Role.VISITOR
-            user = {
-                "_id": user_id,
-                "full_name": "Authenticated User",
-                "role": role_enum,
-                "is_active": True,
-            }
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found for token subject. Please sign in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Normalize role if coming from Mongo
     if isinstance(user.get("role"), str):

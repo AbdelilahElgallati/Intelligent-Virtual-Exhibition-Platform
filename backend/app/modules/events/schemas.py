@@ -90,6 +90,7 @@ class EventBase(BaseModel):
     payment_proof_url: Optional[str] = None
     enterprise_link: Optional[str] = None
     visitor_link: Optional[str] = None
+    publicity_link: Optional[str] = None
     rejection_reason: Optional[str] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}

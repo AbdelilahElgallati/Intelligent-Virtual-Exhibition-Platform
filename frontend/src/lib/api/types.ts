@@ -5,7 +5,7 @@ export type { Stand, StandsListResponse } from '@/types/stand';
 
 // Types not yet elevated to types/ — defined here
 
-export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PENDING' | 'PAYMENT_REQUIRED' | 'PAYMENT_PENDING';
+export type ParticipantStatus = 'NOT_JOINED' | 'INVITED' | 'REQUESTED' | 'APPROVED' | 'GUEST_APPROVED' | 'REJECTED' | 'PENDING' | 'PAYMENT_REQUIRED' | 'PAYMENT_PENDING';
 
 export type PaymentStatus = 'none' | 'pending' | 'paid' | 'failed';
 

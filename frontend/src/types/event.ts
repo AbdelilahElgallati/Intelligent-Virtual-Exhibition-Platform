@@ -57,6 +57,7 @@ export interface OrganizerEvent {
     payment_proof_url?: string;
     enterprise_link?: string;
     visitor_link?: string;
+    publicity_link?: string;
     rejection_reason?: string;
 }
 

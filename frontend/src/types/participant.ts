@@ -4,7 +4,7 @@
 
 export interface ParticipantItem {
     id: string;
-    status: 'invited' | 'requested' | 'approved' | 'rejected';
+    status: 'invited' | 'requested' | 'pending_admin_approval' | 'pending_payment' | 'approved' | 'guest_approved' | 'rejected';
     created_at: string;
     user_id: string;
     rejection_reason?: string | null;

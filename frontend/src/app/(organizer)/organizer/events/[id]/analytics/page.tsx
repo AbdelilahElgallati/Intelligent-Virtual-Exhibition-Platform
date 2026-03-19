@@ -56,12 +56,17 @@ interface EventAnalytics {
   enterprises?: EnterpriseSummary[];
 }
 
+type AnalyticsPayload = {
+  kpis?: Kpi[];
+  distribution?: DistributionItem[] | Record<string, number>;
+  total_visitors?: number;
+  total_enterprises?: number;
+  total_stand_interactions?: number;
+  enterprises?: EnterpriseSummary[];
+};
+
 interface LiveEventAnalyticsResponse {
-  dashboard?: {
-    kpis?: Kpi[];
-    distribution?: Record<string, number> | DistributionItem[];
-    [key: string]: unknown;
-  };
+  dashboard?: AnalyticsPayload;
   live?: Record<string, number>;
 }
 
@@ -94,7 +99,7 @@ function normalizeDistribution(distribution: EventAnalytics["distribution"] | Re
   }));
 }
 
-function normalizeAnalyticsPayload(payload: Partial<EventAnalytics>): EventAnalytics {
+function normalizeAnalyticsPayload(payload: AnalyticsPayload): EventAnalytics {
   return {
     ...payload,
     kpis: payload.kpis ?? [],
@@ -276,7 +281,7 @@ export default function EventAnalyticsPage() {
       try {
         const fallbackPayload = await organizerService.getEventAnalytics(eventId);
         if (isMounted) {
-          setAnalytics(normalizeAnalyticsPayload(fallbackPayload as unknown as Partial<EventAnalytics>));
+          setAnalytics(normalizeAnalyticsPayload(fallbackPayload as AnalyticsPayload));
           setError(null);
         }
       } catch (fallbackErr) {
@@ -325,10 +330,11 @@ export default function EventAnalyticsPage() {
       await organizerService.exportEventReportPDF(eventId);
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Export failed:", err);
       // Use the error message from the service if available
-      setError(err.message || "Failed to export report. Please check your connection.");
+      const message = err instanceof Error ? err.message : "Failed to export report. Please check your connection.";
+      setError(message);
     } finally {
       setExportLoading(false);
     }

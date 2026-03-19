@@ -14,6 +14,8 @@ import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { ChatShell } from '@/components/assistant/ChatShell';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
+import { ParticipantStatus } from '@/lib/api/types';
+import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
     const { id, standId } = use(params);
@@ -27,21 +29,25 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [hasProducts, setHasProducts] = useState(false);
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
+    const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
+    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
     const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         const fetchStand = async () => {
             try {
-                const data = await apiClient.get<Stand>(ENDPOINTS.STANDS.GET(id, standId));
-                setStand(data);
+                const [data, evt, statusData] = await Promise.all([
+                    apiClient.get<Stand>(ENDPOINTS.STANDS.GET(id, standId)),
+                    apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id)).catch(() => null),
+                    apiClient
+                        .get<{ status: ParticipantStatus }>(ENDPOINTS.EVENTS.MY_STATUS(id))
+                        .catch(() => ({ status: 'NOT_JOINED' as ParticipantStatus })),
+                ]);
 
-                // Fetch event data for meeting schedule constraints
-                try {
-                    const evt = await apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id));
-                    setEventData(evt);
-                } catch {
-                    /* event fetch is non-critical */
-                }
+                setStand(data);
+                setEventData(evt);
+                setParticipantStatus(statusData.status || 'NOT_JOINED');
+                const resolvedStandId = (data as any).id || (data as any)._id || standId;
 
                 // Fetch favorites state
                 if (isAuthenticated) {
@@ -56,7 +62,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
 
                 // Check if stand has marketplace products
                 try {
-                    const products = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(standId));
+                    const products = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(resolvedStandId));
                     setHasProducts(Array.isArray(products) && products.length > 0);
                 } catch {
                     /* marketplace check is non-critical */
@@ -67,7 +73,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     await apiClient.post('/analytics/log', {
                         type: 'stand_visit',
                         event_id: id,
-                        stand_id: standId,
+                        stand_id: resolvedStandId,
                     });
                 } catch (e) {
                     // ignore
@@ -80,6 +86,14 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
         };
         fetchStand();
     }, [id, standId, isAuthenticated]);
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setTimelineNow(Date.now());
+        }, 30000);
+
+        return () => window.clearInterval(timer);
+    }, []);
 
     const toggleFavorite = async () => {
         if (!stand) return;
@@ -105,8 +119,88 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     if (loading) return <LoadingState message="Loading stand..." />;
     if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
 
+    const lifecycle = eventData ? getEventLifecycle(eventData, new Date(timelineNow)) : null;
+    const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
+    const canAccessLive = isApproved && lifecycle?.hasScheduleSlots && lifecycle.status === 'live';
+    const isBetweenSlots = Boolean(
+        lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
+    );
+
+    if (!isApproved) {
+        return (
+            <div className="min-h-[70vh] flex items-center justify-center px-4">
+                <div className="max-w-2xl w-full rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+                    <h3 className="text-xl font-semibold text-amber-900">Registration Required</h3>
+                    <p className="mt-2 text-amber-800">
+                        You need approved participation to access stands during live event slots.
+                    </p>
+                    <a
+                        href={`/events/${id}`}
+                        className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors"
+                    >
+                        Go to Event Registration
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (!lifecycle?.hasScheduleSlots) {
+        return (
+            <div className="min-h-[70vh] flex items-center justify-center px-4">
+                <div className="max-w-2xl w-full rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+                    <h3 className="text-xl font-semibold text-amber-900">Timeline Not Published Yet</h3>
+                    <p className="mt-2 text-amber-800">
+                        Stand access is enabled only during published live schedule slots.
+                    </p>
+                    <a
+                        href={`/events/${id}`}
+                        className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-700 text-white text-sm font-semibold hover:bg-amber-800 transition-colors"
+                    >
+                        Back to Event Details
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (!canAccessLive) {
+        return (
+            <div className="min-h-[70vh] flex items-center justify-center px-4">
+                <div className="max-w-2xl w-full rounded-2xl border border-cyan-200 bg-cyan-50 p-6 text-center">
+                    <h3 className={`text-xl font-semibold ${isBetweenSlots ? 'text-blue-900' : lifecycle?.status === 'ended' ? 'text-slate-900' : 'text-cyan-900'}`}>
+                        {lifecycle?.status === 'ended'
+                            ? 'Event Timeline Ended'
+                            : isBetweenSlots
+                              ? 'Event In Progress'
+                              : 'Event Not Live Yet'}
+                    </h3>
+                    <p className="mt-2 text-cyan-800">
+                        {lifecycle?.status === 'ended'
+                            ? 'This event has ended, so stand access is now closed.'
+                            : isBetweenSlots
+                              ? 'There is no active slot right now. Stand access opens automatically when the next slot starts.'
+                              : 'Stand access opens when the event enters a live schedule slot.'}
+                    </p>
+                    {lifecycle?.status !== 'ended' && (
+                        <p className="mt-3 text-sm font-semibold text-cyan-900">
+                            {formatTimeToStart(lifecycle?.nextSlotStart || null)}
+                        </p>
+                    )}
+                    <a
+                        href={`/events/${id}?tab=schedule`}
+                        className="inline-flex mt-4 px-4 py-2 rounded-lg bg-cyan-700 text-white text-sm font-semibold hover:bg-cyan-800 transition-colors"
+                    >
+                        View Event Schedule
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
     const themeColor = stand.theme_color ?? '#1e293b';
     const avatarBg = stand.presenter_avatar_bg ?? '#ffffff';
+    const resolvedStandId = (stand as any).id || (stand as any)._id || standId;
 
     return (
         <>
@@ -128,7 +222,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 {/* ----- Tab content passed as children ----- */}
                 {activeTab === 'resources' ? (
                     <div className="space-y-5">
-                        <StandResources standId={standId} />
+                        <StandResources standId={resolvedStandId} />
                         <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
                             <h4 className="font-bold text-indigo-900 mb-1 text-sm">Recommended for You</h4>
                             <p className="text-xs text-indigo-700">
@@ -151,7 +245,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             {/* Chat Panel */}
             {isChatOpen && (
                 <ChatPanel
-                    standId={standId}
+                    standId={resolvedStandId}
                     standName={stand.name}
                     onClose={() => setIsChatOpen(false)}
                     avatarBg={avatarBg}
@@ -162,10 +256,10 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
 
             {/* Assistant */}
             {isAssistantOpen && (
-                <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm">
-                    <div className="w-[90%] sm:w-[480px] md:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-3 sm:p-6">
+                    <div className="w-full max-w-5xl h-[88vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
                         <ChatShell
-                            scope={`stand-${standId}`}
+                            scope={`stand-${resolvedStandId}`}
                             title={`${stand.name} Assistant`}
                             subtitle="Ask anything about this stand and its resources."
                             suggestedPrompts={[
@@ -183,7 +277,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             {/* Shop Panel */}
             {isShopOpen && (
                 <ProductsPanel
-                    standId={standId}
+                    standId={resolvedStandId}
                     standName={stand.name}
                     themeColor={themeColor}
                     onClose={() => setIsShopOpen(false)}
@@ -194,8 +288,9 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             <MeetingRequestModal
                 isOpen={isMeetingModalOpen}
                 onClose={() => setIsMeetingModalOpen(false)}
-                standId={standId}
+                standId={resolvedStandId}
                 standName={stand.name}
+                eventId={id}
                 eventStartDate={eventData?.start_date}
                 eventEndDate={eventData?.end_date}
                 scheduleDays={eventData?.schedule_days}

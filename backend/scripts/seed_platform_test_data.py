@@ -103,7 +103,7 @@ def _event_blueprints() -> list[dict[str, Any]]:
             "description": "A live multi-day technology exhibition focused on AI, cloud platforms, robotics, and enterprise tooling.",
             "category": "Technology",
             "location": "IVEP Virtual Arena",
-            "banner_url": "/stands/future-tech-banner.jpg",
+            "banner_url": "/stands/office-bg.jpg",
             "tags": ["ai", "cloud", "robotics"],
             "num_enterprises": 5,
             "stand_price": 4500.0,
@@ -113,7 +113,7 @@ def _event_blueprints() -> list[dict[str, Any]]:
             "payment_amount": 13500.0,
             "created_at": NOW - timedelta(days=16),
             "start_date": NOW - timedelta(days=1),
-            "end_date": NOW + timedelta(days=2),
+            "end_date": NOW + timedelta(days=5),
             "enterprise_link": "https://ivep.local/future-tech-2026/enterprise",
             "visitor_link": "https://ivep.local/future-tech-2026/visitor",
             "day_specs": [
@@ -132,7 +132,14 @@ def _event_blueprints() -> list[dict[str, Any]]:
                     "slots": [
                         {"start_time": "09:30", "end_time": "11:00", "label": "Enterprise innovation conference", "is_conference": True},
                         {"start_time": "11:30", "end_time": "13:00", "label": "Stand demos"},
-                        {"start_time": "15:00", "end_time": "17:00", "label": "Investor meetings"},
+                        {"start_time": "15:00", "end_time": "23:59", "label": "Investor meetings"},
+                    ],
+                },
+                {
+                    "day_number": 3,
+                    "date_label": (NOW + timedelta(days=1)).date().isoformat(),
+                    "slots": [
+                        {"start_time": "09:00", "end_time": "23:59", "label": "Always-on demo and networking day"},
                     ],
                 },
             ],
@@ -147,7 +154,7 @@ def _event_blueprints() -> list[dict[str, Any]]:
             "description": "A fully approved sustainability summit ready for operations, exhibitor management, and visitor onboarding.",
             "category": "Sustainability",
             "location": "IVEP Green Campus",
-            "banner_url": "/stands/green-summit-banner.jpg",
+            "banner_url": "/stands/office-stand.jpeg",
             "tags": ["sustainability", "climate", "industry"],
             "num_enterprises": 4,
             "stand_price": 3200.0,
@@ -182,7 +189,7 @@ def _event_blueprints() -> list[dict[str, Any]]:
             "description": "A completed commercial event with historical activity for analytics and reporting validation.",
             "category": "Commerce",
             "location": "IVEP Commerce Hall",
-            "banner_url": "/stands/marketplace-growth-banner.jpg",
+            "banner_url": "/stands/office-bg.jpg",
             "tags": ["marketplace", "commerce", "growth"],
             "num_enterprises": 3,
             "stand_price": 2800.0,
@@ -216,7 +223,7 @@ def _event_blueprints() -> list[dict[str, Any]]:
             "description": "A newly created organizer request waiting for admin approval.",
             "category": "Operations",
             "location": "IVEP Request Queue",
-            "banner_url": "/stands/ops-expo-banner.jpg",
+            "banner_url": "/stands/office-bg.jpg",
             "tags": ["operations", "process", "automation"],
             "num_enterprises": 2,
             "stand_price": 2500.0,
@@ -241,6 +248,142 @@ def _event_blueprints() -> list[dict[str, Any]]:
             ],
             "extended_details": "Pending admin approval event request to exercise the admin moderation queue.",
             "additional_info": "No participants yet by design.",
+        },
+        {
+            "key": "finops-approved",
+            "title": "FinOps Acceleration Expo 2026",
+            "organizer_email": "organizer.amine@ivep.test",
+            "organizer_name": "Amine El Idrissi",
+            "description": "Admin-approved event open for enterprise join requests before organizer payment handoff.",
+            "category": "Finance",
+            "location": "IVEP Finance Hub",
+            "banner_url": "/stands/office-stand.jpeg",
+            "tags": ["finops", "cloud-cost", "efficiency"],
+            "num_enterprises": 3,
+            "stand_price": 3000.0,
+            "is_paid": False,
+            "ticket_price": None,
+            "state": EventState.APPROVED.value,
+            "payment_amount": None,
+            "created_at": NOW - timedelta(days=6),
+            "start_date": NOW + timedelta(days=12),
+            "end_date": NOW + timedelta(days=13),
+            "enterprise_link": None,
+            "visitor_link": None,
+            "day_specs": [
+                {
+                    "day_number": 1,
+                    "date_label": (NOW + timedelta(days=12)).date().isoformat(),
+                    "slots": [
+                        {"start_time": "09:00", "end_time": "11:00", "label": "Cloud cost governance"},
+                        {"start_time": "11:30", "end_time": "13:00", "label": "FinOps workshops"},
+                    ],
+                }
+            ],
+            "extended_details": "Approved event specifically seeded to test enterprise join-request lifecycle before payment completion.",
+            "additional_info": "Contains pending admin approval and pending payment enterprise participants.",
+        },
+        {
+            "key": "smart-factory-waiting-payment",
+            "title": "Smart Factory Connect 2026",
+            "organizer_email": "organizer.salma@ivep.test",
+            "organizer_name": "Salma Benyoussef",
+            "description": "Organizer-approved event waiting for organizer payment confirmation.",
+            "category": "Industry 4.0",
+            "location": "IVEP Industrial Pavilion",
+            "banner_url": "/stands/office-bg.jpg",
+            "tags": ["industry4.0", "iot", "automation"],
+            "num_enterprises": 4,
+            "stand_price": 3600.0,
+            "is_paid": True,
+            "ticket_price": 49.0,
+            "state": EventState.WAITING_FOR_PAYMENT.value,
+            "payment_amount": 10800.0,
+            "created_at": NOW - timedelta(days=10),
+            "start_date": NOW + timedelta(days=15),
+            "end_date": NOW + timedelta(days=17),
+            "enterprise_link": None,
+            "visitor_link": None,
+            "day_specs": [
+                {
+                    "day_number": 1,
+                    "date_label": (NOW + timedelta(days=15)).date().isoformat(),
+                    "slots": [
+                        {"start_time": "10:00", "end_time": "12:00", "label": "Factory digitization roadmap"},
+                        {"start_time": "14:00", "end_time": "16:00", "label": "Automation pilots"},
+                    ],
+                }
+            ],
+            "extended_details": "Waiting-for-payment state event for organizer payment verification and admin monitoring.",
+            "additional_info": "No active enterprise participation by design until lifecycle progresses.",
+        },
+        {
+            "key": "creative-week-payment-proof",
+            "title": "Creative Media Week 2026",
+            "organizer_email": "organizer.salma@ivep.test",
+            "organizer_name": "Salma Benyoussef",
+            "description": "Organizer payment proof submitted event awaiting admin payment validation.",
+            "category": "Media",
+            "location": "IVEP Creator Arena",
+            "banner_url": "/stands/office-stand.jpeg",
+            "tags": ["media", "creator", "production"],
+            "num_enterprises": 3,
+            "stand_price": 2900.0,
+            "is_paid": False,
+            "ticket_price": None,
+            "state": EventState.PAYMENT_PROOF_SUBMITTED.value,
+            "payment_amount": 8700.0,
+            "created_at": NOW - timedelta(days=8),
+            "start_date": NOW + timedelta(days=20),
+            "end_date": NOW + timedelta(days=21),
+            "enterprise_link": None,
+            "visitor_link": None,
+            "day_specs": [
+                {
+                    "day_number": 1,
+                    "date_label": (NOW + timedelta(days=20)).date().isoformat(),
+                    "slots": [
+                        {"start_time": "10:00", "end_time": "11:30", "label": "Creator economy keynote"},
+                        {"start_time": "12:00", "end_time": "14:00", "label": "Media partner demos"},
+                    ],
+                }
+            ],
+            "extended_details": "Payment-proof-submitted event for admin validation and organizer communication testing.",
+            "additional_info": "Useful for admin queue filtering by lifecycle state.",
+        },
+        {
+            "key": "legacy-risk-rejected",
+            "title": "Legacy Risk Forum 2026",
+            "organizer_email": "organizer.amine@ivep.test",
+            "organizer_name": "Amine El Idrissi",
+            "description": "Rejected event request with reason for organizer feedback workflows.",
+            "category": "Risk",
+            "location": "IVEP Compliance Wing",
+            "banner_url": "/stands/office-bg.jpg",
+            "tags": ["risk", "compliance", "legacy"],
+            "num_enterprises": 2,
+            "stand_price": 2100.0,
+            "is_paid": False,
+            "ticket_price": None,
+            "state": EventState.REJECTED.value,
+            "payment_amount": None,
+            "created_at": NOW - timedelta(days=5),
+            "start_date": NOW + timedelta(days=25),
+            "end_date": NOW + timedelta(days=26),
+            "enterprise_link": None,
+            "visitor_link": None,
+            "day_specs": [
+                {
+                    "day_number": 1,
+                    "date_label": (NOW + timedelta(days=25)).date().isoformat(),
+                    "slots": [
+                        {"start_time": "09:30", "end_time": "11:00", "label": "Risk review"},
+                        {"start_time": "11:30", "end_time": "13:00", "label": "Compliance clinics"},
+                    ],
+                }
+            ],
+            "extended_details": "Rejected organizer request used to validate rejection reason and organizer-side messaging.",
+            "additional_info": "Should remain inaccessible in enterprise discovery flows.",
         },
     ]
 
@@ -338,6 +481,9 @@ for index in range(1, 11):
             "bio": "Visitor profile seeded for networking, stand exploration, meetings, and product requests.",
             "title": "Visitor",
             "company": f"Prospect Company {index:02d}",
+            "phone": f"+212600000{index:03d}",
+            "city": "Casablanca" if index % 2 == 0 else "Rabat",
+            "country": "Morocco",
             "interests": ["innovation", "networking", "products"],
             "networking_goals": ["discover suppliers", "book demos"],
         }
@@ -409,14 +555,21 @@ ENTERPRISE_EVENT_STATUSES: dict[str, list[dict[str, Any]]] = {
         {"email": "enterprise.ecopulse@ivep.test", "status": "approved", "stand_fee_paid": True},
         {"email": "enterprise.databridge@ivep.test", "status": "approved", "stand_fee_paid": True},
         {"email": "enterprise.mediasphere@ivep.test", "status": "approved", "stand_fee_paid": True},
-        {"email": "enterprise.logiflow@ivep.test", "status": "pending_admin_approval", "stand_fee_paid": True},
+        {"email": "enterprise.logiflow@ivep.test", "status": "pending_admin_approval", "stand_fee_paid": False},
     ],
     "green-summit-payment-done": [
         {"email": "enterprise.novasync@ivep.test", "status": "approved", "stand_fee_paid": True},
         {"email": "enterprise.ecopulse@ivep.test", "status": "approved", "stand_fee_paid": True},
-        {"email": "enterprise.logiflow@ivep.test", "status": "approved", "stand_fee_paid": True},
+        {"email": "enterprise.logiflow@ivep.test", "status": "pending_admin_approval", "stand_fee_paid": False},
         {"email": "enterprise.databridge@ivep.test", "status": "pending_payment", "stand_fee_paid": False},
         {"email": "enterprise.mediasphere@ivep.test", "status": "rejected", "stand_fee_paid": False, "rejection_reason": "Capacity aligned with sponsor quota."},
+    ],
+    "finops-approved": [
+        {"email": "enterprise.ecopulse@ivep.test", "status": "pending_admin_approval", "stand_fee_paid": False},
+        {"email": "enterprise.databridge@ivep.test", "status": "pending_payment", "stand_fee_paid": False},
+    ],
+    "ops-expo-pending": [
+        {"email": "enterprise.mediasphere@ivep.test", "status": "pending_admin_approval", "stand_fee_paid": False},
     ],
     "marketplace-closed": [
         {"email": "enterprise.databridge@ivep.test", "status": "approved", "stand_fee_paid": True},
@@ -430,6 +583,7 @@ VISITOR_EVENT_MEMBERSHIP: dict[str, list[int]] = {
     "future-tech-live": [1, 2, 3, 4, 5, 6, 7],
     "green-summit-payment-done": [3, 4, 5, 6, 8, 9],
     "marketplace-closed": [1, 2, 8, 9, 10],
+    "finops-approved": [6, 7, 10],
 }
 
 
@@ -439,6 +593,11 @@ def _oid_filter(value: str) -> dict[str, Any]:
     if ObjectId.is_valid(value):
         return {"_id": ObjectId(value)}
     return {"_id": value}
+
+
+def _doc_id(doc: dict[str, Any]) -> str:
+    """Canonical seeded reference id: prefer MongoDB _id, fallback to mirrored id."""
+    return str(doc.get("_id") or doc.get("id") or "")
 
 
 async def _refresh_by_id(collection_name: str, record_id: str) -> dict[str, Any] | None:
@@ -462,6 +621,9 @@ async def _upsert_user(blueprint: dict[str, Any], summary: SeedSummary) -> dict[
         "bio": blueprint["bio"],
         "title": blueprint["title"],
         "company": blueprint["company"],
+        "phone": blueprint.get("phone", ""),
+        "city": blueprint.get("city", ""),
+        "country": blueprint.get("country", ""),
         "interests": blueprint["interests"],
         "networking_goals": blueprint["networking_goals"],
         "avatar_url": None,
@@ -474,11 +636,11 @@ async def _upsert_user(blueprint: dict[str, Any], summary: SeedSummary) -> dict[
 
     if existing:
         await db.users.update_one(
-            _oid_filter(existing["id"]),
+            _oid_filter(_doc_id(existing)),
             {"$set": base_payload, "$setOnInsert": {"created_at": NOW}},
         )
         summary.users_updated += 1
-        return await _refresh_by_id("users", existing["id"])
+        return await _refresh_by_id("users", _doc_id(existing))
 
     user_payload = {
         **base_payload,
@@ -495,7 +657,7 @@ async def _upsert_organization(blueprint: dict[str, Any], users_by_email: dict[s
     db = get_database()
     owner = users_by_email[blueprint["owner_email"]]
     existing = await db.organizations.find_one({"name": blueprint["name"]})
-    owner_id = str(owner["id"])
+    owner_id = _doc_id(owner)
     update_fields = {
         "name": blueprint["name"],
         "description": blueprint["description"],
@@ -522,10 +684,11 @@ async def _upsert_organization(blueprint: dict[str, Any], users_by_email: dict[s
         OrganizationCreate(name=blueprint["name"], description=blueprint["description"]),
         owner_id,
     )
-    await db.organizations.update_one(_oid_filter(created["id"]), {"$set": update_fields})
-    await add_organization_member(created["id"], owner_id, OrgMemberRole.OWNER)
+    created_org_id = _doc_id(created)
+    await db.organizations.update_one(_oid_filter(created_org_id), {"$set": update_fields})
+    await add_organization_member(created_org_id, owner_id, OrgMemberRole.OWNER)
     summary.organizations_created += 1
-    refreshed = await _refresh_by_id("organizations", created["id"])
+    refreshed = await _refresh_by_id("organizations", created_org_id)
     return refreshed if refreshed else created
 
 
@@ -537,7 +700,7 @@ async def _upsert_event(blueprint: dict[str, Any], users_by_email: dict[str, dic
     event_update = {
         "title": blueprint["title"],
         "description": blueprint["description"],
-        "organizer_id": str(organizer["id"]),
+        "organizer_id": _doc_id(organizer),
         "organizer_name": blueprint["organizer_name"],
         "category": blueprint["category"],
         "location": blueprint["location"],
@@ -590,11 +753,12 @@ async def _upsert_event(blueprint: dict[str, Any], users_by_email: dict[str, dic
             is_paid=blueprint["is_paid"],
             ticket_price=blueprint["ticket_price"],
         ),
-        organizer["id"],
+        _doc_id(organizer),
     )
-    await db.events.update_one(_oid_filter(created["id"]), {"$set": event_update})
+    created_event_id = _doc_id(created)
+    await db.events.update_one(_oid_filter(created_event_id), {"$set": event_update})
     summary.events_created += 1
-    refreshed = await _refresh_by_id("events", created["id"])
+    refreshed = await _refresh_by_id("events", created_event_id)
     return refreshed if refreshed else created
 
 
@@ -640,9 +804,9 @@ async def _upsert_enterprise_participants(
             user = users_by_email[assignment["email"]]
             organization = org_by_owner_email[assignment["email"]]
             participant_doc = {
-                "event_id": event["id"],
-                "organization_id": organization["id"],
-                "user_id": user["id"],
+                "event_id": _doc_id(event),
+                "organization_id": _doc_id(organization),
+                "user_id": _doc_id(user),
                 "role": Role.ENTERPRISE.value,
                 "status": assignment["status"],
                 "stand_fee_paid": assignment.get("stand_fee_paid", False),
@@ -663,8 +827,8 @@ async def _upsert_visitor_participants(events_by_key: dict[str, dict[str, Any]],
             email = f"visitor{visitor_index:02d}@ivep.test"
             user = users_by_email[email]
             participant_doc = {
-                "event_id": event["id"],
-                "user_id": user["id"],
+                "event_id": _doc_id(event),
+                "user_id": _doc_id(user),
                 "role": Role.VISITOR.value,
                 "status": "approved",
                 "created_at": event["created_at"] + timedelta(days=1, hours=offset),
@@ -675,7 +839,9 @@ async def _upsert_visitor_participants(events_by_key: dict[str, dict[str, Any]],
 
 
 async def _ensure_stand(event: dict[str, Any], organization: dict[str, Any], summary: SeedSummary) -> dict[str, Any]:
-    existing = await get_stand_by_org(event["id"], organization["id"])
+    event_id = _doc_id(event)
+    organization_id = _doc_id(organization)
+    existing = await get_stand_by_org(event_id, organization_id)
     stand_name = f"{organization['name']} Stand"
     base_branding = {
         "description": organization.get("description"),
@@ -694,7 +860,7 @@ async def _ensure_stand(event: dict[str, Any], organization: dict[str, Any], sum
         refreshed = await _refresh_by_id("stands", existing["id"])
         return refreshed if refreshed else existing
 
-    created = await create_stand(event["id"], organization["id"], stand_name, **base_branding)
+    created = await create_stand(event_id, organization_id, stand_name, **base_branding)
     summary.stands_created += 1
     refreshed = await _refresh_by_id("stands", created["id"])
     return refreshed if refreshed else created
@@ -722,10 +888,35 @@ async def _upsert_resource(stand: dict[str, Any], title: str, resource_type: str
     return resource
 
 
-async def _upsert_enterprise_product(enterprise_user_id: str, organization_id: str, name: str, category: str, price: float, summary: SeedSummary) -> dict[str, Any]:
+async def _upsert_enterprise_product(
+    enterprise_user_id: str,
+    organization_id: str,
+    name: str,
+    category: str,
+    price: float,
+    summary: SeedSummary,
+    product_type: str = "product",
+    stock: int = 25,
+) -> dict[str, Any]:
     db = get_database()
     existing = await db.products.find_one({"enterprise_id": enterprise_user_id, "name": name, "is_active": True})
+    resolved_type = "service" if product_type == "service" else "product"
+    resolved_stock = 0 if resolved_type == "service" else stock
     if existing:
+        await db.products.update_one(
+            {"_id": existing["_id"]},
+            {
+                "$set": {
+                    "description": f"Seeded product for {name} ({category})",
+                    "price": price,
+                    "currency": "MAD",
+                    "image_url": "/product_images/default-seed-product.png",
+                    "stock": resolved_stock,
+                    "type": resolved_type,
+                    "is_active": True,
+                }
+            },
+        )
         return await _refresh_by_id("products", str(existing["_id"]))
 
     product = await enterprise_repo.create_product(
@@ -733,13 +924,12 @@ async def _upsert_enterprise_product(enterprise_user_id: str, organization_id: s
         organization_id,
         ProductCreate(
             name=name,
-            description=f"Seeded product for {name}",
-            category=category,
-            is_service=False,
+            description=f"Seeded product for {name} ({category})",
             price=price,
-            stock=25,
-            tags=[category.lower(), "seeded"],
-            images=["/product_images/default-seed-product.png"],
+            currency="MAD",
+            image_url="/product_images/default-seed-product.png",
+            stock=resolved_stock,
+            type=resolved_type,
             is_active=True,
         ),
     )
@@ -747,7 +937,14 @@ async def _upsert_enterprise_product(enterprise_user_id: str, organization_id: s
     return product
 
 
-async def _upsert_marketplace_product(stand_id: str, name: str, price: float, summary: SeedSummary) -> dict[str, Any]:
+async def _upsert_marketplace_product(
+    stand_id: str,
+    name: str,
+    price: float,
+    summary: SeedSummary,
+    product_type: str = "product",
+    stock: int | None = None,
+) -> dict[str, Any]:
     db = get_database()
     from bson import ObjectId
 
@@ -758,8 +955,11 @@ async def _upsert_marketplace_product(stand_id: str, name: str, price: float, su
             "stand_id": str(existing["stand_id"]),
             "name": existing["name"],
             "price": existing["price"],
+            "type": existing.get("type", "product"),
         }
 
+    resolved_type = "service" if product_type == "service" else "product"
+    resolved_stock = 0 if resolved_type == "service" else int(stock if stock is not None else 12)
     product = await marketplace_service.create_product(
         stand_id,
         {
@@ -768,14 +968,23 @@ async def _upsert_marketplace_product(stand_id: str, name: str, price: float, su
             "price": price,
             "currency": "usd",
             "image_url": "/product_images/marketplace-seed-item.png",
-            "stock": 12,
+            "stock": resolved_stock,
+            "type": resolved_type,
         },
     )
     summary.marketplace_products_created += 1
     return product
 
 
-async def _upsert_product_request(visitor_id: str, enterprise_id: str, product_id: str, event_id: str, message: str, quantity: int, summary: SeedSummary) -> dict[str, Any]:
+async def _upsert_product_request(
+    visitor_id: str,
+    enterprise_id: str,
+    product_id: str,
+    event_id: str,
+    message: str,
+    quantity: int | None,
+    summary: SeedSummary,
+) -> dict[str, Any]:
     db = get_database()
     existing = await db.product_requests.find_one(
         {
@@ -800,7 +1009,16 @@ async def _upsert_product_request(visitor_id: str, enterprise_id: str, product_i
     return created
 
 
-async def _upsert_stand_order(product_id: str, stand_id: str, buyer_id: str, product_name: str, quantity: int, total_amount: float, summary: SeedSummary) -> dict[str, Any]:
+async def _upsert_stand_order(
+    product_id: str,
+    stand_id: str,
+    buyer_id: str,
+    product_name: str,
+    quantity: int,
+    total_amount: float,
+    summary: SeedSummary,
+    payment_method: str = "stripe",
+) -> dict[str, Any]:
     db = get_database()
     from bson import ObjectId
 
@@ -825,9 +1043,12 @@ async def _upsert_stand_order(product_id: str, stand_id: str, buyer_id: str, pro
         product_name=product_name,
         quantity=quantity,
         total_amount=total_amount,
-        stripe_session_id=f"seed-order-{stand_id[-6:]}-{buyer_id[-6:]}",
+        unit_price=total_amount / max(quantity, 1),
+        payment_method=payment_method,
+        stripe_session_id=f"seed-order-{stand_id[-6:]}-{buyer_id[-6:]}" if payment_method == "stripe" else "",
     )
-    await marketplace_service.mark_order_paid(order["id"], f"pi_seed_{order['id'][-8:]}")
+    if payment_method == "stripe":
+        await marketplace_service.mark_order_paid(order["id"], f"pi_seed_{order['id'][-8:]}")
     summary.stand_orders_created += 1
     return order
 
@@ -840,7 +1061,7 @@ async def _upsert_payment(event_id: str, user_id: str, amount: float, session_id
 
     payment = await create_payment(event_id=event_id, user_id=user_id, amount=amount, stripe_session_id=session_id)
     if paid:
-        payment = await mark_payment_paid(payment["id"], stripe_payment_intent=f"pi_{session_id[-10:]}")
+        payment = await mark_payment_paid(payment["id"], stripe_payment_intent_id=f"pi_{session_id[-10:]}")
     summary.payments_created += 1
     return payment
 
@@ -1073,17 +1294,20 @@ async def seed_platform_test_data() -> SeedSummary:
             owner = users_by_email[blueprint["owner_email"]]
             organization = organizations_by_name[blueprint["name"]]
             enterprise_products[blueprint["owner_email"]] = [
-                await _upsert_enterprise_product(owner["id"], organization["id"], f"{organization['name']} Suite", blueprint["industry"], 1499.0, summary),
-                await _upsert_enterprise_product(owner["id"], organization["id"], f"{organization['name']} Advisory", blueprint["industry"], 2200.0, summary),
+                await _upsert_enterprise_product(owner["id"], organization["id"], f"{organization['name']} Suite", blueprint["industry"], 1499.0, summary, product_type="product", stock=25),
+                await _upsert_enterprise_product(owner["id"], organization["id"], f"{organization['name']} Advisory", blueprint["industry"], 2200.0, summary, product_type="service", stock=0),
             ]
 
         for (_, owner_email), stand in stands_by_event_org.items():
             marketplace_products.setdefault(owner_email, [])
             marketplace_products[owner_email].append(
-                await _upsert_marketplace_product(stand["id"], f"{stand['name']} Starter Package", 199.0, summary)
+                await _upsert_marketplace_product(stand["id"], f"{stand['name']} Starter Package", 199.0, summary, product_type="product", stock=12)
             )
             marketplace_products[owner_email].append(
-                await _upsert_marketplace_product(stand["id"], f"{stand['name']} Premium Package", 499.0, summary)
+                await _upsert_marketplace_product(stand["id"], f"{stand['name']} Premium Package", 499.0, summary, product_type="product", stock=7)
+            )
+            marketplace_products[owner_email].append(
+                await _upsert_marketplace_product(stand["id"], f"{stand['name']} Advisory Service", 299.0, summary, product_type="service", stock=0)
             )
 
         future_event = events_by_key["future-tech-live"]
@@ -1112,8 +1336,27 @@ async def seed_platform_test_data() -> SeedSummary:
                 quantity=visitor_index,
                 summary=summary,
             )
+            service_product = enterprise_products[owner_email][1]
+            await _upsert_product_request(
+                visitor_id=visitor["id"],
+                enterprise_id=users_by_email[owner_email]["id"],
+                product_id=service_product["id"],
+                event_id=future_event["id"],
+                message="We need a service onboarding call and implementation details.",
+                quantity=None,
+                summary=summary,
+            )
             market_product = marketplace_products[owner_email][0]
-            await _upsert_stand_order(market_product["id"], stand["id"], visitor["id"], market_product["name"], 1, float(market_product["price"]), summary)
+            await _upsert_stand_order(
+                market_product["id"],
+                stand["id"],
+                visitor["id"],
+                market_product["name"],
+                1,
+                float(market_product["price"]),
+                summary,
+                payment_method="cash_on_delivery" if visitor_index == 1 else "stripe",
+            )
 
         live_stand = stands_by_event_org[("future-tech-live", "enterprise.novasync@ivep.test")]
         eco_stand = stands_by_event_org[("future-tech-live", "enterprise.ecopulse@ivep.test")]
@@ -1161,6 +1404,51 @@ async def seed_platform_test_data() -> SeedSummary:
                 initiator_id=users_by_email["visitor04@ivep.test"]["id"],
             ),
             status=MeetingStatus.APPROVED.value,
+            session_status="scheduled",
+            summary=summary,
+        )
+        await _upsert_meeting(
+            MeetingCreate(
+                event_id=future_event["id"],
+                visitor_id=users_by_email["visitor05@ivep.test"]["id"],
+                stand_id=eco_stand["id"],
+                start_time=NOW + timedelta(hours=3),
+                end_time=NOW + timedelta(hours=3, minutes=30),
+                purpose="Requesting procurement alignment discussion",
+                meeting_type=MeetingType.ONE_TO_ONE,
+                initiator_id=users_by_email["visitor05@ivep.test"]["id"],
+            ),
+            status=MeetingStatus.PENDING.value,
+            session_status="scheduled",
+            summary=summary,
+        )
+        await _upsert_meeting(
+            MeetingCreate(
+                event_id=future_event["id"],
+                visitor_id=users_by_email["visitor06@ivep.test"]["id"],
+                stand_id=data_stand["id"],
+                start_time=NOW - timedelta(hours=5),
+                end_time=NOW - timedelta(hours=4, minutes=30),
+                purpose="Rejected due to overlapping executive agenda",
+                meeting_type=MeetingType.ONE_TO_ONE,
+                initiator_id=users_by_email["visitor06@ivep.test"]["id"],
+            ),
+            status=MeetingStatus.REJECTED.value,
+            session_status="scheduled",
+            summary=summary,
+        )
+        await _upsert_meeting(
+            MeetingCreate(
+                event_id=green_event["id"],
+                visitor_id=users_by_email["visitor09@ivep.test"]["id"],
+                stand_id=stands_by_event_org[("green-summit-payment-done", "enterprise.ecopulse@ivep.test")]["id"],
+                start_time=NOW + timedelta(days=5, hours=4),
+                end_time=NOW + timedelta(days=5, hours=4, minutes=30),
+                purpose="Canceled by requester after schedule conflict",
+                meeting_type=MeetingType.ONE_TO_ONE,
+                initiator_id=users_by_email["visitor09@ivep.test"]["id"],
+            ),
+            status=MeetingStatus.CANCELED.value,
             session_status="scheduled",
             summary=summary,
         )
@@ -1273,7 +1561,8 @@ async def seed_platform_test_data() -> SeedSummary:
                 "Organizer accounts: organizer.amine@ivep.test, organizer.salma@ivep.test",
                 "Enterprise accounts: enterprise.novasync@ivep.test, enterprise.ecopulse@ivep.test, enterprise.databridge@ivep.test, enterprise.mediasphere@ivep.test, enterprise.logiflow@ivep.test",
                 "Visitor accounts: visitor01@ivep.test through visitor10@ivep.test",
-                "Events seeded across pending, payment_done, live, and closed lifecycle states.",
+                "Events seeded across all lifecycle states: pending_approval, approved, rejected, waiting_for_payment, payment_proof_submitted, payment_done, live, and closed.",
+                "Enterprise participation covers pending_admin_approval, pending_payment, approved, and rejected statuses.",
             ]
         )
 

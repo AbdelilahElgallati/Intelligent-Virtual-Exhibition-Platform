@@ -1,40 +1,60 @@
 'use client';
 
-import { use, Suspense, useState, useEffect } from 'react';
+import { use, Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoadingState } from '@/components/ui/LoadingState';
 import MeetingRoom from '@/components/meetings/MeetingRoom';
-import { Meeting, MeetingJoinResponse } from '@/types/meeting';
+import { MeetingJoinResponse } from '@/types/meeting';
+import { apiClient } from '@/lib/api/client';
+import { Event } from '@/types/event';
+import { ENDPOINTS } from '@/lib/api/endpoints';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+type MeetingLite = {
+    _id?: string;
+    id?: string;
+    event_id?: string;
+};
 
 function MeetingRoomContent({ meetingId }: { meetingId: string }) {
     const router = useRouter();
-    const [meeting, setMeeting] = useState<Meeting | null>(null);
     const [tokenData, setTokenData] = useState<MeetingJoinResponse | null>(null);
+    const [eventData, setEventData] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
+
+    const autoEndMeeting = useCallback(async () => {
+        try {
+            await apiClient.post(`/meetings/${meetingId}/end`);
+        } catch {
+            // Best-effort, server may already have auto-closed this meeting.
+        }
+        setError('Meeting timeslot ended automatically.');
+        setTimeout(() => router.back(), 1200);
+    }, [meetingId, router]);
 
     useEffect(() => {
         async function load() {
             try {
-                const token = localStorage.getItem('access_token');
-                const headers = { Authorization: `Bearer ${token}` };
-
                 // Fetch the meeting token — this also validates participant access
-                const tRes = await fetch(`${API_BASE}/meetings/${meetingId}/token`, { headers });
-                if (!tRes.ok) {
-                    const err = await tRes.json();
-                    throw new Error(err.detail || 'Cannot join meeting');
-                }
-                const tData: MeetingJoinResponse = await tRes.json();
+                const tData = await apiClient.get<MeetingJoinResponse>(`/meetings/${meetingId}/token`);
                 setTokenData(tData);
 
+                // Resolve meeting event for lifecycle gating.
+                try {
+                    const myMeetings = await apiClient.get<MeetingLite[]>('/meetings/my-meetings');
+                    const matched = myMeetings.find((m) => (m.id || m._id) === meetingId);
+                    if (matched?.event_id) {
+                        const evt = await apiClient.get<Event>(ENDPOINTS.EVENTS.GET(matched.event_id));
+                        setEventData(evt);
+                    }
+                } catch {
+                    // Keep meeting join flow resilient if event lookup fails.
+                }
+
                 // Start the session (marks as live)
-                await fetch(`${API_BASE}/meetings/${meetingId}/start`, {
-                    method: 'POST',
-                    headers,
-                });
+                await apiClient.post(`/meetings/${meetingId}/start`);
             } catch (e: any) {
                 setError(e.message || 'Failed to join meeting');
             } finally {
@@ -44,13 +64,46 @@ function MeetingRoomContent({ meetingId }: { meetingId: string }) {
         load();
     }, [meetingId]);
 
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setTimelineNow(Date.now());
+        }, 30000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const endsAt = tokenData?.ends_at;
+        if (!endsAt) return;
+
+        const endAtMs = new Date(endsAt).getTime();
+        if (!Number.isFinite(endAtMs)) return;
+
+        const delay = endAtMs - Date.now();
+        if (delay <= 0) {
+            autoEndMeeting();
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            autoEndMeeting();
+        }, delay);
+
+        return () => window.clearTimeout(timer);
+    }, [tokenData?.ends_at, autoEndMeeting]);
+
+    useEffect(() => {
+        if (!tokenData || !eventData) return;
+        const lifecycle = getEventLifecycle(eventData, new Date(timelineNow));
+        const timelineIsLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+        if (!timelineIsLive) {
+            autoEndMeeting();
+        }
+    }, [tokenData, eventData, timelineNow, autoEndMeeting]);
+
     const handleEnd = async () => {
-        const token = localStorage.getItem('access_token');
         // Best-effort end session
-        await fetch(`${API_BASE}/meetings/${meetingId}/end`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => { });
+        await apiClient.post(`/meetings/${meetingId}/end`).catch(() => { });
         router.back();
     };
 

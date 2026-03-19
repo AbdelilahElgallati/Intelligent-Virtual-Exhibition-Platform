@@ -70,6 +70,9 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "payment_amount": None,
         "enterprise_link": None,
         "visitor_link": None,
+        "publicity_link": None,
+        "enterprise_invite_token": None,
+        "visitor_invite_token": None,
         "rejection_reason": None,
         # Structured schedule
         "schedule_days": [d.model_dump() for d in data.schedule_days] if data.schedule_days else None,
@@ -269,6 +272,9 @@ async def confirm_event_payment(event_id) -> Optional[dict]:
                 "state": EventState.PAYMENT_DONE,
                 "enterprise_link": f"/join/enterprise/{event_id}?token={enterprise_token}",
                 "visitor_link": f"/join/visitor/{event_id}?token={visitor_token}",
+                "publicity_link": f"/events/{event_id}",
+                "enterprise_invite_token": enterprise_token,
+                "visitor_invite_token": visitor_token,
             }
         },
         return_document=True,
@@ -284,10 +290,10 @@ async def get_joined_events(user_id) -> list[dict]:
     participants_collection = db["participants"]
     events_collection = db["events"]
     
-    # Find approved participations for this user
+    # Find accepted participations for this user
     participations = await participants_collection.find({
         "user_id": str(user_id),
-        "status": "approved"
+        "status": {"$in": ["approved", "guest_approved"]}
     }).to_list(length=100)
     
     # event_id stored are now stringified _id values

@@ -118,6 +118,12 @@ class EnterpriseRepository:
                         req["visitor_name"] = visitor.get("full_name") or visitor.get("name") or visitor.get("email", "")
                         req["visitor_email"] = visitor.get("email", "")
                         req["visitor_phone"] = visitor.get("phone") or visitor.get("org_phone") or "" # Try common fields
+                        req["visitor_company"] = visitor.get("company") or visitor.get("org_name") or ""
+                        req["visitor_city"] = visitor.get("city") or visitor.get("org_city") or ""
+                        req["visitor_country"] = visitor.get("country") or visitor.get("org_country") or ""
+                        city = req.get("visitor_city") or ""
+                        country = req.get("visitor_country") or ""
+                        req["visitor_location"] = ", ".join([part for part in [city, country] if part])
                 except Exception:
                     pass
             # Enrich with product name (handle both ObjectId and UUID string IDs)

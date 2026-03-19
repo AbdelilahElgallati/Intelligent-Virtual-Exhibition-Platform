@@ -1,3 +1,16 @@
+"use client";
+
+export default function AdminPaymentsPage() {
+	return (
+		<div className="rounded-2xl border border-zinc-200 bg-white p-8">
+			<h1 className="text-2xl font-bold text-zinc-900">Payment Reviews</h1>
+			<p className="mt-2 text-sm text-zinc-500">
+				This page is temporarily disabled while the payment moderation flow is being stabilized.
+			</p>
+		</div>
+	);
+}
+
 // 'use client';
 
 // import React, { useEffect, useState, useCallback } from 'react';

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import json
 from typing import List, Optional
 from .schemas import MeetingCreate, MeetingUpdate, MeetingSchema, MeetingJoinResponse, BusySlot
 from .repository import meeting_repo
@@ -13,6 +14,123 @@ from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
 
 router = APIRouter()
+
+
+def _to_utc_datetime(value) -> Optional[datetime]:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+
+async def _ensure_meeting_not_expired(meeting_id: str, meeting: dict):
+    end_time = _to_utc_datetime(meeting.get("end_time"))
+    if not end_time:
+        return
+
+    now_utc = datetime.now(timezone.utc)
+    if now_utc < end_time:
+        return
+
+    # Auto-close expired sessions to keep lifecycle consistent.
+    if meeting.get("session_status") != "ended" or meeting.get("status") != "completed":
+        room_name = meeting.get("livekit_room_name") or f"meeting-{meeting_id}"
+        await lk.delete_room(room_name)
+        await meeting_repo.end_session(meeting_id)
+
+    raise HTTPException(status_code=410, detail="Meeting timeslot has ended")
+
+
+def _parse_hhmm_to_minutes(value: Optional[str]) -> Optional[int]:
+    if not value or ":" not in value:
+        return None
+    try:
+        h_str, m_str = value.split(":", 1)
+        h = int(h_str)
+        m = int(m_str)
+        if h < 0 or h > 23 or m < 0 or m > 59:
+            return None
+        return h * 60 + m
+    except Exception:
+        return None
+
+
+def _extract_schedule_days(event: dict) -> list[dict]:
+    days = event.get("schedule_days")
+    if isinstance(days, list) and days:
+        return days
+
+    timeline = event.get("event_timeline")
+    if isinstance(timeline, str) and timeline.strip():
+        try:
+            parsed = json.loads(timeline)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            return []
+    return []
+
+
+def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
+    days = _extract_schedule_days(event)
+    start_date = _to_utc_datetime(event.get("start_date"))
+
+    if days and start_date:
+        base = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
+        windows: list[tuple[datetime, datetime]] = []
+
+        for idx, day in enumerate(days):
+            day_num = int(day.get("day_number") or (idx + 1))
+            day_offset = max(0, day_num - 1)
+            day_date = base + timedelta(days=day_offset)
+
+            for slot in day.get("slots") or []:
+                start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
+                end_minutes = _parse_hhmm_to_minutes(slot.get("end_time"))
+                if start_minutes is None or end_minutes is None or end_minutes <= start_minutes:
+                    continue
+
+                slot_start = day_date + timedelta(minutes=start_minutes)
+                slot_end = day_date + timedelta(minutes=end_minutes)
+                windows.append((slot_start, slot_end))
+
+        if windows:
+            return any(start <= now_utc <= end for start, end in windows)
+
+    # Fallback to event date range if no valid schedule slots.
+    event_start = _to_utc_datetime(event.get("start_date"))
+    event_end = _to_utc_datetime(event.get("end_date"))
+    if event_start and now_utc < event_start:
+        return False
+    if event_end and now_utc > event_end:
+        return False
+    return True
+
+
+async def _ensure_event_timeline_live(meeting: dict):
+    event_id = meeting.get("event_id")
+    if not event_id:
+        return
+
+    event = await get_event_by_id(str(event_id))
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    now_utc = datetime.now(timezone.utc)
+    if not _is_event_live_by_timeline(event, now_utc):
+        raise HTTPException(
+            status_code=403,
+            detail="Meeting access is allowed only during live event schedule slots",
+        )
 
 
 async def verify_stand_ownership(stand_id: str, user_id: str):
@@ -127,6 +245,11 @@ async def request_meeting(
     # 1. Date Validation
     meeting_start = meeting.start_time.replace(tzinfo=None)
     meeting_end = meeting.end_time.replace(tzinfo=None)
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    if meeting_start < now_utc:
+        raise HTTPException(status_code=400, detail="Meeting start time must be in the future")
+
     event_start = event["start_date"].replace(tzinfo=None) if isinstance(event["start_date"], datetime) else datetime.fromisoformat(event["start_date"].replace("Z", "+00:00")).replace(tzinfo=None)
     event_end = event["end_date"].replace(tzinfo=None) if isinstance(event["end_date"], datetime) else datetime.fromisoformat(event["end_date"].replace("Z", "+00:00")).replace(tzinfo=None)
 
@@ -231,6 +354,9 @@ async def get_meeting_token(
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
+    await _ensure_meeting_not_expired(meeting_id, meeting)
+    await _ensure_event_timeline_live(meeting)
+
     uid = str(current_user["_id"])
 
     # Check participant is either requester or stand owner
@@ -244,7 +370,7 @@ async def get_meeting_token(
             stand = await get_stand_by_id(stand_id)
             if stand:
                 org = await get_organization_by_id(stand["organization_id"])
-                if org and org.get("owner_id") == uid:
+                if org and str(org.get("owner_id")) == uid:
                     is_owner = True
         except Exception:
             pass
@@ -267,6 +393,7 @@ async def get_meeting_token(
         token=token,
         livekit_url=settings.LIVEKIT_WS_URL,
         room_name=room_name,
+        ends_at=_to_utc_datetime(meeting.get("end_time")),
     )
 
 
@@ -280,6 +407,9 @@ async def start_meeting_session(
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
+    await _ensure_meeting_not_expired(meeting_id, meeting)
+    await _ensure_event_timeline_live(meeting)
+
     uid = str(current_user["_id"])
     is_requester = uid == meeting.get("visitor_id") or uid == meeting.get("initiator_id")
     is_owner = False
@@ -289,7 +419,7 @@ async def start_meeting_session(
             stand = await get_stand_by_id(stand_id)
             if stand:
                 org = await get_organization_by_id(stand["organization_id"])
-                if org and org.get("owner_id") == uid:
+                if org and str(org.get("owner_id")) == uid:
                     is_owner = True
         except Exception:
             pass
@@ -324,7 +454,7 @@ async def end_meeting_session(
             stand = await get_stand_by_id(stand_id)
             if stand:
                 org = await get_organization_by_id(stand["organization_id"])
-                if org and org.get("owner_id") == uid:
+                if org and str(org.get("owner_id")) == uid:
                     is_owner = True
         except Exception:
             pass

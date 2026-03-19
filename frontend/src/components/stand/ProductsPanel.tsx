@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { X, ShoppingBag, ShoppingCart, Package, Minus, Plus, Loader2, Trash2, AlertCircle, Briefcase } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
+import { resolveMediaUrl } from '@/lib/media';
 import type { Product, CartCheckoutResponse } from '@/types/marketplace';
 
 /* ------------------------------------------------------------------ */
@@ -23,6 +24,8 @@ interface CartEntry {
     product: Product;
     quantity: number;
 }
+
+const isServiceProduct = (product: Product) => (product.type || 'product') === 'service';
 
 /* ------------------------------------------------------------------ */
 /*  ProductsPanel (centered modal with cart)                           */
@@ -78,7 +81,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         setCart((prev) => {
             const existing = prev[product.id];
             const currentQty = existing ? existing.quantity : 0;
-            if (currentQty >= product.stock) return prev;
+            if (!isServiceProduct(product) && currentQty >= product.stock) return prev;
             return { ...prev, [product.id]: { product, quantity: currentQty + 1 } };
         });
     }, []);
@@ -87,7 +90,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         setCart((prev) => {
             const entry = prev[productId];
             if (!entry) return prev;
-            const clamped = Math.max(0, Math.min(qty, entry.product.stock, 100));
+            const maxQty = isServiceProduct(entry.product) ? 100 : Math.min(entry.product.stock, 100);
+            const clamped = Math.max(0, Math.min(qty, maxQty));
             if (clamped <= 0) {
                 const { [productId]: _, ...rest } = prev;
                 return rest;
@@ -150,8 +154,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     };
 
     /* ---- Currency formatting ---- */
-    const fmt = (amount: number, currency: string = 'MAD') =>
-        new Intl.NumberFormat('fr-MA', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
+    const fmt = (amount: number) =>
+        new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(amount);
 
     const downloadReceipt = async () => {
         if (placedOrderIds.length === 0) {
@@ -356,7 +360,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                             {filteredProducts.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                                    <Package className="w-10 h-10 mb-3 text-gray-300" />
+                                    {activeTab === 'service' ? <Briefcase className="w-10 h-10 mb-3 text-gray-300" /> : <Package className="w-10 h-10 mb-3 text-gray-300" />}
                                     <p className="text-sm font-medium text-gray-500">No {activeTab === 'product' ? 'products' : 'services'} yet</p>
                                     <p className="text-xs text-gray-400 mt-1">This stand hasn&apos;t listed any {activeTab === 'product' ? 'products' : 'services'}.</p>
                                 </div>
@@ -364,7 +368,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {filteredProducts.map((product) => {
                                         const inCart = cart[product.id]?.quantity ?? 0;
-                                        const outOfStock = product.stock <= 0;
+                                        const isService = isServiceProduct(product);
+                                        const outOfStock = !isService && product.stock <= 0;
 
                                         return (
                                             <div
@@ -375,10 +380,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                 {product.image_url && (
                                                     <div className="relative w-full h-40 bg-gray-100">
                                                         <img
-                                                            src={product.image_url}
+                                                            src={resolveMediaUrl(product.image_url)}
                                                             alt={product.name}
                                                             className="w-full h-full object-cover"
                                                             draggable={false}
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = '/stands/office-bg.jpg';
+                                                            }}
                                                         />
                                                         {inCart > 0 && (
                                                             <div
@@ -401,7 +409,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             className="shrink-0 text-sm font-bold"
                                                             style={{ color: themeColor }}
                                                         >
-                                                            {fmt(product.price, product.currency)}
+                                                            {fmt(product.price)}
                                                         </span>
                                                     </div>
 
@@ -414,7 +422,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                                                     {/* Stock badge */}
                                                     <div className="mb-3 mt-auto">
-                                                        {outOfStock ? (
+                                                        {isService ? (
+                                                            <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[10px] font-semibold">
+                                                                Service
+                                                            </span>
+                                                        ) : outOfStock ? (
                                                             <span className="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-semibold">
                                                                 Out of Stock
                                                             </span>
@@ -429,7 +441,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     {!outOfStock && (
                                                         <button
                                                             onClick={() => addToCart(product)}
-                                                            disabled={inCart >= product.stock}
+                                                            disabled={!isService && inCart >= product.stock}
                                                             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
                                                             style={{ backgroundColor: themeColor }}
                                                         >
@@ -500,10 +512,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                 {product.image_url && (
                                                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                                                         <img
-                                                            src={product.image_url}
+                                                            src={resolveMediaUrl(product.image_url)}
                                                             alt={product.name}
                                                             className="w-full h-full object-cover"
                                                             draggable={false}
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = '/stands/office-bg.jpg';
+                                                            }}
                                                         />
                                                     </div>
                                                 )}
@@ -520,7 +535,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                         </button>
                                                     </div>
                                                     <p className="text-xs text-gray-500 mb-2">
-                                                        {fmt(product.price, product.currency)} each · {product.stock} in stock
+                                                        {fmt(product.price)} each{isServiceProduct(product) ? '' : ` · ${product.stock} in stock`}
                                                     </p>
                                                     {/* Quantity controls */}
                                                     <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -535,7 +550,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             <input
                                                                 type="number"
                                                                 min={1}
-                                                                max={product.stock}
+                                                                max={isServiceProduct(product) ? 100 : product.stock}
                                                                 value={quantity}
                                                                 onChange={(e) => {
                                                                     const val = parseInt(e.target.value, 10);
@@ -546,13 +561,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             <button
                                                                 onClick={() => updateCartQty(product.id, quantity + 1)}
                                                                 className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                                                                disabled={quantity >= product.stock}
+                                                                disabled={!isServiceProduct(product) && quantity >= product.stock}
                                                             >
                                                                 <Plus className="w-3.5 h-3.5" />
                                                             </button>
                                                         </div>
                                                         <span className="text-sm font-bold ml-auto sm:ml-0" style={{ color: themeColor }}>
-                                                            {fmt(product.price * quantity, product.currency)}
+                                                            {fmt(product.price * quantity)}
                                                         </span>
                                                     </div>
                                                 </div>

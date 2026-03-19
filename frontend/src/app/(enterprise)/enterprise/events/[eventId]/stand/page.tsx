@@ -14,6 +14,39 @@ import {
 
 type Tab = 'branding' | 'products' | 'resources' | 'ai';
 
+interface ProductSelection {
+    product_id: string;
+    quantity?: number | null;
+}
+
+interface BrandingState {
+    name: string;
+    description: string;
+    logo_url: string;
+    theme_color: string;
+    stand_background_url: string;
+    presenter_name: string;
+    presenter_avatar_url: string;
+}
+
+interface BrandingPreset {
+    label: string;
+    value: string;
+}
+
+const STAND_BACKGROUND_PRESETS: BrandingPreset[] = [
+    { label: 'Wood Wave Desk', value: '/stands/stand_background.jpg' },
+    { label: 'Neon White Tech', value: '/stands/stand_background_2.png' },
+    { label: 'Neon Dark Tech', value: '/stands/stand_background_3.png' },
+    { label: 'Classic Wood Desk', value: '/stands/stand_background_4.jpg' },
+    { label: 'Office Stand', value: '/stands/office-stand.jpeg' },
+];
+
+const PRESENTER_AVATAR_PRESETS: BrandingPreset[] = [
+    { label: 'Male Presenter', value: '/stands/male-presenter.png' },
+    { label: 'Female Presenter', value: '/stands/female-presenter.png' },
+];
+
 export default function StandConfigPage() {
     const params = useParams();
     const eventId = params?.eventId as string;
@@ -25,11 +58,19 @@ export default function StandConfigPage() {
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Branding state
-    const [branding, setBranding] = useState({ name: '', description: '', logo_url: '', theme_color: '#4f46e5', stand_background_url: '', presenter_name: '' });
+    const [branding, setBranding] = useState<BrandingState>({
+        name: '',
+        description: '',
+        logo_url: '',
+        theme_color: '#4f46e5',
+        stand_background_url: '',
+        presenter_name: '',
+        presenter_avatar_url: '',
+    });
 
     // Products state
     const [myProducts, setMyProducts] = useState<any[]>([]);
-    const [linkedProducts, setLinkedProducts] = useState<string[]>([]);
+    const [linkedProducts, setLinkedProducts] = useState<ProductSelection[]>([]);
 
     // Resources state
     const [resources, setResources] = useState<any[]>([]);
@@ -57,8 +98,26 @@ export default function StandConfigPage() {
                     theme_color: s.theme_color || '#4f46e5',
                     stand_background_url: s.stand_background_url || '',
                     presenter_name: s.presenter_name || '',
+                    presenter_avatar_url: s.presenter_avatar_url || '',
                 });
-                setLinkedProducts(s.products || []);
+                const savedLinks = Array.isArray(s.product_links) ? s.product_links : [];
+                if (savedLinks.length > 0) {
+                    setLinkedProducts(
+                        savedLinks
+                            .filter((link: any) => Boolean(link?.product_id))
+                            .map((link: any) => ({
+                                product_id: String(link.product_id),
+                                quantity: link.quantity ?? null,
+                            }))
+                    );
+                } else {
+                    const fallbackIds = Array.isArray(s.products) ? s.products : [];
+                    setLinkedProducts(
+                        fallbackIds
+                            .filter((pid: any) => typeof pid === 'string')
+                            .map((pid: string) => ({ product_id: pid, quantity: 1 }))
+                    );
+                }
             }
             if (ragData.status === 'fulfilled') setRagStatus(ragData.value);
             if (productsData.status === 'fulfilled') setMyProducts(productsData.value?.products || []);
@@ -95,6 +154,29 @@ export default function StandConfigPage() {
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Save failed' });
         } finally { setIsSaving(false); }
+    };
+
+    const isProductLinked = (productId: string) => linkedProducts.some((entry) => entry.product_id === productId);
+
+    const toggleProductLink = (product: any) => {
+        const pid = product.id || product._id;
+        const isService = (product.type || 'product') === 'service';
+        setLinkedProducts((prev) => {
+            const exists = prev.some((entry) => entry.product_id === pid);
+            if (exists) {
+                return prev.filter((entry) => entry.product_id !== pid);
+            }
+            return [...prev, { product_id: pid, quantity: isService ? null : Math.max(1, Number(product.stock || 1)) }];
+        });
+    };
+
+    const updateLinkedQuantity = (productId: string, nextQuantity: number) => {
+        setLinkedProducts((prev) =>
+            prev.map((entry) => {
+                if (entry.product_id !== productId) return entry;
+                return { ...entry, quantity: Math.max(1, nextQuantity) };
+            })
+        );
     };
 
     const addResource = async () => {
@@ -162,7 +244,7 @@ export default function StandConfigPage() {
         <div className="text-center py-20 bg-red-50 rounded-2xl border border-red-100">
             <AlertCircle className="mx-auto text-red-300 mb-4" size={48} />
             <h3 className="text-lg font-bold text-red-900">Access Denied</h3>
-            <p className="text-red-600 mt-2">Your participation must be approved before configuring a stand.</p>
+            <p className="text-red-600 mt-2">Your join request must be approved and your stand fee must be paid before configuring a stand.</p>
         </div>
     );
 
@@ -214,7 +296,26 @@ export default function StandConfigPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                             <Input label="Logo URL" value={branding.logo_url} onChange={(e) => setBranding(p => ({ ...p, logo_url: e.target.value }))} placeholder="https://..." />
-                            <Input label="Banner URL" value={branding.stand_background_url} onChange={(e) => setBranding(p => ({ ...p, stand_background_url: e.target.value }))} placeholder="https://..." />
+                            <Input label="Custom Background URL" value={branding.stand_background_url} onChange={(e) => setBranding(p => ({ ...p, stand_background_url: e.target.value }))} placeholder="https://... or /stands/..." />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-sm font-semibold text-zinc-700">Stand Background Presets</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {STAND_BACKGROUND_PRESETS.map((preset) => {
+                                    const isSelected = branding.stand_background_url === preset.value;
+                                    return (
+                                        <button
+                                            key={preset.value}
+                                            type="button"
+                                            onClick={() => setBranding((p) => ({ ...p, stand_background_url: preset.value }))}
+                                            className={`rounded-xl border p-2 text-left transition ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-zinc-200 hover:border-indigo-300'}`}
+                                        >
+                                            <img src={preset.value} alt={preset.label} className="w-full h-20 rounded-lg object-cover mb-2" />
+                                            <p className="text-xs font-medium text-zinc-700">{preset.label}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                             <Input label="Presenter Name" value={branding.presenter_name} onChange={(e) => setBranding(p => ({ ...p, presenter_name: e.target.value }))} />
@@ -225,6 +326,39 @@ export default function StandConfigPage() {
                                     <span className="text-xs font-mono text-zinc-500">{branding.theme_color}</span>
                                 </div>
                             </div>
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-sm font-semibold text-zinc-700">Presenter Avatar</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setBranding((p) => ({ ...p, presenter_avatar_url: '' }))}
+                                    className={`rounded-xl border p-3 text-left transition ${branding.presenter_avatar_url === '' ? 'border-indigo-500 bg-indigo-50' : 'border-zinc-200 hover:border-indigo-300'}`}
+                                >
+                                    <p className="text-sm font-semibold text-zinc-800">Auto</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Use the default avatar selection.</p>
+                                </button>
+                                {PRESENTER_AVATAR_PRESETS.map((preset) => {
+                                    const isSelected = branding.presenter_avatar_url === preset.value;
+                                    return (
+                                        <button
+                                            key={preset.value}
+                                            type="button"
+                                            onClick={() => setBranding((p) => ({ ...p, presenter_avatar_url: preset.value }))}
+                                            className={`rounded-xl border p-2 text-left transition ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-zinc-200 hover:border-indigo-300'}`}
+                                        >
+                                            <img src={preset.value} alt={preset.label} className="w-full h-28 rounded-lg object-contain bg-zinc-50 mb-2" />
+                                            <p className="text-xs font-medium text-zinc-700">{preset.label}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <Input
+                                label="Custom Avatar URL"
+                                value={branding.presenter_avatar_url}
+                                onChange={(e) => setBranding((p) => ({ ...p, presenter_avatar_url: e.target.value }))}
+                                placeholder="https://... or /stands/..."
+                            />
                         </div>
                         <div className="flex justify-end">
                             <Button onClick={saveBranding} isLoading={isSaving}>Save Branding</Button>
@@ -243,9 +377,11 @@ export default function StandConfigPage() {
                                 <p className="text-zinc-400 text-sm text-center py-8">No products in your catalog yet. <a href="/enterprise/products" className="text-indigo-600 hover:underline">Add products first.</a></p>
                             ) : myProducts.map((prod) => {
                                 const pid = prod.id || prod._id;
-                                const isLinked = linkedProducts.includes(pid);
+                                const isLinked = isProductLinked(pid);
+                                const isService = (prod.type || 'product') === 'service';
+                                const linkedEntry = linkedProducts.find((entry) => entry.product_id === pid);
                                 return (
-                                    <div key={pid} onClick={() => setLinkedProducts(prev => isLinked ? prev.filter(id => id !== pid) : [...prev, pid])}
+                                    <div key={pid} onClick={() => toggleProductLink(prod)}
                                         className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${isLinked ? 'border-indigo-300 bg-indigo-50' : 'border-zinc-200 hover:border-zinc-300'}`}
                                     >
                                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isLinked ? 'border-indigo-600 bg-indigo-600' : 'border-zinc-300'}`}>
@@ -253,7 +389,19 @@ export default function StandConfigPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-zinc-900 text-sm">{prod.name}</h4>
-                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `$${prod.price}` : 'Quote Only'}</p>
+                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `${prod.price} MAD` : 'Quote Only'} · {(prod.type || 'product') === 'service' ? 'Service' : 'Product'}</p>
+                                            {!isService && isLinked && (
+                                                <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Quantity</label>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        value={linkedEntry?.quantity ?? 1}
+                                                        onChange={(e) => updateLinkedQuantity(pid, parseInt(e.target.value || '1', 10) || 1)}
+                                                        className="h-8 w-24 rounded-md border border-indigo-200 bg-white px-2 text-xs font-semibold text-zinc-700"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );

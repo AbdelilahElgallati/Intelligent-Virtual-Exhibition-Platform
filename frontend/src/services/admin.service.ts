@@ -120,6 +120,10 @@ export const adminService = {
         return http.get('/analytics/platform');
     },
 
+    async getEventAnalytics(eventId: string): Promise<DashboardData> {
+        return http.get(`/analytics/event/${eventId}`);
+    },
+
     // ── Health (Day 8) ────────────────────────────────────────────────
 
     async getHealth(): Promise<PlatformHealth> {

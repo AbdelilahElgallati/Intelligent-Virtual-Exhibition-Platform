@@ -9,6 +9,23 @@ interface QAPanelProps {
     isSpeaker?: boolean;
 }
 
+function formatRelativeTime(value?: string) {
+    if (!value) return 'just now';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'just now';
+
+    const diffMs = Date.now() - date.getTime();
+    const diffSeconds = Math.max(1, Math.floor(diffMs / 1000));
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    if (diffMinutes > 0) return `${diffMinutes}m ago`;
+    return `${diffSeconds}s ago`;
+}
+
 export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProps) {
     const [questions, setQuestions] = useState<QAItem[]>([]);
     const [newQuestion, setNewQuestion] = useState('');
@@ -41,7 +58,7 @@ export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProp
     };
 
     const upvote = async (qaId: string) => {
-        await http.post(`/conferences/${conferenceId}/qa/${qaId}/upvote`);
+        await http.post(`/conferences/${conferenceId}/qa/${qaId}/upvote`, {});
         loadQuestions();
     };
 
@@ -116,6 +133,7 @@ function SpeakerQAItem({
             <p className="text-sm text-zinc-800 leading-snug">{item.question}</p>
             <div className="flex items-center gap-2 mt-2">
                 <span className="text-[11px] text-zinc-400 font-medium">{item.user_name}</span>
+                <span className="text-[11px] text-zinc-400">{formatRelativeTime(item.created_at)}</span>
                 <button
                     onClick={onUpvote}
                     className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 rounded px-2 py-0.5 transition-colors"

@@ -194,7 +194,9 @@ export default function EnterpriseCommunicationsPage() {
         try {
             // 1. Fetch Events to find stands
             const events = await http.get<any[]>('/enterprise/events');
-            const approvedEvents = events.filter(ev => ev.participation?.status === 'approved');
+            const approvedEvents = events.filter(
+                ev => ev.participation?.status === 'approved' || ev.participation?.status === 'guest_approved'
+            );
 
             // 2. Fetch stands for approved events
             const standPromises = approvedEvents.map(ev =>

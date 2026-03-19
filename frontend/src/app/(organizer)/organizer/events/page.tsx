@@ -145,7 +145,7 @@ export default function OrganizerEvents() {
                                     </td>
                                     <td className="px-4 py-4 text-gray-600">
                                         {event.payment_amount != null
-                                            ? <span className="font-medium text-gray-900">${event.payment_amount.toFixed(2)}</span>
+                                            ? <span className="font-medium text-gray-900">{event.payment_amount.toFixed(2)} MAD</span>
                                             : <span className="text-gray-400">—</span>}
                                     </td>
                                     <td className="px-4 py-4">

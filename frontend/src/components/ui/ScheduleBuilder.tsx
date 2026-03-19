@@ -53,6 +53,9 @@ function SlotRow({
                         type="time"
                         value={slot.start_time}
                         onChange={e => set({ start_time: e.target.value })}
+                        lang="en-GB"
+                        step={60}
+                        title="Use 24-hour format (HH:mm)"
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
@@ -63,6 +66,9 @@ function SlotRow({
                         type="time"
                         value={slot.end_time}
                         onChange={e => set({ end_time: e.target.value })}
+                        lang="en-GB"
+                        step={60}
+                        title="Use 24-hour format (HH:mm)"
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>

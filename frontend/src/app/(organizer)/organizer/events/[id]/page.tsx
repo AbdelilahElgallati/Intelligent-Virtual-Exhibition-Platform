@@ -158,7 +158,7 @@ const WORKFLOW_STEPS: { key: EventStatus; label: string; getDesc: (event: Organi
     label: "Admin Approved",
     getDesc: (e) =>
       e.payment_amount != null
-        ? `Payment required: $${e.payment_amount.toFixed(2)}`
+        ? `Payment required: ${e.payment_amount.toFixed(2)} MAD`
         : "Payment required",
   },
   { key: "payment_done", label: "Payment Confirmed", getDesc: () => "Access links generated" },
@@ -287,6 +287,44 @@ const handleConfirmPayment = async () => {
   }
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const toAbsoluteLink = (value?: string) => {
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) {
+      if (!baseUrl) return value;
+      try {
+        const parsed = new URL(value);
+        return `${baseUrl}${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch {
+        return value;
+      }
+    }
+    if (!baseUrl) return value;
+    return `${baseUrl}${value.startsWith("/") ? "" : "/"}${value}`;
+  };
+
+  const extractToken = (value?: string) => {
+    if (!value) return "";
+    try {
+      const normalized = /^https?:\/\//i.test(value) ? value : `http://local${value.startsWith("/") ? "" : "/"}${value}`;
+      const parsed = new URL(normalized);
+      return parsed.searchParams.get("token") || "";
+    } catch {
+      return "";
+    }
+  };
+
+  const buildInviteLink = (kind: "visitor" | "enterprise", raw?: string) => {
+    const token = extractToken(raw);
+    const joinPath = `/join/${kind}/${event.id}`;
+    return toAbsoluteLink(token ? `${joinPath}?token=${encodeURIComponent(token)}` : joinPath);
+  };
+
+  const enterpriseInviteLink = event.enterprise_link ? buildInviteLink("enterprise", event.enterprise_link) : "";
+  const visitorInviteLink = event.visitor_link ? buildInviteLink("visitor", event.visitor_link) : "";
+  const canPublishEvent = ["payment_done", "live", "closed"].includes(event.state);
+  const publicityLink = toAbsoluteLink(
+    event.publicity_link || (canPublishEvent ? `/events/${event.id}` : "")
+  );
   const currentIdx = STEP_ORDER.indexOf(event.state as EventStatus);
 
   return (
@@ -422,7 +460,7 @@ const handleConfirmPayment = async () => {
                 </div>
                 <p className="text-sm text-orange-700 mt-1">
                   Your event has been approved. To activate it, please send{" "}
-                  <span className="font-bold text-orange-900">${event.payment_amount?.toFixed(2)}</span>{" "}
+                  <span className="font-bold text-orange-900">{event.payment_amount?.toFixed(2)} MAD</span>{" "}
                   to the following RIB and upload a proof of payment.
                 </p>
               </div>
@@ -508,41 +546,57 @@ const handleConfirmPayment = async () => {
       )}
 
       {/* Access links */}
-      {(event.enterprise_link || event.visitor_link) && (
+      {(enterpriseInviteLink || visitorInviteLink || publicityLink) && (
         <Card className="p-5 border-indigo-200 bg-indigo-50">
           <h2 className="text-sm font-semibold text-indigo-800 mb-3 flex items-center gap-2">
             <Link2 className="w-4 h-4" /> Access Links
           </h2>
           <div className="space-y-4">
-            {event.enterprise_link && (
+            {enterpriseInviteLink && (
               <div>
                 <div className="text-xs font-semibold uppercase text-indigo-600 mb-1">
-                  Enterprise Link
+                  Enterprise Guest Invite
                 </div>
                 <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
                   <span className="text-sm text-gray-700 flex-1 truncate">
-                    {baseUrl}{event.enterprise_link}
+                    {enterpriseInviteLink}
                   </span>
-                  <CopyButton text={`${baseUrl}${event.enterprise_link}`} />
+                  <CopyButton text={enterpriseInviteLink} />
                 </div>
                 <p className="text-xs text-indigo-600 mt-1">
-                  Share with enterprises to let them register and set up their stands.
+                  Share with enterprise guests. They only need to log in, then they are auto-accepted with guest status and no payment.
                 </p>
               </div>
             )}
-            {event.visitor_link && (
+            {visitorInviteLink && (
               <div>
                 <div className="text-xs font-semibold uppercase text-indigo-600 mb-1">
-                  Visitor Link
+                  Visitor Guest Invite
                 </div>
                 <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
                   <span className="text-sm text-gray-700 flex-1 truncate">
-                    {baseUrl}{event.visitor_link}
+                    {visitorInviteLink}
                   </span>
-                  <CopyButton text={`${baseUrl}${event.visitor_link}`} />
+                  <CopyButton text={visitorInviteLink} />
                 </div>
                 <p className="text-xs text-indigo-600 mt-1">
-                  Share publicly to allow visitors to register for the event.
+                  Share with visitor guests. They only need to log in, then they are auto-accepted with guest status and no payment.
+                </p>
+              </div>
+            )}
+            {publicityLink && (
+              <div>
+                <div className="text-xs font-semibold uppercase text-indigo-600 mb-1">
+                  Publicity Link
+                </div>
+                <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
+                  <span className="text-sm text-gray-700 flex-1 truncate">
+                    {publicityLink}
+                  </span>
+                  <CopyButton text={publicityLink} />
+                </div>
+                <p className="text-xs text-indigo-600 mt-1">
+                  Share publicly on social media. This follows the normal registration and payment flow.
                 </p>
               </div>
             )}
@@ -595,7 +649,7 @@ const handleConfirmPayment = async () => {
             {event.stand_price != null && (
               <InfoRow
                 label="Stand Price"
-                value={`$${event.stand_price.toFixed(2)} per enterprise`}
+                value={`${event.stand_price.toFixed(2)} MAD per enterprise`}
               />
             )}
             <InfoRow
@@ -604,7 +658,7 @@ const handleConfirmPayment = async () => {
                 event.is_paid ? (
                   <span className="inline-flex items-center gap-1 text-orange-700 font-medium">
                     <Tag className="w-3.5 h-3.5" /> Paid event
-                    {event.ticket_price != null && ` — $${event.ticket_price.toFixed(2)} per ticket`}
+                    {event.ticket_price != null && ` — ${event.ticket_price.toFixed(2)} MAD per ticket`}
                   </span>
                 ) : (
                   <span className="text-green-700 font-medium">Free — no ticket required</span>

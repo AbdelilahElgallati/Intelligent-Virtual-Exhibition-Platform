@@ -12,6 +12,9 @@ export const ENDPOINTS = {
     JOINED: '/events/joined',
     MY_STATUS: (id: string) => `/events/${id}/my-status`,
     JOIN: (id: string) => `/events/${id}/join`,
+    ACCEPT_VISITOR_INVITE: (id: string, token?: string) => token
+      ? `/events/${id}/accept-visitor-invite?token=${encodeURIComponent(token)}`
+      : `/events/${id}/accept-visitor-invite`,
     APPROVE: (id: string) => `/events/${id}/approve`,
     REJECT: (id: string) => `/events/${id}/reject`,
     CONFIRM_PAYMENT: (id: string) => `/events/${id}/confirm-payment`,
@@ -51,6 +54,7 @@ export const ENDPOINTS = {
     CHECKOUT: (standId: string, productId: string) =>
       `/marketplace/stands/${standId}/products/${productId}/checkout`,
     STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
+    UPDATE_ORDER_FULFILLMENT: (orderId: string) => `/marketplace/orders/${orderId}/fulfillment-status`,
   },
   NOTIFICATIONS: {
     LIST: '/notifications',
@@ -94,5 +98,10 @@ export const ENDPOINTS = {
     MY_STATUS: (eventId: string) => `/events/${eventId}/my-payment-status`,
     RECEIPT: (eventId: string) => `/events/${eventId}/my-receipt`,
   },
+  ENTERPRISE: {
+    ACCEPT_INVITE: (eventId: string, token?: string) => token
+      ? `/enterprise/events/${eventId}/accept-invite?token=${encodeURIComponent(token)}`
+      : `/enterprise/events/${eventId}/accept-invite`,
+  }
 
 };

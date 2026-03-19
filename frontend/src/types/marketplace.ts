@@ -47,9 +47,20 @@ export interface MarketplaceOrder {
   stripe_payment_intent_id?: string;
   payment_method?: 'stripe' | 'cash_on_delivery';
   status: 'pending' | 'paid' | 'cancelled';
+  fulfillment_status?: 'requested' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
+  fulfillment_note?: string;
+  fulfillment_updated_at?: string | null;
+  fulfillment_history?: Array<{
+    status: 'requested' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
+    note?: string;
+    changed_at?: string;
+  }>;
   shipping_address?: string;
   delivery_notes?: string;
   buyer_phone?: string;
+  buyer_name?: string;
+  buyer_email?: string;
+  product_type?: 'product' | 'service';
   created_at: string;
   paid_at: string | null;
 }

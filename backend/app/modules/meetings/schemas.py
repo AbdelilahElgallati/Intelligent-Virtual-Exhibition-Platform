@@ -61,6 +61,7 @@ class MeetingJoinResponse(BaseModel):
     token: str
     livekit_url: str
     room_name: str
+    ends_at: Optional[datetime] = None
 
 class AvailabilitySlot(BaseModel):
     start_time: datetime
