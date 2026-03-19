@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent } from '@/types/event';
+import { resolveMediaUrl } from '@/lib/media';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -626,7 +627,7 @@ export default function AdminEventDetailPage() {
                                     Payment Proof
                                 </div>
                                 <a
-                                    href={event.payment_proof_url}
+                                    href={resolveMediaUrl(event.payment_proof_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900 font-medium transition-colors"

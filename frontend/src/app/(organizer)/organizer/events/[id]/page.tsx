@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { organizerService } from "@/services/organizer.service";
 import OrganizerEventConferences from "@/components/conferences/OrganizerEventConferences";
+import { resolveMediaUrl } from '@/lib/media';
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
@@ -184,6 +185,7 @@ export default function EventDetailPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUrl, setProofUrl] = useState("");
 
   const fetchEvent = async () => {
     try {
@@ -201,8 +203,9 @@ export default function EventDetailPage() {
   }, [eventId]);
 
 const handleConfirmPayment = async () => {
-    if (!proofFile) {
-      setError("Please select a payment proof file first.");
+    const normalizedProofUrl = proofUrl.trim();
+    if (!proofFile && !normalizedProofUrl) {
+      setError("Please upload an image/PDF proof or provide a URL/path.");
       return;
     }
 
@@ -216,10 +219,11 @@ const handleConfirmPayment = async () => {
     setPaymentLoading(true);
     setError(null);
     try {
-      await organizerService.submitPaymentProof(eventId, proofFile);
+      await organizerService.submitPaymentProof(eventId, proofFile ?? normalizedProofUrl);
       // Re-fetch event to show the new state
       await fetchEvent();
       setProofFile(null);
+      setProofUrl("");
     } catch (err: any) {
       setError(err.message || "Payment proof submission failed.");
     } finally {
@@ -481,7 +485,7 @@ const handleConfirmPayment = async () => {
               {/* File Upload */}
               <div className="space-y-2">
                 <div className="text-[10px] font-bold uppercase text-orange-400 tracking-wider">
-                  Upload Payment Proof
+                  Upload Payment Proof (Image/PDF) or Paste URL
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex-1 cursor-pointer">
@@ -508,10 +512,17 @@ const handleConfirmPayment = async () => {
                     </button>
                   )}
                 </div>
+                <input
+                  type="text"
+                  placeholder="https://... or /uploads/payments/..."
+                  value={proofUrl}
+                  onChange={(e) => setProofUrl(e.target.value)}
+                  className="w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
               </div>
             </div>
 
-            <Button className="bg-orange-500 hover:bg-orange-600 shrink-0 self-end" isLoading={paymentLoading} disabled={!proofFile} onClick={handleConfirmPayment}><FileText className="w-4 h-4 mr-2" />Submit Proof</Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 shrink-0 self-end" isLoading={paymentLoading} disabled={!proofFile && !proofUrl.trim()} onClick={handleConfirmPayment}><FileText className="w-4 h-4 mr-2" />Submit Proof</Button>
           </div>
         </Card>
       )}
@@ -531,7 +542,7 @@ const handleConfirmPayment = async () => {
               {event.payment_proof_url && (
                 <div className="mt-3">
                   <a
-                    href={event.payment_proof_url}
+                    href={resolveMediaUrl(event.payment_proof_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-white border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"

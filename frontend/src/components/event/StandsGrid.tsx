@@ -9,6 +9,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
 import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
 
 /* Lazy-load the 3D hall to keep initial bundle light */
 const HallScene = lazy(() => import('@/components/hall3d/HallScene').then(m => ({ default: m.HallScene })));
@@ -282,6 +283,8 @@ export function StandsGrid({
                         {stands.map((stand) => {
                             const standId = (stand as any).id || (stand as any)._id;
                             const bgImage = stand.stand_background_url || stand.logo_url;
+                            const resolvedBgImage = resolveMediaUrl(bgImage);
+                            const resolvedLogo = resolveMediaUrl(stand.logo_url);
                             const themeColor = stand.theme_color || '#6366f1';
 
                             return (
@@ -292,9 +295,9 @@ export function StandsGrid({
                                     style={{ aspectRatio: '4 / 3' }}
                                 >
                                     {/* Background image or gradient fallback */}
-                                    {bgImage ? (
+                                    {resolvedBgImage ? (
                                         <img
-                                            src={bgImage}
+                                            src={resolvedBgImage}
                                             alt={stand.name}
                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
@@ -327,11 +330,11 @@ export function StandsGrid({
                                     </div>
 
                                     {/* Top-left logo pill */}
-                                    {stand.logo_url && stand.stand_background_url && (
+                                    {resolvedLogo && stand.stand_background_url && (
                                         <div className="absolute top-3 left-3 z-10">
                                             <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
                                                 <img
-                                                    src={stand.logo_url}
+                                                    src={resolvedLogo}
                                                     alt=""
                                                     className="w-full h-full object-cover"
                                                 />

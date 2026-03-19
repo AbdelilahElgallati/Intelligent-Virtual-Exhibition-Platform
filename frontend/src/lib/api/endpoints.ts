@@ -8,6 +8,7 @@ export const ENDPOINTS = {
   },
   EVENTS: {
     LIST: '/events',
+    UPLOAD_BANNER: '/events/uploads/banner',
     GET: (id: string) => `/events/${id}`,
     JOINED: '/events/joined',
     MY_STATUS: (id: string) => `/events/${id}/my-status`,
@@ -20,6 +21,9 @@ export const ENDPOINTS = {
     CONFIRM_PAYMENT: (id: string) => `/events/${id}/confirm-payment`,
     START: (id: string) => `/events/${id}/start`,
     CLOSE: (id: string) => `/events/${id}/close`,
+    SUBMIT_PAYMENT_PROOF: (id: string, proofUrl: string) =>
+      `/events/${id}/submit-proof?proof_url=${encodeURIComponent(proofUrl)}`,
+    UPLOAD_PAYMENT_PROOF: (id: string) => `/events/${id}/upload-payment-proof`,
     DELETE: (id: string) => `/events/${id}`,
     ANALYTICS: (id: string) => `/analytics/event/${id}`,
   },

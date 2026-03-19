@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { eventsApi } from '@/lib/api/events';
 import { Button } from '@/components/ui/Button';
@@ -12,11 +12,14 @@ import { ArrowLeft, FileText, Users, CalendarDays, Info, DollarSign } from 'luci
 import Link from 'next/link';
 
 const CATEGORIES = ['Exhibition', 'Conference', 'Webinar', 'Networking', 'Workshop', 'Hackathon'];
+const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export default function NewEventRequestPage() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
+    const [bannerUploading, setBannerUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const bannerInputRef = useRef<HTMLInputElement>(null);
 
     const [form, setForm] = useState({
         title: '',
@@ -58,6 +61,9 @@ export default function NewEventRequestPage() {
             if (day.slots.length === 0) return `Day ${day.day_number} must have at least one time slot.`;
             for (const slot of day.slots) {
                 if (!slot.start_time || !slot.end_time) return `Day ${day.day_number}: every slot needs a start and end time.`;
+                if (!TIME_24H_REGEX.test(slot.start_time) || !TIME_24H_REGEX.test(slot.end_time)) {
+                    return `Day ${day.day_number}: use 24-hour time format (HH:mm) for all slots.`;
+                }
                 if (slot.start_time >= slot.end_time) return `Day ${day.day_number}: end time must be after start time.`;
                 if (!slot.label.trim()) return `Day ${day.day_number}: please describe the activity for the ${slot.start_time}–${slot.end_time} slot.`;
             }
@@ -116,6 +122,20 @@ export default function NewEventRequestPage() {
             setError(err.message || 'Failed to submit event request. Please try again.');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleBannerUpload = async (file?: File) => {
+        if (!file) return;
+        setBannerUploading(true);
+        setError(null);
+        try {
+            const uploaded = await eventsApi.uploadEventBanner(file);
+            setForm((prev) => ({ ...prev, banner_url: uploaded.banner_url || prev.banner_url }));
+        } catch (err: any) {
+            setError(err.message || 'Failed to upload banner image.');
+        } finally {
+            setBannerUploading(false);
         }
     };
 
@@ -199,7 +219,37 @@ export default function NewEventRequestPage() {
 
                         <Input label="Location" name="location" placeholder="Virtual Platform" value={form.location} onChange={handleChange} />
                         <Input label="Tags (comma-separated)" name="tags" placeholder="e.g. AI, Tech, Startup" value={form.tags} onChange={handleChange} />
-                        <Input label="Banner Image URL" name="banner_url" type="url" placeholder="https://example.com/banner.jpg" value={form.banner_url} onChange={handleChange} />
+                        <div className="space-y-2">
+                            <Input
+                                label="Banner Image URL"
+                                name="banner_url"
+                                type="text"
+                                placeholder="https://example.com/banner.jpg or /uploads/event_banners/..."
+                                value={form.banner_url}
+                                onChange={handleChange}
+                            />
+                            <div className="flex items-center gap-2">
+                                <input
+                                    ref={bannerInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => handleBannerUpload(e.target.files?.[0])}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    isLoading={bannerUploading}
+                                    onClick={() => bannerInputRef.current?.click()}
+                                >
+                                    Upload Banner Image
+                                </Button>
+                                <span className="text-xs text-gray-500">
+                                    You can upload a file or paste an external URL.
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <hr className="border-gray-100" />

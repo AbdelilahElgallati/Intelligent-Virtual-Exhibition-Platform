@@ -86,6 +86,7 @@ export default function MarketplaceSuccessPage() {
 
         const rows = orders.map((order, i) => {
             const r = receipts[order.id] || {};
+            const isService = String(order.product_type || r.product_type || 'product') === 'service';
             const quantity = Number(r.quantity ?? order.quantity ?? 1);
             const unitPrice = Number(r.unit_price ?? ((r.amount ?? order.total_amount ?? 0) / (quantity || 1)));
             const amount = Number(r.amount ?? order.total_amount ?? 0);
@@ -94,7 +95,7 @@ export default function MarketplaceSuccessPage() {
             return [
                 String(i + 1),
                 order.product_name || r.product_name || 'Item',
-                String(quantity),
+                isService ? '—' : String(quantity),
                 `${unitPrice.toFixed(2)} ${currency}`,
                 `${amount.toFixed(2)} ${currency}`,
                 paymentMethod,
@@ -203,7 +204,9 @@ export default function MarketplaceSuccessPage() {
                                             {order.product_name}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            Qty: {order.quantity} · {fmt(Number(receipts[order.id]?.amount ?? order.total_amount), receipts[order.id]?.currency || (order as any).currency || 'MAD')}
+                                            {String(order.product_type || receipts[order.id]?.product_type || 'product') === 'service'
+                                                ? `Service · ${fmt(Number(receipts[order.id]?.amount ?? order.total_amount), receipts[order.id]?.currency || (order as any).currency || 'MAD')}`
+                                                : `Qty: ${order.quantity} · ${fmt(Number(receipts[order.id]?.amount ?? order.total_amount), receipts[order.id]?.currency || (order as any).currency || 'MAD')}`}
                                         </p>
                                     </div>
                                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold uppercase">

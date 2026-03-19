@@ -182,14 +182,16 @@ async def checkout_product(
     if product["stand_id"] != stand_id:
         raise HTTPException(status_code=400, detail="Product does not belong to this stand")
     is_service = str(product.get("type") or "product") == "service"
-    if not is_service and product["stock"] < body.quantity:
+    effective_quantity = 1 if is_service else body.quantity
+
+    if not is_service and product["stock"] < effective_quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
-    total = round(product["price"] * body.quantity, 2)
+    total = round(product["price"] * effective_quantity, 2)
 
     if body.payment_method == "cash_on_delivery" and not is_service:
         # Deduct stock immediately since it's a confirmed order type
-        await mkt_svc.decrement_stock(product["id"], body.quantity)
+        await mkt_svc.decrement_stock(product["id"], effective_quantity)
 
     # Create order
     order = await mkt_svc.create_order(
@@ -197,7 +199,7 @@ async def checkout_product(
         stand_id=stand_id,
         buyer_id=str(user["_id"]),
         product_name=product["name"],
-        quantity=body.quantity,
+        quantity=effective_quantity,
         total_amount=total,
         unit_price=float(product["price"]),
         currency=product.get("currency", "MAD"),
@@ -221,10 +223,11 @@ async def checkout_product(
 
     try:
         stripe_currency = 'mad'
+        display_name = f"Purchase: {product['name']}" if is_service else f"Purchase: {product['name']} x{effective_quantity}"
         stripe_result = create_payment_session(
             order_id=order["id"],
             amount=total,
-            product_name=f"Purchase: {product['name']} x{body.quantity}",
+            product_name=display_name,
             buyer_email=user.get("email"),
             success_url=success_url,
             cancel_url=cancel_url,
@@ -233,7 +236,7 @@ async def checkout_product(
                 'description': (product.get('description') or '')[:200],
                 'unit_amount': int(product['price'] * 100),
                 'currency': stripe_currency,
-                'quantity': body.quantity,
+                'quantity': effective_quantity,
             }],
         )
     except Exception as exc:
@@ -280,20 +283,22 @@ async def cart_checkout(
         if product["stand_id"] != stand_id:
             raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
         is_service = str(product.get("type") or "product") == "service"
-        if not is_service and product["stock"] < cart_item.quantity:
+        effective_quantity = 1 if is_service else cart_item.quantity
+
+        if not is_service and product["stock"] < effective_quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
-        total = round(product["price"] * cart_item.quantity, 2)
+        total = round(product["price"] * effective_quantity, 2)
         
         if body.payment_method == "cash_on_delivery" and not is_service:
-            await mkt_svc.decrement_stock(product["id"], cart_item.quantity)
+            await mkt_svc.decrement_stock(product["id"], effective_quantity)
 
         order = await mkt_svc.create_order(
             product_id=cart_item.product_id,
             stand_id=stand_id,
             buyer_id=str(user["_id"]),
             product_name=product["name"],
-            quantity=cart_item.quantity,
+            quantity=effective_quantity,
             total_amount=total,
             unit_price=float(product["price"]),
             currency=product.get("currency", "MAD"),
@@ -322,12 +327,13 @@ async def cart_checkout(
     for cart_item in body.items:
         product = await mkt_svc.get_product(cart_item.product_id)
         if product:
+            product_is_service = str(product.get("type") or "product") == "service"
             cart_line_items.append({
                 'name': product['name'],
                 'description': (product.get('description') or '')[:200],
                 'unit_amount': int(product['price'] * 100),
                 'currency': 'mad',
-                'quantity': cart_item.quantity,
+                'quantity': 1 if product_is_service else cart_item.quantity,
             })
 
     try:
@@ -455,7 +461,9 @@ async def list_orders_by_session(
                     if order.get("payment_method") == "stripe" and order.get("status") == "pending":
                         updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
                         if updated_order and changed:
-                            await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
+                            product = await mkt_svc.get_product(updated_order["product_id"])
+                            if product and str(product.get("type") or "product") != "service":
+                                await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
 
                 # Return refreshed state after sync
                 orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
@@ -518,16 +526,20 @@ async def get_order_receipt(
     quantity = int(order.get("quantity", 1) or 1)
     total_amount = float(order.get("total_amount", 0) or 0)
     unit_price = float(order.get("unit_price", 0) or 0)
+    product_type = product.get("type", "product") if product else "product"
+    is_service = str(product_type) == "service"
     if unit_price <= 0 and quantity > 0 and total_amount > 0:
         unit_price = round(total_amount / quantity, 2)
+    display_quantity = None if is_service else quantity
+    display_unit_price = total_amount if is_service else unit_price
 
     receipt = {
         "receipt_id": order["_id"],
         "order_id": order["_id"],
         "product_name": product["name"] if product else order.get("product_name", "Unknown"),
-        "product_type": product.get("type", "product") if product else "product",
-        "quantity": quantity,
-        "unit_price": unit_price,
+        "product_type": product_type,
+        "quantity": display_quantity,
+        "unit_price": display_unit_price,
         "amount": total_amount,
         "currency": (order.get("currency") or (product.get("currency") if product else "MAD") or "MAD").upper(),
         "status": order.get("status", "unknown"),

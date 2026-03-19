@@ -2,7 +2,7 @@ import { http } from '@/lib/http';
 import { OrganizerEvent } from '@/types/event';
 import { OrganizerSummary } from '@/types/organizer';
 import { DashboardData } from '@/types/analytics';
-import { getApiUrl } from '@/lib/config';
+import { ENDPOINTS } from '@/lib/api/endpoints';
 
 export const organizerService = {
     /**
@@ -27,13 +27,21 @@ export const organizerService = {
     },
 
     /**
-     * Submit payment proof (image/file) for an approved event.
+     * Submit payment proof for an approved event using either a file (image/PDF)
+     * or a direct URL/path.
      */
-    async submitPaymentProof(eventId: string, file: File): Promise<any> {
-        // In a real app, we might upload to S3 first and get a URL.
-        const mockUrl = `/uploads/proofs/${eventId}_${file.name}`;
-        const params = new URLSearchParams({ proof_url: mockUrl });
-        return http.post(`/events/${eventId}/submit-proof?${params.toString()}`, {});
+    async submitPaymentProof(eventId: string, proof: File | string): Promise<any> {
+        if (typeof proof === 'string') {
+            const normalized = proof.trim();
+            if (!normalized) {
+                throw new Error('Please provide a valid proof URL/path.');
+            }
+            return http.post(ENDPOINTS.EVENTS.SUBMIT_PAYMENT_PROOF(eventId, normalized), {});
+        }
+
+        const formData = new FormData();
+        formData.append('file', proof);
+        return http.post(ENDPOINTS.EVENTS.UPLOAD_PAYMENT_PROOF(eventId), formData);
     },
 
     async startEvent(eventId: string): Promise<OrganizerEvent> {

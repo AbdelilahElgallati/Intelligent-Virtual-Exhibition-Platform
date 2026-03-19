@@ -30,6 +30,13 @@ export const eventsApi = {
     createEvent: (data: EventCreatePayload) =>
         apiClient.post<OrganizerEvent>(ENDPOINTS.EVENTS.LIST, data),
 
+    /** Upload organizer event banner image and get a public URL path */
+    uploadEventBanner: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiClient.post<{ banner_url: string }>(ENDPOINTS.EVENTS.UPLOAD_BANNER, formData);
+    },
+
     /** Update event fields (only while PENDING_APPROVAL) */
     updateEvent: (id: string, data: EventUpdatePayload) =>
         apiClient.patch<OrganizerEvent>(ENDPOINTS.EVENTS.GET(id), data),

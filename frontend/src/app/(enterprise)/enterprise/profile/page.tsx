@@ -8,12 +8,29 @@ import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import { useAuth } from '@/context/AuthContext';
 import {
-    Mail, User, Shield, Building2, MapPin, Globe, Calendar,
+    Mail, User, Shield, Building2, MapPin, Globe,
     Linkedin, Save, CheckCircle2, Phone,
-    Upload, X, Camera, Image as ImageIcon, Briefcase
+    Upload, X, Camera, Briefcase
 } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const ENTERPRISE_CATEGORY_OPTIONS = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Manufacturing',
+    'Retail',
+    'Logistics',
+    'Energy',
+    'Telecommunications',
+    'Consulting',
+    'Media & Marketing',
+    'Tourism & Hospitality',
+    'Government & Public Services',
+    'Non-Profit',
+    'Other',
+];
 
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value?: string }) {
     if (!value) return null;
@@ -35,9 +52,11 @@ export default function EnterpriseProfilePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [tagsInput, setTagsInput] = useState('');
 
     const [profile, setProfile] = useState({
         description: '',
+        category: '',
         website: '',
         linkedin: '',
         theme_color: '#4f46e5',
@@ -53,14 +72,35 @@ export default function EnterpriseProfilePage() {
     const logoInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
 
+    const normalizeTags = (value: unknown): string[] => {
+        const source = Array.isArray(value)
+            ? value.map((v) => String(v))
+            : typeof value === 'string'
+                ? value.split(/[;,]/g)
+                : [];
+        const seen = new Set<string>();
+        const normalized: string[] = [];
+        for (const raw of source) {
+            const tag = raw.trim();
+            if (!tag) continue;
+            const key = tag.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            normalized.push(tag);
+        }
+        return normalized;
+    };
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 const myOrg = await http.get<any>('/enterprise/profile');
 
                 if (myOrg) {
+                    const normalizedTags = normalizeTags(myOrg.tags);
                     setProfile({
                         description: myOrg.description || '',
+                        category: myOrg.category || '',
                         website: myOrg.website || '',
                         linkedin: myOrg.linkedin || '',
                         theme_color: myOrg.theme_color || '#4f46e5',
@@ -68,10 +108,11 @@ export default function EnterpriseProfilePage() {
                         contact_email: myOrg.contact_email || '',
                         contact_phone: myOrg.contact_phone || '',
                         avatar_gender: myOrg.avatar_gender || 'male',
-                        tags: myOrg.tags || [],
+                        tags: normalizedTags,
                         logo_url: myOrg.logo_url || '',
                         banner_url: myOrg.banner_url || ''
                     });
+                    setTagsInput(normalizedTags.join(', '));
                 }
             } catch (err) {
                 console.error("Failed to fetch organization details", err);
@@ -85,8 +126,9 @@ export default function EnterpriseProfilePage() {
     };
 
     const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const tagList = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
-        setProfile(prev => ({ ...prev, tags: tagList }));
+        const raw = e.target.value;
+        setTagsInput(raw);
+        setProfile(prev => ({ ...prev, tags: normalizeTags(raw) }));
     };
 
     const handleFileUpload = async (type: 'logo' | 'banner', file: File) => {
@@ -126,7 +168,13 @@ export default function EnterpriseProfilePage() {
         setMessage(null);
 
         try {
-            await http.patch('/enterprise/profile', profile);
+            const normalizedTags = normalizeTags(tagsInput);
+            await http.patch('/enterprise/profile', {
+                ...profile,
+                tags: normalizedTags,
+            });
+            setProfile(prev => ({ ...prev, tags: normalizedTags }));
+            setTagsInput(normalizedTags.join(', '));
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
@@ -134,9 +182,6 @@ export default function EnterpriseProfilePage() {
             setIsLoading(false);
         }
     };
-
-    const initials = (user?.full_name || user?.email || 'EN')
-        .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -275,10 +320,28 @@ export default function EnterpriseProfilePage() {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-zinc-700">Category</label>
+                                    <select
+                                        name="category"
+                                        value={profile.category}
+                                        onChange={handleChange}
+                                        className="w-full h-12 rounded-xl border border-zinc-300 bg-white px-4 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select a category</option>
+                                        {profile.category && !ENTERPRISE_CATEGORY_OPTIONS.includes(profile.category) && (
+                                            <option value={profile.category}>{profile.category}</option>
+                                        )}
+                                        {ENTERPRISE_CATEGORY_OPTIONS.map((option) => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700">Business Tags</label>
                                     <div className="relative">
                                         <Input
-                                            value={profile.tags.join(', ')}
+                                            value={tagsInput}
                                             onChange={handleTagsChange}
                                             placeholder="AI, Blockchain, SaaS, Green Energy (comma separated)"
                                             className="pl-10"
@@ -286,7 +349,7 @@ export default function EnterpriseProfilePage() {
                                         <Briefcase className="absolute left-3.5 top-3 text-zinc-400" size={16} />
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {profile.tags.map(t => (
+                                        {normalizeTags(tagsInput).map(t => (
                                             <span key={t} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-full border border-indigo-100 uppercase tracking-tighter">
                                                 {t}
                                             </span>

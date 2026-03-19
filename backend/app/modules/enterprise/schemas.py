@@ -10,6 +10,7 @@ class ProductStatus(str, Enum):
 
 class EnterpriseProfileUpdate(BaseModel):
     description: Optional[str] = None
+    category: Optional[str] = None
     tags: Optional[List[str]] = None
     website: Optional[str] = None
     linkedin: Optional[str] = None

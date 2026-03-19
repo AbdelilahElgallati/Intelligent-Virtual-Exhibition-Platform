@@ -79,6 +79,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
     const addToCart = useCallback((product: Product) => {
         setCart((prev) => {
+            if (isServiceProduct(product)) {
+                return { ...prev, [product.id]: { product, quantity: 1 } };
+            }
             const existing = prev[product.id];
             const currentQty = existing ? existing.quantity : 0;
             if (!isServiceProduct(product) && currentQty >= product.stock) return prev;
@@ -90,6 +93,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         setCart((prev) => {
             const entry = prev[productId];
             if (!entry) return prev;
+            if (isServiceProduct(entry.product)) {
+                return { ...prev, [productId]: { ...entry, quantity: 1 } };
+            }
             const maxQty = isServiceProduct(entry.product) ? 100 : Math.min(entry.product.stock, 100);
             const clamped = Math.max(0, Math.min(qty, maxQty));
             if (clamped <= 0) {
@@ -126,7 +132,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         try {
             const items = cartItems.map((c) => ({
                 product_id: c.product.id,
-                quantity: c.quantity,
+                quantity: isServiceProduct(c.product) ? 1 : c.quantity,
             }));
             const resp = await apiClient.post<CartCheckoutResponse>(
                 ENDPOINTS.MARKETPLACE.CART_CHECKOUT(standId),
@@ -217,13 +223,14 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         doc.text(`Delivery Notes: ${firstReceipt.delivery_notes || '—'}`, 14, 86);
 
         const rows = validReceipts.map((r: any, i: number) => {
+            const isService = String(r.product_type || 'product') === 'service';
             const qty = Number(r.quantity || 1);
             const amount = Number(r.amount || 0);
             const unitPrice = qty > 0 ? amount / qty : amount;
             return [
                 String(i + 1),
                 r.product_name || 'Item',
-                String(qty),
+                isService ? '—' : String(qty),
                 `${unitPrice.toFixed(2)} ${currency}`,
                 `${amount.toFixed(2)} ${currency}`,
                 r.payment_method === 'cash_on_delivery' ? 'Pay on Reception (COD)' : 'Stripe',
@@ -539,35 +546,41 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     </p>
                                                     {/* Quantity controls */}
                                                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                                                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                                                            <button
-                                                                onClick={() => updateCartQty(product.id, quantity - 1)}
-                                                                className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                                                                disabled={quantity <= 1}
-                                                            >
-                                                                <Minus className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <input
-                                                                type="number"
-                                                                min={1}
-                                                                max={isServiceProduct(product) ? 100 : product.stock}
-                                                                value={quantity}
-                                                                onChange={(e) => {
-                                                                    const val = parseInt(e.target.value, 10);
-                                                                    if (!isNaN(val)) updateCartQty(product.id, val);
-                                                                }}
-                                                                className="w-12 sm:w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50/50 border-x border-gray-200 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                            />
-                                                            <button
-                                                                onClick={() => updateCartQty(product.id, quantity + 1)}
-                                                                className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                                                                disabled={!isServiceProduct(product) && quantity >= product.stock}
-                                                            >
-                                                                <Plus className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
+                                                        {isServiceProduct(product) ? (
+                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
+                                                                Service
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                                                <button
+                                                                    onClick={() => updateCartQty(product.id, quantity - 1)}
+                                                                    className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                    disabled={quantity <= 1}
+                                                                >
+                                                                    <Minus className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    max={product.stock}
+                                                                    value={quantity}
+                                                                    onChange={(e) => {
+                                                                        const val = Number.parseInt(e.target.value, 10);
+                                                                        if (!Number.isNaN(val)) updateCartQty(product.id, val);
+                                                                    }}
+                                                                    className="w-12 sm:w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50/50 border-x border-gray-200 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                />
+                                                                <button
+                                                                    onClick={() => updateCartQty(product.id, quantity + 1)}
+                                                                    className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                    disabled={quantity >= product.stock}
+                                                                >
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                         <span className="text-sm font-bold ml-auto sm:ml-0" style={{ color: themeColor }}>
-                                                            {fmt(product.price * quantity)}
+                                                            {fmt(product.price * (isServiceProduct(product) ? 1 : quantity))}
                                                         </span>
                                                     </div>
                                                 </div>
