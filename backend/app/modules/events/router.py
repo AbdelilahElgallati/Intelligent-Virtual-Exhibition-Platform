@@ -4,10 +4,13 @@ Events module router for IVEP.
 Handles event request submission, admin review, payment confirmation, and lifecycle transitions.
 """
 
+import os
+import shutil
+import uuid
 from typing import Optional
 from urllib.parse import urlparse, parse_qs
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
 from app.core.dependencies import get_current_user, require_feature, require_role, require_roles
 from app.modules.auth.enums import Role
@@ -42,6 +45,24 @@ from app.modules.audit.service import log_audit
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
+
+EVENT_BANNER_UPLOAD_DIR = "uploads/event_banners"
+PAYMENT_PROOF_UPLOAD_DIR = "uploads/payments"
+os.makedirs(EVENT_BANNER_UPLOAD_DIR, exist_ok=True)
+os.makedirs(PAYMENT_PROOF_UPLOAD_DIR, exist_ok=True)
+
+
+async def _save_upload(file: UploadFile, upload_dir: str, prefix: str) -> str:
+    """Persist an uploaded file in a public uploads folder and return its URL path."""
+    ext = os.path.splitext(file.filename or "file")[1] or ".bin"
+    safe_name = f"{prefix}_{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(upload_dir, safe_name)
+
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    normalized_dir = upload_dir.replace("\\", "/")
+    return f"/{normalized_dir}/{safe_name}"
 
 
 def _extract_legacy_invite_token(link: Optional[str]) -> Optional[str]:
@@ -175,6 +196,18 @@ async def accept_visitor_invite(
 
 
 # ============== Organizer Endpoints ==============
+
+@router.post("/uploads/banner")
+async def upload_event_banner(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+):
+    """Upload an event banner image and return a browser-accessible URL path."""
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Banner must be an image")
+
+    banner_url = await _save_upload(file, EVENT_BANNER_UPLOAD_DIR, "event_banner")
+    return {"banner_url": banner_url}
 
 @router.get("/organizer/my-events", response_model=EventsResponse)
 async def get_my_events_as_organizer(
@@ -553,6 +586,39 @@ async def submit_proof(
     from app.modules.events.service import submit_payment_proof
     updated_event = await submit_payment_proof(event_id, proof_url)
     
+    return EventRead(**updated_event)
+
+
+@router.post("/{event_id}/upload-payment-proof", response_model=EventRead)
+async def upload_and_submit_payment_proof(
+    event_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_role(Role.ORGANIZER)),
+) -> EventRead:
+    """
+    Upload payment proof file and immediately submit it.
+    Transition: WAITING_FOR_PAYMENT -> PAYMENT_PROOF_SUBMITTED
+    """
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    if event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if event["state"] != EventState.WAITING_FOR_PAYMENT:
+        raise HTTPException(status_code=400, detail="Must be in waiting_for_payment state")
+
+    if not file.content_type or not (
+        file.content_type.startswith("image/")
+        or file.content_type == "application/pdf"
+    ):
+        raise HTTPException(status_code=400, detail="Payment proof must be an image or PDF")
+
+    proof_url = await _save_upload(file, PAYMENT_PROOF_UPLOAD_DIR, f"event_{event_id}_proof")
+    from app.modules.events.service import submit_payment_proof
+
+    updated_event = await submit_payment_proof(event_id, proof_url)
     return EventRead(**updated_event)
 
 

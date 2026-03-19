@@ -96,10 +96,40 @@ async def get_event_stands(
         limit=limit,
         skip=skip,
     )
+
+    items = result["items"]
+
+    # Enrich stand branding/category/tags from organization profile if missing on stand.
+    from app.db.mongo import get_database
+    from app.db.utils import stringify_object_ids
+    from bson import ObjectId
+
+    db = get_database()
+    org_ids = list({str(s.get("organization_id") or "") for s in items if s.get("organization_id")})
+    org_map: dict[str, dict] = {}
+    for org_id in org_ids:
+        if not org_id:
+            continue
+        org_doc = await db.organizations.find_one({"_id": ObjectId(org_id)}) if ObjectId.is_valid(org_id) else None
+        if not org_doc:
+            org_doc = await db.organizations.find_one({"_id": org_id})
+        if org_doc:
+            org_map[org_id] = stringify_object_ids(org_doc)
+
+    for stand in items:
+        org = org_map.get(str(stand.get("organization_id") or ""), {})
+        if org.get("banner_url"):
+            stand["banner_url"] = org["banner_url"]
+        if org.get("logo_url"):
+            stand["logo_url"] = org["logo_url"]
+        if stand.get("category") in (None, "") and org.get("category"):
+            stand["category"] = org["category"]
+        if (not stand.get("tags")) and org.get("tags"):
+            stand["tags"] = org["tags"]
     
     # Convert items to StandRead
     return {
-        "items": [StandRead(**s) for s in result["items"]],
+        "items": [StandRead(**s) for s in items],
         "total": result["total"],
         "limit": result["limit"],
         "skip": result["skip"],
@@ -139,6 +169,10 @@ async def get_stand(stand_id: str) -> StandRead:
             stand["banner_url"] = org["banner_url"]
         if org.get("logo_url"):
             stand["logo_url"] = org["logo_url"]
+        if stand.get("category") in (None, "") and org.get("category"):
+            stand["category"] = org["category"]
+        if (not stand.get("tags")) and org.get("tags"):
+            stand["tags"] = org["tags"]
             
     return StandRead(**stand)
 

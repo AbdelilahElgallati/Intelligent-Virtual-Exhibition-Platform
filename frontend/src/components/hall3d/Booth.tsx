@@ -5,6 +5,7 @@ import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Stand } from '@/types/stand';
 import type { HallTextures } from './useHallTextures';
+import { resolveMediaUrl } from '@/lib/media';
 
 /* ── Booth dimensions (enlarged for 3-per-row layout) ── */
 const BOOTH_W = 4.5;   // width  (X)
@@ -77,17 +78,18 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
     const standId = stand.id || (stand as any)._id;
     const themeColor = stand.theme_color || '#6366f1';
     const variant = getVariant(stand);
+    const resolvedLogoUrl = resolveMediaUrl(stand.logo_url);
 
     // Load logo texture safely
     const logoTexture = useMemo(() => {
-        if (!stand.logo_url) return null;
+        if (!resolvedLogoUrl) return null;
         try {
             const loader = new THREE.TextureLoader();
-            return loader.load(stand.logo_url);
+            return loader.load(resolvedLogoUrl);
         } catch {
             return null;
         }
-    }, [stand.logo_url]);
+    }, [resolvedLogoUrl]);
 
     const displayName = truncateName(stand.name || 'Stand');
 

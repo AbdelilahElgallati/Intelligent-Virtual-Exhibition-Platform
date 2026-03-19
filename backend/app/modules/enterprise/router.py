@@ -179,6 +179,10 @@ async def ensure_enterprise_stand(event_id: str, org_id: str, org_hint: Optional
         organization_id=org_id,
         name=stand_name,
         description=stand_description,
+        logo_url=(org_doc or {}).get("logo_url"),
+        tags=(org_doc or {}).get("tags") or [],
+        category=(org_doc or {}).get("category"),
+        theme_color=(org_doc or {}).get("theme_color") or "#1e293b",
     )
 
 
@@ -191,7 +195,6 @@ async def get_enterprise_profile(
     """Get enterprise organization profile."""
     return await get_enterprise_org(current_user)
 
-
 @router.patch("/profile")
 async def update_enterprise_profile(
     data: EnterpriseProfileUpdate,
@@ -200,8 +203,41 @@ async def update_enterprise_profile(
     """Update enterprise organization profile."""
     org = await get_enterprise_org(current_user)
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+
+    if "category" in update_data and isinstance(update_data["category"], str):
+        update_data["category"] = update_data["category"].strip() or None
+
+    if "tags" in update_data:
+        raw_tags = update_data["tags"]
+        normalized_tags: list[str] = []
+        if isinstance(raw_tags, str):
+            candidate_tags = raw_tags.replace(";", ",").split(",")
+            normalized_tags = [t.strip() for t in candidate_tags if t and t.strip()]
+        elif isinstance(raw_tags, list):
+            candidate_tags: list[str] = []
+            for item in raw_tags:
+                val = str(item).strip()
+                if not val:
+                    continue
+                if "," in val or ";" in val:
+                    candidate_tags.extend(val.replace(";", ",").split(","))
+                else:
+                    candidate_tags.append(val)
+            normalized_tags = [t.strip() for t in candidate_tags if t and t.strip()]
+
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for tag in normalized_tags:
+            key = tag.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(tag)
+        update_data["tags"] = deduped
+
     if not update_data:
         return org
+
     org_coll = get_organizations_collection()
     from pymongo import ReturnDocument
     updated_org = await org_coll.find_one_and_update(
@@ -209,6 +245,28 @@ async def update_enterprise_profile(
         {"$set": update_data},
         return_document=ReturnDocument.AFTER,
     )
+
+    # Keep stand branding metadata aligned with enterprise profile.
+    sync_fields = {
+        k: v
+        for k, v in update_data.items()
+        if k in {"category", "tags", "logo_url", "banner_url"}
+    }
+    if sync_fields:
+        db = get_database()
+        org_sync_filter = {"organization_id": str(org["id"])}
+        if ObjectId.is_valid(str(org["id"])):
+            org_sync_filter = {
+                "$or": [
+                    {"organization_id": str(org["id"])},
+                    {"organization_id": ObjectId(str(org["id"]))},
+                ]
+            }
+        await db.stands.update_many(
+            org_sync_filter,
+            {"$set": sync_fields},
+        )
+
     return stringify_object_ids(updated_org)
 
 

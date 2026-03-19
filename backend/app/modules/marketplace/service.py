@@ -403,4 +403,26 @@ async def list_orders_for_buyer(buyer_id: str, session_id: str = None) -> list[d
     if session_id:
         query["stripe_session_id"] = session_id
     cursor = _db().stand_orders.find(query).sort("created_at", -1)
-    return [_serialize(d) async for d in cursor]
+    orders = [_serialize(d) async for d in cursor]
+    if not orders:
+        return orders
+
+    product_ids: list[ObjectId] = []
+    for order in orders:
+        product_oid = _to_object_id(order.get("product_id", ""))
+        if product_oid:
+            product_ids.append(product_oid)
+
+    products_map: dict[str, dict] = {}
+    if product_ids:
+        product_cursor = _db().stand_products.find(
+            {"_id": {"$in": product_ids}},
+            {"type": 1},
+        )
+        products_map = {str(doc["_id"]): doc async for doc in product_cursor}
+
+    for order in orders:
+        product = products_map.get(order.get("product_id", ""), {})
+        order["product_type"] = str(product.get("type") or "product")
+
+    return orders

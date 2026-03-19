@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowRight, Building2 } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
 
 interface StandCardProps {
     stand: Stand;
@@ -21,7 +22,7 @@ export function StandCard({ stand }: StandCardProps) {
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center border border-indigo-100 text-indigo-600 shadow-sm group-hover:shadow-md transition-shadow">
                         {stand.logo_url ? (
                             <img
-                                src={stand.logo_url}
+                                src={resolveMediaUrl(stand.logo_url)}
                                 alt={stand.name}
                                 className="w-full h-full object-cover rounded-lg"
                             />

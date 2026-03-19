@@ -86,9 +86,9 @@ export default function EnterpriseProductsPage() {
             const payload = {
                 name: formData.name,
                 description: formData.description,
-                price: parseFloat(formData.price) || 0,
+                price: Number.parseFloat(formData.price) || 0,
                 currency: formData.currency || 'MAD',
-                stock: parseInt(formData.stock) || 0,
+                stock: formData.type === 'service' ? 0 : (Number.parseInt(formData.stock, 10) || 0),
                 type: formData.type,
                 image_url: editingProduct?.image_url || '',
             };
@@ -218,14 +218,23 @@ export default function EnterpriseProductsPage() {
                                     </select>
                                 </div>
 
-                                <Input
-                                    label="Stock (quantity available)"
-                                    name="stock"
-                                    value={formData.stock}
-                                    onChange={handleChange}
-                                    type="number"
-                                    placeholder="100"
-                                />
+                                {formData.type !== 'service' ? (
+                                    <Input
+                                        label="Stock (quantity available)"
+                                        name="stock"
+                                        value={formData.stock}
+                                        onChange={handleChange}
+                                        type="number"
+                                        placeholder="100"
+                                    />
+                                ) : (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Stock</label>
+                                        <div className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm text-zinc-500">
+                                            Not applicable for services
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700">Type *</label>
@@ -242,7 +251,7 @@ export default function EnterpriseProductsPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, type: 'service' }))}
+                                            onClick={() => setFormData(prev => ({ ...prev, type: 'service', stock: '' }))}
                                             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all border-l border-zinc-200 ${formData.type === 'service'
                                                 ? 'bg-amber-500 text-white shadow-sm'
                                                 : 'text-zinc-500 hover:text-zinc-700'

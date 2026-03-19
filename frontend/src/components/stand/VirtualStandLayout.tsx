@@ -271,6 +271,22 @@ export function VirtualStandLayout({
             {/* Mobile-only welcome card (below banner) */}
             <div className="absolute top-[20%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
                 <div className="bg-white/[0.92] backdrop-blur rounded-xl shadow-lg p-3 border border-white/60">
+                    <h4 className="text-[11px] font-semibold text-gray-900 line-clamp-1 mb-1">{stand.name}</h4>
+                    {stand.category && (
+                        <p className="text-[10px] text-gray-500 mb-1">{stand.category}</p>
+                    )}
+                    {stand.tags && stand.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                            {stand.tags.slice(0, 3).map((tag, i) => (
+                                <span
+                                    key={i}
+                                    className="px-1.5 py-0.5 text-[9px] rounded-full bg-gray-100 text-gray-600"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                     <h3 className="font-semibold text-gray-800 mb-1 text-[10px] uppercase tracking-wider">
                         Welcome
                     </h3>
