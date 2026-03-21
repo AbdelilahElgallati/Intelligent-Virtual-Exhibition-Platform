@@ -15,13 +15,14 @@ interface HallSceneProps {
     onStandClick: (standId: string) => void;
     eventTitle?: string;
     eventBannerUrl?: string;
+    onViewAllStands?: () => void;
 }
 
 /**
  * HallSceneContent – The 3D content rendered inside the Canvas.
  * Rich warm lighting inspired by real exhibition halls.
  */
-function HallSceneContent({ stands, onStandClick, eventTitle }: HallSceneProps) {
+function HallSceneContent({ stands, onStandClick, eventTitle, onViewAllStands }: HallSceneProps) {
     const placements = useHallLayout(stands);
     const textures = useHallTextures();
 
@@ -46,6 +47,9 @@ function HallSceneContent({ stands, onStandClick, eventTitle }: HallSceneProps) 
             {/* ── Hall Floor (with event branding + textures) ── */}
             <HallFloor eventTitle={eventTitle} textures={textures} />
 
+            {/* ── 3D floor CTA outside bottom-right wall ── */}
+            {onViewAllStands && <HallFloorCta onClick={onViewAllStands} />}
+
             {/* ── Booths ── */}
             {placements.map((p) => (
                 <Booth key={p.id} stand={p.stand} position={p.position} textures={textures} onClick={onStandClick} />
@@ -68,6 +72,70 @@ function HallSceneContent({ stands, onStandClick, eventTitle }: HallSceneProps) 
     );
 }
 
+function HallFloorCta({ onClick }: { onClick: () => void }) {
+    const { size } = useThree();
+    const [hovered, setHovered] = useState(false);
+    const responsiveScale = size.width < 640 ? 1.35 : size.width < 1024 ? 1.18 : 1;
+
+    return (
+        <group
+            position={[HALL_WIDTH / 2 + 2.3, 0.03, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+            scale={[responsiveScale, responsiveScale, responsiveScale]}
+            onPointerOver={(e) => {
+                e.stopPropagation();
+                setHovered(true);
+                document.body.style.cursor = 'pointer';
+            }}
+            onPointerOut={(e) => {
+                e.stopPropagation();
+                setHovered(false);
+                document.body.style.cursor = 'auto';
+            }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+        >
+            <mesh position={[0, 0, 0]}>
+                <boxGeometry args={[5.6, 0.09, 2.35]} />
+                <meshStandardMaterial
+                    color={hovered ? '#d97706' : '#92400e'}
+                    emissive={hovered ? '#f59e0b' : '#78350f'}
+                    emissiveIntensity={hovered ? 0.42 : 0.18}
+                    roughness={0.35}
+                    metalness={0.15}
+                />
+            </mesh>
+
+            <mesh position={[0, 0.04, 0]}>
+                <boxGeometry args={[5.35, 0.025, 2.15]} />
+                <meshStandardMaterial
+                    color={hovered ? '#f59e0b' : '#b45309'}
+                    emissive={hovered ? '#fbbf24' : '#92400e'}
+                    emissiveIntensity={hovered ? 0.38 : 0.14}
+                    roughness={0.28}
+                    metalness={0.08}
+                />
+            </mesh>
+
+            <Text
+                position={[0, 0.079, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                fontSize={0.62}
+                color={hovered ? '#ffffff' : '#fef3c7'}
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.03}
+                outlineColor="#451a03"
+                font={undefined}
+            >
+                {'View all stands'}
+            </Text>
+        </group>
+    );
+}
+
 /**
  * ResponsiveCamera — dynamically adjusts the orthographic zoom based on screen width
  * so that the exhibition hall doesn't look cut-off or oversized on mobile phones.
@@ -84,10 +152,10 @@ function ResponsiveCamera() {
         let responsiveZoom;
 
         if (size.width < 600) {
-            // Mobile (e.g. 375px) -> significantly zoom in more than before
-            responsiveZoom = baseZoom * (size.width / 600);
+            // Mobile-only: zoom out a bit so hall corners and floor CTA remain visible.
+            responsiveZoom = baseZoom * (size.width / 600) * 0.82;
             // Ensure a minimum clamp
-            if (responsiveZoom < 12.5) responsiveZoom = 12.5;
+            if (responsiveZoom < 11.8) responsiveZoom = 11.8;
         } else if (size.width < 1024) {
             // Tablet -> moderate scale down
             responsiveZoom = baseZoom * (size.width / 900);
@@ -110,7 +178,7 @@ function ResponsiveCamera() {
  * Warm background to eliminate black void — resembles a real convention center.
  * Includes fullscreen toggle and responsive sizing.
  */
-function HallSceneInner({ stands, onStandClick, eventTitle }: HallSceneProps) {
+function HallSceneInner({ stands, onStandClick, eventTitle, onViewAllStands }: HallSceneProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -173,7 +241,12 @@ function HallSceneInner({ stands, onStandClick, eventTitle }: HallSceneProps) {
             >
                 <color attach="background" args={['#d4c4a8']} />
                 <Suspense fallback={null}>
-                    <HallSceneContent stands={stands} onStandClick={onStandClick} eventTitle={eventTitle} />
+                    <HallSceneContent
+                        stands={stands}
+                        onStandClick={onStandClick}
+                        eventTitle={eventTitle}
+                        onViewAllStands={onViewAllStands}
+                    />
                 </Suspense>
             </Canvas>
         </div>

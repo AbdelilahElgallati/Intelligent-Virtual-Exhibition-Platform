@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Stand, StandsListResponse } from '@/types/stand';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -60,12 +60,15 @@ export function StandsGrid({
     eventBannerUrl
 }: StandsGridProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     /* ── view mode: 'grid' or 'hall' ── */
-    const [viewMode, setViewMode] = useState<'grid' | 'hall'>('hall');
+    const [viewMode, setViewMode] = useState<'grid' | 'hall'>(
+        searchParams.get('view') === 'grid' ? 'grid' : 'hall'
+    );
 
     /* ── filter state ── */
     const [category, setCategory] = useState<string>(initialFilters?.category || '');
@@ -275,6 +278,7 @@ export function StandsGrid({
                             onStandClick={(standId) => router.push(`/events/${eventId}/stands/${standId}`)}
                             eventTitle={eventTitle}
                             eventBannerUrl={eventBannerUrl}
+                            onViewAllStands={() => router.push(`/events/${eventId}/live?tab=stands&view=grid`)}
                         />
                     </Suspense>
                 ) : (
