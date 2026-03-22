@@ -57,7 +57,7 @@ class ConferenceRead(BaseModel):
     start_time: datetime
     end_time: datetime
     status: ConferenceStatus = ConferenceStatus.SCHEDULED
-    livekit_room_name: Optional[str] = None
+    room_name: Optional[str] = None  # was: livekit_room_name
     max_attendees: int = 0
     attendee_count: int = 0
     is_registered: Optional[bool] = None            # populated per-user at runtime
@@ -71,7 +71,7 @@ class ConferenceRead(BaseModel):
 
 class ConferenceTokenResponse(BaseModel):
     token: str
-    livekit_url: str
+    room_url: str         # Full Daily room URL (https://<domain>/<room_name>)
     room_name: str
     role: str   # "speaker" | "audience"
 

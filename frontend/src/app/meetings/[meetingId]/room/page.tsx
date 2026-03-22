@@ -140,7 +140,7 @@ function MeetingRoomContent({ meetingId }: { meetingId: string }) {
     return (
         <MeetingRoom
             token={tokenData.token}
-            serverUrl={tokenData.livekit_url}
+            roomUrl={tokenData.room_url}
             onSessionEnd={handleEnd}
         />
     );

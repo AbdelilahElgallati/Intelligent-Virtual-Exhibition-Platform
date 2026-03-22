@@ -181,7 +181,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
     return (
         <SpeakerRoom
             token={tokenData.token}
-            serverUrl={tokenData.livekit_url}
+            roomUrl={tokenData.room_url}
             conferenceId={confId}
             conferenceTitle={conf.title}
             conferenceDescription={conf.description}

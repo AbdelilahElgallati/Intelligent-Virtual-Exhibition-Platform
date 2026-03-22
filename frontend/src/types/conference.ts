@@ -15,7 +15,7 @@ export interface Conference {
     start_time: string;
     end_time: string;
     status: ConferenceStatus;
-    livekit_room_name?: string;
+    room_name?: string;  // was: livekit_room_name
     max_attendees: number;
     attendee_count: number;
     is_registered?: boolean;
@@ -27,7 +27,7 @@ export interface Conference {
 
 export interface ConferenceTokenResponse {
     token: string;
-    livekit_url: string;
+    room_url: string;   // Daily.co room URL (https://<domain>/<room_name>)
     room_name: string;
     role: 'speaker' | 'audience';
 }

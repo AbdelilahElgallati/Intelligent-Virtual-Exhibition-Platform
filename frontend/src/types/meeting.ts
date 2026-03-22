@@ -27,12 +27,12 @@ export interface Meeting {
     meeting_type: MeetingType;
     initiator_id?: string;
     session_status: SessionStatus;
-    livekit_room_name?: string;
+    room_name?: string;  // was: livekit_room_name
 }
 
 export interface MeetingJoinResponse {
     token: string;
-    livekit_url: string;
+    room_url: string;   // Daily.co room URL (https://<domain>/<room_name>)
     room_name: string;
     ends_at?: string;
 }
