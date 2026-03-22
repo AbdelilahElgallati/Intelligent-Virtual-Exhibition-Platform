@@ -9,7 +9,7 @@ bcrypt==4.0.1
 pyjwt==2.8.0
 python-multipart==0.0.6
 email-validator
-livekit-api>=1.1.0
+# livekit-api removed — replaced by Daily.co via httpx (already listed below)
 argon2-cffi==23.1.0
 httpx
 redis==5.0.1

@@ -9,7 +9,7 @@ from ...core.config import settings
 from ..stands.service import get_stand_by_id
 from ..organizations.service import get_organization_by_id
 from ..events.service import get_event_by_id
-from ..livekit import service as lk
+from ..daily import service as daily_svc
 from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
 
@@ -43,8 +43,13 @@ async def _ensure_meeting_not_expired(meeting_id: str, meeting: dict):
 
     # Auto-close expired sessions to keep lifecycle consistent.
     if meeting.get("session_status") != "ended" or meeting.get("status") != "completed":
-        room_name = meeting.get("livekit_room_name") or f"meeting-{meeting_id}"
-        await lk.delete_room(room_name)
+        # Support both old "livekit_room_name" and new "room_name" field
+        room_name = (
+            meeting.get("room_name")
+            or meeting.get("livekit_room_name")
+            or f"meeting-{meeting_id}"
+        )
+        await daily_svc.delete_room(room_name)
         await meeting_repo.end_session(meeting_id)
 
     raise HTTPException(status_code=410, detail="Meeting timeslot has ended")
@@ -384,14 +389,20 @@ async def get_meeting_token(
             detail=f"Meeting is not approved yet (status: {meeting.get('status')})"
         )
 
-    room_name = meeting.get("livekit_room_name") or f"meeting-{meeting_id}"
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        meeting.get("room_name")
+        or meeting.get("livekit_room_name")
+        or f"meeting-{meeting_id}"
+    )
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
-    token = lk.generate_meeting_token(room_name, uid, user_name)
+    # is_owner = True for the stand owner (enterprise side)
+    token = await daily_svc.generate_meeting_token(room_name, uid, user_name, is_owner=is_owner)
 
     return MeetingJoinResponse(
         token=token,
-        livekit_url=settings.LIVEKIT_WS_URL,
+        room_url=daily_svc.get_room_url(room_name),
         room_name=room_name,
         ends_at=_to_utc_datetime(meeting.get("end_time")),
     )
@@ -427,9 +438,14 @@ async def start_meeting_session(
     if not is_requester and not is_owner:
         raise HTTPException(status_code=403, detail="Not a participant")
 
-    room_name = meeting.get("livekit_room_name") or f"meeting-{meeting_id}"
-    # Best-effort room creation (LiveKit may not be running in dev)
-    await lk.create_room(room_name)
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        meeting.get("room_name")
+        or meeting.get("livekit_room_name")
+        or f"meeting-{meeting_id}"
+    )
+    # Best-effort room creation (no-op if credentials not set in dev)
+    await daily_svc.create_room(room_name)
 
     updated = await meeting_repo.start_session(meeting_id)
     return {"session_status": "live", "room_name": room_name}
@@ -462,8 +478,13 @@ async def end_meeting_session(
     if not is_requester and not is_owner:
         raise HTTPException(status_code=403, detail="Not a participant")
 
-    room_name = meeting.get("livekit_room_name") or f"meeting-{meeting_id}"
-    await lk.delete_room(room_name)
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        meeting.get("room_name")
+        or meeting.get("livekit_room_name")
+        or f"meeting-{meeting_id}"
+    )
+    await daily_svc.delete_room(room_name)
 
     updated = await meeting_repo.end_session(meeting_id)
     return {"session_status": "ended"}

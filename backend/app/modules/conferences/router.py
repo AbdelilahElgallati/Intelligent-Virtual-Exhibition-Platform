@@ -22,7 +22,7 @@ from app.modules.conferences.repository import conf_repo
 from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
 from app.db.mongo import get_database
-from app.modules.livekit import service as lk
+from app.modules.daily import service as daily_svc
 from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
 from app.modules.events.service import get_event_by_id
@@ -173,7 +173,7 @@ async def organizer_create_conference(
     doc["event_id"] = event_id
     doc["organizer_id"] = str(current_user["_id"])
     doc["status"] = "scheduled"
-    doc["livekit_room_name"] = None   # assigned when going live
+    doc["room_name"] = None   # assigned when going live
 
     conf = await conf_repo.create(doc)
 
@@ -268,16 +268,16 @@ async def enterprise_start_conference(
         raise HTTPException(status_code=400, detail=f"Cannot start a conference with status '{conf['status']}'")
 
     room_name = f"conf-{conf_id}"
-    created = await lk.create_room(room_name)
+    created = await daily_svc.create_room(room_name)
     if not created:
         raise HTTPException(
             status_code=503,
-            detail="Could not start the video server. Please try again in a moment.",
+            detail="Could not create the video room. Please try again in a moment.",
         )
 
     updated = await conf_repo.set_status(
         conf_id, "live",
-        extra={"livekit_room_name": room_name}
+        extra={"room_name": room_name}
     )
 
     # Best-effort analytics instrumentation.
@@ -322,8 +322,13 @@ async def enterprise_end_conference(
     conf = await _get_conf_or_404(conf_id)
     await _assert_assigned_enterprise(conf, current_user)
 
-    room_name = conf.get("livekit_room_name") or f"conf-{conf_id}"
-    await lk.delete_room(room_name)
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        conf.get("room_name")
+        or conf.get("livekit_room_name")
+        or f"conf-{conf_id}"
+    )
+    await daily_svc.delete_room(room_name)
 
     await conf_repo.set_status(conf_id, "ended")
     return {"session_status": "ended"}
@@ -344,18 +349,19 @@ async def enterprise_speaker_token(
     if conf["status"] not in ("live", "scheduled"):
         raise HTTPException(status_code=400, detail="Conference is not live")
 
-    # Ensure LiveKit server is reachable
-    if not await lk.ensure_livekit_running():
-        raise HTTPException(status_code=503, detail="Video server is not available. Please try again.")
-
-    room_name = conf.get("livekit_room_name") or f"conf-{conf_id}"
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        conf.get("room_name")
+        or conf.get("livekit_room_name")
+        or f"conf-{conf_id}"
+    )
     uid = str(current_user["_id"])
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
-    token = lk.generate_speaker_token(room_name, uid, user_name)
+    token = await daily_svc.generate_speaker_token(room_name, uid, user_name)
     return ConferenceTokenResponse(
         token=token,
-        livekit_url=settings.LIVEKIT_WS_URL,
+        room_url=daily_svc.get_room_url(room_name),
         room_name=room_name,
         role="speaker",
     )
@@ -456,11 +462,16 @@ async def get_audience_token(
     if conf["status"] != "live":
         raise HTTPException(status_code=400, detail="Conference is not live yet")
 
-    room_name = conf.get("livekit_room_name") or f"conf-{conf_id}"
+    # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
+    room_name = (
+        conf.get("room_name")
+        or conf.get("livekit_room_name")
+        or f"conf-{conf_id}"
+    )
     uid = str(current_user["_id"])
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
-    token = lk.generate_audience_token(room_name, uid, user_name)
+    token = await daily_svc.generate_audience_token(room_name, uid, user_name)
 
     # Best-effort analytics instrumentation.
     try:
@@ -480,7 +491,7 @@ async def get_audience_token(
 
     return ConferenceTokenResponse(
         token=token,
-        livekit_url=settings.LIVEKIT_WS_URL,
+        room_url=daily_svc.get_room_url(room_name),
         room_name=room_name,
         role="audience",
     )

@@ -47,19 +47,19 @@ class MeetingSchema(MeetingBase):
     requester_org_name: Optional[str] = None
     receiver_org_name: Optional[str] = None
 
-    # Video session fields (new)
+    # Video session fields — provider-agnostic
     meeting_type: MeetingType = MeetingType.ONE_TO_ONE
     initiator_id: Optional[str] = None
     session_status: SessionStatus = SessionStatus.SCHEDULED
-    livekit_room_name: Optional[str] = None
+    room_name: Optional[str] = None  # was: livekit_room_name
 
     class Config:
         populate_by_name = True
 
 class MeetingJoinResponse(BaseModel):
-    """Returned when a meeting participant requests a LiveKit token."""
+    """Returned when a meeting participant requests a Daily.co token."""
     token: str
-    livekit_url: str
+    room_url: str         # Full Daily room URL (https://<domain>/<room_name>)
     room_name: str
     ends_at: Optional[datetime] = None
 
