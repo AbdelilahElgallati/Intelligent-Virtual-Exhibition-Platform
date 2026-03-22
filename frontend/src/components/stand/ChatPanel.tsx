@@ -101,15 +101,20 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     }, [messages, userId, limitReached, persistLimit, disableMessageLimit]);
 
     /* ---- Initialize chat ---- */
+    const initializedStandRef = useRef<string | null>(null);
+
     useEffect(() => {
         const initChat = async () => {
             if (!isAuthenticated) return;
 
-            setIsLoading(true);
-            setInput('');
-            setMessages([]);
-
+            // Handle pre-set rooms mapping
             if (initialRoomId) {
+                if (initializedStandRef.current === initialRoomId) return;
+                initializedStandRef.current = initialRoomId;
+                
+                setIsLoading(true);
+                setInput('');
+                setMessages([]);
                 setRoomId(initialRoomId);
                 try {
                     const history = await apiClient.get<any[]>(ENDPOINTS.CHAT.HISTORY(initialRoomId));
@@ -123,6 +128,14 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
             }
 
             if (!standId) return;
+            
+            // Abort if already starting init for this stand (fixes React 18 strict mode duplicate API triggers)
+            if (initializedStandRef.current === standId) return;
+            initializedStandRef.current = standId;
+
+            setIsLoading(true);
+            setInput('');
+            setMessages([]);
 
             try {
                 const room = await apiClient.post<ChatRoom>(ENDPOINTS.CHAT.START(standId));
@@ -132,6 +145,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                 setMessages((prev) => mergeChatHistory(prev, history.reverse()));
             } catch (error) {
                 console.error("Failed to init chat", error);
+                initializedStandRef.current = null; // allow retry on failure
             } finally {
                 setIsLoading(false);
             }

@@ -87,7 +87,7 @@ class ChatRepository:
         self, user_id: str,
         event_id: str = None, room_category: str = None
     ) -> List[ChatRoomSchema]:
-        query: dict = {"members": user_id}
+        query: dict = {"members": user_id, "last_message": {"$ne": None}}
         if event_id:
             query["event_id"] = event_id
         if room_category:
