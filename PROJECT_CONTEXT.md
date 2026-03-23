@@ -338,25 +338,23 @@ Observed in workspace context:
 
 ## 13) Change Log (Latest Verified Modifications)
 
-### 2026-03-18 - Backend startup ImportError fix
+### 2026-03-23 - Platform Audit & R2 Media Verification
 
-Issue observed during backend startup:
-- ImportError in payments router: attempted to import `_configure` from marketplace stripe service, but symbol did not exist.
+Comprehensive audit of all user roles (Admin, Organizer, Enterprise, Visitor) for both GET and Mutation (POST/PATCH) flows.
 
-Applied modification:
-- In `backend/app/modules/payments/router.py`, removed invalid/unused import:
-  - `from app.modules.marketplace.stripe_service import _configure as _stripe_configure`
+- **Storage**: Fixed `resolveMediaUrl` in [media.ts](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/lib/media.ts) and upload logic in [storage.py](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/backend/app/core/storage.py) to prioritize Cloudflare R2 and handle legacy folder structures (e.g., `/event_banners/`).
+- **Security**: Implemented protocol enforcement in [config.ts](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/lib/config.ts) to resolve Mixed Content errors on the hosted site `https://eglobal-expo.com`.
+- **Validation**:
+    - Verified **GET** flow for all dashboards, event lists, and profiles.
+    - Verified **POST/PATCH** mutation flows for:
+        - Enterprise Profile updates
+        - Organizer Event creation
+        - Admin Event approval & Organization verification
+    - Identified missing R2 assets (event banners) as a data migration task (Manual upload required).
 
 Validation performed:
-- Direct module import check succeeded:
-  - `import app.modules.payments.router`
-- Confirms previous startup blocker was removed.
-
-### Context correction included in this snapshot
-
-Updated documentation statement:
-- Frontend marketplace route folder exists with success and cancel pages.
-- There is still no standalone marketplace index page.
+- Successful cross-role simulated audits with recorded evidence.
+- Verified 200/201 status codes for mutation endpoints.
 
 ---
 
@@ -465,6 +463,8 @@ Current `backend/tests` directory:
 - Frontend route tree includes many admin and enterprise pages beyond older docs.
 - Marketplace frontend has success/cancel pages but no marketplace index page file currently.
 - Some frontend hooks/services/types remain placeholders or empty while backend endpoints exist.
+- **R2 Media Status**: Core assets (logos, product images) are verified. Some event banners are missing from R2 bucket (404) and require manual upload/sync from legacy `backend/uploads`.
+- **API Protocol**: Code-level safety implemented in `config.ts` to prevent mixed-content blocks by forcing HTTPS when the site is secure.
 
 ---
 

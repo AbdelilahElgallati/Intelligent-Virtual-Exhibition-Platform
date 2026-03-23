@@ -162,15 +162,19 @@ async def store_upload(
                 "provider": "r2",
             }
         except Exception as exc:
-            logger.warning("R2 upload failed, falling back to local storage: %s", exc)
+            logger.error("R2 upload failed for %s. Falling back to local storage. Error: %s", r2_key, str(exc))
 
+    # Local storage fallback
     os.makedirs(local_dir, exist_ok=True)
     local_path = os.path.join(local_dir, safe_name)
     with open(local_path, "wb") as output:
         output.write(content)
 
+    # Ensure local URL is clean
+    final_url = f"{local_url_prefix.rstrip('/')}/{safe_name}"
+    
     return {
-        "url": f"{local_url_prefix.rstrip('/')}/{safe_name}",
+        "url": final_url,
         "size": file_size,
         "content_type": content_type,
         "key": safe_name,
