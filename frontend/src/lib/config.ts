@@ -1,7 +1,7 @@
 export const API_BASE_URL = (() => {
-  // __IVEP_SAFE_API_URL is set by next.config.ts with https:// guaranteed.
+  // NEXT_PUBLIC_IVEP_SAFE_API_URL is set by next.config.ts with https:// guaranteed.
   // Falls back to NEXT_PUBLIC_API_URL if somehow the build config is skipped.
-  const rawUrl = process.env.__IVEP_SAFE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const rawUrl = process.env.NEXT_PUBLIC_IVEP_SAFE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   let url = rawUrl.trim().replace(/\/$/, '');
   // Last-resort safety: force https for any non-localhost URL
   if (!url.includes('localhost') && !url.includes('127.0.0.1') && url.startsWith('http:')) {
