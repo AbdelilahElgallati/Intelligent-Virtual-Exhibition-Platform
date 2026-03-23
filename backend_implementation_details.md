@@ -28,6 +28,13 @@ This document provides a deep dive into the backend architecture of the Intellig
 - **Goal**: Configure centralized logging for the platform.
 - **Key Components**: Standardized logging initialization to ensure consistent output format across all modules.
 
+### `storage.py`
+- **Goal**: Unified file storage abstraction (Cloudflare R2 with local fallback).
+- **Key Functions**:
+    - `store_upload`: Persists uploaded files to R2 or local disk, returning a public URL.
+    - `delete_managed_upload_by_url`: Removes a file from storage given its URL.
+    - `r2_is_configured`: Checks if R2 credentials are present in settings.
+
 ---
 
 ## 🗄 Database Layer (`app/db/`)
