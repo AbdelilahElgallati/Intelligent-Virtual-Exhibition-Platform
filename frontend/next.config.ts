@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_STRIPE_PUBLIC_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY,
-    NEXT_PUBLIC_LIVEKIT_URL: process.env.NEXT_PUBLIC_LIVEKIT_URL,
+    NEXT_PUBLIC_DAILY_DOMAIN: process.env.NEXT_PUBLIC_DAILY_DOMAIN,
   },
 };
 

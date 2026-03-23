@@ -9,9 +9,15 @@ class ProductStatus(str, Enum):
     CLOSED = "CLOSED"
 
 class EnterpriseProfileUpdate(BaseModel):
+    name: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[List[str]] = None
+    industry: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    company_size: Optional[str] = None
+    professional_email: Optional[str] = None
     website: Optional[str] = None
     linkedin: Optional[str] = None
     logo_url: Optional[str] = None

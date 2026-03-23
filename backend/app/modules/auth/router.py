@@ -113,6 +113,19 @@ async def register(request: RegisterRequest) -> TokenResponse:
             "org_website": request.org_website,
             "org_professional_email": request.org_professional_email,
         } if is_organizer else {}),
+        # Enterprise profile data (mirrored on user for admin review and simpler queries)
+        **({
+            "company_name": request.company_name,
+            "professional_email": request.professional_email,
+            "industry": request.industry,
+            "description": request.description,
+            "country": request.country,
+            "city": request.city,
+            "creation_year": request.creation_year,
+            "company_size": request.company_size,
+            "website": request.website,
+            "linkedin": request.linkedin,
+        } if is_enterprise else {}),
     }
     
     user = await create_user(user_data)
@@ -146,6 +159,7 @@ async def register(request: RegisterRequest) -> TokenResponse:
                 "type": "enterprise",
                 "industry": request.industry,
                 "professional_email": request.professional_email,
+                "contact_email": request.professional_email,
                 "country": request.country,
                 "city": request.city,
                 "creation_year": request.creation_year,

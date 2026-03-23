@@ -29,6 +29,8 @@ from app.modules.stands.service import get_stand_by_org, update_stand, create_st
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from bson import ObjectId
+from app.core.storage import store_upload
+from app.core.storage import delete_managed_upload_by_url
 
 router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
@@ -45,14 +47,14 @@ async def upload_profile_image(org_id: str, file: UploadFile, field_name: str) -
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
-    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
-    safe_name = f"{org_id}_{field_name}_{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(PROFILE_IMAGE_DIR, safe_name)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return f"/uploads/enterprise_profile/{safe_name}"
+    stored = await store_upload(
+        file=file,
+        local_dir=PROFILE_IMAGE_DIR,
+        local_url_prefix="/uploads/enterprise_profile",
+        r2_folder="enterprise_profile",
+        filename_prefix=f"{org_id}_{field_name}",
+    )
+    return stored["url"]
 
 async def get_enterprise_org(current_user: dict) -> dict:
     """Find enterprise organization; auto-provision one if missing."""
@@ -240,11 +242,19 @@ async def update_enterprise_profile(
 
     org_coll = get_organizations_collection()
     from pymongo import ReturnDocument
+    previous_logo_url = org.get("logo_url")
+    previous_banner_url = org.get("banner_url")
+
     updated_org = await org_coll.find_one_and_update(
         {"_id": ObjectId(org["id"])},
         {"$set": update_data},
         return_document=ReturnDocument.AFTER,
     )
+
+    if "logo_url" in update_data and previous_logo_url and update_data.get("logo_url") != previous_logo_url:
+        delete_managed_upload_by_url(previous_logo_url)
+    if "banner_url" in update_data and previous_banner_url and update_data.get("banner_url") != previous_banner_url:
+        delete_managed_upload_by_url(previous_banner_url)
 
     # Keep stand branding metadata aligned with enterprise profile.
     sync_fields = {
@@ -277,6 +287,7 @@ async def upload_enterprise_logo(
 ):
     """Upload enterprise logo."""
     org = await get_enterprise_org(current_user)
+    previous_logo_url = org.get("logo_url")
     image_url = await upload_profile_image(org["id"], file, "logo")
     
     org_coll = get_organizations_collection()
@@ -284,6 +295,8 @@ async def upload_enterprise_logo(
         {"_id": ObjectId(org["id"])},
         {"$set": {"logo_url": image_url}}
     )
+    if previous_logo_url and previous_logo_url != image_url:
+        delete_managed_upload_by_url(previous_logo_url)
     return {"logo_url": image_url}
 
 
@@ -294,6 +307,7 @@ async def upload_enterprise_banner(
 ):
     """Upload enterprise banner."""
     org = await get_enterprise_org(current_user)
+    previous_banner_url = org.get("banner_url")
     image_url = await upload_profile_image(org["id"], file, "banner")
     
     org_coll = get_organizations_collection()
@@ -301,6 +315,8 @@ async def upload_enterprise_banner(
         {"_id": ObjectId(org["id"])},
         {"$set": {"banner_url": image_url}}
     )
+    if previous_banner_url and previous_banner_url != image_url:
+        delete_managed_upload_by_url(previous_banner_url)
     return {"banner_url": image_url}
 
 
@@ -346,18 +362,24 @@ async def upload_product_image(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
-    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
-    safe_name = f"{product_id}_{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(PRODUCT_IMAGE_DIR, safe_name)
+    existing_product = await enterprise_repo.get_product_by_id(product_id)
+    previous_image_url = existing_product.get("image_url") if existing_product else None
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    image_url = f"/uploads/product_images/{safe_name}"
+    stored = await store_upload(
+        file=file,
+        local_dir=PRODUCT_IMAGE_DIR,
+        local_url_prefix="/uploads/product_images",
+        r2_folder="product_images",
+        filename_prefix=product_id,
+    )
+    image_url = stored["url"]
 
     updated = await enterprise_repo.set_product_image(product_id, str(current_user["_id"]), image_url)
     if not updated:
         raise HTTPException(status_code=404, detail="Product not found or access denied")
+
+    if previous_image_url and previous_image_url != image_url:
+        delete_managed_upload_by_url(previous_image_url)
     return {"image_url": image_url}
 
 
@@ -434,7 +456,7 @@ async def list_enterprise_events(current_user: dict = Depends(require_role(Role.
         if not (exc.status_code == status.HTTP_404_NOT_FOUND and str(exc.detail) == "Enterprise organization not found"):
             raise
 
-    cursor = db.events.find({"state": {"$in": ["approved", "live", "waiting_for_payment", "payment_done"]}})
+    cursor = db.events.find({"state": {"$in": ["approved", "payment_done", "live", "closed"]}})
     all_events = stringify_object_ids(await cursor.to_list(length=200))
 
     participations = {}
@@ -466,7 +488,7 @@ async def enterprise_join_event(
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    if event.get("state") not in ("approved", "waiting_for_payment", "payment_done", "live"):
+    if event.get("state") not in ("approved", "payment_done", "live"):
         raise HTTPException(status_code=400, detail="Event is not open for enterprise participation")
 
     # Check enterprise stand capacity
@@ -925,24 +947,26 @@ async def upload_stand_resource(
 
     file_path = url or ""
     
+    stored_upload = None
     if file and file.filename:
-        ext = os.path.splitext(file.filename)[1] or ""
-        safe_name = f"{stand['id']}_{uuid.uuid4().hex}{ext}"
         upload_dir = "uploads/stand_resources"
-        os.makedirs(upload_dir, exist_ok=True)
-        save_path = os.path.join(upload_dir, safe_name)
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        file_path = f"/{upload_dir}/{safe_name}"
+        stored_upload = await store_upload(
+            file=file,
+            local_dir=upload_dir,
+            local_url_prefix="/uploads/stand_resources",
+            r2_folder="stand_resources",
+            filename_prefix=str(stand["id"]),
+        )
+        file_path = stored_upload["url"]
 
     db = get_database()
     
     # Calculate file size if uploaded
     file_size = 0
     mime_type = "application/octet-stream"
-    if file and file.filename:
-        file_size = os.path.getsize(save_path)
-        mime_type = file.content_type or mime_type
+    if stored_upload:
+        file_size = stored_upload["size"]
+        mime_type = stored_upload["content_type"]
 
     resource_doc = {
         "stand_id": str(stand["id"]),

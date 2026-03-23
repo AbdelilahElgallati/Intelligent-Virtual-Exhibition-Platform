@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Package, Loader2, FileText } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
@@ -8,7 +8,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { MarketplaceOrder } from '@/types/marketplace';
 import { useSearchParams } from 'next/navigation';
 
-export default function MarketplaceSuccessPage() {
+function MarketplaceSuccessContent() {
     const searchParams = useSearchParams();
     const sessionId = searchParams.get('session_id');
     const standIdFromUrl = searchParams.get('stand_id');
@@ -249,5 +249,13 @@ export default function MarketplaceSuccessPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function MarketplaceSuccessPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+            <MarketplaceSuccessContent />
+        </Suspense>
     );
 }

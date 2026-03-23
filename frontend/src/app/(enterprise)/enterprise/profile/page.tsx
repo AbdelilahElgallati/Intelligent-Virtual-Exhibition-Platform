@@ -12,8 +12,6 @@ import {
     Linkedin, Save, CheckCircle2, Phone,
     Upload, X, Camera, Briefcase
 } from 'lucide-react';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const ENTERPRISE_CATEGORY_OPTIONS = [
     'Technology',
     'Healthcare',
@@ -48,15 +46,27 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export default function EnterpriseProfilePage() {
-    const { user } = useAuth();
+    const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [tagsInput, setTagsInput] = useState('');
+    const [accountTimezone, setAccountTimezone] = useState('UTC');
+
+    const timezoneOptions =
+        typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+            ? (Intl.supportedValuesOf('timeZone') as string[])
+            : ['UTC', 'Africa/Casablanca', 'Europe/Paris', 'Europe/London', 'America/New_York'];
 
     const [profile, setProfile] = useState({
+        name: '',
         description: '',
         category: '',
+        industry: '',
+        country: '',
+        city: '',
+        company_size: '',
+        professional_email: '',
         website: '',
         linkedin: '',
         theme_color: '#4f46e5',
@@ -99,8 +109,14 @@ export default function EnterpriseProfilePage() {
                 if (myOrg) {
                     const normalizedTags = normalizeTags(myOrg.tags);
                     setProfile({
+                        name: myOrg.name || '',
                         description: myOrg.description || '',
                         category: myOrg.category || '',
+                        industry: myOrg.industry || '',
+                        country: myOrg.country || '',
+                        city: myOrg.city || '',
+                        company_size: myOrg.company_size || '',
+                        professional_email: myOrg.professional_email || '',
                         website: myOrg.website || '',
                         linkedin: myOrg.linkedin || '',
                         theme_color: myOrg.theme_color || '#4f46e5',
@@ -121,6 +137,11 @@ export default function EnterpriseProfilePage() {
         if (user) fetchProfile();
     }, [user]);
 
+    useEffect(() => {
+        if (!user) return;
+        setAccountTimezone(user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+    }, [user]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setProfile(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
@@ -137,20 +158,7 @@ export default function EnterpriseProfilePage() {
         formData.append('file', file);
 
         try {
-            // Need to get token manually for fetch-with-FormData
-            let token = '';
-            const storedTokens = localStorage.getItem('auth_tokens');
-            if (storedTokens) token = JSON.parse(storedTokens).access_token;
-
-            const res = await fetch(`${API_BASE}/api/v1/enterprise/profile/${type}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-
-            if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
-
-            const data = await res.json();
+            const data = await http.post<any>(`/enterprise/profile/${type}`, formData);
             const url = type === 'logo' ? data.logo_url : data.banner_url;
 
             setProfile(prev => ({ ...prev, [`${type}_url`]: url }));
@@ -173,6 +181,8 @@ export default function EnterpriseProfilePage() {
                 ...profile,
                 tags: normalizedTags,
             });
+            await http.put('/users/me', { timezone: accountTimezone });
+            await refreshUser?.();
             setProfile(prev => ({ ...prev, tags: normalizedTags }));
             setTagsInput(normalizedTags.join(', '));
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -262,9 +272,9 @@ export default function EnterpriseProfilePage() {
                             <div className="space-y-1">
                                 <InfoRow icon={User} label="Primary Contact" value={user?.full_name} />
                                 <InfoRow icon={Mail} label="Account Email" value={user?.email} />
-                                <InfoRow icon={Building2} label="Registered Entity" value={user?.org_name} />
-                                <InfoRow icon={MapPin} label="Base Location" value={[user?.org_city, user?.org_country].filter(Boolean).join(', ') || 'Global'} />
-                                <InfoRow icon={Briefcase} label="Sector" value={user?.org_type} />
+                                <InfoRow icon={Building2} label="Registered Entity" value={profile.name || user?.org_name} />
+                                <InfoRow icon={MapPin} label="Base Location" value={[profile.city || user?.org_city, profile.country || user?.org_country].filter(Boolean).join(', ') || 'Global'} />
+                                <InfoRow icon={Briefcase} label="Sector" value={profile.industry || user?.org_type} />
                                 <div className="pt-4 text-center">
                                     <p className="text-[10px] text-zinc-400"> Member since {user?.created_at ? new Date(user.created_at).getFullYear() : '2024'} </p>
                                 </div>
@@ -305,6 +315,64 @@ export default function EnterpriseProfilePage() {
                                 <CardTitle className="text-lg font-bold text-zinc-900">About Company</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Company Name</label>
+                                        <Input
+                                            name="name"
+                                            value={profile.name}
+                                            onChange={handleChange}
+                                            placeholder="Acme Corporation"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Industry</label>
+                                        <Input
+                                            name="industry"
+                                            value={profile.industry}
+                                            onChange={handleChange}
+                                            placeholder="Technology"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Country</label>
+                                        <Input
+                                            name="country"
+                                            value={profile.country}
+                                            onChange={handleChange}
+                                            placeholder="Morocco"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">City</label>
+                                        <Input
+                                            name="city"
+                                            value={profile.city}
+                                            onChange={handleChange}
+                                            placeholder="Casablanca"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Company Size</label>
+                                        <Input
+                                            name="company_size"
+                                            value={profile.company_size}
+                                            onChange={handleChange}
+                                            placeholder="51-200"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700">Professional Email</label>
+                                        <Input
+                                            name="professional_email"
+                                            value={profile.professional_email}
+                                            onChange={handleChange}
+                                            type="email"
+                                            placeholder="business@acme.com"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700 flex items-center justify-between">
                                         Company Bio
@@ -355,6 +423,35 @@ export default function EnterpriseProfilePage() {
                                             </span>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+                                        <Globe size={14} className="text-indigo-500" /> Logo URL (optional)
+                                    </label>
+                                    <Input
+                                        name="logo_url"
+                                        value={profile.logo_url}
+                                        onChange={handleChange}
+                                        placeholder="https://cdn.example.com/logo.png"
+                                    />
+                                    <p className="text-xs text-zinc-500">Paste a hosted image URL or use the upload button on the logo card.</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+                                        <Globe size={14} className="text-indigo-500" /> Account Timezone
+                                    </label>
+                                    <select
+                                        value={accountTimezone}
+                                        onChange={(e) => setAccountTimezone(e.target.value)}
+                                        className="w-full h-12 rounded-xl border border-zinc-300 bg-white px-4 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    >
+                                        {timezoneOptions.map((tz) => (
+                                            <option key={tz} value={tz}>{tz}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-zinc-500">Used as your personal display timezone across the platform.</p>
                                 </div>
                             </CardContent>
                         </Card>

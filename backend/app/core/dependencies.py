@@ -51,16 +51,6 @@ async def verify_jwt_token(token: str) -> dict:
     """
     Verify JWT token and return user.
     """
-    # Allow test token (useful for development)
-    if token == "test-token":
-        return {
-            "_id": "visitor-456",
-            "id": "visitor-456",
-            "full_name": "Test User",
-            "role": Role.VISITOR,
-            "is_active": True,
-        }
-
     # First try advanced token verification (new architecture)
     payload = verify_token_type(token, "access")
 

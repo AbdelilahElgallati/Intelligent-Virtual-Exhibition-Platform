@@ -98,7 +98,6 @@ async def create_event_checkout(
     backend_base = str(request.base_url).rstrip("/")
     success_url = f"{origin}/events/{event_id}/payment?success=true&payment_id={{PAYMENT_ID}}"
     cancel_url = f"{origin}/events/{event_id}/payment?cancelled=true"
-    notification_url = f"{backend_base}/events/{event_id}/payment-callback"
 
     try:
         st_result = create_payment_session(
@@ -235,10 +234,11 @@ async def verify_event_payment(
     return {"status": "paid", "message": "Payment confirmed. You now have access to the event."}
 
 
-@router.post("/events/{event_id}/payment-callback")
-async def event_payment_callback(event_id: str, request: Request):
+@router.post("/webhook")
+async def global_payment_webhook(request: Request):
     """
-    Stripe Webhook for event payments.
+    Global Stripe Webhook for all payments.
+    Registers at /api/v1/payments/webhook in the Stripe Dashboard.
     """
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature', '')
@@ -246,7 +246,7 @@ async def event_payment_callback(event_id: str, request: Request):
     try:
         event_obj = construct_event(payload, sig_header)
     except Exception as e:
-        logger.warning(f"Stripe event payment callback failed: {e}")
+        logger.warning(f"Stripe global webhook failed: {e}")
         raise HTTPException(status_code=400, detail="Invalid signature or payload")
 
     if event_obj["type"] == "checkout.session.completed":
@@ -254,8 +254,8 @@ async def event_payment_callback(event_id: str, request: Request):
         st_session_id = session.get("id")
         transaction_id = session.get("payment_intent", "")
         metadata = session.get("metadata", {})
+        
         order_id = metadata.get("payment_id")
-
         source = metadata.get("source")
         
         if source == "enterprise_stand_fee":
@@ -289,15 +289,17 @@ async def event_payment_callback(event_id: str, request: Request):
             await mark_payment_paid(payment["_id"], transaction_id)
             
             user_id = payment["user_id"]
-            ev_id = payment["event_id"]
-            existing = await get_user_participation(ev_id, user_id)
-            if not existing:
-                participant = await request_to_join(ev_id, user_id)
-                from app.modules.participants.service import approve_participant
-                await approve_participant(participant["_id"])
-            elif existing["status"] != ParticipantStatus.APPROVED:
-                from app.modules.participants.service import approve_participant
-                await approve_participant(existing["_id"])
+            # Read event_id from payment record or metadata
+            ev_id = payment.get("event_id") or metadata.get("event_id") 
+            if ev_id:
+                existing = await get_user_participation(ev_id, user_id)
+                if not existing:
+                    participant = await request_to_join(ev_id, user_id)
+                    from app.modules.participants.service import approve_participant
+                    await approve_participant(participant["_id"])
+                elif existing["status"] != ParticipantStatus.APPROVED:
+                    from app.modules.participants.service import approve_participant
+                    await approve_participant(existing["_id"])
 
             logger.info("Event payment %s confirmed via Stripe callback", payment["_id"])
 

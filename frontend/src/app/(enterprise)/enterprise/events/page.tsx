@@ -112,6 +112,34 @@ const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null
 
 function ScheduleSection({ ev }: { ev: any }) {
     const scheduleDays: any[] = ev.schedule_days || [];
+    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(value);
+        const read = (type: Intl.DateTimeFormatPartTypes): number => {
+            const raw = parts.find((p) => p.type === type)?.value;
+            return Number(raw || 0);
+        };
+        return { year: read('year'), month: read('month'), day: read('day') };
+    };
+
+    const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
+        const tz = ev.event_timezone || 'UTC';
+        const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
+        const seed = new Date(ev.start_date || ev.schedule?.start_date || new Date().toISOString());
+        const ymd = getDatePartsInTimezone(seed, tz);
+        // Use UTC noon as a stable anchor date to avoid local timezone day-shifts.
+        const base = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day + dayOffset, 12, 0, 0, 0));
+        return new Intl.DateTimeFormat('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            timeZone: tz,
+        }).format(base);
+    };
 
     // Fallback: if no structured days, show key dates
     const fmt = (d?: string) => d
@@ -160,7 +188,7 @@ function ScheduleSection({ ev }: { ev: any }) {
                                 D{day.day_number}
                             </div>
                             <span className="text-sm font-bold text-indigo-900">
-                                {day.date_label || `Day ${day.day_number}`}
+                                {formatDayLabel(day.day_number, di)}
                             </span>
                         </div>
                         {/* Slots */}
@@ -745,6 +773,7 @@ function EnterpriseEventCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function EnterpriseEventsPage() {
+    const VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -753,12 +782,13 @@ export default function EnterpriseEventsPage() {
     const searchParams = useSearchParams();
     const paymentSuccess = searchParams.get('payment_success') === 'true';
     const paymentCancelled = searchParams.get('payment_cancelled') === 'true';
+    const eventEnded = searchParams.get('event_ended') === 'true';
 
     const fetchEvents = async () => {
         setIsLoading(true);
         try {
             const data = await http.get<any[]>('/enterprise/events');
-            setEvents(data);
+            setEvents((Array.isArray(data) ? data : []).filter((ev) => VISIBLE_STATES.has(String(ev?.state || ''))));
         } catch (err) {
             console.error('Failed to fetch events', err);
         } finally {
@@ -819,6 +849,12 @@ export default function EnterpriseEventsPage() {
                 <div className="rounded-xl p-4 text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
                     <p className="font-bold">Payment Cancelled</p>
                     <p className="mt-1">Stand fee payment was cancelled. You can try again from the event details.</p>
+                </div>
+            )}
+            {eventEnded && (
+                <div className="rounded-xl p-4 text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300">
+                    <p className="font-bold">Live Session Ended</p>
+                    <p className="mt-1">You were moved out of the live management room because this event timeline has ended.</p>
                 </div>
             )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

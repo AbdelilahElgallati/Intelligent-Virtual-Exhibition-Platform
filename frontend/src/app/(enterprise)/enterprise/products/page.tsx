@@ -11,8 +11,6 @@ import {
     Upload
 } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 export default function EnterpriseProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -273,7 +271,7 @@ export default function EnterpriseProductsPage() {
                                         <div className="flex gap-3 mb-2">
                                             <div className="relative group w-24 h-24 rounded-xl overflow-hidden border border-zinc-200">
                                                 <img
-                                                    src={editingProduct.image_url.startsWith('http') ? editingProduct.image_url : `${API_BASE}${editingProduct.image_url}`}
+                                                    src={resolveMediaUrl(editingProduct.image_url)}
                                                     alt=""
                                                     className="w-full h-full object-cover"
                                                 />
@@ -348,7 +346,7 @@ export default function EnterpriseProductsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {products.map((p) => {
                         const imgSrc = p.image_url
-                            ? (p.image_url.startsWith('http') ? p.image_url : `${API_BASE}${p.image_url}`)
+                            ? resolveMediaUrl(p.image_url)
                             : '';
 
                         return (

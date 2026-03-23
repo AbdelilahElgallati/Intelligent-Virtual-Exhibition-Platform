@@ -13,11 +13,29 @@ import Link from 'next/link';
 
 const CATEGORIES = ['Exhibition', 'Conference', 'Webinar', 'Networking', 'Workshop', 'Hackathon'];
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const FALLBACK_TIMEZONES = [
+    'UTC',
+    'Africa/Casablanca',
+    'Europe/Paris',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+];
+
+const SUPPORTED_TIMEZONES =
+    typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+        ? (Intl.supportedValuesOf('timeZone') as string[])
+        : FALLBACK_TIMEZONES;
+
+const LOCAL_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 export default function NewEventRequestPage() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
     const [bannerUploading, setBannerUploading] = useState(false);
+    const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +45,7 @@ export default function NewEventRequestPage() {
         category: 'Exhibition',
         start_date: '',   // YYYY-MM-DD (date only)
         end_date: '',     // YYYY-MM-DD (date only)
+        event_timezone: LOCAL_TIMEZONE,
         location: 'Virtual Platform',
         tags: '',
         banner_url: '',
@@ -41,6 +60,46 @@ export default function NewEventRequestPage() {
 
     // Structured schedule — driven by date range
     const [scheduleDays, setScheduleDays] = useState<EventScheduleDay[]>([]);
+
+    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).formatToParts(value);
+        const read = (type: Intl.DateTimeFormatPartTypes): number => {
+            const raw = parts.find((p) => p.type === type)?.value;
+            return Number(raw || 0);
+        };
+        return {
+            year: read('year'),
+            month: read('month'),
+            day: read('day'),
+            hour: read('hour'),
+            minute: read('minute'),
+        };
+    };
+
+    const getTodayIsoInTimezone = (timeZone: string): string => {
+        const nowParts = getDatePartsInTimezone(new Date(), timeZone);
+        return `${nowParts.year}-${String(nowParts.month).padStart(2, '0')}-${String(nowParts.day).padStart(2, '0')}`;
+    };
+
+    const getNowMinutesInTimezone = (timeZone: string): number => {
+        const nowParts = getDatePartsInTimezone(new Date(), timeZone);
+        return nowParts.hour * 60 + nowParts.minute;
+    };
+
+    const getNowHhMmInTimezone = (timeZone: string): string => {
+        const minutes = Math.min(getNowMinutesInTimezone(timeZone) + 1, 23 * 60 + 59);
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -57,6 +116,9 @@ export default function NewEventRequestPage() {
     const validateSchedule = (): string | null => {
         if (!form.start_date || !form.end_date) return 'Please select a start and end date.';
         if (scheduleDays.length === 0) return 'The event schedule is empty.';
+        const tz = form.event_timezone || 'UTC';
+        const todayIso = getTodayIsoInTimezone(tz);
+        const nowMinutes = getNowMinutesInTimezone(tz);
         for (const day of scheduleDays) {
             if (day.slots.length === 0) return `Day ${day.day_number} must have at least one time slot.`;
             for (const slot of day.slots) {
@@ -65,6 +127,13 @@ export default function NewEventRequestPage() {
                     return `Day ${day.day_number}: use 24-hour time format (HH:mm) for all slots.`;
                 }
                 if (slot.start_time >= slot.end_time) return `Day ${day.day_number}: end time must be after start time.`;
+                if (form.start_date === todayIso && day.day_number === 1) {
+                    const [startH, startM] = slot.start_time.split(':').map(Number);
+                    const slotStartMinutes = startH * 60 + startM;
+                    if (slotStartMinutes < nowMinutes) {
+                        return `Day 1: ${slot.start_time} is in the past. Please choose a future time for today's schedule.`;
+                    }
+                }
                 if (!slot.label.trim()) return `Day ${day.day_number}: please describe the activity for the ${slot.start_time}–${slot.end_time} slot.`;
             }
         }
@@ -88,6 +157,10 @@ export default function NewEventRequestPage() {
         if (form.start_date && form.end_date && form.start_date > form.end_date) {
             setError('End date must be on or after start date.'); return;
         }
+        const todayInEventTz = getTodayIsoInTimezone(form.event_timezone || 'UTC');
+        if (form.start_date && form.start_date < todayInEventTz) {
+            setError('Start date cannot be in the past for the selected event timezone.'); return;
+        }
         const schedErr = validateSchedule();
         if (schedErr) { setError(schedErr); return; }
         if (!form.extended_details.trim() || form.extended_details.trim().length < 10) {
@@ -96,6 +169,15 @@ export default function NewEventRequestPage() {
 
         setSaving(true);
         try {
+            let resolvedBannerUrl = form.banner_url.trim() || undefined;
+
+            // Upload selected banner only when the organizer submits the full event request.
+            if (pendingBannerFile) {
+                setBannerUploading(true);
+                const uploaded = await eventsApi.uploadEventBanner(pendingBannerFile);
+                resolvedBannerUrl = uploaded.banner_url || resolvedBannerUrl;
+            }
+
             const timelineJson = JSON.stringify(scheduleDays);
 
             await eventsApi.createEvent({
@@ -104,8 +186,9 @@ export default function NewEventRequestPage() {
                 category: form.category || undefined,
                 start_date: form.start_date ? `${form.start_date}T00:00:00` : undefined,
                 end_date: form.end_date ? `${form.end_date}T23:59:59` : undefined,
+                event_timezone: form.event_timezone || 'UTC',
                 location: form.location.trim() || undefined,
-                banner_url: form.banner_url.trim() || undefined,
+                banner_url: resolvedBannerUrl,
                 tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
                 num_enterprises: parseInt(form.num_enterprises),
                 event_timeline: timelineJson,
@@ -121,22 +204,15 @@ export default function NewEventRequestPage() {
         } catch (err: any) {
             setError(err.message || 'Failed to submit event request. Please try again.');
         } finally {
+            setBannerUploading(false);
             setSaving(false);
         }
     };
 
     const handleBannerUpload = async (file?: File) => {
         if (!file) return;
-        setBannerUploading(true);
+        setPendingBannerFile(file);
         setError(null);
-        try {
-            const uploaded = await eventsApi.uploadEventBanner(file);
-            setForm((prev) => ({ ...prev, banner_url: uploaded.banner_url || prev.banner_url }));
-        } catch (err: any) {
-            setError(err.message || 'Failed to upload banner image.');
-        } finally {
-            setBannerUploading(false);
-        }
     };
 
     return (
@@ -198,6 +274,7 @@ export default function NewEventRequestPage() {
                                 type="date"
                                 value={form.start_date}
                                 onChange={handleChange}
+                                min={getTodayIsoInTimezone(form.event_timezone || 'UTC')}
                                 required
                             />
                             <Input
@@ -209,6 +286,20 @@ export default function NewEventRequestPage() {
                                 min={form.start_date || undefined}
                                 required
                             />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-700">Event Timezone</label>
+                            <select
+                                name="event_timezone"
+                                value={form.event_timezone}
+                                onChange={handleChange}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                {SUPPORTED_TIMEZONES.map((tz) => (
+                                    <option key={tz} value={tz}>{tz}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500">Schedule slots are interpreted in this timezone for all users.</p>
                         </div>
                         {form.start_date && form.end_date && form.start_date <= form.end_date && (
                             <p className="text-xs text-indigo-600 flex items-center gap-1">
@@ -240,13 +331,14 @@ export default function NewEventRequestPage() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    isLoading={bannerUploading}
                                     onClick={() => bannerInputRef.current?.click()}
                                 >
                                     Upload Banner Image
                                 </Button>
                                 <span className="text-xs text-gray-500">
-                                    You can upload a file or paste an external URL.
+                                    {pendingBannerFile
+                                        ? `Selected: ${pendingBannerFile.name} (will upload on submit)`
+                                        : 'You can upload a file or paste an external URL.'}
                                 </span>
                             </div>
                         </div>
@@ -355,6 +447,11 @@ export default function NewEventRequestPage() {
                             onChange={setScheduleDays}
                             startDate={form.start_date}
                             endDate={form.end_date}
+                            minStartTimeForDay1={
+                                form.start_date === getTodayIsoInTimezone(form.event_timezone || 'UTC')
+                                    ? getNowHhMmInTimezone(form.event_timezone || 'UTC')
+                                    : undefined
+                            }
                         />
                     </div>
 

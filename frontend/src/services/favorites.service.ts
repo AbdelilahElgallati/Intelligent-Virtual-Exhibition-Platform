@@ -5,6 +5,7 @@ export type FavoriteTarget = 'event' | 'stand' | 'organization';
 
 export interface Favorite {
   id: string;
+  _id?: string;
   user_id: string;
   target_type: FavoriteTarget;
   target_id: string;

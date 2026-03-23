@@ -20,12 +20,20 @@ interface SlotWindow {
     label: string;
 }
 
+interface TimezoneParts {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+}
+
 function isValidDate(value: unknown): value is Date {
     return value instanceof Date && !Number.isNaN(value.getTime());
 }
 
 function hasExplicitTime(value: string): boolean {
-    // Detect common time patterns to avoid overriding explicit timestamps.
     return /[T\s]\d{1,2}:\d{2}/.test(value);
 }
 
@@ -35,8 +43,6 @@ function parseDate(value: unknown, boundary: 'start' | 'end' = 'start'): Date | 
     const d = new Date(raw);
     if (!isValidDate(d)) return null;
 
-    // For date-only values like 2026-03-19, interpret end as end-of-day
-    // so an event remains active for the full final day.
     if (!hasExplicitTime(raw)) {
         if (boundary === 'end') {
             d.setHours(23, 59, 59, 999);
@@ -72,53 +78,126 @@ function parseScheduleDays(event: Event): EventScheduleDay[] {
     }
 }
 
-function dateOnlyFrom(base: Date): Date {
-    return new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+function getEventTimezone(event: Event): string {
+    return event.event_timezone || 'UTC';
 }
 
-function addDays(base: Date, count: number): Date {
-    const d = new Date(base);
-    d.setDate(d.getDate() + count);
-    return d;
+function getDatePartsInTimezone(value: Date, timeZone: string): TimezoneParts {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+
+    const parts = formatter.formatToParts(value);
+    const read = (type: Intl.DateTimeFormatPartTypes): number => {
+        const raw = parts.find((p) => p.type === type)?.value;
+        return Number(raw || 0);
+    };
+
+    return {
+        year: read('year'),
+        month: read('month'),
+        day: read('day'),
+        hour: read('hour'),
+        minute: read('minute'),
+        second: read('second'),
+    };
 }
 
-function buildDateFromDayLabel(dayLabel: string | undefined, fallback: Date): Date {
-    if (!dayLabel) return fallback;
+function zonedDateTimeToUtc(
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    minute: number,
+    timeZone: string,
+): Date {
+    const targetUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+    let guess = targetUtc;
 
-    const parsed = parseDate(dayLabel);
-    if (!parsed) return fallback;
+    for (let i = 0; i < 4; i += 1) {
+        const asTz = getDatePartsInTimezone(new Date(guess), timeZone);
+        const asUtc = Date.UTC(asTz.year, asTz.month - 1, asTz.day, asTz.hour, asTz.minute, asTz.second, 0);
+        const delta = targetUtc - asUtc;
+        if (delta === 0) break;
+        guess += delta;
+    }
 
-    return dateOnlyFrom(parsed);
+    return new Date(guess);
 }
 
-function buildSlotDate(baseDate: Date, time?: string): Date | null {
-    const minutes = parseTimeToMinutes(time);
-    if (minutes === null) return null;
+function addDaysToYmd(
+    year: number,
+    month: number,
+    day: number,
+    offset: number,
+): { year: number; month: number; day: number } {
+    const d = new Date(Date.UTC(year, month - 1, day + offset));
+    return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+}
 
-    const d = new Date(baseDate);
-    d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-    return d;
+function resolveDayYmd(
+    dayLabel: string | undefined,
+    fallback: { year: number; month: number; day: number },
+    timeZone: string,
+): { year: number; month: number; day: number } {
+    // day.date_label is display-only and may be stale when timezone/date inputs changed.
+    // Lifecycle logic must rely on canonical start_date + day_number.
+    void dayLabel;
+    void timeZone;
+    return fallback;
 }
 
 function buildScheduleWindows(event: Event): SlotWindow[] {
     const days = parseScheduleDays(event);
     if (days.length === 0) return [];
 
+    const tz = getEventTimezone(event);
     const eventStart = parseDate(event.start_date) || new Date();
-    const eventBaseDate = dateOnlyFrom(eventStart);
+    const eventStartLocal = getDatePartsInTimezone(eventStart, tz);
+    const baseYmd = {
+        year: eventStartLocal.year,
+        month: eventStartLocal.month,
+        day: eventStartLocal.day,
+    };
 
     const windows: SlotWindow[] = [];
 
     days.forEach((day, dayIndex) => {
         const dayOffset = (day.day_number || dayIndex + 1) - 1;
-        const fallbackDate = addDays(eventBaseDate, dayOffset);
-        const dayDate = buildDateFromDayLabel(day.date_label, fallbackDate);
+        const fallbackYmd = addDaysToYmd(baseYmd.year, baseYmd.month, baseYmd.day, dayOffset);
+        const dayYmd = resolveDayYmd(day.date_label, fallbackYmd, tz);
 
         (day.slots || []).forEach((slot: EventScheduleSlot) => {
-            const start = buildSlotDate(dayDate, slot.start_time);
-            const end = buildSlotDate(dayDate, slot.end_time);
+            const startMinutes = parseTimeToMinutes(slot.start_time);
+            const endMinutes = parseTimeToMinutes(slot.end_time);
 
-            if (!start || !end || end <= start) return;
+            if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return;
+
+            const start = zonedDateTimeToUtc(
+                dayYmd.year,
+                dayYmd.month,
+                dayYmd.day,
+                Math.floor(startMinutes / 60),
+                startMinutes % 60,
+                tz,
+            );
+            const end = zonedDateTimeToUtc(
+                dayYmd.year,
+                dayYmd.month,
+                dayYmd.day,
+                Math.floor(endMinutes / 60),
+                endMinutes % 60,
+                tz,
+            );
+
+            if (end <= start) return;
 
             windows.push({
                 start,
@@ -139,20 +218,6 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
         const first = windows[0];
         const last = windows[windows.length - 1];
         const active = windows.find((w) => now >= w.start && now <= w.end) || null;
-
-        if (explicitState === 'live') {
-            return {
-                status: 'live',
-                startsAt: first.start,
-                endsAt: last.end,
-                nextSlotStart: null,
-                activeSlotLabel: active ? active.label : null,
-                source: 'schedule',
-                hasScheduleSlots: true,
-                scheduleSlotCount: windows.length,
-                withinScheduleWindow: !!active,
-            };
-        }
 
         if (explicitState === 'closed') {
             return {
@@ -226,20 +291,6 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
 
     const startDate = parseDate(event.start_date, 'start');
     const endDate = parseDate(event.end_date, 'end');
-
-    if (explicitState === 'live') {
-        return {
-            status: 'live',
-            startsAt: startDate,
-            endsAt: endDate,
-            nextSlotStart: null,
-            activeSlotLabel: null,
-            source: 'dates',
-            hasScheduleSlots: false,
-            scheduleSlotCount: 0,
-            withinScheduleWindow: false,
-        };
-    }
 
     if (explicitState === 'closed') {
         return {

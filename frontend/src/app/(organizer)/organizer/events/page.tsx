@@ -6,6 +6,7 @@ import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent, EventStatus } from '@/types/event';
 import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,14 @@ const STATE_COLORS: Record<EventStatus, string> = {
     payment_done: 'bg-indigo-100 text-indigo-700',
     live: 'bg-green-100 text-green-700',
     closed: 'bg-gray-100 text-gray-600',
+};
+
+const getEffectiveState = (event: OrganizerEvent): EventStatus => {
+    if (event.state === 'live') {
+        const lifecycle = getEventLifecycle(event as any);
+        if (lifecycle.status === 'ended') return 'closed';
+    }
+    return event.state;
 };
 
 export default function OrganizerEvents() {
@@ -68,7 +77,7 @@ export default function OrganizerEvents() {
     const filtered = events.filter(
         (e) =>
             e.title.toLowerCase().includes(search.toLowerCase()) ||
-            STATE_LABELS[e.state].toLowerCase().includes(search.toLowerCase())
+            STATE_LABELS[getEffectiveState(e)].toLowerCase().includes(search.toLowerCase())
     );
 
     if (loading) {
@@ -131,6 +140,9 @@ export default function OrganizerEvents() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filtered.map((event) => (
+                                (() => {
+                                    const effectiveState = getEffectiveState(event);
+                                    return (
                                 <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="font-medium text-gray-900 truncate max-w-[200px]">{event.title}</div>
@@ -149,8 +161,8 @@ export default function OrganizerEvents() {
                                             : <span className="text-gray-400">—</span>}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATE_COLORS[event.state]}`}>
-                                            {STATE_LABELS[event.state]}
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATE_COLORS[effectiveState]}`}>
+                                            {STATE_LABELS[effectiveState]}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4">
@@ -201,7 +213,7 @@ export default function OrganizerEvents() {
                                             )} */}
 
                                             {/* Analytics — live or closed */}
-                                            {(event.state === 'live' || event.state === 'closed') && (
+                                            {(effectiveState === 'live' || effectiveState === 'closed') && (
                                                 <Link href={`/organizer/events/${event.id}/analytics`}>
                                                     <Button variant="outline" size="sm" className="gap-1">
                                                         <BarChart2 className="w-3.5 h-3.5" />
@@ -212,6 +224,8 @@ export default function OrganizerEvents() {
                                         </div>
                                     </td>
                                 </tr>
+                                    );
+                                })()
                             ))}
                         </tbody>
                     </table>

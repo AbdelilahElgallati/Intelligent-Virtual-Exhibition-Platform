@@ -33,6 +33,7 @@ export interface User {
     // Profile fields
     bio?: string;
     language?: string;
+    timezone?: string;
     professional_info?: ProfessionalInfo;
     interests?: string[];
     event_preferences?: EventPreferences;
@@ -50,6 +51,7 @@ export interface ProfileUpdatePayload {
     full_name?: string;
     bio?: string;
     language?: string;
+    timezone?: string;
     avatar_url?: string;
     professional_info?: ProfessionalInfo;
     interests?: string[];

@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthTokens } from '@/types/user';
 import { authService } from '@/services/auth.service';
 import { useRouter } from 'next/navigation';
+import { http } from '@/lib/http';
+import { ENDPOINTS } from '@/lib/api/endpoints';
 
 interface RegisterResult {
     pendingApproval: boolean;
@@ -52,6 +54,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
+    const detectBrowserTimezone = (): string => {
+        try {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        } catch {
+            return 'UTC';
+        }
+    };
+
+    const ensureAccountTimezone = async (baseUser: User, accessToken?: string): Promise<User> => {
+        if (baseUser.timezone) return baseUser;
+        try {
+            const detectedTimezone = detectBrowserTimezone();
+            const updated = await http.put<User>(ENDPOINTS.USERS.ME, { timezone: detectedTimezone }, { token: accessToken });
+            return updated;
+        } catch {
+            return { ...baseUser, timezone: detectBrowserTimezone() };
+        }
+    };
+
     useEffect(() => {
         // Restore session on mount
         const storedTokens = localStorage.getItem('auth_tokens');
@@ -60,7 +81,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedTokens && storedUser) {
             try {
                 setTokens(JSON.parse(storedTokens));
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser) as User;
+                setUser(parsedUser);
+                if (!parsedUser.timezone) {
+                    ensureAccountTimezone(parsedUser).then((updatedUser) => {
+                        setUser(updatedUser);
+                        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+                    });
+                }
             } catch (e) {
                 console.error('Failed to restore auth state', e);
                 localStorage.removeItem('auth_tokens');
@@ -83,13 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         try {
             const response = await authService.login(credentials);
-            const { user, access_token, refresh_token, token_type } = response;
+            const { access_token, refresh_token, token_type } = response;
             const tokens = { access_token, refresh_token, token_type };
+            const user = await ensureAccountTimezone(response.user, access_token);
 
             setTokens(tokens);
             setUser(user);
             localStorage.setItem('auth_tokens', JSON.stringify(tokens));
-            localStorage.setItem('auth_user', JSON.stringify(response.user));
+            localStorage.setItem('auth_user', JSON.stringify(user));
 
             // Check for redirect path
             const redirectPath = localStorage.getItem('redirectAfterLogin');
@@ -110,7 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         try {
             const response = await authService.register(userData);
-            const { user, access_token, refresh_token, token_type } = response;
+            const { access_token, refresh_token, token_type } = response;
+            const user = await ensureAccountTimezone(response.user, access_token);
 
             // Organizer & enterprise accounts need admin approval before they can use the platform.
             // Do NOT store tokens or redirect — just signal pending approval.
@@ -122,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setTokens(tokens);
             setUser(user);
             localStorage.setItem('auth_tokens', JSON.stringify(tokens));
-            localStorage.setItem('auth_user', JSON.stringify(response.user));
+            localStorage.setItem('auth_user', JSON.stringify(user));
 
             // Check for redirect path
             const redirectPath = localStorage.getItem('redirectAfterLogin');
@@ -153,8 +183,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshUser = async () => {
         try {
             const freshUser = await authService.getMe();
-            setUser(freshUser);
-            localStorage.setItem('auth_user', JSON.stringify(freshUser));
+            const normalized = await ensureAccountTimezone(freshUser);
+            setUser(normalized);
+            localStorage.setItem('auth_user', JSON.stringify(normalized));
         } catch (error) {
             console.error('Failed to refresh user', error);
         }

@@ -39,7 +39,7 @@ export const adminService = {
      */
     async getEvents(state?: string): Promise<{ events: OrganizerEvent[]; total: number }> {
         const params = state ? `?state=${state}` : '';
-        return http.get(`/events${params}`);
+        return http.get(`/events/admin/all${params}`);
     },
 
     async approveEvent(id: string, payload: { payment_amount?: number } = {}): Promise<OrganizerEvent> {

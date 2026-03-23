@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { resolveMediaUrl } from '@/lib/media';
 import {
     CalendarCheck, RefreshCw, CheckCircle2, XCircle, AlertCircle, X,
@@ -12,8 +13,30 @@ import {
     Search
 } from 'lucide-react';
 
+const COMMON_TIMEZONES = [
+    'UTC',
+    'Africa/Casablanca',
+    'Europe/Paris',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+];
+
+function parseClockTime(value?: string): [number, number] | null {
+    if (!value || !value.includes(':')) return null;
+    const [hours, minutes] = value.split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return [hours, minutes];
+}
+
+function formatInTimeZone(date: Date, timeZone: string, options: Intl.DateTimeFormatOptions): string {
+    return new Intl.DateTimeFormat('en-GB', { ...options, timeZone }).format(date);
+}
+
 // ── Structured schedule renderer ─────────────────────────────────────────────
-function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
+function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone: string }) {
     let days: EventScheduleDay[] | null = event.schedule_days ?? null;
 
     if (!days && event.event_timeline) {
@@ -26,32 +49,60 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
     if (days && days.length > 0) {
         return (
             <div className="space-y-3">
-                {days.map((day) => (
+                {days.map((day, dayIndex) => {
+                    const fallbackDate = new Date(event.start_date || new Date().toISOString());
+                    fallbackDate.setHours(0, 0, 0, 0);
+                    const dayOffset = Math.max(0, Number(day.day_number || (dayIndex + 1)) - 1);
+                    fallbackDate.setDate(fallbackDate.getDate() + dayOffset);
+                    const dayTitle = formatInTimeZone(fallbackDate, timeZone, {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                    });
+
+                    return (
                     <div key={day.day_number} className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
                         <div className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-50 border-b border-zinc-200">
                             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
                                 {day.day_number}
                             </span>
                             <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
-                            {day.date_label && <span className="text-xs text-zinc-500 ml-1">— {day.date_label}</span>}
+                            <span className="text-xs text-zinc-500 ml-1">— {dayTitle}</span>
                         </div>
                         <div className="p-3 space-y-2">
-                            {day.slots.map((slot, si) => (
-                                <div key={si} className="flex items-start gap-3 p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
-                                    <span className="flex-shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-1 whitespace-nowrap tabular-nums">
-                                        {slot.start_time} → {slot.end_time}
-                                    </span>
-                                    <p className="text-sm text-zinc-700 leading-snug pt-0.5">
-                                        {slot.label || <em className="text-zinc-400">No description</em>}
-                                    </p>
-                                </div>
-                            ))}
+                            {day.slots.map((slot, si) => {
+                                const startParts = parseClockTime(slot.start_time);
+                                const endParts = parseClockTime(slot.end_time);
+                                let startLabel = slot.start_time;
+                                let endLabel = slot.end_time;
+
+                                if (startParts && endParts) {
+                                    const slotStart = new Date(fallbackDate);
+                                    slotStart.setHours(startParts[0], startParts[1], 0, 0);
+                                    const slotEnd = new Date(fallbackDate);
+                                    slotEnd.setHours(endParts[0], endParts[1], 0, 0);
+                                    startLabel = formatInTimeZone(slotStart, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    endLabel = formatInTimeZone(slotEnd, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
+                                }
+
+                                return (
+                                    <div key={si} className="flex items-start gap-3 p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
+                                        <span className="flex-shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-1 whitespace-nowrap tabular-nums">
+                                            {startLabel} → {endLabel}
+                                        </span>
+                                        <p className="text-sm text-zinc-700 leading-snug pt-0.5">
+                                            {slot.label || <em className="text-zinc-400">No description</em>}
+                                        </p>
+                                    </div>
+                                );
+                            })}
                             {day.slots.length === 0 && (
                                 <p className="text-xs text-zinc-400 italic px-1">No slots defined</p>
                             )}
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         );
     }
@@ -84,6 +135,14 @@ function StateBadge({ state }: { state: string }) {
     );
 }
 
+function getEffectiveState(event: OrganizerEvent): string {
+    if (event.state === 'live') {
+        const lifecycle = getEventLifecycle(event as any);
+        if (lifecycle.status === 'ended') return 'closed';
+    }
+    return event.state;
+}
+
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
     return (
         <div className="space-y-3">
@@ -109,19 +168,23 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
 // ── Side Panel ──────────────────────────────────────────────────────────────
 interface EventPanelProps {
     event: OrganizerEvent;
+    timeZone: string;
     onClose: () => void;
     onApprove: (id: string, paymentAmount?: number, isConfirmPayment?: boolean, specialAction?: 'start' | 'close') => Promise<void>;
     onReject: (id: string, reason?: string) => Promise<void>;
     busy: boolean;
 }
 
-function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelProps) {
+function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [rejectReason, setRejectReason] = useState('');
     const [confirming, setConfirming] = useState<'approve' | 'reject' | 'confirm_payment' | 'start_event' | 'close_event' | null>(null);
 
-    const canAct = event.state === 'pending_approval';
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const effectiveState = getEffectiveState(event);
+    const canAct = effectiveState === 'pending_approval';
+    const fmt = (d?: string) => d ? formatInTimeZone(new Date(d), timeZone, {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+    }) : '—';
 
     return (
         <>
@@ -135,7 +198,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
                     <div className="space-y-2 pr-4">
                         <h2 className="text-lg font-bold text-zinc-900 leading-tight">{event.title}</h2>
                         <div className="flex items-center flex-wrap gap-2">
-                            <StateBadge state={event.state} />
+                            <StateBadge state={effectiveState} />
                             {event.organizer_name && (
                                 <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
                                     <Building2 className="w-3 h-3" /> {event.organizer_name}
@@ -178,6 +241,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
 
                     {/* Logistics */}
                     <Section icon={Calendar} title="Event Details">
+                        <p className="text-[11px] text-zinc-500 -mt-1 mb-2">Displayed in timezone: <strong>{timeZone}</strong></p>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                             <InfoRow label="Start date" value={fmt(event.start_date)} />
                             <InfoRow label="End date" value={fmt(event.end_date)} />
@@ -239,7 +303,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
 
                     {/* Schedule */}
                     <Section icon={Clock} title="Event Schedule">
-                        <ScheduleDisplay event={event} />
+                        <ScheduleDisplay event={event} timeZone={timeZone} />
                     </Section>
 
 
@@ -293,7 +357,7 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
                 </div>
 
                 {/* ── Decision footer ───────────────────────────────────── */}
-                {(canAct || event.state === 'payment_proof_submitted' || event.state === 'payment_done' || event.state === 'live') && (
+                {(canAct || effectiveState === 'payment_proof_submitted' || effectiveState === 'payment_done' || effectiveState === 'live') && (
                     <div className="border-t border-zinc-100 px-6 py-5 flex-shrink-0 space-y-4 bg-zinc-50">
                         {/* Inline confirm states */}
                         {confirming === 'approve' ? (
@@ -363,21 +427,21 @@ function EventPanel({ event, onClose, onApprove, onReject, busy }: EventPanelPro
                                             <XCircle className="w-4 h-4" /> Reject
                                         </button>
                                     </>
-                                ) : event.state === 'payment_proof_submitted' ? (
+                                ) : effectiveState === 'payment_proof_submitted' ? (
                                     <button
                                         onClick={() => setConfirming('confirm_payment')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Confirm & Activate
                                     </button>
-                                ) : event.state === 'payment_done' ? (
+                                ) : effectiveState === 'payment_done' ? (
                                     <button
                                         onClick={() => setConfirming('start_event')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                                     >
                                         <CalendarCheck className="w-4 h-4" /> Start (Force Live)
                                     </button>
-                                ) : event.state === 'live' ? (
+                                ) : effectiveState === 'live' ? (
                                     <button
                                         onClick={() => setConfirming('close_event')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
@@ -428,6 +492,8 @@ export default function AdminEventsPage() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const [timeZone, setTimeZone] = useState<string>(detectedTimeZone);
 
     // Pagination
     const ITEMS_PER_PAGE = 15;
@@ -451,6 +517,7 @@ export default function AdminEventsPage() {
     }, [filter, searchQuery]);
 
     const filteredEvents = events.filter(ev => {
+        if (filter && getEffectiveState(ev) !== filter) return false;
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
         return ev.title.toLowerCase().includes(q) ||
@@ -495,7 +562,9 @@ export default function AdminEventsPage() {
         finally { setBusy(false); }
     };
 
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmt = (d?: string) => d ? formatInTimeZone(new Date(d), timeZone, {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+    }) : '—';
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -536,11 +605,22 @@ export default function AdminEventsPage() {
                         <option value="closed">Closed</option>
                         <option value="rejected">Rejected</option>
                     </select>
+                    <select
+                        value={timeZone}
+                        onChange={(e) => setTimeZone(e.target.value)}
+                        className="text-sm border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[220px]"
+                        title="Display timezone"
+                    >
+                        {Array.from(new Set([detectedTimeZone, ...COMMON_TIMEZONES])).map((tz) => (
+                            <option key={tz} value={tz}>{tz}</option>
+                        ))}
+                    </select>
                     <button onClick={fetchEvents} className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>
+            <p className="text-xs text-zinc-500">Times are displayed in <strong>{timeZone}</strong>.</p>
 
             {/* Alerts */}
             {success && (
@@ -602,7 +682,7 @@ export default function AdminEventsPage() {
                                         ) : '—'}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <StateBadge state={ev.state} />
+                                        <StateBadge state={getEffectiveState(ev)} />
                                     </td>
                                     <td className="px-4 py-4 hidden sm:table-cell">
                                         <div className="flex items-center gap-2">
@@ -682,6 +762,7 @@ export default function AdminEventsPage() {
             {selected && (
                 <EventPanel
                     event={selected}
+                    timeZone={timeZone}
                     onClose={() => setSelected(null)}
                     onApprove={handleApprove}
                     onReject={handleReject}

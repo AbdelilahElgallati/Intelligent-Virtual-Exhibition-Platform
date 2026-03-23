@@ -110,11 +110,35 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
     const now = new Date();
     const eventStart = event.start_date ? new Date(event.start_date) : null;
     const canUseEventDate = eventStart && !Number.isNaN(eventStart.getTime());
+    const eventTimeZone = event.event_timezone || 'UTC';
+
+    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(value);
+        const read = (type: Intl.DateTimeFormatPartTypes): number => {
+            const raw = parts.find((p) => p.type === type)?.value;
+            return Number(raw || 0);
+        };
+        return { year: read('year'), month: read('month'), day: read('day') };
+    };
 
     return days.flatMap((day, dayIndex) => {
         const dayOffset = (day.day_number || dayIndex + 1) - 1;
-        const baseDate = canUseEventDate ? addDays(eventStart as Date, dayOffset) : new Date(now);
-        const resolvedDayLabel = day.date_label || formatDateLabel(baseDate);
+        const baseDate = (() => {
+            if (!canUseEventDate) return new Date(now);
+            const ymd = getDatePartsInTimezone(eventStart as Date, eventTimeZone);
+            return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day + dayOffset, 12, 0, 0, 0));
+        })();
+        const resolvedDayLabel = new Intl.DateTimeFormat('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            timeZone: eventTimeZone,
+        }).format(baseDate);
 
         return (day.slots || []).map((slot) => {
             const startAt = buildDateForTime(baseDate, slot.start_time);
@@ -207,6 +231,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                 {days.map((day, dayIndex) => {
                     const dayNumber = day.day_number || dayIndex + 1;
                     const dayItems = timelineSlots.filter((item) => item.dayNumber === dayNumber);
+                    const dayLabel = dayItems[0]?.dayLabel || '';
                     const liveCount = dayItems.filter((item) => item.status === 'live').length;
                     const upcomingCount = dayItems.filter((item) => item.status === 'upcoming').length;
 
@@ -224,9 +249,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                                         <h3 className="text-xl font-semibold text-slate-900">
                                             Day {dayNumber}
                                         </h3>
-                                        {day.date_label && (
-                                            <p className="text-sm text-slate-500">{day.date_label}</p>
-                                        )}
+                                        {dayLabel && <p className="text-sm text-slate-500">{dayLabel}</p>}
                                     </div>
                                 </div>
 

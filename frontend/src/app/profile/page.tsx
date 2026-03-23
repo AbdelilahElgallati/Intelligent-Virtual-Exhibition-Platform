@@ -17,6 +17,20 @@ const EVENT_TYPE_OPTIONS = ['Webinar', 'Exhibition', 'Networking', 'Workshop'];
 const LANGUAGE_OPTIONS = ['English', 'French', 'Arabic', 'Spanish', 'German', 'Chinese', 'Japanese'];
 const NETWORKING_OPTIONS = ['Partnerships', 'Investors', 'Clients', 'Knowledge', 'Jobs'];
 const EXPERIENCE_LEVELS = ['Junior', 'Mid', 'Senior', 'Executive'];
+const FALLBACK_TIMEZONES = [
+    'UTC',
+    'Africa/Casablanca',
+    'Europe/Paris',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+];
+const TIMEZONE_OPTIONS =
+    typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+        ? (Intl.supportedValuesOf('timeZone') as string[])
+        : FALLBACK_TIMEZONES;
 
 // ── Helper: Multi-select chip component ─────────────────────────────
 
@@ -169,6 +183,7 @@ export default function ProfilePage() {
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
     const [language, setLanguage] = useState('');
+    const [timezone, setTimezone] = useState('UTC');
     const [jobTitle, setJobTitle] = useState('');
     const [industry, setIndustry] = useState('');
     const [company, setCompany] = useState('');
@@ -185,6 +200,7 @@ export default function ProfilePage() {
         setFullName(user.full_name || '');
         setBio(user.bio || '');
         setLanguage(user.language || '');
+        setTimezone(user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
         setJobTitle(user.professional_info?.job_title || '');
         setIndustry(user.professional_info?.industry || '');
         setCompany(user.professional_info?.company || '');
@@ -224,6 +240,7 @@ export default function ProfilePage() {
             full_name: fullName || undefined,
             bio: bio || undefined,
             language: language || undefined,
+            timezone: timezone || undefined,
             professional_info: {
                 job_title: jobTitle || undefined,
                 industry: industry || undefined,
@@ -372,6 +389,19 @@ export default function ProfilePage() {
                                     <option value="">Select language…</option>
                                     {LANGUAGE_OPTIONS.map((l) => (
                                         <option key={l} value={l}>{l}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5 w-full">
+                                <label htmlFor="timezone" className="text-sm font-medium text-zinc-700">Timezone</label>
+                                <select
+                                    id="timezone"
+                                    value={timezone}
+                                    onChange={(e) => setTimezone(e.target.value)}
+                                    className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                >
+                                    {TIMEZONE_OPTIONS.map((tz) => (
+                                        <option key={tz} value={tz}>{tz}</option>
                                     ))}
                                 </select>
                             </div>

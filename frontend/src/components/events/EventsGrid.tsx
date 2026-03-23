@@ -6,9 +6,19 @@ interface EventsGridProps {
     events: Event[];
     isLoading?: boolean;
     registeredEventIds?: Set<string>;
+    favoriteMap?: Map<string, string>;
+    favoriteAnimatingEventId?: string | null;
+    onToggleFavorite?: (eventId: string) => void;
 }
 
-export const EventsGrid: React.FC<EventsGridProps> = ({ events, isLoading, registeredEventIds }) => {
+export const EventsGrid: React.FC<EventsGridProps> = ({
+    events,
+    isLoading,
+    registeredEventIds,
+    favoriteMap,
+    favoriteAnimatingEventId,
+    onToggleFavorite,
+}) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -35,7 +45,16 @@ export const EventsGrid: React.FC<EventsGridProps> = ({ events, isLoading, regis
                 const key = event.id || (event as any)._id || `${event.title}-${index}`;
                 const eventId = String(event.id || (event as any)._id || '');
                 const isRegistered = !!eventId && !!registeredEventIds?.has(eventId);
-                return <EventCard key={key} event={event} isRegistered={isRegistered} />;
+                return (
+                    <EventCard
+                        key={key}
+                        event={event}
+                        isRegistered={isRegistered}
+                        favoriteId={eventId ? (favoriteMap?.get(eventId) ?? null) : null}
+                        favoriteAnimating={favoriteAnimatingEventId === eventId}
+                        onToggleFavorite={onToggleFavorite}
+                    />
+                );
             })}
         </div>
     );

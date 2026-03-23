@@ -19,8 +19,17 @@ function buildDateRange(start: string, end: string): string[] {
     const dates: string[] = [];
     const cur = new Date(start + 'T00:00:00');
     const last = new Date(end + 'T00:00:00');
+
+    const toLocalYmd = (d: Date): string => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     while (cur <= last) {
-        dates.push(cur.toISOString().slice(0, 10));
+        // Keep local calendar date instead of UTC ISO date to avoid timezone day drift.
+        dates.push(toLocalYmd(cur));
         cur.setDate(cur.getDate() + 1);
     }
     return dates;
@@ -32,13 +41,17 @@ function SlotRow({
     onChange,
     onRemove,
     canRemove,
+    minStartTime,
 }: {
     slot: EventScheduleSlot;
     onChange: (updated: EventScheduleSlot) => void;
     onRemove: () => void;
     canRemove: boolean;
+    minStartTime?: string;
 }) {
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
+    const startMin = minStartTime;
+    const endMin = startMin ? maxTime(startMin, slot.start_time) : slot.start_time;
 
     return (
         <div className="flex items-center gap-2 p-3 rounded-xl border border-zinc-200 bg-zinc-50 group hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
@@ -52,7 +65,12 @@ function SlotRow({
                     <input
                         type="time"
                         value={slot.start_time}
-                        onChange={e => set({ start_time: e.target.value })}
+                        onChange={e => {
+                            const selected = e.target.value;
+                            const clamped = startMin && selected < startMin ? startMin : selected;
+                            set({ start_time: clamped });
+                        }}
+                        min={startMin}
                         lang="en-GB"
                         step={60}
                         title="Use 24-hour format (HH:mm)"
@@ -65,7 +83,12 @@ function SlotRow({
                     <input
                         type="time"
                         value={slot.end_time}
-                        onChange={e => set({ end_time: e.target.value })}
+                        onChange={e => {
+                            const selected = e.target.value;
+                            const clamped = selected < endMin ? endMin : selected;
+                            set({ end_time: clamped });
+                        }}
+                        min={endMin}
                         lang="en-GB"
                         step={60}
                         title="Use 24-hour format (HH:mm)"
@@ -102,13 +125,16 @@ function SlotRow({
 function DayCard({
     day,
     onUpdate,
+    minStartTime,
 }: {
     day: EventScheduleDay;
     onUpdate: (updated: EventScheduleDay) => void;
+    minStartTime?: string;
 }) {
     const addSlot = () => {
         const last = day.slots[day.slots.length - 1];
-        const start = last?.end_time ?? '09:00';
+        const startSeed = last?.end_time ?? '09:00';
+        const start = minStartTime ? maxTime(startSeed, minStartTime) : startSeed;
         const [h, m] = start.split(':').map(Number);
         const endH = Math.min(h + 1, 23);
         const end = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -168,6 +194,7 @@ function DayCard({
                         onChange={updated => updateSlot(idx, updated)}
                         onRemove={() => removeSlot(idx)}
                         canRemove={day.slots.length > 1}
+                        minStartTime={minStartTime}
                     />
                 ))}
 
@@ -191,9 +218,11 @@ interface ScheduleBuilderProps {
     /** YYYY-MM-DD — when provided together, auto-generates one day per calendar date */
     startDate?: string;
     endDate?: string;
+    /** HH:mm minimum time for day 1 when start date is today in event timezone */
+    minStartTimeForDay1?: string;
 }
 
-export function ScheduleBuilder({ days, onChange, startDate, endDate }: ScheduleBuilderProps) {
+export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTimeForDay1 }: ScheduleBuilderProps) {
     // Auto-regenerate day cards whenever the date range changes
     useEffect(() => {
         if (!startDate || !endDate || startDate > endDate) return;
@@ -239,8 +268,13 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate }: Schedule
                     key={idx}
                     day={day}
                     onUpdate={updated => updateDay(idx, updated)}
+                    minStartTime={day.day_number === 1 ? minStartTimeForDay1 : undefined}
                 />
             ))}
         </div>
     );
+}
+
+function maxTime(a: string, b: string): string {
+    return a >= b ? a : b;
 }

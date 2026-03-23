@@ -109,6 +109,7 @@ async def create_room(
     except Exception as exc:
         logger.error("Daily create_room(%s) exception: %s", room_name, exc)
         return False
+    return False
 
 
 async def delete_room(room_name: str) -> bool:
@@ -143,6 +144,7 @@ async def delete_room(room_name: str) -> bool:
     except Exception as exc:
         logger.error("Daily delete_room(%s) exception: %s", room_name, exc)
         return False
+    return False
 
 
 # ── Token Generation ──────────────────────────────────────────────────────────
@@ -216,6 +218,7 @@ async def _create_meeting_token(
             exc,
         )
         raise
+    return ""
 
 
 # ── Public helpers (same interface pattern as the old livekit service) ────────

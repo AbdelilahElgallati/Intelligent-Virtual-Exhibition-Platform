@@ -168,7 +168,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
     return (
         <AudienceRoom
             token={tokenData.token}
-            serverUrl={tokenData.livekit_url}
+            roomUrl={tokenData.room_url}
             conferenceId={confId}
             conferenceTitle={conf.title}
             conferenceDescription={conf.description}

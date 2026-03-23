@@ -7,6 +7,7 @@ Defines data models for events and event lifecycle states.
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional, Union
+from zoneinfo import ZoneInfo
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator
 
@@ -67,6 +68,7 @@ class EventBase(BaseModel):
     category: Optional[str] = "Exhibition"
     start_date: datetime
     end_date: datetime
+    event_timezone: str = "UTC"
     location: Optional[str] = "Virtual Platform"
     tags: list[str] = []
     organizer_name: Optional[str] = None
@@ -95,6 +97,15 @@ class EventBase(BaseModel):
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 
+    @field_validator("event_timezone")
+    @classmethod
+    def validate_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
+
 
 class EventCreate(BaseModel):
     """Schema for submitting a new event request (goes straight to PENDING_APPROVAL)."""
@@ -104,6 +115,7 @@ class EventCreate(BaseModel):
     category: Optional[str] = "Exhibition"
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    event_timezone: str = "UTC"
     location: Optional[str] = "Virtual Platform"
     banner_url: Optional[str] = None
     tags: Optional[list[str]] = []
@@ -123,6 +135,15 @@ class EventCreate(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_validator("event_timezone")
+    @classmethod
+    def validate_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
+
 
 class EventUpdate(BaseModel):
     """Schema for updating a pending event request (organizer only, before approval)."""
@@ -132,6 +153,7 @@ class EventUpdate(BaseModel):
     category: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    event_timezone: Optional[str] = None
     location: Optional[str] = None
     banner_url: Optional[str] = None
     tags: Optional[list[str]] = None
@@ -146,6 +168,17 @@ class EventUpdate(BaseModel):
     ticket_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
+
+    @field_validator("event_timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
 
 
 class ScheduleSlotConferenceAssign(BaseModel):

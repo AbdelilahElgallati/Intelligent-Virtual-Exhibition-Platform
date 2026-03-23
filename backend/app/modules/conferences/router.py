@@ -10,6 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import json
+from zoneinfo import ZoneInfo
+from bson import ObjectId
 
 from app.core.dependencies import get_current_user, require_role
 from app.core.config import settings
@@ -51,7 +53,7 @@ def _parse_hhmm_to_minutes(value: Optional[str]) -> Optional[int]:
     if not value or ":" not in value:
         return None
     try:
-        h_str, m_str = value.split(":", 1)
+        h_str, m_str = str(value).split(":", 1)
         h = int(h_str)
         m = int(m_str)
         if h < 0 or h > 23 or m < 0 or m > 59:
@@ -94,17 +96,26 @@ def _extract_schedule_days(event: dict) -> list[dict]:
 
 
 def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
+    if str(event.get("state") or "").lower() == "closed":
+        return False
+
     days = _extract_schedule_days(event)
     start_date = _parse_utc_datetime(event.get("start_date"))
 
     if days and start_date:
-        base = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
+        tz_name = str(event.get("event_timezone") or "UTC")
+        try:
+            event_tz = ZoneInfo(tz_name)
+        except Exception:
+            event_tz = timezone.utc
+
+        base_local_date = start_date.astimezone(event_tz).date()
         windows: list[tuple[datetime, datetime]] = []
 
         for idx, day in enumerate(days):
             day_num = int(day.get("day_number") or (idx + 1))
             day_offset = max(0, day_num - 1)
-            day_date = base + timedelta(days=day_offset)
+            day_date = base_local_date + timedelta(days=day_offset)
 
             for slot in day.get("slots") or []:
                 start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
@@ -112,8 +123,10 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
                 if start_minutes is None or end_minutes is None or end_minutes <= start_minutes:
                     continue
 
-                slot_start = day_date + timedelta(minutes=start_minutes)
-                slot_end = day_date + timedelta(minutes=end_minutes)
+                slot_start_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_minutes or 0))
+                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(end_minutes or 0))
+                slot_start = slot_start_local.astimezone(timezone.utc)
+                slot_end = slot_end_local.astimezone(timezone.utc)
                 windows.append((slot_start, slot_end))
 
         if windows:
@@ -126,6 +139,14 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
     if event_end and now_utc > event_end:
         return False
     return True
+
+
+def _is_conference_live_window(conf: dict, now_utc: datetime) -> bool:
+    start = _parse_utc_datetime(conf.get("start_time"))
+    end = _parse_utc_datetime(conf.get("end_time"))
+    if not isinstance(start, datetime) or not isinstance(end, datetime):
+        return True
+    return start <= now_utc < end
 
 
 async def _ensure_conference_event_live(conf: dict):
@@ -148,7 +169,7 @@ async def _enrich(conf: dict, current_user_id: Optional[str] = None) -> dict:
     db = get_database()
     eid = conf.get("assigned_enterprise_id")
     if eid:
-        user = await db.users.find_one({"_id": __import__("bson").ObjectId(eid)}) if __import__("bson").ObjectId.is_valid(eid) else None
+        user = await db.users.find_one({"_id": ObjectId(eid)}) if ObjectId.is_valid(eid) else None
         if user:
             conf["assigned_enterprise_name"] = user.get("full_name") or user.get("email")
     if current_user_id:
@@ -247,9 +268,12 @@ async def organizer_cancel_conference(
     summary="Enterprise: list conferences assigned to me",
 )
 async def enterprise_my_conferences(
+    event_id: Optional[str] = Query(None),
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
     confs = await conf_repo.list_by_enterprise(str(current_user["_id"]))
+    if event_id:
+        confs = [c for c in confs if str(c.get("event_id")) == str(event_id)]
     return [await _enrich(c, str(current_user["_id"])) for c in confs]
 
 
@@ -263,6 +287,13 @@ async def enterprise_start_conference(
 ):
     conf = await _get_conf_or_404(conf_id)
     await _assert_assigned_enterprise(conf, current_user)
+    await _ensure_conference_event_live(conf)
+
+    if not _is_conference_live_window(conf, datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=403,
+            detail="Conference can only be started during its scheduled time window",
+        )
 
     if conf["status"] not in ("scheduled", "live"):
         raise HTTPException(status_code=400, detail=f"Cannot start a conference with status '{conf['status']}'")
@@ -345,6 +376,13 @@ async def enterprise_speaker_token(
 ):
     conf = await _get_conf_or_404(conf_id)
     await _assert_assigned_enterprise(conf, current_user)
+    await _ensure_conference_event_live(conf)
+
+    if not _is_conference_live_window(conf, datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=403,
+            detail="Speaker access is allowed only during the conference scheduled time window",
+        )
 
     if conf["status"] not in ("live", "scheduled"):
         raise HTTPException(status_code=400, detail="Conference is not live")
@@ -469,6 +507,16 @@ async def get_audience_token(
         or f"conf-{conf_id}"
     )
     uid = str(current_user["_id"])
+    user_role = str(current_user.get("role") or "").lower()
+    privileged_roles = {Role.ADMIN.value, Role.ORGANIZER.value}
+    if user_role not in privileged_roles:
+        is_registered = await conf_repo.is_registered(conf_id, uid)
+        if not is_registered:
+            raise HTTPException(
+                status_code=403,
+                detail="You must register for this conference before joining",
+            )
+
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
     token = await daily_svc.generate_audience_token(room_name, uid, user_name)

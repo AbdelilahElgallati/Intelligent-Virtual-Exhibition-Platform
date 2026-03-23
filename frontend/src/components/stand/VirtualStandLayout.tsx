@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Stand } from '@/lib/api/types';
 import {
@@ -85,6 +85,9 @@ export function VirtualStandLayout({
     children,
 }: VirtualStandLayoutProps) {
     const [showPanel, setShowPanel] = useState(false);
+    const [favoritePulse, setFavoritePulse] = useState(false);
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    const panelBodyRef = useRef<HTMLDivElement | null>(null);
     const { r, g, b } = hexToRgb(themeColor);
     const standId = stand.id || (stand as any)._id || stand.name || '';
     const fallbackPresenterImg = hashStandId(standId) % 2 === 0 ? PRESENTER_MALE : PRESENTER_FEMALE;
@@ -100,12 +103,27 @@ export function VirtualStandLayout({
     const presenterLabel = hashStandId(standId) % 2 === 0 ? 'male' : 'female';
 
     const handleTabClick = (tab: 'resources' | 'about') => {
-        if (activeTab === tab && showPanel) {
-            setShowPanel(false);
-        } else {
-            onTabChange(tab);
-            setShowPanel(true);
-        }
+        onTabChange(tab);
+        setShowPanel(true);
+    };
+
+    useEffect(() => {
+        if (!showPanel) return;
+        panelBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        panelRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    }, [activeTab, showPanel]);
+
+    useEffect(() => {
+        if (!favoriteId) return;
+        setFavoritePulse(true);
+        const timer = window.setTimeout(() => setFavoritePulse(false), 350);
+        return () => window.clearTimeout(timer);
+    }, [favoriteId]);
+
+    const onFavoriteClick = () => {
+        setFavoritePulse(true);
+        window.setTimeout(() => setFavoritePulse(false), 250);
+        onFavoriteToggle();
     };
 
     return (
@@ -346,14 +364,14 @@ export function VirtualStandLayout({
 
             {/* Favorite button */}
             <button
-                onClick={onFavoriteToggle}
+                onClick={onFavoriteClick}
                 className={`absolute top-3.5 right-3.5 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-full backdrop-blur-md shadow-lg text-sm font-medium transition-all border ${favoriteId
                     ? 'bg-amber-50/95 text-amber-700 border-amber-200 shadow-amber-200/40'
                     : 'bg-white/90 text-gray-700 border-white/50 hover:bg-white'
                     }`}
             >
                 <Heart
-                    className={`w-4 h-4 transition-colors ${favoriteId ? 'fill-amber-500 text-amber-500' : ''
+                    className={`w-4 h-4 transition-all ${favoritePulse ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-amber-500 text-amber-500' : ''
                         }`}
                 />
                 <span className="hidden sm:inline">
@@ -372,6 +390,7 @@ export function VirtualStandLayout({
 
             {/* ---------- Content drawer ---------- */}
             <div
+                ref={panelRef}
                 className={`absolute inset-x-0 bottom-[68px] z-20 flex justify-center px-3 transition-all duration-300 ease-out ${showPanel
                     ? 'opacity-100 translate-y-0'
                     : 'opacity-0 translate-y-6 pointer-events-none'
@@ -391,7 +410,7 @@ export function VirtualStandLayout({
                         </button>
                     </div>
                     {/* Drawer body */}
-                    <div className="p-5 max-h-[42vh] overflow-y-auto">
+                    <div ref={panelBodyRef} className="p-5 max-h-[42vh] overflow-y-auto">
                         {children}
                     </div>
                 </div>

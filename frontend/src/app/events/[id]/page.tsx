@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, use } from 'react';
-import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'; // Added usePathname
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Event, ParticipantStatus } from '@/lib/api/types';
@@ -13,9 +13,11 @@ import { SectionTitle } from '@/components/common/SectionTitle';
 import { useAuth } from '@/context/AuthContext';
 import { favoritesService } from '@/services/favorites.service';
 import { Button } from '@/components/ui/Button';
-import { Download } from 'lucide-react';
+import { Download, Heart } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { StandsListResponse } from '@/types/stand';
+
+const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
 interface EnterprisePreview {
   id?: string;
@@ -49,6 +51,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const id = resolvedParams?.id;
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -57,6 +60,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const [joinLoading, setJoinLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
+  const [favoriteAnimating, setFavoriteAnimating] = useState(false);
   const [enterprisesPreview, setEnterprisesPreview] = useState<EnterprisePreview[]>([]);
   const [standPreview, setStandPreview] = useState<StandPreview[]>([]);
 
@@ -101,7 +105,8 @@ export default function EventDetailsPage({ params }: EventPageProps) {
         try {
           const favs = await favoritesService.list();
           const match = favs.find((f) => f.target_type === 'event' && (f.target_id === (eventData as any).id || f.target_id === (eventData as any)._id));
-          setFavoriteId(match ? match.id : null);
+          const favoriteDocId = match ? resolveFavoriteDocId(match) : '';
+          setFavoriteId(favoriteDocId || null);
         } catch {
           /* ignore favorite fetch errors to not block page */
         }
@@ -160,15 +165,19 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       return;
     }
     try {
+      setFavoriteAnimating(true);
       if (favoriteId) {
         await favoritesService.remove(favoriteId);
         setFavoriteId(null);
       } else {
         const fav = await favoritesService.add('event', id);
-        setFavoriteId(fav.id);
+        const favoriteDocId = resolveFavoriteDocId(fav);
+        setFavoriteId(favoriteDocId || null);
       }
+      window.setTimeout(() => setFavoriteAnimating(false), 250);
     } catch (err) {
       console.error('Favorite toggle failed', err);
+      setFavoriteAnimating(false);
     }
   };
 
@@ -218,8 +227,37 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
   const isPaidEvent = !!(event as any).is_paid && ((event as any).ticket_price || (event as any).price) > 0;
   const isApprovedVisitor = status === 'APPROVED' || status === 'GUEST_APPROVED';
+  const wasEjectedFromLive = searchParams.get('event_ended') === 'true';
 
   const parseScheduleHighlights = (ev: Event): ScheduleSlotPreview[] => {
+    const eventTimezone = ((ev as any).event_timezone as string) || 'UTC';
+    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(value);
+      const read = (type: Intl.DateTimeFormatPartTypes): number => {
+        const raw = parts.find((p) => p.type === type)?.value;
+        return Number(raw || 0);
+      };
+      return { year: read('year'), month: read('month'), day: read('day') };
+    };
+
+    const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
+      const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
+      const seed = new Date((ev as any).start_date || new Date().toISOString());
+      const ymd = getDatePartsInTimezone(seed, eventTimezone);
+      const base = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day + dayOffset, 12, 0, 0, 0));
+      return new Intl.DateTimeFormat('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        timeZone: eventTimezone,
+      }).format(base);
+    };
+
     const days = Array.isArray((ev as any).schedule_days)
       ? ((ev as any).schedule_days as Array<any>)
       : (() => {
@@ -235,7 +273,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
     const flat: ScheduleSlotPreview[] = [];
     days.forEach((day: any, dayIndex: number) => {
       const dayNumber = day?.day_number || dayIndex + 1;
-      const dateLabel = day?.date_label;
+      const dateLabel = formatDayLabel(dayNumber, dayIndex);
       const slots = Array.isArray(day?.slots) ? day.slots : [];
       slots.forEach((slot: any) => {
         flat.push({
@@ -288,6 +326,12 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       <EventDetailsHeader event={event} />
 
       <Container className="py-12">
+        {wasEjectedFromLive && (
+          <div className="mb-6 rounded-xl p-4 text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300">
+            <p className="font-bold">Live Access Closed</p>
+            <p className="mt-1">This event has ended, so you were moved out of the live area.</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -298,7 +342,8 @@ export default function EventDetailsPage({ params }: EventPageProps) {
                     <Download size={16} /> Download Receipt
                   </Button>
                 )}
-                <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite}>
+                <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite} className="gap-2">
+                  <Heart className={`h-4 w-4 transition-all ${favoriteAnimating ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
                   {favoriteId ? 'Favorited' : 'Add to favorites'}
                 </Button>
               </div>

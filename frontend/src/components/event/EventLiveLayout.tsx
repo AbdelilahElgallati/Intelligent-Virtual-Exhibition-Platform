@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Event, ParticipantStatus } from '@/lib/api/types';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
@@ -11,6 +11,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { Calendar, MapPin, User } from 'lucide-react';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { resolveMediaUrl } from '@/lib/media';
 
 interface EventLiveLayoutProps {
     eventId: string;
@@ -18,6 +19,7 @@ interface EventLiveLayoutProps {
 }
 
 export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
+    const router = useRouter();
     const [event, setEvent] = useState<Event | null>(null);
     const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
     const [loading, setLoading] = useState(true);
@@ -62,10 +64,20 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
         return () => window.clearInterval(timer);
     }, []);
 
+    const lifecycle = event ? getEventLifecycle(event, new Date(timelineNow)) : null;
+
+    // Keep hook order stable across renders; guard internally when data is unavailable.
+    useEffect(() => {
+        if (!event || !lifecycle || lifecycle.status !== 'ended') return;
+        const timer = window.setTimeout(() => {
+            router.replace(`/events/${eventId}?event_ended=true`);
+        }, 2500);
+        return () => window.clearTimeout(timer);
+    }, [event, eventId, lifecycle, router]);
+
     if (loading) return <LoadingState message="Loading event..." />;
     if (!event) return <div className="text-center py-20 text-gray-500">Event not found</div>;
 
-    const lifecycle = getEventLifecycle(event, new Date(timelineNow));
     const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
         const canAccessLive = isApproved && lifecycle.hasScheduleSlots && lifecycle.status === 'live';
@@ -106,7 +118,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                 <div className="h-36 sm:h-48 md:h-64 w-full bg-gradient-to-r from-indigo-900 to-purple-800 relative overflow-hidden">
                     {event.banner_url ? (
                         <img
-                            src={event.banner_url}
+                            src={resolveMediaUrl(event.banner_url)}
                             alt={event.title}
                             className="w-full h-full object-cover opacity-80"
                         />
@@ -236,6 +248,9 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                             <h3 className="text-xl font-semibold text-slate-900">Event Timeline Ended</h3>
                             <p className="mt-2 text-slate-700">
                                 This event has ended, so live visitor access is now closed.
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-slate-600">
+                                Redirecting you back to event details...
                             </p>
                             <Link
                                 href={`/events/${eventId}`}

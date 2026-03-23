@@ -5,7 +5,6 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 """
 
 import os
-import shutil
 import uuid
 from typing import Optional
 from urllib.parse import urlparse, parse_qs
@@ -41,10 +40,19 @@ from app.modules.participants.schemas import ParticipantRead, ParticipantStatus
 from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.service import log_audit
+from app.core.storage import store_upload
 
 
 
 router = APIRouter(prefix="/events", tags=["Events"])
+
+# States visible in public event catalogs by default.
+PUBLIC_VISIBLE_EVENT_STATES = {
+    EventState.APPROVED,
+    EventState.PAYMENT_DONE,
+    EventState.LIVE,
+    EventState.CLOSED,
+}
 
 EVENT_BANNER_UPLOAD_DIR = "uploads/event_banners"
 PAYMENT_PROOF_UPLOAD_DIR = "uploads/payments"
@@ -53,16 +61,16 @@ os.makedirs(PAYMENT_PROOF_UPLOAD_DIR, exist_ok=True)
 
 
 async def _save_upload(file: UploadFile, upload_dir: str, prefix: str) -> str:
-    """Persist an uploaded file in a public uploads folder and return its URL path."""
-    ext = os.path.splitext(file.filename or "file")[1] or ".bin"
-    safe_name = f"{prefix}_{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(upload_dir, safe_name)
-
-    with open(save_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
+    """Persist an uploaded file to R2 when configured, otherwise local uploads."""
     normalized_dir = upload_dir.replace("\\", "/")
-    return f"/{normalized_dir}/{safe_name}"
+    stored = await store_upload(
+        file=file,
+        local_dir=upload_dir,
+        local_url_prefix=f"/{normalized_dir}",
+        r2_folder=normalized_dir.replace("uploads/", "", 1),
+        filename_prefix=prefix,
+    )
+    return stored["url"]
 
 
 def _extract_legacy_invite_token(link: Optional[str]) -> Optional[str]:
@@ -236,6 +244,24 @@ async def submit_event_request(
     return EventRead(**event)
 
 
+@router.get("/admin/all", response_model=EventsResponse)
+async def get_all_events_for_admin(
+    organizer_id: Optional[str] = None,
+    state: Optional[EventState] = None,
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(require_role(Role.ADMIN)),
+) -> EventsResponse:
+    """List all events for administrators without public visibility filtering."""
+    events = await list_events(
+        organizer_id=organizer_id,
+        state=state,
+        category=category,
+        search=search,
+    )
+    return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
+
+
 @router.get("/", response_model=EventsResponse)
 async def get_all_events(
     organizer_id: Optional[str] = None,
@@ -244,8 +270,9 @@ async def get_all_events(
     search: Optional[str] = None,
 ) -> EventsResponse:
     """List all events with optional filters. Public endpoint."""
+    effective_state = state if state is not None else list(PUBLIC_VISIBLE_EVENT_STATES)
     events = await list_events(
-        organizer_id=organizer_id, state=state, category=category, search=search
+        organizer_id=organizer_id, state=effective_state, category=category, search=search
     )
     return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { favoritesService, Favorite } from "@/services/favorites.service";
 import { apiClient } from "@/lib/api/client";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { resolveMediaUrl } from "@/lib/media";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 // Helper to determine Card styling based on target type
@@ -273,12 +274,21 @@ function FavoritesList({
                                                 {isLoading ? (
                                                     <div className="w-full h-full animate-pulse bg-zinc-200" />
                                                 ) : data?.img ? (
-                                                    <img src={data.img} alt={data?.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                                    <img
+                                                        src={resolveMediaUrl(data.img)}
+                                                        alt={data?.title}
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
                                                 ) : (
                                                     <div className={`w-full h-full bg-gradient-to-br ${getTypeColor(fav.target_type)} flex items-center justify-center opacity-80`}>
                                                         <ImageIcon className="text-white/30 w-12 h-12" />
                                                     </div>
                                                 )}
+
+                                                <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-700 shadow-sm">
+                                                    <Heart className="h-3 w-3 fill-current" />
+                                                    Favorited
+                                                </span>
                                                 
                                                 {/* Float Action Button */}
                                                 <button 

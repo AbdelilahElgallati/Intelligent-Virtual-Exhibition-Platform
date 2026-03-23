@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { XCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
-export default function MarketplaceCancelPage() {
+function MarketplaceCancelContent() {
     const searchParams = useSearchParams();
     const standIdFromUrl = searchParams.get('stand_id');
     const eventIdFromUrl = searchParams.get('event_id');
@@ -40,5 +41,13 @@ export default function MarketplaceCancelPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function MarketplaceCancelPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+            <MarketplaceCancelContent />
+        </Suspense>
     );
 }

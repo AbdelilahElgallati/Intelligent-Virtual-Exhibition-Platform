@@ -5,8 +5,7 @@ import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Conference } from '@/types/conference';
 import { LoadingState } from '@/components/ui/LoadingState';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { http } from '@/lib/http';
 
 function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
     const router = useRouter();
@@ -15,31 +14,20 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
 
     const load = useCallback(async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const res = await fetch(`${API_BASE}/conferences/my-assigned`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                // Filter to this event's conferences
-                setConferences(data.filter((c: Conference) => c.event_id === eventId));
-            }
+            const data = await http.get<Conference[]>('/conferences/my-assigned');
+            // Filter to this event's conferences
+            setConferences((data || []).filter((c: Conference) => c.event_id === eventId));
         } finally { setLoading(false); }
     }, [eventId]);
 
     useEffect(() => { load(); }, [load]);
 
     const startConference = async (confId: string) => {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch(`${API_BASE}/conferences/${confId}/start`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
+        try {
+            await http.post(`/conferences/${confId}/start`, {});
             router.push(`/enterprise/events/${eventId}/conferences/${confId}/live`);
-        } else {
-            const err = await res.json();
-            alert(err.detail || 'Failed to start session');
+        } catch (err: any) {
+            alert(err?.message || 'Failed to start session');
         }
     };
 

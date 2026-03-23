@@ -1,106 +1,3 @@
-// "use client";
-
-// import React from 'react';
-// import Link from 'next/link';
-// import { usePathname } from 'next/navigation';
-// import {
-//     LayoutDashboard,
-//     User,
-//     Package,
-//     MessageSquare,
-//     LogOut,
-//     Building2,
-//     Calendar
-// } from 'lucide-react';
-// import { useAuth } from '@/context/AuthContext';
-
-// const NAV_ITEMS = [
-//     { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
-//     { label: 'Events', href: '/enterprise/events', icon: Calendar },
-//     { label: 'Profile', href: '/enterprise/profile', icon: User },
-//     { label: 'Products', href: '/enterprise/products', icon: Package },
-//     { label: 'Requests', href: '/enterprise/product-requests', icon: MessageSquare },
-// ];
-
-
-// export default function EnterpriseLayout({
-//     children,
-// }: {
-//     children: React.ReactNode;
-// }) {
-//     const pathname = usePathname();
-//     const { logout, user } = useAuth();
-
-//     return (
-//         <div className="min-h-screen bg-zinc-50 flex">
-//             {/* Sidebar */}
-//             <aside className="w-64 bg-white border-r border-zinc-200 flex flex-col sticky top-0 h-screen">
-//                 <div className="p-6 border-b border-zinc-100">
-//                     <div className="flex items-center gap-3">
-//                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
-//                             <Building2 size={24} />
-//                         </div>
-//                         <div>
-//                             <h2 className="font-bold text-zinc-900 leading-tight">Enterprise</h2>
-//                             <p className="text-xs text-zinc-500">Business Portal</p>
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 <nav className="flex-1 p-4 space-y-1">
-//                     {NAV_ITEMS.map((item) => {
-//                         const Icon = item.icon;
-//                         const isActive = pathname === item.href;
-//                         return (
-//                             <Link
-//                                 key={item.href}
-//                                 href={item.href}
-//                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-//                                     ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-//                                     : 'text-zinc-600 hover:bg-zinc-50 hover:text-indigo-600'
-//                                     }`}
-//                             >
-//                                 <Icon size={18} className={isActive ? 'text-indigo-600' : 'text-zinc-400'} />
-//                                 {item.label}
-//                             </Link>
-//                         );
-//                     })}
-//                 </nav>
-
-//                 <div className="p-4 border-t border-zinc-100">
-//                     <div className="bg-zinc-50 rounded-xl p-4 mb-4">
-//                         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Connected as</p>
-//                         <p className="text-sm font-bold text-zinc-900 truncate">{user?.full_name}</p>
-//                         <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
-//                     </div>
-//                     <button
-//                         onClick={logout}
-//                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
-//                     >
-//                         <LogOut size={18} />
-//                         Sign Out
-//                     </button>
-//                 </div>
-//             </aside>
-
-//             {/* Main Content */}
-//             <main className="flex-1 overflow-auto">
-//                 <header className="h-16 bg-white/80 backdrop-blur-md border-b border-zinc-200 sticky top-0 z-10 flex items-center justify-between px-8">
-//                     <h1 className="text-lg font-bold text-zinc-900">
-//                         {NAV_ITEMS.find(i => i.href === pathname)?.label || 'Enterprise Portal'}
-//                     </h1>
-//                 </header>
-//                 <div className="p-8">
-//                     {children}
-//                 </div>
-//             </main>
-//         </div>
-//     );
-// }
-
-
-// :::::::::::::::::::::::::::::::::::::::::::::::
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -128,9 +25,9 @@ import {
 const NAV_ITEMS = [
     { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
     { label: 'Events', href: '/enterprise/events', icon: Calendar },
-    { label: 'Conferences', href: '/enterprise/conferences', icon: CalendarCheck },
-    { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
-    { label: 'Leads', href: '/enterprise/leads', icon: Users },
+    // { label: 'Conferences', href: '/enterprise/conferences', icon: CalendarCheck },
+    // { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
+    // { label: 'Leads', href: '/enterprise/leads', icon: Users },
     { label: 'Analytics', href: '/enterprise/analytics', icon: CreditCard },
     { label: 'Products', href: '/enterprise/products', icon: Package },
     { label: 'Profile', href: '/enterprise/profile', icon: User },

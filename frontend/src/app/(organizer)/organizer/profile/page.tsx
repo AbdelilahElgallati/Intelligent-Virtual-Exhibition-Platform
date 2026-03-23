@@ -12,6 +12,22 @@ import {
     Settings, Bell, Lock
 } from 'lucide-react';
 
+const FALLBACK_TIMEZONES = [
+    'UTC',
+    'Africa/Casablanca',
+    'Europe/Paris',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+];
+
+const TIMEZONE_OPTIONS =
+    typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+        ? (Intl.supportedValuesOf('timeZone') as string[])
+        : FALLBACK_TIMEZONES;
+
 export default function OrganizerProfile() {
     const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +37,7 @@ export default function OrganizerProfile() {
         full_name: '',
         bio: '',
         language: '',
+        timezone: 'UTC',
         interests: [] as string[]
     });
 
@@ -30,6 +47,7 @@ export default function OrganizerProfile() {
                 full_name: user.full_name || '',
                 bio: user.bio || '',
                 language: user.language || 'English',
+                timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 interests: user.interests || []
             });
         }
@@ -131,6 +149,21 @@ export default function OrganizerProfile() {
                                             <option>Spanish</option>
                                             <option>French</option>
                                             <option>Arabic</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+                                            <Globe size={14} className="text-indigo-500" /> Timezone
+                                        </label>
+                                        <select
+                                            name="timezone"
+                                            value={form.timezone}
+                                            onChange={(e) => setForm(prev => ({ ...prev, timezone: e.target.value }))}
+                                            className="w-full h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner"
+                                        >
+                                            {TIMEZONE_OPTIONS.map((tz) => (
+                                                <option key={tz} value={tz}>{tz}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

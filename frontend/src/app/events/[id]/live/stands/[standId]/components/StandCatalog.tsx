@@ -3,12 +3,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { resolveMediaUrl } from '@/lib/media';
+import { http } from '@/lib/http';
 import {
     Package, Tag, ShoppingCart, X,
     CheckCircle2, Send, Hash, Wrench, Image as ImageIcon
 } from 'lucide-react';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface Product {
     id: string;
@@ -39,7 +38,6 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const payload: any = {
                 product_id: product.id,
                 event_id: eventId,
@@ -49,18 +47,7 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
             if (!product.is_service) {
                 payload.quantity = quantity;
             }
-            const res = await fetch(`${API_BASE}/api/v1/enterprise/public/products/${product.id}/request`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.detail || 'Request failed');
-            }
+            await http.post(`/enterprise/public/products/${product.id}/request`, payload);
             setSuccess(true);
         } catch (err: any) {
             setError(err.message || 'Something went wrong. Please try again.');

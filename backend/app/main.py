@@ -8,14 +8,15 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging
-from app.db.mongo import connect_to_mongo, close_mongo_connection
+from app.core.ratelimit import RateLimitMiddleware
+from app.db.mongo import connect_to_mongo, close_mongo_connection, check_mongo_health
 from app.db.indexes import ensure_indexes
 from app.workers.lifecycle import lifecycle_loop
 
@@ -153,25 +154,31 @@ def create_application() -> FastAPI:
         description="Backend API for the Intelligent Virtual Exhibition Platform",
         version="0.1.0",
         debug=settings.DEBUG,
-        openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json",
+        openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json" if settings.ENV == "dev" else None,
         lifespan=lifespan,
     )
 
-    # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
+    # Configure CORS from environment
+    cors_origins = settings.CORS_ORIGINS
+    if settings.ENV == "dev":
+        # Include localhost variants in development
+        cors_origins = list(set(cors_origins + [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "http://localhost:3001",
             "http://127.0.0.1:3001",
-            "http://10.77.178.149:3000",
-            "http://10.77.178.149:3001",
-        ],
+        ]))
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
         allow_headers=["*"],
     )
+    
+    # Add rate limiting middleware (must be after CORS)
+    app.add_middleware(RateLimitMiddleware)
 
     # Register routers
     register_routers(app)
@@ -200,6 +207,12 @@ async def read_root() -> dict[str, str]:
 @app.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
     """
-    Health check endpoint.
+    Health check endpoint - verifies API and database connectivity.
     """
-    return {"status": "healthy"}
+    health_status = await check_mongo_health()
+    if health_status["status"] == "unhealthy":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection failed"
+        )
+    return health_status

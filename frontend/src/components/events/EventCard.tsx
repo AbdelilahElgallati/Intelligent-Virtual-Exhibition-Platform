@@ -7,15 +7,24 @@ import { Event } from '@/types/event';
 import { formatDate } from '@/lib/utils';
 import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
-import { CheckCircle2, CircleOff, Clock3 } from 'lucide-react';
+import { CheckCircle2, CircleOff, Clock3, Heart } from 'lucide-react';
 
 interface EventCardProps {
   event: Event;
   showStatus?: boolean;
   isRegistered?: boolean;
+  favoriteId?: string | null;
+  favoriteAnimating?: boolean;
+  onToggleFavorite?: (eventId: string) => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, isRegistered }) => {
+export const EventCard: React.FC<EventCardProps> = ({
+  event,
+  isRegistered,
+  favoriteId,
+  favoriteAnimating,
+  onToggleFavorite,
+}) => {
   const eventId = (event as any)?.id || (event as any)?._id;
   const lifecycle = getEventLifecycle(event);
   const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
@@ -63,6 +72,21 @@ export const EventCard: React.FC<EventCardProps> = ({ event, isRegistered }) => 
             {event.title}
           </CardTitle>
           <div className="flex flex-col items-end gap-1">
+            {eventId && onToggleFavorite && (
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(String(eventId))}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-all ${
+                  favoriteId
+                    ? 'border-rose-300 bg-rose-50 text-rose-700'
+                    : 'border-zinc-300 bg-white text-zinc-600 hover:border-rose-300 hover:text-rose-600'
+                }`}
+                aria-label={favoriteId ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Heart className={`h-3.5 w-3.5 transition-transform ${favoriteAnimating ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
+                {favoriteId ? 'Favorited' : 'Favorite'}
+              </button>
+            )}
             <Badge className={`border whitespace-nowrap text-[11px] font-semibold tracking-wide ${lifecycleClass}`}>
               {lifecycleLabel}
             </Badge>

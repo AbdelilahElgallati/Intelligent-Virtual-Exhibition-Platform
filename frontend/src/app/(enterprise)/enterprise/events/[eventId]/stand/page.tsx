@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
@@ -55,7 +55,9 @@ export default function StandConfigPage() {
     const [activeTab, setActiveTab] = useState<Tab>('branding');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const logoFileInputRef = useRef<HTMLInputElement>(null);
 
     // Branding state
     const [branding, setBranding] = useState<BrandingState>({
@@ -144,6 +146,32 @@ export default function StandConfigPage() {
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Save failed' });
         } finally { setIsSaving(false); }
+    };
+
+    const uploadLogoFromFile = async (file: File) => {
+        if (!file.type.startsWith('image/')) {
+            setMessage({ type: 'error', text: 'Please choose an image file for the logo.' });
+            return;
+        }
+
+        setIsUploadingLogo(true);
+        setMessage(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const data = await http.post<{ logo_url: string }>(`/enterprise/profile/logo`, formData);
+            const logoUrl = data?.logo_url || '';
+            if (!logoUrl) {
+                throw new Error('Upload completed but no logo URL was returned.');
+            }
+            setBranding((p) => ({ ...p, logo_url: logoUrl }));
+            setMessage({ type: 'success', text: 'Logo uploaded. Click Save Branding to apply it to this stand.' });
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Failed to upload logo image.' });
+        } finally {
+            setIsUploadingLogo(false);
+            if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+        }
     };
 
     const saveProducts = async () => {
@@ -318,8 +346,37 @@ export default function StandConfigPage() {
                                 placeholder="What will visitors find at your stand?"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <Input label="Logo URL" value={branding.logo_url} onChange={(e) => setBranding(p => ({ ...p, logo_url: e.target.value }))} placeholder="https://..." />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Input
+                                    label="Logo URL"
+                                    value={branding.logo_url}
+                                    onChange={(e) => setBranding(p => ({ ...p, logo_url: e.target.value }))}
+                                    placeholder="https://..."
+                                />
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        isLoading={isUploadingLogo}
+                                        onClick={() => logoFileInputRef.current?.click()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Upload size={14} /> Upload Logo Image
+                                    </Button>
+                                    <span className="text-xs text-zinc-500">Use URL or upload a file.</span>
+                                </div>
+                                <input
+                                    ref={logoFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) uploadLogoFromFile(file);
+                                    }}
+                                />
+                            </div>
                             <Input label="Custom Background URL" value={branding.stand_background_url} onChange={(e) => setBranding(p => ({ ...p, stand_background_url: e.target.value }))} placeholder="https://... or /stands/..." />
                         </div>
                         <div className="space-y-3">

@@ -29,6 +29,7 @@ import {
 import { organizerService } from "@/services/organizer.service";
 import OrganizerEventConferences from "@/components/conferences/OrganizerEventConferences";
 import { resolveMediaUrl } from '@/lib/media';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
@@ -54,6 +55,34 @@ const STATE_COLORS: Record<EventStatus, string> = {
 
 // ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
 function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
+  const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
+    const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
+    const tz = event.event_timezone || 'UTC';
+    const start = new Date(event.start_date || new Date().toISOString());
+    if (Number.isNaN(start.getTime())) return 'Invalid date';
+
+    // Build the base calendar day in the event timezone, then offset by day index.
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(start);
+
+    const year = Number(parts.find((p) => p.type === 'year')?.value);
+    const month = Number(parts.find((p) => p.type === 'month')?.value);
+    const day = Number(parts.find((p) => p.type === 'day')?.value);
+    if (!year || !month || !day) return 'Invalid date';
+
+    const anchorUtcNoon = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0));
+    return new Intl.DateTimeFormat('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      timeZone: tz,
+    }).format(anchorUtcNoon);
+  };
+
   let days: EventScheduleDay[] | null = event.schedule_days ?? null;
 
   if (!days && event.event_timeline) {
@@ -66,14 +95,14 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
   if (days && days.length > 0) {
     return (
       <div className="space-y-3">
-        {days.map((day) => (
+        {days.map((day, dayIndex) => (
           <div key={day.day_number} className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
             <div className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-50 border-b border-zinc-200">
               <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                 {day.day_number}
               </span>
               <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
-              {day.date_label && <span className="text-xs text-zinc-500 ml-1">— {day.date_label}</span>}
+              <span className="text-xs text-zinc-500 ml-1">— {formatDayLabel(day.day_number, dayIndex)}</span>
             </div>
             <div className="p-3 space-y-2">
               {day.slots.map((slot, si) => (
@@ -325,11 +354,14 @@ const handleConfirmPayment = async () => {
 
   const enterpriseInviteLink = event.enterprise_link ? buildInviteLink("enterprise", event.enterprise_link) : "";
   const visitorInviteLink = event.visitor_link ? buildInviteLink("visitor", event.visitor_link) : "";
-  const canPublishEvent = ["payment_done", "live", "closed"].includes(event.state);
+  const effectiveState: EventStatus = event.state === 'live' && getEventLifecycle(event as any).status === 'ended'
+    ? 'closed'
+    : event.state;
+  const canPublishEvent = ["payment_done", "live", "closed"].includes(effectiveState);
   const publicityLink = toAbsoluteLink(
     event.publicity_link || (canPublishEvent ? `/events/${event.id}` : "")
   );
-  const currentIdx = STEP_ORDER.indexOf(event.state as EventStatus);
+  const currentIdx = STEP_ORDER.indexOf(effectiveState);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -341,13 +373,13 @@ const handleConfirmPayment = async () => {
           </Button>
         </Link>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold border ${STATE_COLORS[event.state]}`}
+          className={`px-3 py-1 rounded-full text-xs font-semibold border ${STATE_COLORS[effectiveState]}`}
         >
-          {STATE_LABELS[event.state]}
+          {STATE_LABELS[effectiveState]}
         </span>
-        {(event.state === "live" || event.state === "closed" || event.state === "payment_done") && (
+        {(effectiveState === "live" || effectiveState === "closed" || effectiveState === "payment_done") && (
           <div className="flex gap-2 ml-auto">
-            {event.state !== "payment_done" && (
+            {effectiveState !== "payment_done" && (
               <Link href={`/organizer/events/${event.id}/analytics`}>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <BarChart2 className="w-4 h-4" /> View Analytics
@@ -363,7 +395,7 @@ const handleConfirmPayment = async () => {
             >
               <Download className="w-4 h-4" /> Download Report
             </Button>
-            {event.state === "payment_done" && (
+            {effectiveState === "payment_done" && (
               <Button
                 variant="primary"
                 size="sm"
@@ -373,7 +405,7 @@ const handleConfirmPayment = async () => {
                 <Check className="w-4 h-4" /> Start Event (Go Live)
               </Button>
             )}
-            {event.state === "live" && (
+            {effectiveState === "live" && (
               <Button
                 variant="danger"
                 size="sm"
@@ -454,7 +486,7 @@ const handleConfirmPayment = async () => {
       </Card>
 
       {/* Payment Banner */}
-      {event.state === "waiting_for_payment" && (
+      {effectiveState === "waiting_for_payment" && (
         <Card className="p-5 border-orange-200 bg-orange-50 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="space-y-3 flex-1">
@@ -528,7 +560,7 @@ const handleConfirmPayment = async () => {
       )}
 
       {/* Proof Reviewing Banner */}
-      {event.state === "payment_proof_submitted" && (
+      {effectiveState === "payment_proof_submitted" && (
         <Card className="p-5 border-blue-200 bg-blue-50">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -681,7 +713,7 @@ const handleConfirmPayment = async () => {
       )}
 
       {/* Conference Management — visible once event is approved / live */}
-      {['payment_done', 'live', 'closed'].includes(event.state) && (
+      {['payment_done', 'live', 'closed'].includes(effectiveState) && (
         <OrganizerEventConferences eventId={eventId} event={event} onEventUpdated={fetchEvent} />
       )}
 

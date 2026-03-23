@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ParticipantStatus } from '@/lib/api/types';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
+const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
+
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
     const { id, standId } = use(params);
     const [stand, setStand] = useState<Stand | null>(null);
@@ -54,7 +56,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     try {
                         const favs = await favoritesService.list();
                         const match = favs.find((f) => f.target_type === 'stand' && (f.target_id === (data as any).id || f.target_id === (data as any)._id));
-                        setFavoriteId(match ? match.id : null);
+                        const favoriteDocId = match ? resolveFavoriteDocId(match) : '';
+                        setFavoriteId(favoriteDocId || null);
                     } catch {
                         /* ignore favorites fetch error */
                     }
@@ -109,15 +112,13 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 setFavoriteId(null);
             } else {
                 const fav = await favoritesService.add('stand', (stand as any).id || (stand as any)._id);
-                setFavoriteId(fav.id);
+                const favoriteDocId = resolveFavoriteDocId(fav);
+                setFavoriteId(favoriteDocId || null);
             }
         } catch (error) {
             console.error('Failed to toggle favorite', error);
         }
     };
-
-    if (loading) return <LoadingState message="Loading stand..." />;
-    if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
 
     const lifecycle = eventData ? getEventLifecycle(eventData, new Date(timelineNow)) : null;
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
@@ -125,6 +126,17 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const isBetweenSlots = Boolean(
         lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
     );
+
+    useEffect(() => {
+        if (lifecycle?.status !== 'ended') return;
+        const timer = window.setTimeout(() => {
+            window.location.replace(`/events/${id}?event_ended=true`);
+        }, 2500);
+        return () => window.clearTimeout(timer);
+    }, [id, lifecycle?.status]);
+
+    if (loading) return <LoadingState message="Loading stand..." />;
+    if (!stand) return <div className="text-center py-20 text-gray-500">Stand not found</div>;
 
     if (!isApproved) {
         return (
@@ -182,16 +194,21 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                               ? 'There is no active slot right now. Stand access opens automatically when the next slot starts.'
                               : 'Stand access opens when the event enters a live schedule slot.'}
                     </p>
+                    {lifecycle?.status === 'ended' && (
+                        <p className="mt-2 text-sm font-medium text-slate-600">
+                            Redirecting you back to the event page...
+                        </p>
+                    )}
                     {lifecycle?.status !== 'ended' && (
                         <p className="mt-3 text-sm font-semibold text-cyan-900">
                             {formatTimeToStart(lifecycle?.nextSlotStart || null)}
                         </p>
                     )}
                     <a
-                        href={`/events/${id}?tab=schedule`}
+                        href={lifecycle?.status === 'ended' ? `/events/${id}` : `/events/${id}?tab=schedule`}
                         className="inline-flex mt-4 px-4 py-2 rounded-lg bg-cyan-700 text-white text-sm font-semibold hover:bg-cyan-800 transition-colors"
                     >
-                        View Event Schedule
+                        {lifecycle?.status === 'ended' ? 'Back to Event Details' : 'View Event Schedule'}
                     </a>
                 </div>
             </div>

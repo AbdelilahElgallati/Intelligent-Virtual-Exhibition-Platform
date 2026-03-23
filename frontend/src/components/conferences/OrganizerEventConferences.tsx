@@ -30,6 +30,34 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
+        const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
+        const tz = event.event_timezone || 'UTC';
+        const start = new Date(event.start_date || new Date().toISOString());
+        if (Number.isNaN(start.getTime())) return 'Invalid date';
+
+        // Build the base calendar day in the event timezone, then offset by day index.
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: tz,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(start);
+
+        const year = Number(parts.find((p) => p.type === 'year')?.value);
+        const month = Number(parts.find((p) => p.type === 'month')?.value);
+        const day = Number(parts.find((p) => p.type === 'day')?.value);
+        if (!year || !month || !day) return 'Invalid date';
+
+        const anchorUtcNoon = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0));
+        return new Intl.DateTimeFormat('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            timeZone: tz,
+        }).format(anchorUtcNoon);
+    };
+
     const loadConferences = useCallback(async () => {
         try {
             const data = await http.get<Conference[]>(`/organizer/events/${eventId}/conferences`);
@@ -151,7 +179,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                     {day.day_number}
                                 </span>
                                 <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
-                                {day.date_label && <span className="text-xs text-zinc-500 ml-1">— {day.date_label}</span>}
+                                <span className="text-xs text-zinc-500 ml-1">— {formatDayLabel(day.day_number, dayIdx)}</span>
                             </div>
                             <div className="p-3 space-y-2">
                                 {day.slots.map((slot, slotIdx) => {

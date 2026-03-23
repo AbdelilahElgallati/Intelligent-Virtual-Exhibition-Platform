@@ -8,8 +8,12 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
-import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
+import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark, Heart } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/media';
+import { favoritesService } from '@/services/favorites.service';
+import { useAuth } from '@/hooks/useAuth';
+
+const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
 /* Lazy-load the 3D hall to keep initial bundle light */
 const HallScene = lazy(() => import('@/components/hall3d/HallScene').then(m => ({ default: m.HallScene })));
@@ -61,9 +65,12 @@ export function StandsGrid({
 }: StandsGridProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { isAuthenticated } = useAuth();
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [standFavoriteMap, setStandFavoriteMap] = useState<Map<string, string>>(new Map());
+    const [favoriteAnimatingStandId, setFavoriteAnimatingStandId] = useState<string | null>(null);
 
     /* ── view mode: 'grid' or 'hall' ── */
     const [viewMode, setViewMode] = useState<'grid' | 'hall'>(
@@ -120,6 +127,33 @@ export function StandsGrid({
         return () => clearTimeout(timer);
     }, [category, search, currentPage, fetchStands]);
 
+    useEffect(() => {
+        const fetchStandFavorites = async () => {
+            if (!isAuthenticated) {
+                setStandFavoriteMap(new Map());
+                return;
+            }
+            try {
+                const favorites = await favoritesService.list();
+                const nextMap = new Map<string, string>();
+                favorites
+                    .filter((fav) => fav.target_type === 'stand' && typeof fav.target_id === 'string')
+                    .forEach((fav) => {
+                        const favoriteDocId = resolveFavoriteDocId(fav);
+                        if (favoriteDocId) {
+                            nextMap.set(String(fav.target_id), favoriteDocId);
+                        }
+                    });
+                setStandFavoriteMap(nextMap);
+            } catch {
+                // keep stand list functional even if favorites fail
+                setStandFavoriteMap(new Map());
+            }
+        };
+
+        fetchStandFavorites();
+    }, [isAuthenticated]);
+
     /* Reset to page 1 if filters change */
     useEffect(() => {
         setCurrentPage(1);
@@ -129,6 +163,49 @@ export function StandsGrid({
         setCategory('');
         setSearch('');
         setCurrentPage(1);
+    };
+
+    const toggleStandFavorite = async (
+        event: React.MouseEvent<HTMLButtonElement>,
+        standId: string
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!isAuthenticated) {
+            localStorage.setItem('redirectAfterLogin', `/events/${eventId}/live?tab=stands&view=grid`);
+            window.location.href = '/auth/login';
+            return;
+        }
+
+        try {
+            setFavoriteAnimatingStandId(standId);
+            const existingFavoriteId = standFavoriteMap.get(standId);
+            if (existingFavoriteId) {
+                await favoritesService.remove(existingFavoriteId);
+                setStandFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    next.delete(standId);
+                    return next;
+                });
+            } else {
+                const created = await favoritesService.add('stand', standId);
+                const favoriteDocId = resolveFavoriteDocId(created);
+                setStandFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    if (favoriteDocId) {
+                        next.set(standId, favoriteDocId);
+                    }
+                    return next;
+                });
+            }
+        } catch (err) {
+            console.error('Failed to toggle stand favorite', err);
+        } finally {
+            window.setTimeout(() => {
+                setFavoriteAnimatingStandId((current) => (current === standId ? null : current));
+            }, 250);
+        }
     };
 
     /* ── Pagination handlers ── */
@@ -286,6 +363,8 @@ export function StandsGrid({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {stands.map((stand) => {
                             const standId = (stand as any).id || (stand as any)._id;
+                            const standIdStr = String(standId || '');
+                            const favoriteId = standIdStr ? (standFavoriteMap.get(standIdStr) ?? null) : null;
                             const bgImage = stand.stand_background_url || stand.logo_url;
                             const resolvedBgImage = resolveMediaUrl(bgImage);
                             const resolvedLogo = resolveMediaUrl(stand.logo_url);
@@ -298,6 +377,22 @@ export function StandsGrid({
                                     className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     style={{ aspectRatio: '4 / 3' }}
                                 >
+                                    {standIdStr && (
+                                        <button
+                                            type="button"
+                                            onClick={(event) => toggleStandFavorite(event, standIdStr)}
+                                            className={`absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-sm transition-all ${
+                                                favoriteId
+                                                    ? 'border-amber-300 bg-amber-50/90 text-amber-700'
+                                                    : 'border-white/70 bg-white/85 text-zinc-700 hover:border-amber-300 hover:text-amber-700'
+                                            }`}
+                                            aria-label={favoriteId ? 'Remove stand from favorites' : 'Add stand to favorites'}
+                                        >
+                                            <Heart className={`h-3.5 w-3.5 transition-transform ${favoriteAnimatingStandId === standIdStr ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
+                                            {favoriteId ? 'Favorited' : 'Favorite'}
+                                        </button>
+                                    )}
+
                                     {/* Background image or gradient fallback */}
                                     {resolvedBgImage ? (
                                         <img
@@ -335,7 +430,7 @@ export function StandsGrid({
 
                                     {/* Top-left logo pill */}
                                     {resolvedLogo && stand.stand_background_url && (
-                                        <div className="absolute top-3 left-3 z-10">
+                                        <div className="absolute top-14 left-3 z-10">
                                             <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
                                                 <img
                                                     src={resolvedLogo}

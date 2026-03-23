@@ -6,7 +6,7 @@ Provides MongoDB-backed event storage and CRUD operations.
 
 import secrets
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Sequence
 
 from bson import ObjectId
 
@@ -14,6 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.modules.events.schemas import EventCreate, EventState, EventUpdate
 from app.db.utils import stringify_object_ids
+from app.core.storage import delete_managed_upload_by_url
 
 # Price per enterprise per event day (configurable)
 PRICE_PER_ENTERPRISE_PER_DAY: float = 50.0
@@ -53,6 +54,7 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "category": data.category or "Exhibition",
         "start_date": data.start_date or now,
         "end_date": data.end_date or now,
+        "event_timezone": data.event_timezone or "UTC",
         "location": data.location or "Virtual Platform",
         "tags": data.tags or [],
         "organizer_name": data.organizer_name,
@@ -95,7 +97,7 @@ async def get_event_by_id(event_id) -> Optional[dict]:
 
 async def list_events(
     organizer_id: Optional[str] = None,
-    state: Optional[EventState] = None,
+    state: Optional[EventState | Sequence[EventState]] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
 ) -> list[dict]:
@@ -109,7 +111,10 @@ async def list_events(
         query["organizer_id"] = str(organizer_id)
     
     if state:
-        query["state"] = state
+        if isinstance(state, (list, tuple, set)):
+            query["state"] = {"$in": [getattr(s, "value", s) for s in state]}
+        else:
+            query["state"] = getattr(state, "value", state)
 
     if category:
         query["category"] = category
@@ -135,13 +140,25 @@ async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
     
     if not update_data:
         return await get_event_by_id(event_id)
+
+    existing = await collection.find_one(_id_query(event_id))
+    if not existing:
+        return None
+
+    previous_banner_url = existing.get("banner_url")
+    banner_changed = "banner_url" in update_data and update_data.get("banner_url") != previous_banner_url
     
     result = await collection.find_one_and_update(
         _id_query(event_id),
         {"$set": update_data},
         return_document=True,
     )
-    return stringify_object_ids(result) if result else None
+    updated = stringify_object_ids(result) if result else None
+
+    if updated and banner_changed and previous_banner_url:
+        delete_managed_upload_by_url(previous_banner_url)
+
+    return updated
 
 
 async def delete_event(event_id) -> bool:

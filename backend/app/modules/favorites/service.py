@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
+from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from app.db.mongo import get_database
@@ -23,6 +24,29 @@ async def list_favorites(user_id: str) -> List[dict]:
 
 async def create_favorite(user_id: str, data: FavoriteCreate) -> dict:
     col = get_favorites_collection()
+
+    db = get_database()
+    target_collection_name = {
+        "event": "events",
+        "stand": "stands",
+        "organization": "organizations",
+    }[data.target_type]
+    target_collection = db[target_collection_name]
+
+    target_queries = [
+        {"_id": data.target_id},
+        {"id": data.target_id},
+    ]
+    if ObjectId.is_valid(data.target_id):
+        target_queries.append({"_id": ObjectId(data.target_id)})
+
+    target_doc = await target_collection.find_one({"$or": target_queries}, {"_id": 1})
+    if not target_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{data.target_type.capitalize()} not found",
+        )
+
     existing = await col.find_one({
         "user_id": str(user_id),
         "target_type": data.target_type,

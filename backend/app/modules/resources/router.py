@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from typing import List, Optional
 import os
-import shutil
-import uuid
 from .schemas import ResourceCreate, ResourceSchema
 from .repository import resource_repo
 from ...core.dependencies import get_current_user
+from ...core.storage import store_upload
 
 router = APIRouter()
 
@@ -21,24 +20,22 @@ async def upload_resource(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    # In production, use S3 or similar. Local storage for now.
-    original_name = os.path.basename(file.filename or "resource.bin")
-    _, ext = os.path.splitext(original_name)
-    safe_name = f"{stand_id}_{uuid.uuid4().hex}{ext}"
-    disk_path = os.path.join(UPLOAD_DIR, safe_name)
-    public_path = f"/uploads/resources/{safe_name}"
-    
-    with open(disk_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    stored = await store_upload(
+        file=file,
+        local_dir=UPLOAD_DIR,
+        local_url_prefix="/uploads/resources",
+        r2_folder="resources",
+        filename_prefix=str(stand_id),
+    )
         
     resource_data = ResourceCreate(
         title=title,
         description=description,
         stand_id=stand_id,
         type=type,
-        file_path=public_path,
-        file_size=os.path.getsize(disk_path),
-        mime_type=file.content_type or "application/octet-stream",
+        file_path=stored["url"],
+        file_size=stored["size"],
+        mime_type=stored["content_type"],
         tags=[]
     )
     

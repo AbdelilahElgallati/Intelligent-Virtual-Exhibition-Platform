@@ -6,9 +6,10 @@ Defines data models for user operations including profile and preferences.
 
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.modules.auth.enums import Role
 
@@ -81,6 +82,7 @@ class UserRead(BaseModel):
     # Profile fields (optional – backward compatible)
     bio: Optional[str] = None
     language: Optional[str] = None
+    timezone: Optional[str] = None
     avatar_url: Optional[str] = None
     professional_info: Optional[ProfessionalInfo] = None
     interests: Optional[list[str]] = None
@@ -89,6 +91,17 @@ class UserRead(BaseModel):
     engagement_settings: Optional[EngagementSettings] = None
     
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
 
 
 class UserUpdate(BaseModel):
@@ -109,6 +122,7 @@ class ProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     language: Optional[str] = None
+    timezone: Optional[str] = None
     avatar_url: Optional[str] = None
     professional_info: Optional[ProfessionalInfo] = None
     interests: Optional[list[str]] = None
@@ -117,3 +131,14 @@ class ProfileUpdate(BaseModel):
     engagement_settings: Optional[EngagementSettings] = None
 
     model_config = {"from_attributes": True}
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value

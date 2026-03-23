@@ -6,13 +6,12 @@ Completely isolated from the existing event payment system.
 import logging
 import math
 import os
-import shutil
-import uuid
 
 import stripe
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
 
 from app.core.config import settings
+from app.core.storage import store_upload
 from app.core.dependencies import get_current_user
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
@@ -149,14 +148,15 @@ async def upload_product_image(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
-    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
-    safe_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(PRODUCT_IMAGE_DIR, safe_name)
+    stored = await store_upload(
+        file=file,
+        local_dir=PRODUCT_IMAGE_DIR,
+        local_url_prefix="/uploads/product_images",
+        r2_folder="product_images",
+        filename_prefix="marketplace",
+    )
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return {"image_url": f"/uploads/product_images/{safe_name}"}
+    return {"image_url": stored["url"]}
 
 
 # ── Stripe & COD Checkout ────────────────────────────────────────────────

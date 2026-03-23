@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from datetime import datetime, timedelta, timezone
 import json
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 from .schemas import MeetingCreate, MeetingUpdate, MeetingSchema, MeetingJoinResponse, BusySlot
 from .repository import meeting_repo
 from ...core.dependencies import get_current_user
@@ -59,7 +60,7 @@ def _parse_hhmm_to_minutes(value: Optional[str]) -> Optional[int]:
     if not value or ":" not in value:
         return None
     try:
-        h_str, m_str = value.split(":", 1)
+        h_str, m_str = str(value).split(":", 1)
         h = int(h_str)
         m = int(m_str)
         if h < 0 or h > 23 or m < 0 or m > 59:
@@ -86,17 +87,26 @@ def _extract_schedule_days(event: dict) -> list[dict]:
 
 
 def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
+    if str(event.get("state") or "").lower() == "closed":
+        return False
+
     days = _extract_schedule_days(event)
     start_date = _to_utc_datetime(event.get("start_date"))
 
     if days and start_date:
-        base = datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
+        tz_name = str(event.get("event_timezone") or "UTC")
+        try:
+            event_tz = ZoneInfo(tz_name)
+        except Exception:
+            event_tz = timezone.utc
+
+        base_local_date = start_date.astimezone(event_tz).date()
         windows: list[tuple[datetime, datetime]] = []
 
         for idx, day in enumerate(days):
             day_num = int(day.get("day_number") or (idx + 1))
             day_offset = max(0, day_num - 1)
-            day_date = base + timedelta(days=day_offset)
+            day_date = base_local_date + timedelta(days=day_offset)
 
             for slot in day.get("slots") or []:
                 start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
@@ -104,8 +114,10 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
                 if start_minutes is None or end_minutes is None or end_minutes <= start_minutes:
                     continue
 
-                slot_start = day_date + timedelta(minutes=start_minutes)
-                slot_end = day_date + timedelta(minutes=end_minutes)
+                slot_start_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_minutes or 0))
+                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(end_minutes or 0))
+                slot_start = slot_start_local.astimezone(timezone.utc)
+                slot_end = slot_end_local.astimezone(timezone.utc)
                 windows.append((slot_start, slot_end))
 
         if windows:

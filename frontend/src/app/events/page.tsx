@@ -11,13 +11,17 @@ import { useAuth } from '@/context/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { favoritesService } from '@/services/favorites.service';
 
 type TimelineFilter = 'all' | 'live' | 'in_progress' | 'upcoming' | 'ended' | 'timeline_tbd';
+const PUBLIC_VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
 
 export default function EventsPage() {
     const { isAuthenticated } = useAuth();
     const [events, setEvents] = useState<Event[]>([]);
     const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
+    const [favoriteMap, setFavoriteMap] = useState<Map<string, string>>(new Map());
+    const [favoriteAnimatingEventId, setFavoriteAnimatingEventId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
@@ -33,11 +37,19 @@ export default function EventsPage() {
                 const joinedPromise = isAuthenticated
                     ? apiClient.get<any>(ENDPOINTS.EVENTS.JOINED).catch(() => ({ items: [] }))
                     : Promise.resolve({ items: [] });
+                const favoritesPromise = isAuthenticated
+                    ? favoritesService.list().catch(() => [])
+                    : Promise.resolve([]);
 
-                const [eventsResponse, joinedResponse] = await Promise.all([eventsPromise, joinedPromise]);
+                const [eventsResponse, joinedResponse, favoritesResponse] = await Promise.all([
+                    eventsPromise,
+                    joinedPromise,
+                    favoritesPromise,
+                ]);
 
                 const allEvents = (eventsResponse as any).items || (eventsResponse as any).events || [];
-                setEvents(allEvents);
+                const visibleEvents = (allEvents as Event[]).filter((ev) => PUBLIC_VISIBLE_STATES.has(String((ev as any).state || '')));
+                setEvents(visibleEvents);
 
                 const joinedItems = (joinedResponse as any).items || (joinedResponse as any).events || [];
                 const joinedSet = new Set<string>(
@@ -46,6 +58,21 @@ export default function EventsPage() {
                         .filter((id) => id.length > 0)
                 );
                 setRegisteredEventIds(joinedSet);
+
+                if (Array.isArray(favoritesResponse)) {
+                    const nextMap = new Map<string, string>();
+                    favoritesResponse
+                        .filter((fav: any) => fav?.target_type === 'event' && typeof fav?.target_id === 'string')
+                        .forEach((fav: any) => {
+                            const resolvedFavoriteId = String(fav?.id || fav?._id || '');
+                            if (resolvedFavoriteId) {
+                                nextMap.set(String(fav.target_id), resolvedFavoriteId);
+                            }
+                        });
+                    setFavoriteMap(nextMap);
+                } else {
+                    setFavoriteMap(new Map());
+                }
             } catch (err) {
                 console.error('Failed to fetch events', err);
                 setError('Could not load events. Please try again later.');
@@ -66,6 +93,36 @@ export default function EventsPage() {
 
         fetchEvents();
     }, [isAuthenticated]);
+
+    const handleToggleFavorite = async (eventId: string) => {
+        if (!eventId || !isAuthenticated) {
+            return;
+        }
+
+        try {
+            setFavoriteAnimatingEventId(eventId);
+            const existingFavoriteId = favoriteMap.get(eventId);
+            if (existingFavoriteId) {
+                await favoritesService.remove(existingFavoriteId);
+                setFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    next.delete(eventId);
+                    return next;
+                });
+            } else {
+                const created = await favoritesService.add('event', eventId);
+                setFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    next.set(eventId, created.id);
+                    return next;
+                });
+            }
+        } catch (err) {
+            console.error('Failed to toggle event favorite', err);
+        } finally {
+            window.setTimeout(() => setFavoriteAnimatingEventId((current) => (current === eventId ? null : current)), 250);
+        }
+    };
 
     const normalizedCategory = category.trim().toLowerCase();
 
@@ -147,6 +204,9 @@ export default function EventsPage() {
                     events={filteredEvents}
                     isLoading={isLoading}
                     registeredEventIds={isAuthenticated ? registeredEventIds : undefined}
+                    favoriteMap={favoriteMap}
+                    favoriteAnimatingEventId={favoriteAnimatingEventId}
+                    onToggleFavorite={handleToggleFavorite}
                 />
             </Container>
         </div>

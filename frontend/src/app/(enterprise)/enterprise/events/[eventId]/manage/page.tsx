@@ -328,6 +328,7 @@ export default function EventManagementHub() {
     const [isSubmittingMeeting, setIsSubmittingMeeting] = useState(false);
     const [meetingFilter, setMeetingFilter] = useState<'all' | 'upcoming' | 'live' | 'past'>('all');
     const [eventData, setEventData] = useState<OrganizerEvent | null>(null);
+    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
     const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [meetingError, setMeetingError] = useState<string | null>(null);
@@ -654,6 +655,14 @@ export default function EventManagementHub() {
         setLastSeenByRoom((prev) => ({ ...prev, [selectedRoomId]: lastMessageTime }));
     }, [allRooms, selectedRoomId]);
 
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setTimelineNow(Date.now());
+        }, 30000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
     const unreadByRoomId = useMemo(() => {
         return allRooms.reduce<Record<string, number>>((acc, room) => {
             const roomId = room.id || room._id;
@@ -671,9 +680,8 @@ export default function EventManagementHub() {
     // ── Event Timeline Gating ─────────────────────────────────────────────
     const eventTimeline = useMemo(() => {
         if (!eventData) return null;
-        const now = Date.now();
         const state = eventData.state;
-        const lifecycle = getEventLifecycle(eventData);
+        const lifecycle = getEventLifecycle(eventData, new Date(timelineNow));
 
         if (state === 'closed') {
             return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
@@ -712,7 +720,15 @@ export default function EventManagementHub() {
             };
         }
         return { gate: 'not-ready' as const, title: eventData.title, state };
-    }, [eventData]);
+    }, [eventData, timelineNow]);
+
+    useEffect(() => {
+        if (!eventTimeline || eventTimeline.gate !== 'ended') return;
+        const timer = window.setTimeout(() => {
+            router.replace('/enterprise/events?event_ended=true');
+        }, 2500);
+        return () => window.clearTimeout(timer);
+    }, [eventTimeline, router]);
 
     if (isLoading && !stand && !isForbidden) {
         return (
@@ -844,9 +860,12 @@ export default function EventManagementHub() {
                     This exhibition has concluded. Meeting rooms, live chats, and conference sessions are no longer available.
                     Thank you for your participation.
                 </p>
+                <p className="text-sm font-medium text-zinc-500 mb-6">
+                    Redirecting you back to your enterprise events dashboard...
+                </p>
 
                 {/* Event period */}
-                <div className="flex items-center gap-3 text-sm text-zinc-400 mb-10">
+                <div className="flex items-center gap-3 text-sm text-zinc-400 mb-8">
                     <Calendar size={14} />
                     <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     <ArrowRight size={14} />
