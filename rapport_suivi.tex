@@ -1,0 +1,202 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+\definecolor{primary}{RGB}{0, 75, 150}
+\definecolor{databasebg}{RGB}{200, 220, 240}
+\definecolor{processbg}{RGB}{240, 240, 240}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=magenta,      
+    urlcolor=primary,
+    pdftitle={Rapport d'Avancement - IVEP},
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    \Huge
+    \textbf{\textcolor{primary}{Rapport d'État d'Avancement}}
+    
+    \vspace{0.5cm}
+    \LARGE
+    Plateforme d'Exposition Virtuelle Intelligente (IVEP)
+    
+    \vspace{1.5cm}
+    
+    \Large
+    \textbf{Auteur :} Abdelilah Elgallati \\
+    \textbf{Période couverte :} Février 2026 - Mars 2026
+    
+    \vfill
+    
+    \normalsize
+    \textbf{Soumis au Coordinateur du Projet} \\
+    \vspace{0.8cm}
+    \Large Mars 2026
+    
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Introduction et Rappel de la Vision}
+Initié au début du mois de février, le projet de Plateforme d'Exposition Virtuelle Intelligente a pour vision de révolutionner l'organisation des événements et salons virtuels. L'objectif global (tel que défini dans le document d'exigences initial) était de concevoir un système B2B/B2C intelligent permettant aux entreprises de déployer des stands virtuels engageants, d'exposer leurs produits et d'interagir en temps réel avec des visiteurs mondiaux.
+
+Après plusieurs itérations d'ingénierie logicielle, nous présentons aujourd'hui le premier déploiement complet en production cloud (Proof of Concept Validé), couplant une infrastructure backend résiliente et des interfaces dynamiques.
+
+\section{Architecture Technique et Flux de Données}
+Le point fort de ce mois de mars réside dans l'industrialisation de notre code. L'application a dépassé le stade de prototype local et est actuellement fonctionnelle "Live" grâce à une architecture logicielle moderne et distribuée. 
+
+\subsection{Schéma d'Architecture Global}
+Ce schéma illustre la disposition actuelle des microservices et le flux des données (Le Front-end dialogue de manière sécurisée avec le Nginx Proxy, qui redirige la charge sur l'API Python connectée à Atlas et au stockage).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2cm, auto]
+    % Définition des styles
+    \tikzstyle{process} = [rectangle, minimum width=4cm, minimum height=1cm, text centered, draw=black, fill=processbg, rounded corners=3mm]
+    \tikzstyle{database} = [cylinder, shape border rotate=90, aspect=0.25, draw=black, fill=databasebg, text centered, minimum width=2.5cm, minimum height=2cm]
+    \tikzstyle{arrow} = [thick,->,>=stealth]
+
+    % Noeuds
+    \node (frontend) [process] {Frontend Vercel (Next.js)};
+    \node (nginx) [process, below of=frontend, yshift=-1.5cm] {Proxy Nginx (Hetzner VPS)};
+    \node (backend) [process, below of=nginx, yshift=-1.5cm] {Backend FastAPI (PM2)};
+    \node (db) [database, right of=backend, xshift=5cm] {MongoDB Atlas M10};
+    \node (storage) [database, left of=backend, xshift=-5cm, fill=orange!20] {Cloudflare R2 (S3)};
+    \node (stripe) [process, right of=nginx, xshift=5cm, fill=green!10] {Stripe / Daily.co APIs};
+
+    % Flèches
+    \draw [arrow] (frontend) -- node[align=center] {Requêtes HTTPS \\ (API Calls)} (nginx);
+    \draw [arrow] (nginx) -- node[align=center] {Proxy inverse \\ (127.0.0.1:8000)} (backend);
+    \draw [arrow] (backend) -- node[above] {Requêtes NoSQL} (db);
+    \draw [arrow] (backend) -- node[above] {Stockage Objets / Médias} (storage);
+    \draw [arrow, <->] (backend) -- node[right, align=left] {Webhooks \& \\ Signature Tokens} (stripe);
+
+\end{tikzpicture}
+\caption{Diagramme de Déploiement Cloud et Architecture Serveur}
+\end{figure}
+
+\newpage
+\section{Fonctionnalités "Full-Stack" Développées}
+La plateforme prend désormais en charge un écosystème multi-rôles hautement sécurisé (Administrateurs, Organisateurs, Entreprises et Visiteurs). 
+
+\begin{itemize}
+    \item \textbf{Système événementiel et Rôles :} Création d'événements, système de soumission de stands par les entreprises, et flux d'approbation asynchrone par les organisateurs.
+    \item \textbf{Transactions et Billetterie :} Intégration robuste de \textbf{Stripe} pour les achats de tickets et le Marketplace (actuellement en environnement de test sécurisé avec \textit{Global Webhooks}).
+    \item \textbf{Communication Temps Réel :} Implémentation réussie de la visioconférence (Daily.co) permettant des webinaires hôtes-visiteurs et des meetings privés B2B sans quitter le navigateur.
+\end{itemize}
+
+\section{Prochaine Phase du Projet : Data Science et Intelligence Artificielle}
+L'architecture de base, la sécurité et le déploiement serveur étant désormais industrialisés, **le reste du projet va se concentrer intensivement sur la dimension "Data Science" de la vision initiale.**
+
+Ces systèmes d'IA (actuellement en phase de modélisation) incluront :
+
+\begin{enumerate}
+    \item \textbf{Le Modèle RAG (Retrieval-Augmented Generation) et Traitement NLP :} \\
+    Développement d'un assistant virtuel capable de raisonner dynamiquement sur les bases documentaires des expositions (récupération de contexte dans les brochures des entreprises, horaires des conférences, FAQs) pour fournir des réponses instantanées et précises aux visiteurs via un Chatbot intelligent.
+    
+    \item \textbf{Système de Recommandation Algorithmique (Machine Learning) :} \\
+    Conception de modèles de filtrage collaboratif et basé sur le contenu (Content-Based Filtering) analysant les profils des utilisateurs et leurs interactions (les stands visités, le temps passé, leurs favoris) pour générer du matchmaking B2B qualifié et suggérer des produits pertinents.
+    
+    \item \textbf{Modèles de Traduction Automatique (Barrier-Free Global Platform) :} \\
+    Intégration d'outils de traduction générative pour casser la barrière des langues entre les exposants et les visiteurs internationaux (traductions textuelles en direct sur les salons de chat ou transcription de conférences).
+\end{enumerate}
+
+\section{Démonstration Visuelle (Interface Utilisateur)}
+
+\begin{figure}[h]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{home_page.png}
+    \vspace{4cm} % Remplacer l'espace vertical par l'insertion d'image
+    \caption{Interface de navigation des Événements et Salons sur Vercel}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{dashboard.png}
+    \vspace{4cm}
+    \caption{Tableau de bord d'Analyse (Dashboard Administrateur)}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    % \includegraphics[width=0.85\textwidth]{payment.png}
+    \vspace{4cm}
+    \caption{Intégration réussie de la session e-commerce et tunnel de paiement (Stripe Checkout)}
+\end{figure}
+
+\section{Modélisation des Processus Métiers (Workflows)}
+Afin de détailler la logique fonctionnelle de la plateforme à votre coordinateur, voici les arbres de décision et les flux d'état (State Machines) des entités principales que nous avons codés.
+
+\subsection{Cycle de Vie d'un Événement (Event Lifecycle)}
+Ce diagramme illustre le processus de validation (Workflow Asynchrone) par lequel un organisateur doit passer avant qu'un salon virtuel ne soit accessible au public.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2.5cm, auto]
+    \tikzstyle{state} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!10]
+    \tikzstyle{admin} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=red, fill=red!10, dashed]
+    \tikzstyle{arrow} = [thick,->,>=stealth]
+
+    \node (draft) [state] {1. Brouillon (Draft)};
+    \node (review) [state, right of=draft, xshift=2cm] {2. En relecture (Pending)};
+    \node (publish) [admin, below of=review, yshift=-0.5cm] {3. Approuvé (Published)};
+    \node (live) [state, left of=publish, xshift=-2cm, fill=green!20] {4. En Direct (Live)};
+    \node (closed) [state, below of=live, yshift=-0.5cm, fill=gray!20] {5. Clôturé (Archived)};
+
+    \draw [arrow] (draft) -- node[above] {Soumission} (review);
+    \draw [arrow] (review) -- node[right] {Validation Admin} (publish);
+    \draw [arrow] (publish) -- node[above] {Date 'Start' atteinte} (live);
+    \draw [arrow] (live) -- node[left] {Date 'End' atteinte} (closed);
+\end{tikzpicture}
+\caption{State Machine du Cycle de Vie d'un Salon Virtuel}
+\end{figure}
+
+\subsection{Parcours Utilisateur (User Journey) : Visiteurs et B2B Meetings}
+Le parcours d'un visiteur est optimisé pour maximiser l'engagement (achats, networking, et conférences). Ce flux montre l'intégration entre notre base de données et les APIs externes.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2.5cm, auto]
+    \tikzstyle{user} = [ellipse, draw=black, fill=yellow!20, minimum height=1cm, text centered]
+    \tikzstyle{action} = [rectangle, draw=black, fill=processbg, minimum width=3cm, minimum height=1cm, text centered]
+    \tikzstyle{integration} = [rectangle, draw=black, fill=green!10, minimum width=3cm, minimum height=1cm, text centered]
+    \tikzstyle{arrow} = [thick,->,>=stealth]
+
+    \node (start) [user] {Visiteur};
+    \node (pay) [integration, right of=start, xshift=2.5cm] {Achat Ticket (Stripe API)};
+    \node (enter) [action, right of=pay, xshift=2.5cm] {Accès Événement Live};
+    \node (stand) [action, below of=enter, yshift=-0.5cm] {Visite d'un Stand Exposant};
+    \node (meeting) [action, left of=stand, xshift=-2.5cm] {Demande Meeting B2B};
+    \node (video) [integration, left of=meeting, xshift=-2.5cm] {Visioconférence (Daily.co)};
+
+    \draw [arrow] (start) -- (pay);
+    \draw [arrow] (pay) -- (enter);
+    \draw [arrow] (enter) -- (stand);
+    \draw [arrow] (stand) -- (meeting);
+    \draw [arrow] (meeting) -- node[above] {Si Approuvé} (video);
+\end{tikzpicture}
+\caption{Entonnoir de conversion, Accès et Networking B2B}
+\end{figure}
+
+\section{Conclusion}
+Le système central garantit désormais la stabilité, la sécurité des communications (WSS/HTTPS) et la fluidité requises pour une exposition virtuelle. L'intégration planifiée des algorithmes de Data Science finalisera l'aspect "Intelligente" (Intelligence Artificielle de la plateforme), ouvrant la plateforme à son lancement définitif.
+
+\end{document}

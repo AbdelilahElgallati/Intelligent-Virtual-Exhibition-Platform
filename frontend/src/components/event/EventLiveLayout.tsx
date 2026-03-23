@@ -76,7 +76,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
     }, [event, eventId, lifecycle, router]);
 
     if (loading) return <LoadingState message="Loading event..." />;
-    if (!event) return <div className="text-center py-20 text-gray-500">Event not found</div>;
+    if (!event || !lifecycle) return <div className="text-center py-20 text-gray-500">Event not found or timeline unavailable</div>;
 
     const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';

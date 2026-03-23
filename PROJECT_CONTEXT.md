@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT.md - Intelligent Virtual Exhibition Platform (IVEP)
 
-Generated: 2026-03-18
-Purpose: Full, code-verified project context snapshot up to current state, including latest modifications.
+Generated: 2026-03-23
+Purpose: Full, code-verified project context snapshot up to current state, including the latest production deployment architecture and API provider swaps.
 
 ---
 
@@ -33,7 +33,6 @@ Main workspace root:
 - `PROJECT_CONTEXT.md` - this context file
 - `backend_api_guide.md`, `backend_implementation_details.md`, `discution_about_project.md`
 - `fix_*.py` helper/fix scripts used during iterative maintenance
-- `livekit_1.9.12_windows_amd64/` binaries
 - `Ressources/`
 
 Backend notable folders:
@@ -54,11 +53,11 @@ Frontend notable folders:
 ### Backend
 - Python 3.10+
 - FastAPI + Uvicorn
-- MongoDB (async access)
-- Redis (optional/cache-related flows)
+- MongoDB (async access, M10 Atlas cluster)
 - JWT auth + RBAC
-- Stripe for payments (event ticket + marketplace checkout)
-- LiveKit-related integration modules
+- Stripe for payments (event ticket + marketplace checkout, Test Keys)
+- Daily.co integration for real-time video/conferences
+- Cloudflare R2 integration for bucket storage
 - AI stack components for RAG, translation, transcription
 
 ### Frontend
@@ -67,6 +66,17 @@ Frontend notable folders:
 - Tailwind CSS + component system
 - Client API/service layer abstraction
 - Pages for public, admin, organizer, and enterprise experiences
+
+---
+
+## 3.5) Production Deployment Architecture
+
+- **Frontend:** Deployed on Vercel Edge Network (`NEXT_PUBLIC_API_URL` pointing to backend).
+- **Backend:** Deployed on Hetzner Cloud VPS (Ubuntu). Python environment managed via `venv` and processes daemonized using **PM2** (`pm2 start uvicorn`). Exposed securely via **Nginx** reverse proxy and Certbot SSL.
+- **Database:** MongoDB Atlas (M10 Dedicated Cluster).
+- **Storage:** Cloudflare R2 (S3/boto3 integration).
+- **Video API:** Daily.co (Switched seamlessly from LiveKit).
+- **Payments:** Stripe (Webhook configured fully globally on `/api/v1/webhook`).
 
 ---
 
@@ -155,7 +165,6 @@ Modules present in `backend/app/modules/`:
 - favorites
 - incidents
 - leads
-- livekit
 - marketplace
 - meetings
 - monitoring
@@ -191,8 +200,8 @@ Router coverage:
 
 ### Payments
 - Event ticket checkout and verification endpoints in payments module
-- Marketplace checkout and webhook handling in marketplace module
-- Stripe-backed payment sessions and payment status checks
+- Global webhook endpoint (`/webhook`) handling Stripe `checkout.session.completed` events
+- Stripe-backed payment sessions and payment status checks (using Test API keys)
 
 ### Enterprise Ecosystem
 - Enterprise profile and media management
@@ -398,11 +407,11 @@ Module: `backend/app/modules/transcripts`
 - supported languages endpoint
 - websocket live transcription route
 
-### Conferences and Meetings (LiveKit)
+### Conferences and Meetings (Daily.co)
 
 - conference host/audience token generation
-- conference room lifecycle integration with LiveKit
-- meeting token/start/end endpoints in meetings module
+- conference room lifecycle integration utilizing Daily.co REST API
+- meeting generation/start/end endpoints in meetings module
 
 ---
 
@@ -498,4 +507,4 @@ frontend/
 
 ---
 
-This document reflects the workspace state verified from source files on 2026-03-15.
+This document reflects the workspace state verified from source files on 2026-03-23, including the final production deployment configuration.
