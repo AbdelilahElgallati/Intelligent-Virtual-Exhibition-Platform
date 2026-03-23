@@ -226,7 +226,7 @@ async def get_my_events_as_organizer(
     return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
-@router.post("/", response_model=EventRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
 async def submit_event_request(
     data: EventCreate,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
@@ -262,7 +262,7 @@ async def get_all_events_for_admin(
     return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
-@router.get("/", response_model=EventsResponse)
+@router.get("", response_model=EventsResponse)
 async def get_all_events(
     organizer_id: Optional[str] = None,
     state: Optional[EventState] = None,
