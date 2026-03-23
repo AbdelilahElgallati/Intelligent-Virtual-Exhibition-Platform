@@ -1,11 +1,9 @@
 export const API_BASE_URL = (() => {
   let url = (process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:8000').replace(/\/$/, '');
-  
-  // Security fallback: If site is HTTPS, force the API to also be HTTPS
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http:')) {
+  // Force HTTPS for any real (non-localhost) API endpoint
+  if (!url.includes('localhost') && !url.includes('127.0.0.1') && url.startsWith('http:')) {
     url = url.replace('http:', 'https:');
   }
-  
   return url;
 })();
 export const API_PREFIX = '/api/v1';
