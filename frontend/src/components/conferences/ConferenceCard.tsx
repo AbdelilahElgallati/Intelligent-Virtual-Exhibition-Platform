@@ -5,6 +5,7 @@ import { Conference } from '@/types/conference';
 import { useRouter } from 'next/navigation';
 import { Users, Clock } from 'lucide-react';
 import { formatInTZ } from '@/lib/timezone';
+import clsx from 'clsx';
 
 interface ConferenceCardProps {
     conference: Conference;

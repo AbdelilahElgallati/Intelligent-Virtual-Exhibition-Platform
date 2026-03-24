@@ -1,4 +1,12 @@
+import { useEffect, useState } from 'react';
 import { formatInTZ } from '@/lib/timezone';
+import { Event } from '@/types/event';
+import { Stand, StandsListResponse } from '@/types/stand';
+import { apiClient } from '@/lib/api/client';
+import { ENDPOINTS } from '@/lib/api/endpoints';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { Briefcase, Calendar, Clock, ExternalLink, Mail, Search, Sparkles, Users, X } from 'lucide-react';
 
 /* ── Types ── */
 
