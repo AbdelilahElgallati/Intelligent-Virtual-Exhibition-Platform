@@ -44,6 +44,7 @@ import {
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
 
@@ -514,18 +515,16 @@ export default function EventManagementHub() {
     }, [eventData]);
 
     const getDateTimeValue = useCallback((dateStr: string, time: string) => {
-        return new Date(`${dateStr}T${time}:00`).getTime();
-    }, []);
+        return fromZonedTime(`${dateStr}T${time}:00`, eventData?.event_timezone || 'UTC').getTime();
+    }, [eventData?.event_timezone]);
 
     const isPastDate = useCallback((dateStr: string) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const target = new Date(`${dateStr}T00:00:00`);
-        return target.getTime() < today.getTime();
-    }, []);
+        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, eventData?.event_timezone || 'UTC').getTime();
+        return targetEndOfDay < Date.now();
+    }, [eventData?.event_timezone]);
 
     const isPastDateTime = useCallback((dateStr: string, time: string) => {
-        return getDateTimeValue(dateStr, time) <= Date.now();
+        return getDateTimeValue(dateStr, time) <= Date.now() + 30000;
     }, [getDateTimeValue]);
 
     const dayAvailability = useMemo(() => {
@@ -611,8 +610,9 @@ export default function EventManagementHub() {
         setIsSubmittingMeeting(true);
         setMeetingError(null);
         try {
-            const start = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
-            const end = new Date(`${meetingForm.date}T${meetingForm.endTime}:00`);
+            const timeZone = eventData?.event_timezone || 'UTC';
+            const start = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, timeZone);
+            const end = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, timeZone);
 
             await http.post('/meetings/', {
                 visitor_id: user?._id || user?.id || "SELF",
@@ -1171,7 +1171,7 @@ export default function EventManagementHub() {
                         {filtered.map((m) => {
                             const tl = m._tl;
                             const TlIcon = tl.icon;
-                            const canJoin = m.status === 'approved' && (tl.status === 'live' || tl.status === 'starting-soon');
+                            const canJoin = (m.status === 'approved' || m.session_status === 'live') && (tl.status === 'live' || tl.status === 'starting-soon');
                             const isExpired = tl.status === 'expired';
                             const isPast = tl.status === 'ended' || isExpired;
 
@@ -1234,13 +1234,13 @@ export default function EventManagementHub() {
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar size={11} />
-                                                        {new Date(m.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                        {formatInTimeZone(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'MMM d, yyyy')}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Clock size={11} />
-                                                        {new Date(m.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {formatInTimeZone(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
                                                         <ArrowRight size={10} />
-                                                        {new Date(m.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {formatInTimeZone(new Date(m.end_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Building2 size={11} />

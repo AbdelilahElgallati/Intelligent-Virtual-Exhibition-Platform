@@ -311,6 +311,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 eventStartDate={eventData?.start_date}
                 eventEndDate={eventData?.end_date}
                 scheduleDays={eventData?.schedule_days}
+                eventTimeZone={eventData?.event_timezone}
             />
         </>
     );

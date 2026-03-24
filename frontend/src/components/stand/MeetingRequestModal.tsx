@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { EventScheduleDay } from '@/types/event';
 import { Meeting } from '@/types/meeting';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 interface MeetingRequestModalProps {
     isOpen: boolean;
@@ -33,6 +34,7 @@ interface MeetingRequestModalProps {
     eventStartDate?: string;
     eventEndDate?: string;
     scheduleDays?: EventScheduleDay[];
+    eventTimeZone?: string;
 }
 
 interface BusySlot {
@@ -144,6 +146,7 @@ export function MeetingRequestModal({
     eventStartDate,
     eventEndDate,
     scheduleDays,
+    eventTimeZone = 'UTC',
 }: MeetingRequestModalProps) {
     const router = useRouter();
     const [activeView, setActiveView] = useState<'list' | 'request'>('list');
@@ -198,6 +201,12 @@ export function MeetingRequestModal({
         setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
         fetchMeetings();
         fetchBusySlots();
+
+        const interval = setInterval(() => {
+            fetchMeetings();
+        }, 10000);
+        
+        return () => clearInterval(interval);
     }, [isOpen, fetchMeetings, fetchBusySlots]);
 
     const nowIsoDate = useMemo(() => formatLocalDate(new Date()), []);
@@ -235,15 +244,13 @@ export function MeetingRequestModal({
     }, [eventStartDate, eventEndDate, scheduleDays]);
 
     const getDateTimeValue = useCallback((dateStr: string, time: string) => {
-        return new Date(`${dateStr}T${time}:00`).getTime();
-    }, []);
+        return fromZonedTime(`${dateStr}T${time}:00`, eventTimeZone).getTime();
+    }, [eventTimeZone]);
 
     const isPastDate = useCallback((dateStr: string) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const target = new Date(`${dateStr}T00:00:00`);
-        return target.getTime() < today.getTime();
-    }, []);
+        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, eventTimeZone).getTime();
+        return targetEndOfDay < Date.now();
+    }, [eventTimeZone]);
 
     const isPastDateTime = useCallback((dateStr: string, time: string) => {
         return getDateTimeValue(dateStr, time) <= Date.now() + 30000;
@@ -350,11 +357,11 @@ export function MeetingRequestModal({
                 throw new Error('Please select date and time');
             }
 
-            const startTime = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
-            const endTime = new Date(`${meetingForm.date}T${meetingForm.endTime}:00`);
+            const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, eventTimeZone);
+            const endTime = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, eventTimeZone);
             const now = Date.now();
 
-            if (!(startTime instanceof Date) || Number.isNaN(startTime.getTime())) {
+            if (!startTime || Number.isNaN(startTime.getTime())) {
                 throw new Error('Invalid meeting start time');
             }
             if (startTime.getTime() <= now + 30000) {
@@ -403,7 +410,7 @@ export function MeetingRequestModal({
                 <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
                     <div>
                         <h3 className="font-bold text-gray-900">Meetings with {standName}</h3>
-                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints</p>
+                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints • Times shown in {eventTimeZone}</p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X size={20} />
@@ -457,7 +464,7 @@ export function MeetingRequestModal({
                                 categorizedMeetings.map((m) => {
                                     const tl = m.timeline;
                                     const TlIcon = tl.icon;
-                                    const canJoin = m.status === 'approved' && (tl.status === 'live' || tl.status === 'starting-soon');
+                                    const canJoin = (m.status === 'approved' || m.session_status === 'live') && (tl.status === 'live' || tl.status === 'starting-soon');
                                     const canCancel = (m.status === 'pending' || m.status === 'approved') && tl.status !== 'ended' && tl.status !== 'expired';
 
                                     return (
@@ -480,11 +487,11 @@ export function MeetingRequestModal({
                                                     </div>
                                                     <p className="text-sm font-semibold text-zinc-900">{m.purpose || 'General discussion'}</p>
                                                     <p className="text-xs text-zinc-500 mt-1">
-                                                        {new Date(m.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                        {formatInTimeZone(new Date(m.start_time), eventTimeZone, 'MMM d, yyyy')}
                                                         {' · '}
-                                                        {new Date(m.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {formatInTimeZone(new Date(m.start_time), eventTimeZone, 'h:mm a')}
                                                         {' - '}
-                                                        {new Date(m.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {formatInTimeZone(new Date(m.end_time), eventTimeZone, 'h:mm a')}
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-2 w-full md:w-auto">
