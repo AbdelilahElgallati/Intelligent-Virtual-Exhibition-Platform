@@ -9,6 +9,8 @@ import {
 
 interface MediaGridProps {
   participants: DailyParticipant[];
+  /** Layout type: 'meeting' (1:1/group) or 'conference' (presenter-led) */
+  layout?: 'meeting' | 'conference';
   /** If true, maximizes any active screen share */
   prominentScreenShare?: boolean;
 }
@@ -22,9 +24,11 @@ interface MediaTileProps {
   isAudioOn: boolean;
   isVideoOn: boolean;
   isScreen?: boolean;
+  /** 'cover' for cameras, 'contain' for screens */
+  objectFit?: 'cover' | 'contain';
 }
 
-function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen }: MediaTileProps) {
+function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit }: MediaTileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -54,10 +58,12 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen }:
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  const fit = objectFit || (isScreen ? 'contain' : 'cover');
+
   return (
     <div
       ref={containerRef}
-      className="relative bg-zinc-900 rounded-xl overflow-hidden border border-white/5 group"
+      className={`relative bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 group shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none border-none' : ''}`}
       style={{ width: '100%', height: '100%' }}
     >
       {track ? (
@@ -66,53 +72,60 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen }:
           autoPlay
           playsInline
           muted={isLocal}
-          className={`w-full h-full ${isScreen ? 'object-contain bg-black' : 'object-cover'}`}
+          className={`w-full h-full ${fit} ${isScreen ? 'bg-black' : ''}`}
         />
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-zinc-950">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-            {userName.charAt(0).toUpperCase()}
+        <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-[#0a0a0f]">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white text-3xl font-bold shadow-[0_0_30px_rgba(79,70,229,0.3)]">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            {!isAudioOn && (
+              <div className="absolute -bottom-1 -right-1 p-1.5 bg-red-500 rounded-full border-2 border-[#0a0a0f] text-white">
+                <MicOff size={12} />
+              </div>
+            )}
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-zinc-200 font-medium text-sm">{userName}</span>
-            <span className="text-zinc-500 text-[10px] uppercase tracking-widest mt-1">
-              {isScreen ? 'Screen share starting...' : 'Camera is off'}
+          <div className="flex flex-col items-center text-center px-4">
+            <span className="text-zinc-100 font-semibold tracking-tight">{userName}</span>
+            <span className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mt-1 font-medium op-70">
+              {isScreen ? 'Screen shared' : 'Stream Paused'}
             </span>
           </div>
         </div>
       )}
 
-      {/* Overlays */}
-      <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Modern Glass Overlays */}
+      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0 duration-300">
         <button
           onClick={toggleFullscreen}
-          className="p-2 rounded-lg bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-colors"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          className="p-2.5 rounded-xl bg-black/40 backdrop-blur-xl text-white border border-white/10 hover:bg-black/60 hover:scale-105 active:scale-95 transition-all"
         >
-          {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
         </button>
       </div>
 
-      <div className="absolute bottom-3 left-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/5">
-        {!isAudioOn && <MicOff size={12} className="text-red-500" />}
-        {isScreen && <ScreenShare size={12} className="text-indigo-400" />}
-        <span className="text-[11px] font-medium text-white truncate max-w-[120px]">
-          {userName} {isLocal && '(You)'} {isScreen && '· Screen'}
-        </span>
+      <div className="absolute bottom-4 left-4 flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg">
+        <div className="flex items-center gap-1.5">
+          {!isAudioOn && <MicOff size={13} className="text-red-400" />}
+          {isScreen && <ScreenShare size={13} className="text-indigo-400" />}
+          <span className="text-xs font-semibold text-zinc-100 tracking-tight">
+            {userName} {isLocal && <span className="text-white/40 ml-1 font-normal">(You)</span>}
+          </span>
+        </div>
       </div>
+      
+      {/* Decorative border glow for active speakers could go here */}
     </div>
   );
 }
 
 // ── Main Grid ──────────────────────────────────────────────────────────────
 
-export default function MediaGrid({ participants, prominentScreenShare = true }: MediaGridProps) {
-  // Flatten participants into individual media items (Camera and/or Screen)
+export default function MediaGrid({ participants, layout = 'meeting', prominentScreenShare = true }: MediaGridProps) {
   const items = useMemo(() => {
     const list: (MediaTileProps & { id: string })[] = [];
-    
     participants.forEach((p) => {
-      // 1. Camera Track
       list.push({
         id: `${p.sessionId}-cam`,
         track: p.videoTrack,
@@ -122,40 +135,51 @@ export default function MediaGrid({ participants, prominentScreenShare = true }:
         isVideoOn: p.videoOn,
         isScreen: false,
       });
-
-      // 2. Screen Share Track (if active)
       if (p.screenVideoTrack) {
         list.push({
           id: `${p.sessionId}-screen`,
           track: p.screenVideoTrack,
           userName: p.userName,
           isLocal: p.local,
-          isAudioOn: p.audioOn, // usually screen audio is separate, but we link to user state
+          isAudioOn: p.audioOn,
           isVideoOn: true,
           isScreen: true,
         });
       }
     });
-
     return list;
   }, [participants]);
 
   const screenShareItem = items.find(item => item.isScreen);
   const otherItems = items.filter(item => item !== screenShareItem);
 
-  // If there's a screen share and we want it prominent
+  if (items.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 bg-[#030305] text-zinc-500 font-sans">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center animate-pulse border border-white/5">
+            <User size={36} className="text-zinc-700" />
+          </div>
+          <div className="absolute inset-0 rounded-full border border-indigo-500/20 animate-ping opacity-20" />
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-sm font-semibold text-zinc-300">Room is currently quiet</p>
+          <p className="text-xs text-zinc-500 tracking-wide uppercase">Waiting for streams to begin</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Case: Screen Share Present
   if (prominentScreenShare && screenShareItem) {
     return (
-      <div className="flex-1 flex flex-col md:flex-row gap-4 p-4 min-h-0 bg-zinc-950">
-        {/* Prominent View (Screen Share) */}
-        <div className="flex-[3] min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0 bg-[#030305]">
+        <div className="flex-[4] min-h-0 min-w-0">
           <MediaTile {...screenShareItem} />
         </div>
-        
-        {/* Sidebar View (Cameras) */}
-        <div className="flex-1 flex flex-row md:flex-col gap-3 overflow-x-auto md:overflow-y-auto pr-2 min-h-0">
+        <div className="flex-1 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto min-h-0 pr-1 pb-1">
           {otherItems.map((item) => (
-            <div key={item.id} className="w-48 md:w-full aspect-video shrink-0">
+            <div key={item.id} className="w-[280px] lg:w-full aspect-video shrink-0 shadow-xl">
               <MediaTile {...item} />
             </div>
           ))}
@@ -164,22 +188,35 @@ export default function MediaGrid({ participants, prominentScreenShare = true }:
     );
   }
 
-  if (items.length === 0) {
+  // Case: 1:1 Meeting layout (Optimized)
+  if (layout === 'meeting' && items.length === 2) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-zinc-950 text-zinc-500">
-        <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center animate-pulse">
-          <User size={32} />
-        </div>
-        <p className="text-sm font-medium">Waiting for participants to join...</p>
+      <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 min-h-0 bg-[#030305]">
+        {items.map((item) => (
+          <div key={item.id} className="flex-1 min-h-0">
+            <MediaTile {...item} />
+          </div>
+        ))}
       </div>
     );
   }
 
-  // Fallback: Default Grid
+  // Case: Conference stage (Single prominent or standard grid)
+  if (layout === 'conference' && items.length === 1) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0 bg-[#030305]">
+        <div className="w-full h-full max-w-6xl aspect-video mx-auto">
+          <MediaTile {...items[0]} />
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: Standard masonry-ish grid
   return (
-    <div className={`flex-1 grid gap-4 p-4 min-h-0 bg-zinc-950 ${
-      items.length === 1 ? 'grid-cols-1' : 
-      items.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+    <div className={`flex-1 grid gap-4 p-4 min-h-0 bg-[#030305] ${
+      items.length === 1 ? 'grid-cols-1' :
+      items.length <= 4 ? 'grid-cols-1 md:grid-cols-2' :
       'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
     }`}>
       {items.map((item) => (

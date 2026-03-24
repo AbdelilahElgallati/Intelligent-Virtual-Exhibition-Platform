@@ -173,6 +173,7 @@ export default function AudienceRoom({
           <main className="relative flex-1 overflow-hidden bg-zinc-950 flex flex-col">
             <MediaGrid 
               participants={remoteParticipants} 
+              layout="conference"
               prominentScreenShare={true} 
             />
 

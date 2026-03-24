@@ -162,7 +162,8 @@ export default function MeetingRoom({ token, roomUrl, onSessionEnd }: MeetingRoo
       )}
 
       {/* Media grid */}
-      <MediaGrid participants={allParticipants} />
+      {/* Media grid */}
+      <MediaGrid participants={allParticipants} layout="meeting" />
 
       {/* Controls */}
       <Controls

@@ -222,7 +222,7 @@ export default function SpeakerRoom({
             <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-zinc-950">
               {/* Media area */}
               {allParticipants.length > 0 ? (
-                <MediaGrid participants={allParticipants} />
+                <MediaGrid participants={allParticipants} layout="conference" />
               ) : (
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
