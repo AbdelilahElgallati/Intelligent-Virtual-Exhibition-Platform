@@ -16,7 +16,7 @@ from app.modules.stands.service import create_stand, get_stand_by_org, list_even
 router = APIRouter(prefix="/events/{event_id}/stands", tags=["Stands"])
 
 
-@router.post("/", response_model=StandRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=StandRead, status_code=status.HTTP_201_CREATED)
 async def assign_stand_to_organization(
     event_id: str,
     data: StandCreate,
@@ -62,7 +62,7 @@ async def assign_stand_to_organization(
     return StandRead(**stand)
 
 
-@router.get("/")
+@router.get("")
 async def get_event_stands(
     event_id: str,
     category: str | None = Query(None, description="Filter by category"),

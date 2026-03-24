@@ -206,7 +206,7 @@ async def get_event_attendees(
 @router.get("/enterprises", response_model=list[EnrichedParticipantRead])
 async def get_event_enterprise_participants(
     event_id: str,
-    current_user: dict = Depends(require_roles([Role.ENTERPRISE, Role.ADMIN, Role.ORGANIZER])),
+    current_user: dict = Depends(require_roles([Role.ENTERPRISE, Role.ADMIN, Role.ORGANIZER, Role.VISITOR])),
 ) -> list[EnrichedParticipantRead]:
     """
     Allow enterprises to see other approved participants of the same event for B2B discovery.
