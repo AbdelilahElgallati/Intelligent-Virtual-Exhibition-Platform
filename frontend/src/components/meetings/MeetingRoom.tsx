@@ -9,6 +9,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
+import MediaGrid from './MediaGrid';
 import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff, WifiOff, Loader2 } from 'lucide-react';
 
 interface MeetingRoomProps {
@@ -17,118 +18,6 @@ interface MeetingRoomProps {
   onSessionEnd?: () => void;
 }
 
-// ── Single participant video tile ──────────────────────────────────────────
-
-function VideoTile({ participant, large = false }: { participant: DailyParticipant; large?: boolean }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current && participant.videoTrack) {
-      videoRef.current.srcObject = new MediaStream([participant.videoTrack]);
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, [participant.videoTrack]);
-
-  useEffect(() => {
-    if (audioRef.current && participant.audioTrack && !participant.local) {
-      audioRef.current.srcObject = new MediaStream([participant.audioTrack]);
-    } else if (audioRef.current) {
-      audioRef.current.srcObject = null;
-    }
-  }, [participant.audioTrack, participant.local]);
-
-  return (
-    <div
-      style={{
-        position: 'relative',
-        background: '#1a1a2e',
-        borderRadius: 12,
-        overflow: 'hidden',
-        aspectRatio: large ? 'auto' : '16/9',
-        flex: large ? '1 1 auto' : '0 0 calc(50% - 8px)',
-        minWidth: 0,
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      {participant.videoOn ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={participant.local}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      ) : (
-        <div style={{
-          width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', flexDirection: 'column', gap: 8,
-        }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 700, color: '#fff',
-          }}>
-            {participant.userName.charAt(0).toUpperCase()}
-          </div>
-          <span style={{ color: '#94a3b8', fontSize: 12 }}>{participant.userName}</span>
-        </div>
-      )}
-
-      {/* Hidden audio element for remote participants */}
-      {!participant.local && (
-        <audio ref={audioRef} autoPlay playsInline style={{ display: 'none' }} />
-      )}
-
-      {/* Name badge */}
-      <div style={{
-        position: 'absolute', bottom: 8, left: 8,
-        background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '3px 8px',
-        fontSize: 11, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: 4,
-      }}>
-        {!participant.audioOn && <MicOff size={10} color="#ef4444" />}
-        {participant.userName}
-        {participant.local && ' (You)'}
-      </div>
-    </div>
-  );
-}
-
-// ── Video grid adaptable to 1–N participants ───────────────────────────────
-
-function VideoGrid({ participants }: { participants: DailyParticipant[] }) {
-  if (participants.length === 0) {
-    return (
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#64748b', flexDirection: 'column', gap: 12,
-      }}>
-        <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', opacity: 0.5 }} />
-        <span style={{ fontSize: 14 }}>Waiting for participants to join…</span>
-      </div>
-    );
-  }
-
-  if (participants.length === 1) {
-    return (
-      <div style={{ flex: 1, display: 'flex', padding: 16, minHeight: 0 }}>
-        <VideoTile participant={participants[0]} large />
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8, padding: 16,
-      alignContent: 'flex-start', overflowY: 'auto', minHeight: 0,
-    }}>
-      {participants.map((p) => (
-        <VideoTile key={p.sessionId} participant={p} />
-      ))}
-    </div>
-  );
-}
 
 // ── Control bar ────────────────────────────────────────────────────────────
 
@@ -272,8 +161,8 @@ export default function MeetingRoom({ token, roomUrl, onSessionEnd }: MeetingRoo
         </div>
       )}
 
-      {/* Video grid */}
-      <VideoGrid participants={allParticipants} />
+      {/* Media grid */}
+      <MediaGrid participants={allParticipants} />
 
       {/* Controls */}
       <Controls

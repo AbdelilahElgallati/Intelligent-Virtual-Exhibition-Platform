@@ -10,6 +10,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
+import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
 import { AlertTriangle, CalendarClock, Clock3, RefreshCw, Users } from 'lucide-react';
 
@@ -53,69 +54,6 @@ function formatDuration(ms: number) {
 
 // ── Speaker video display (receive-only) ───────────────────────────────────
 
-function SpeakerDisplay({ speaker }: { speaker: DailyParticipant | null }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current && speaker?.videoTrack) {
-      videoRef.current.srcObject = new MediaStream([speaker.videoTrack]);
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, [speaker?.videoTrack]);
-
-  useEffect(() => {
-    if (audioRef.current && speaker?.audioTrack) {
-      audioRef.current.srcObject = new MediaStream([speaker.audioTrack]);
-    }
-  }, [speaker?.audioTrack]);
-
-  if (!speaker) {
-    return (
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: 12, color: '#71717a', fontSize: 14,
-      }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: '50%', background: '#27272a',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-        }}>🎤</div>
-        <span>Waiting for presenter to start…</span>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ position: 'relative', flex: '1 1 auto', background: '#09090b', minWidth: 0 }}>
-      {speaker.videoOn ? (
-        <video
-          ref={videoRef}
-          autoPlay playsInline
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      ) : (
-        <div style={{
-          width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', flexDirection: 'column', gap: 12,
-        }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, fontWeight: 700, color: '#fff',
-          }}>
-            {speaker.userName.charAt(0).toUpperCase()}
-          </div>
-          <span style={{ color: '#94a3b8', fontSize: 13 }}>{speaker.userName}</span>
-          <span style={{ color: '#52525b', fontSize: 12 }}>Camera is off</span>
-        </div>
-      )}
-      {/* Always render hidden audio element to play speaker audio */}
-      <audio ref={audioRef} autoPlay playsInline style={{ display: 'none' }} />
-    </div>
-  );
-}
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -233,7 +171,10 @@ export default function AudienceRoom({
 
           {/* Speaker video */}
           <main className="relative flex-1 overflow-hidden bg-zinc-950 flex flex-col">
-            <SpeakerDisplay speaker={speaker} />
+            <MediaGrid 
+              participants={remoteParticipants} 
+              prominentScreenShare={true} 
+            />
 
             {/* Disconnect overlay */}
             {isDisconnected && (

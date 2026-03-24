@@ -10,6 +10,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
+import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
 import {
   AlertTriangle, CalendarClock, Clock3, Mic, MicOff,
@@ -56,56 +57,6 @@ function formatDuration(ms: number) {
   return `${seconds}s`;
 }
 
-// ── Video tile ─────────────────────────────────────────────────────────────
-
-function SpeakerVideoTile({ participant }: { participant: DailyParticipant }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (videoRef.current && participant.videoTrack) {
-      videoRef.current.srcObject = new MediaStream([participant.videoTrack]);
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, [participant.videoTrack]);
-
-  useEffect(() => {
-    if (audioRef.current && participant.audioTrack && !participant.local) {
-      audioRef.current.srcObject = new MediaStream([participant.audioTrack]);
-    }
-  }, [participant.audioTrack, participant.local]);
-
-  return (
-    <div style={{ position: 'relative', flex: '1 1 auto', minWidth: 0, background: '#09090b' }}>
-      {participant.videoOn ? (
-        <video
-          ref={videoRef}
-          autoPlay playsInline muted={participant.local}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      ) : (
-        <div style={{
-          width: '100%', height: '100%', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', flexDirection: 'column', gap: 12,
-        }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, fontWeight: 700, color: '#fff',
-          }}>
-            {participant.userName.charAt(0).toUpperCase()}
-          </div>
-          <span style={{ color: '#94a3b8', fontSize: 13 }}>{participant.userName}</span>
-        </div>
-      )}
-      {!participant.local && (
-        <audio ref={audioRef} autoPlay playsInline style={{ display: 'none' }} />
-      )}
-    </div>
-  );
-}
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -269,9 +220,9 @@ export default function SpeakerRoom({
           {/* Video area */}
           <main className="flex min-h-0 flex-1 flex-col">
             <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-zinc-950">
-              {/* Primary speaker video */}
-              {primaryParticipant ? (
-                <SpeakerVideoTile participant={primaryParticipant} />
+              {/* Media area */}
+              {allParticipants.length > 0 ? (
+                <MediaGrid participants={allParticipants} />
               ) : (
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
