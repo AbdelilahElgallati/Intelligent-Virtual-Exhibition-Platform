@@ -10,7 +10,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
 import MediaGrid from './MediaGrid';
-import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff, WifiOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff, WifiOff, Loader2, AlertTriangle } from 'lucide-react';
 
 interface MeetingRoomProps {
   token: string;
@@ -40,54 +40,50 @@ function Controls({
   const camOn = localParticipant?.videoOn ?? false;
   const screenOn = !!localParticipant?.screenVideoTrack;
 
-  const btn = 'inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors';
+  const btnBase = 'w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 backdrop-blur-md';
 
   return (
-    <div style={{
-      height: 72, padding: '0 16px', borderTop: '1px solid rgba(255,255,255,0.1)',
-      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    }}>
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 px-6 py-4 rounded-3xl bg-black/30 backdrop-blur-2xl border border-white/10 shadow-2xl">
       {reconnecting && (
-        <span style={{ color: '#f59e0b', fontSize: 12, marginRight: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <WifiOff size={14} /> Reconnecting…
-        </span>
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 bg-amber-500 rounded-full text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
+          <WifiOff size={12} /> Reconnecting…
+        </div>
       )}
 
+      {/* Mic Toggle */}
       <button
         onClick={onToggleMic}
-        className={`${btn} ${micOn ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800'}`}
-        type="button"
+        className={`${btnBase} ${micOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-red-500 text-white hover:bg-red-600'}`}
+        title={micOn ? 'Mute' : 'Unmute'}
       >
-        {micOn ? <Mic size={16} /> : <MicOff size={16} />}
-        <span className="hidden sm:inline">{micOn ? 'Mic On' : 'Mic Off'}</span>
+        {micOn ? <Mic size={20} /> : <MicOff size={20} />}
       </button>
 
+      {/* Camera Toggle */}
       <button
         onClick={onToggleCam}
-        className={`${btn} ${camOn ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800'}`}
-        type="button"
+        className={`${btnBase} ${camOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-red-500 text-white hover:bg-red-600'}`}
+        title={camOn ? 'Turn Camera Off' : 'Turn Camera On'}
       >
-        {camOn ? <Video size={16} /> : <VideoOff size={16} />}
-        <span className="hidden sm:inline">{camOn ? 'Camera On' : 'Camera Off'}</span>
+        {camOn ? <Video size={20} /> : <VideoOff size={20} />}
       </button>
 
+      {/* Screen Share */}
       <button
         onClick={onToggleScreen}
-        className={`${btn} ${screenOn ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800'}`}
-        type="button"
+        className={`${btnBase} ${screenOn ? 'bg-indigo-600 text-white' : 'bg-white/10 text-zinc-300 hover:bg-white/20'}`}
+        title={screenOn ? 'Stop Sharing' : 'Share Screen'}
       >
-        <ScreenShare size={16} />
-        <span className="hidden sm:inline">{screenOn ? 'Stop Share' : 'Share Screen'}</span>
+        <ScreenShare size={20} />
       </button>
 
+      {/* End Call */}
       <button
         onClick={onLeave}
-        className={`${btn} bg-red-600 text-white border-red-500 hover:bg-red-500`}
-        type="button"
+        className={`${btnBase} bg-red-600 text-white hover:bg-red-500 hover:scale-105 active:scale-95 border-none`}
+        title="End Call"
       >
-        <PhoneOff size={16} />
-        <span className="hidden sm:inline">End</span>
+        <PhoneOff size={24} />
       </button>
     </div>
   );
@@ -95,10 +91,6 @@ function Controls({
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-/**
- * Full-screen 1:1 / group meeting room powered by Daily.co.
- * Drop-in replacement for the previous LiveKit-based MeetingRoom.
- */
 export default function MeetingRoom({ token, roomUrl, onSessionEnd }: MeetingRoomProps) {
   const {
     joined,
@@ -123,49 +115,41 @@ export default function MeetingRoom({ token, roomUrl, onSessionEnd }: MeetingRoo
 
   if (error) {
     return (
-      <div style={{
-        height: '100vh', background: '#060B18', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', color: '#e2e8f0',
-        fontFamily: 'Inter, sans-serif', padding: 24, gap: 16,
-      }}>
-        <div style={{ fontSize: 56 }}>⚠️</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, textAlign: 'center' }}>
-          Video connection error
-        </h2>
-        <p style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', maxWidth: 380 }}>{error}</p>
+      <div className="h-screen bg-[#070709] flex flex-col items-center justify-center p-8 text-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black">
+        <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6 border border-red-500/20">
+          <AlertTriangle size={40} />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Connection Failed</h2>
+        <p className="text-zinc-500 max-w-sm mb-8">{error || 'Something went wrong while connecting to the meeting.'}</p>
         <button
           onClick={() => onSessionEnd?.()}
-          style={{
-            background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', border: 'none',
-            borderRadius: 10, color: '#fff', padding: '10px 24px',
-            fontWeight: 600, cursor: 'pointer', fontSize: 14,
-          }}
+          className="px-8 py-3 bg-white text-black font-bold rounded-2xl hover:bg-zinc-200 transition-all active:scale-95"
         >
-          ← Go Back
+          Return to Stand
         </button>
       </div>
     );
   }
 
   return (
-    <div style={{ height: '100vh', background: '#0a0a0a', display: 'flex', flexDirection: 'column' }}>
+    <div className="h-screen bg-black flex flex-col relative overflow-hidden font-sans">
       {/* Connecting overlay */}
       {!joined && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 10, background: '#0a0a0a',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          gap: 16, color: '#e2e8f0', fontFamily: 'Inter, sans-serif',
-        }}>
-          <Loader2 size={40} style={{ animation: 'spin 1s linear infinite', color: '#7c3aed' }} />
-          <p style={{ fontSize: 16, color: '#94a3b8' }}>Connecting to meeting room…</p>
+        <div className="absolute inset-0 z-50 bg-[#070709] flex flex-col items-center justify-center gap-6">
+          <div className="relative">
+            <Loader2 size={48} className="animate-spin text-indigo-500" />
+            <div className="absolute inset-0 blur-xl bg-indigo-500/20 animate-pulse" />
+          </div>
+          <p className="text-zinc-400 font-medium tracking-wide animate-pulse">Establishing encrypted connection…</p>
         </div>
       )}
 
-      {/* Media grid */}
-      {/* Media grid */}
-      <MediaGrid participants={allParticipants} layout="meeting" />
+      {/* Main Video Area */}
+      <div className="flex-1 min-h-0">
+        <MediaGrid participants={allParticipants} layout="whatsapp" />
+      </div>
 
-      {/* Controls */}
+      {/* Floating Controls */}
       <Controls
         localParticipant={localParticipant}
         reconnecting={reconnecting}
@@ -175,8 +159,8 @@ export default function MeetingRoom({ token, roomUrl, onSessionEnd }: MeetingRoo
         onLeave={handleLeave}
       />
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
+      <style jsx global>{`
+        body { background: black; overflow: hidden; }
       `}</style>
     </div>
   );

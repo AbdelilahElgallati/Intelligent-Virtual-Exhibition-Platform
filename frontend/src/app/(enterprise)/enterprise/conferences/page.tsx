@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { formatInTZ } from '@/lib/timezone';
 import { useAuth } from '@/context/AuthContext';
 import { http } from '@/lib/http';
 import { Conference } from '@/types/conference';
@@ -14,14 +15,19 @@ export default function EnterpriseConferencesPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchConferences = async () => {
             try {
                 // Fetch all conferences assigned to this enterprise
-                const data = await http.get<Conference[]>('/conferences/my-assigned');
-                setConferences(data);
+                const [confData, eventData] = await Promise.all([
+                    http.get<Conference[]>('/conferences/my-assigned'),
+                    http.get<any[]>('/enterprise/events').catch(() => [])
+                ]);
+                setConferences(confData);
+                setEvents(eventData);
             } catch (err) {
                 console.error('Failed to fetch conferences', err);
             } finally {
@@ -78,11 +84,23 @@ export default function EnterpriseConferencesPage() {
                             <div className="space-y-3 mb-8">
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <Calendar size={14} className="text-indigo-500" />
-                                    <span>{new Date(c.start_time).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    <span>
+                                        {(() => {
+                                            const event = events.find(e => (e.id || e._id) === c.event_id);
+                                            const tz = event?.event_timezone || 'UTC';
+                                            return formatInTZ(c.start_time, tz, 'MMM d, yyyy');
+                                        })()}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <Clock size={14} className="text-indigo-500" />
-                                    <span>{new Date(c.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — {new Date(c.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span>
+                                        {(() => {
+                                            const event = events.find(e => (e.id || e._id) === c.event_id);
+                                            const tz = event?.event_timezone || 'UTC';
+                                            return `${formatInTZ(c.start_time, tz, 'h:mm a')} — ${formatInTZ(c.end_time, tz, 'h:mm a')}`;
+                                        })()}
+                                    </span>
                                 </div>
                             </div>
 

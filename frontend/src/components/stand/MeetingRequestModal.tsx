@@ -166,8 +166,10 @@ export function MeetingRequestModal({
         purpose: '',
     });
 
-    const fetchMeetings = useCallback(async () => {
-        setLoadingMeetings(true);
+    const fetchMeetings = useCallback(async (silent = false) => {
+        if (!silent || meetings.length === 0) {
+            setLoadingMeetings(true);
+        }
         try {
             const all = await apiClient.get<Meeting[]>('/meetings/my-meetings');
             const filtered = (all || [])
@@ -179,10 +181,12 @@ export function MeetingRequestModal({
         } finally {
             setLoadingMeetings(false);
         }
-    }, [standId, eventId]);
+    }, [standId, eventId, meetings.length]);
 
-    const fetchBusySlots = useCallback(async () => {
-        setLoadingSlots(true);
+    const fetchBusySlots = useCallback(async (silent = false) => {
+        if (!silent) {
+            setLoadingSlots(true);
+        }
         try {
             const slots = await apiClient.get<BusySlot[]>(`/meetings/busy-slots?event_id=${encodeURIComponent(eventId)}&partner_stand_id=${encodeURIComponent(standId)}`);
             setBusySlots(Array.isArray(slots) ? slots : []);
@@ -203,8 +207,9 @@ export function MeetingRequestModal({
         fetchBusySlots();
 
         const interval = setInterval(() => {
-            fetchMeetings();
-        }, 10000);
+            fetchMeetings(true);
+            fetchBusySlots(true);
+        }, 5000);
         
         return () => clearInterval(interval);
     }, [isOpen, fetchMeetings, fetchBusySlots]);

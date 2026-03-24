@@ -1,6 +1,6 @@
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ...db.mongo import get_database
 from .schemas import LeadInteraction, LeadSchema
 
@@ -32,7 +32,10 @@ class LeadRepository:
             {"visitor_id": v_id, "stand_id": s_id},
             {
                 "$inc": {"interactions_count": 1, "score": 10},
-                "$set": {"last_interaction": datetime.utcnow()},
+                "$set": {
+                    "last_interaction": datetime.now(timezone.utc),
+                    "last_interaction_type": data.get("interaction_type")
+                },
                 "$setOnInsert": {
                     "visitor_name": f"Visitor {v_id[-4:]}",
                     "email": f"user_{v_id[-4:]}@example.com",

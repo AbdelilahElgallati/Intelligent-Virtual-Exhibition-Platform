@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { formatInTZ } from '@/lib/timezone';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -17,14 +18,19 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function EnterpriseRequestsPage() {
     const [requests, setRequests] = useState<any[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>('ALL');
 
     const fetchRequests = async () => {
         setIsLoading(true);
         try {
-            const data = await http.get<any[]>('/enterprise/product-requests');
-            setRequests(data);
+            const [reqData, eventData] = await Promise.all([
+                http.get<any[]>('/enterprise/product-requests'),
+                http.get<any[]>('/enterprise/events').catch(() => [])
+            ]);
+            setRequests(reqData);
+            setEvents(eventData);
         } catch (err) {
             console.error('Failed to fetch requests', err);
         } finally {
@@ -110,10 +116,11 @@ export default function EnterpriseRequestsPage() {
                                                 </h4>
                                                 <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                                                     <Clock size={11} />
-                                                    {new Date(req.created_at).toLocaleDateString(undefined, {
-                                                        month: 'short', day: 'numeric', year: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit'
-                                                    })}
+                                                    {(() => {
+                                                        const event = events.find(e => (e.id || e._id) === req.event_id);
+                                                        const tz = event?.event_timezone || 'UTC';
+                                                        return formatInTZ(req.created_at, tz, 'MMM d, yyyy h:mm a');
+                                                    })()}
                                                 </div>
                                             </div>
                                             <span className={`ml-auto md:ml-2 px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_STYLES[req.status] || 'bg-zinc-50 text-zinc-500 border-zinc-100'}`}>

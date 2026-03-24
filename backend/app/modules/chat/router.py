@@ -4,7 +4,7 @@ from ...core.dependencies import get_current_user, get_current_user_ws
 from .schemas import MessageSchema, ChatRoomSchema, MessageCreate
 from .repository import chat_repo
 from .service import manager
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
@@ -250,7 +250,7 @@ async def websocket_endpoint(
                 "sender_name": user.get('username') or user.get('full_name') or "Visitor",
                 "content": message_data.get("content"),
                 "type": message_data.get("type", "text"),
-                "timestamp": datetime.utcnow()
+                "timestamp": datetime.now(timezone.utc)
             }
             
             # Save

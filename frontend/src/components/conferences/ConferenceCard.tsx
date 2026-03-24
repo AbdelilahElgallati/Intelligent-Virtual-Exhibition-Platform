@@ -4,11 +4,12 @@ import React from 'react';
 import { Conference } from '@/types/conference';
 import { useRouter } from 'next/navigation';
 import { Users, Clock } from 'lucide-react';
-import clsx from 'clsx';
+import { formatInTZ } from '@/lib/timezone';
 
 interface ConferenceCardProps {
     conference: Conference;
     eventId: string;
+    eventTimeZone?: string;
     onRegister?: (id: string) => void;
     onUnregister?: (id: string) => void;
 }
@@ -20,14 +21,15 @@ const statusColors: Record<string, { bg: string; text: string; label: string }> 
     canceled: { bg: 'rgba(239,68,68,0.12)', text: '#f87171', label: 'Canceled' },
 };
 
-export default function ConferenceCard({ conference, eventId, onRegister, onUnregister }: ConferenceCardProps) {
+export default function ConferenceCard({ conference, eventId, eventTimeZone = 'UTC', onRegister, onUnregister }: ConferenceCardProps) {
     const router = useRouter();
     const sc = statusColors[conference.status] || statusColors.scheduled;
-    const start = new Date(conference.start_time);
-    const end = new Date(conference.end_time);
 
-    const fmt = (d: Date) =>
-        d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+    const fmt = (iso: string) =>
+        formatInTZ(iso, eventTimeZone, 'dd MMM HH:mm');
+    
+    const fmtTimeOnly = (iso: string) =>
+        formatInTZ(iso, eventTimeZone, 'HH:mm');
 
     return (
         <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 group relative overflow-hidden">
@@ -85,7 +87,7 @@ export default function ConferenceCard({ conference, eventId, onRegister, onUnre
             <div className="flex flex-col gap-4 mb-8 relative z-10">
                 <div className="px-4 py-2 bg-zinc-50 rounded-2xl border border-zinc-100 flex items-center gap-3 text-xs font-bold text-zinc-600 w-fit">
                     <Clock size={14} className="text-indigo-500" />
-                    <span>{fmt(start)} — {end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>{fmt(conference.start_time)} — {fmtTimeOnly(conference.end_time)}</span>
                 </div>
 
                 <div className="flex items-center gap-2">

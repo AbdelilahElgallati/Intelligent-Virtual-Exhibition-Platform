@@ -20,12 +20,13 @@ class ConnectionManager:
                 del self.active_connections[user_id]
 
     async def send_personal_message(self, message: dict, user_id: str):
-        if user_id in self.active_connections:
-            for connection in self.active_connections[user_id]:
+        uid = str(user_id)
+        if uid in self.active_connections:
+            for connection in self.active_connections[uid]:
                 await connection.send_json(message)
 
     async def broadcast_to_room(self, message: dict, member_ids: List[str]):
         for user_id in member_ids:
-            await self.send_personal_message(message, user_id)
+            await self.send_personal_message(message, str(user_id))
 
 manager = ConnectionManager()

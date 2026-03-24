@@ -44,6 +44,7 @@ import {
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { formatInTZ } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
@@ -266,7 +267,7 @@ interface Participant {
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; active: boolean; onClick: () => void; unreadCount?: number }) => (
+const ChatItem = ({ room, active, onClick, unreadCount, tz }: { room: ChatRoom; active: boolean; onClick: () => void; unreadCount?: number; tz: string }) => (
     <div
         onClick={onClick}
         className={clsx(
@@ -286,7 +287,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
                     {room.name || `Chat #${(room.id || room._id).slice(-4)}`}
                 </h4>
                 <span className="text-[10px] text-zinc-400">
-                    {new Date(room.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                    {formatInTZ(room.created_at, tz, 'MMM d')}
                 </span>
             </div>
             <p className="text-xs text-zinc-500 truncate">
@@ -498,6 +499,7 @@ export default function EventManagementHub() {
         }
         // Fallback: generate from start_date to end_date
         const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
+        const tz = eventData.event_timezone || 'UTC';
         const start = new Date(eventData.start_date);
         const end = new Date(eventData.end_date);
         let d = new Date(start);
@@ -505,7 +507,7 @@ export default function EventManagementHub() {
         while (d <= end) {
             days.push({
                 dateStr: d.toISOString().split('T')[0],
-                label: `Day ${num} — ${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`,
+                label: `Day ${num} — ${formatInTZ(d, tz, 'EEE, MMM d')}`,
                 slots: [{ start_time: '09:00', end_time: '18:00' }],
             });
             d.setDate(d.getDate() + 1);
@@ -782,9 +784,9 @@ export default function EventManagementHub() {
                 {/* Event dates */}
                 <div className="flex items-center gap-3 text-sm text-zinc-400 mb-10">
                     <Calendar size={14} />
-                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{formatInTZ((eventTimeline as any).startDate, eventData?.event_timezone || 'UTC', 'EEEE, MMMM d, yyyy')}</span>
                     <ArrowRight size={14} />
-                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{formatInTZ((eventTimeline as any).endDate, eventData?.event_timezone || 'UTC', 'EEEE, MMMM d, yyyy')}</span>
                 </div>
 
                 <div className="flex gap-4">
@@ -1057,6 +1059,7 @@ export default function EventManagementHub() {
                                     <ChatItem
                                         key={room.id || room._id}
                                         room={room}
+                                        tz={eventData?.event_timezone || 'UTC'}
                                         active={selectedRoomId === (room.id || room._id)}
                                         unreadCount={unreadByRoomId[room.id || room._id]}
                                         onClick={() => {
@@ -1091,6 +1094,7 @@ export default function EventManagementHub() {
                                 standName={activeRoom?.name || "Member"}
                                 isEmbedded={true}
                                 disableMessageLimit={true}
+                                eventTimeZone={eventData?.event_timezone}
                                 onClose={() => setSelectedRoomId(null)}
                             />
                         ) : (
@@ -1459,7 +1463,7 @@ export default function EventManagementHub() {
                                             </div>
                                             <div className="space-y-2 mb-6 text-xs text-zinc-500">
                                                 <div className="flex items-center gap-2">
-                                                    <Clock size={14} /> {new Date(c.start_time).toLocaleString()}
+                                                    <Clock size={14} /> {formatInTZ(c.start_time, eventData?.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users size={14} /> {c.attendee_count} attendees

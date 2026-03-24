@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import { ScheduleBuilder } from '@/components/ui/ScheduleBuilder';
 import { EventScheduleDay } from '@/types/event';
 import { ArrowLeft, FileText, Users, CalendarDays, Info, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { zonedToUtc } from '@/lib/timezone';
 
 const CATEGORIES = ['Exhibition', 'Conference', 'Webinar', 'Networking', 'Workshop', 'Hackathon'];
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -180,13 +181,17 @@ export default function NewEventRequestPage() {
 
             const timelineJson = JSON.stringify(scheduleDays);
 
+            const timeZone = form.event_timezone || 'UTC';
+            const startUtc = zonedToUtc(`${form.start_date}T00:00:00`, timeZone);
+            const endUtc = zonedToUtc(`${form.end_date}T23:59:59`, timeZone);
+
             await eventsApi.createEvent({
                 title: form.title.trim(),
                 description: form.description.trim() || undefined,
                 category: form.category || undefined,
-                start_date: form.start_date ? `${form.start_date}T00:00:00` : undefined,
-                end_date: form.end_date ? `${form.end_date}T23:59:59` : undefined,
-                event_timezone: form.event_timezone || 'UTC',
+                start_date: startUtc.toISOString(),
+                end_date: endUtc.toISOString(),
+                event_timezone: timeZone,
                 location: form.location.trim() || undefined,
                 banner_url: resolvedBannerUrl,
                 tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],

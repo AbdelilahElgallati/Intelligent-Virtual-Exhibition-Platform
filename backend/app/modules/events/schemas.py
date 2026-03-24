@@ -141,6 +141,15 @@ class EventCreate(BaseModel):
     is_paid: bool = Field(False, description="Whether the event requires visitor ticket payment")
     ticket_price: Optional[float] = Field(None, ge=0, description="Visitor ticket price (required when is_paid=True)")
 
+    @field_validator("start_date", "end_date", mode="after")
+    @classmethod
+    def ensure_utc(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
+
     model_config = {"from_attributes": True}
 
     @field_validator("event_timezone")
@@ -174,6 +183,15 @@ class EventUpdate(BaseModel):
     stand_price: Optional[float] = None
     is_paid: Optional[bool] = None
     ticket_price: Optional[float] = None
+
+    @field_validator("start_date", "end_date", mode="after")
+    @classmethod
+    def ensure_utc(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
     model_config = {"from_attributes": True}
 

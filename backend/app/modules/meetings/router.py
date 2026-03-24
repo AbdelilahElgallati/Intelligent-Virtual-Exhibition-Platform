@@ -13,6 +13,8 @@ from ..events.service import get_event_by_id
 from ..daily import service as daily_svc
 from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
+from ..notifications.service import create_notification
+from ..notifications.schemas import NotificationType
 
 router = APIRouter()
 
@@ -340,6 +342,18 @@ async def request_meeting(
     except Exception:
         pass
 
+    # Notify the target enterprise owner
+    try:
+        target_org = await get_organization_by_id(stand["organization_id"])
+        if target_org and target_org.get("owner_id"):
+            await create_notification(
+                user_id=target_org["owner_id"],
+                type=NotificationType.MEETING_REQUEST,
+                message=f"New meeting request from {current_user.get('full_name') or current_user.get('email')}"
+            )
+    except Exception as e:
+        print(f"Failed to create meeting notification: {e}")
+
     return created_meeting
 
 
@@ -511,4 +525,18 @@ async def update_meeting(
     updated = await meeting_repo.update_meeting_status(meeting_id, update)
     if not updated:
         raise HTTPException(status_code=404, detail="Meeting not found")
+    if updated:
+        # Notify the visitor about status change
+        try:
+            msg = f"Your meeting request was {update.status}"
+            if update.notes:
+                msg += f": {update.notes}"
+            await create_notification(
+                user_id=updated["visitor_id"],
+                type=NotificationType.MEETING_UPDATE,
+                message=msg
+            )
+        except Exception as e:
+            print(f"Failed to create meeting update notification: {e}")
+            
     return updated

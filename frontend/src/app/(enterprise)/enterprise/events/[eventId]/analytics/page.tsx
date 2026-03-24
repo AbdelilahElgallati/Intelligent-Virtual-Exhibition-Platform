@@ -26,6 +26,7 @@ interface StandAnalytics {
     unique_visitors: number;
     interaction_count: number;
     interaction_breakdown: Record<string, number>;
+    pulse: { hour: string; value: number }[];
 }
 
 interface Stand {
@@ -55,6 +56,7 @@ function mapDashboardToStandAnalytics(payload: any): StandAnalytics {
         interaction_breakdown: Object.fromEntries(
             Object.entries(distribution).map(([k, v]) => [k, Number(v || 0)])
         ),
+        pulse: Array.isArray(dashboard.pulse_chart) ? dashboard.pulse_chart : [],
     };
 }
 
@@ -162,7 +164,13 @@ export default function EventAnalyticsPage() {
         );
     }
 
-    const stats = analytics || { total_visits: 0, unique_visitors: 0, interaction_count: 0, interaction_breakdown: {} };
+    const stats = analytics || { 
+        total_visits: 0, 
+        unique_visitors: 0, 
+        interaction_count: 0, 
+        interaction_breakdown: {},
+        pulse: []
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -245,19 +253,42 @@ export default function EventAnalyticsPage() {
                     <CardContent className="p-8">
                         <div className="h-64 flex flex-col justify-between">
                             <div className="flex items-end justify-between h-full gap-2 px-4 pb-4">
-                                {[20, 35, 65, 40, 80, 55, 30].map((h, i) => (
-                                    <div key={i} className="flex-1 group relative">
-                                        <div
-                                            className="bg-emerald-600/10 group-hover:bg-emerald-600 transition-all rounded-t-lg mx-auto w-full"
-                                            style={{ height: `${h}%` }}
-                                        />
+                                {stats.pulse.length > 0 ? (
+                                    stats.pulse.map((item, i) => {
+                                        const maxVal = Math.max(...stats.pulse.map(p => p.value), 1);
+                                        const h = (item.value / maxVal) * 100;
+                                        return (
+                                            <div key={`${item.hour}-${i}`} className="flex-1 group relative h-full flex items-end">
+                                                <div
+                                                    className={clsx(
+                                                        "transition-all rounded-t-lg mx-auto w-full",
+                                                        item.value > 0 ? "bg-emerald-500" : "bg-emerald-500/5"
+                                                    )}
+                                                    style={{ height: `${Math.max(h, 4)}%` }}
+                                                    title={`${item.hour}: ${item.value} visits`}
+                                                />
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-bold">
+                                                    {item.value}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center text-zinc-300 text-[10px] font-bold uppercase tracking-widest italic">
+                                        No recent activity
                                     </div>
-                                ))}
+                                )}
                             </div>
                             <div className="flex justify-between border-t border-zinc-100 pt-4 px-2">
-                                {['09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00'].map(t => (
-                                    <span key={t} className="text-[10px] font-bold text-zinc-400">{t}</span>
-                                ))}
+                                {stats.pulse.length > 0 ? (
+                                    stats.pulse.filter((_, i) => i % 4 === 0).map((item, i) => (
+                                        <span key={`${item.hour}-${i}`} className="text-[10px] font-bold text-zinc-400">{item.hour}</span>
+                                    ))
+                                ) : (
+                                    ['00:00', '06:00', '12:00', '18:00', '00:00'].map((t, i) => (
+                                        <span key={`${t}-${i}`} className="text-[10px] font-bold text-zinc-400">{t}</span>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </CardContent>

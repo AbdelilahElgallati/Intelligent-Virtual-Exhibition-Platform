@@ -5,7 +5,7 @@ Handles payment events safely to prevent double-charging and race conditions.
 
 import logging
 import stripe
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from bson import ObjectId
 from fastapi import HTTPException, status
@@ -48,8 +48,8 @@ class StripeWebhookHandler:
             "event_id": event_id,
             "event_type": event_data.get("type"),
             "data": event_data,
-            "processed_at": datetime.utcnow(),
-            "created_at": datetime.utcnow(),
+            "processed_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(timezone.utc),
         })
         logger.info(f"✓ Webhook event recorded: {event_id}")
     
@@ -122,7 +122,7 @@ class StripeWebhookHandler:
                 {
                     "$set": {
                         "status": "paid",
-                        "paid_at": datetime.utcnow(),
+                        "paid_at": datetime.now(timezone.utc),
                         "stripe_payment_id": data.get("id"),
                     }
                 },
@@ -146,7 +146,7 @@ class StripeWebhookHandler:
                     "event_id": ObjectId(event_id),
                     "user_id": ObjectId(user_id),
                     "status": "registered",
-                    "registered_at": datetime.utcnow(),
+                    "registered_at": datetime.now(timezone.utc),
                     "tickets": order.get("tickets", 1),
                     "order_id": ObjectId(order_id),
                 }
@@ -173,7 +173,7 @@ class StripeWebhookHandler:
                     {
                         "$set": {
                             "status": "failed",
-                            "failed_at": datetime.utcnow(),
+                            "failed_at": datetime.now(timezone.utc),
                             "failure_reason": data.get("failure_message", "Unknown error"),
                         }
                     }
@@ -195,7 +195,7 @@ class StripeWebhookHandler:
                     {
                         "$set": {
                             "status": "refunded",
-                            "refunded_at": datetime.utcnow(),
+                            "refunded_at": datetime.now(timezone.utc),
                             "refund_amount": data.get("amount_refunded"),
                         }
                     }

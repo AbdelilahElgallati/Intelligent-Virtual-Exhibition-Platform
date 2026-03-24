@@ -18,6 +18,7 @@ class LeadSchema(BaseModel):
     score: int = 0
     tags: List[str] = []
     last_interaction: datetime
+    last_interaction_type: Optional[str] = None
     interactions_count: int = 0
     
     class Config:

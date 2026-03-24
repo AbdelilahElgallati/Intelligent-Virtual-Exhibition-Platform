@@ -18,6 +18,7 @@ import {
     Package,
     MessageSquare,
     Calendar,
+    BarChart3,
     Bell,
     ChevronRight,
 } from 'lucide-react';
@@ -25,10 +26,9 @@ import {
 const NAV_ITEMS = [
     { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
     { label: 'Events', href: '/enterprise/events', icon: Calendar },
-    // { label: 'Conferences', href: '/enterprise/conferences', icon: CalendarCheck },
-    // { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
-    // { label: 'Leads', href: '/enterprise/leads', icon: Users },
-    { label: 'Analytics', href: '/enterprise/analytics', icon: CreditCard },
+    { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
+    { label: 'Leads', href: '/enterprise/leads', icon: Users },
+    { label: 'Analytics', href: '/enterprise/analytics', icon: BarChart3 },
     { label: 'Products', href: '/enterprise/products', icon: Package },
     { label: 'Profile', href: '/enterprise/profile', icon: User },
     { label: 'Notifications', href: '/enterprise/notifications', icon: Bell },

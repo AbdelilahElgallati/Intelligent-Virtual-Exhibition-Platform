@@ -9,8 +9,8 @@ import {
 
 interface MediaGridProps {
   participants: DailyParticipant[];
-  /** Layout type: 'meeting' (1:1/group) or 'conference' (presenter-led) */
-  layout?: 'meeting' | 'conference';
+  /** Layout type: 'meeting' (1:1/group), 'conference' (presenter-led), or 'whatsapp' (1:1 PIP) */
+  layout?: 'meeting' | 'conference' | 'whatsapp';
   /** If true, maximizes any active screen share */
   prominentScreenShare?: boolean;
 }
@@ -26,9 +26,11 @@ interface MediaTileProps {
   isScreen?: boolean;
   /** 'cover' for cameras, 'contain' for screens */
   objectFit?: 'cover' | 'contain';
+  /** For PIP windows */
+  isPip?: boolean;
 }
 
-function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit }: MediaTileProps) {
+function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit, isPip }: MediaTileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -63,10 +65,10 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
   return (
     <div
       ref={containerRef}
-      className={`relative bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 group shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none border-none' : ''}`}
+      className={`relative bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 group shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none border-none' : ''} ${isPip ? 'ring-1 ring-white/20' : ''}`}
       style={{ width: '100%', height: '100%' }}
     >
-      {track ? (
+      {track && isVideoOn ? (
         <video
           ref={videoRef}
           autoPlay
@@ -77,45 +79,47 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-[#0a0a0f]">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white text-3xl font-bold shadow-[0_0_30px_rgba(79,70,229,0.3)]">
+            <div className={`rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold shadow-[0_0_30px_rgba(79,70,229,0.3)] ${isPip ? 'w-12 h-12 text-lg' : 'w-20 h-20 text-3xl'}`}>
               {userName.charAt(0).toUpperCase()}
             </div>
             {!isAudioOn && (
-              <div className="absolute -bottom-1 -right-1 p-1.5 bg-red-500 rounded-full border-2 border-[#0a0a0f] text-white">
-                <MicOff size={12} />
+              <div className={`absolute -bottom-1 -right-1 bg-red-500 rounded-full border-2 border-[#0a0a0f] text-white ${isPip ? 'p-1' : 'p-1.5'}`}>
+                <MicOff size={isPip ? 10 : 12} />
               </div>
             )}
           </div>
-          <div className="flex flex-col items-center text-center px-4">
-            <span className="text-zinc-100 font-semibold tracking-tight">{userName}</span>
-            <span className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mt-1 font-medium op-70">
-              {isScreen ? 'Screen shared' : 'Stream Paused'}
-            </span>
-          </div>
+          {!isPip && (
+            <div className="flex flex-col items-center text-center px-4">
+              <span className="text-zinc-100 font-semibold tracking-tight">{userName}</span>
+              <span className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mt-1 font-medium opacity-70">
+                {isScreen ? 'Screen shared' : 'Stream Paused'}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
       {/* Modern Glass Overlays */}
-      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0 duration-300">
-        <button
-          onClick={toggleFullscreen}
-          className="p-2.5 rounded-xl bg-black/40 backdrop-blur-xl text-white border border-white/10 hover:bg-black/60 hover:scale-105 active:scale-95 transition-all"
-        >
-          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-        </button>
-      </div>
+      {!isPip && (
+        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-1 group-hover:translate-y-0 duration-300">
+          <button
+            onClick={toggleFullscreen}
+            className="p-2.5 rounded-xl bg-black/40 backdrop-blur-xl text-white border border-white/10 hover:bg-black/60 hover:scale-105 active:scale-95 transition-all"
+          >
+            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+          </button>
+        </div>
+      )}
 
-      <div className="absolute bottom-4 left-4 flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg">
+      <div className={`absolute flex items-center gap-2.5 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg ${isPip ? 'bottom-2 left-2 px-2 py-1' : 'bottom-4 left-4 px-3 py-2'}`}>
         <div className="flex items-center gap-1.5">
-          {!isAudioOn && <MicOff size={13} className="text-red-400" />}
-          {isScreen && <ScreenShare size={13} className="text-indigo-400" />}
-          <span className="text-xs font-semibold text-zinc-100 tracking-tight">
+          {!isAudioOn && <MicOff size={isPip ? 10 : 13} className="text-red-400" />}
+          {isScreen && <ScreenShare size={isPip ? 10 : 13} className="text-indigo-400" />}
+          <span className={`${isPip ? 'text-[10px]' : 'text-xs'} font-semibold text-zinc-100 tracking-tight`}>
             {userName} {isLocal && <span className="text-white/40 ml-1 font-normal">(You)</span>}
           </span>
         </div>
       </div>
-      
-      {/* Decorative border glow for active speakers could go here */}
     </div>
   );
 }
@@ -153,6 +157,8 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
   const screenShareItem = items.find(item => item.isScreen);
   const otherItems = items.filter(item => item !== screenShareItem);
 
+  const [isSwapped, setIsSwapped] = useState(false);
+
   if (items.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 bg-[#030305] text-zinc-500 font-sans">
@@ -166,6 +172,41 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
           <p className="text-sm font-semibold text-zinc-300">Room is currently quiet</p>
           <p className="text-xs text-zinc-500 tracking-wide uppercase">Waiting for streams to begin</p>
         </div>
+      </div>
+    );
+  }
+
+  // Case: WhatsApp Style (1:1 PIP with swap capability)
+  if (layout === 'whatsapp' && items.length >= 1) {
+    const remote = items.find(i => !i.isLocal) || items[0];
+    const local = items.find(i => i.isLocal && i !== remote) || (items[0].isLocal ? items[0] : null);
+
+    const main = isSwapped ? local : remote;
+    const pip = isSwapped ? remote : local;
+
+    return (
+      <div className="flex-1 relative overflow-hidden bg-[#030305]">
+        {/* Main Participant (Background) */}
+        {main && (
+          <div className="w-full h-full p-4">
+            <MediaTile {...main} />
+          </div>
+        )}
+        
+        {/* Floating PIP Participant (Switchable) */}
+        {pip && (
+          <button 
+            onClick={() => setIsSwapped(!isSwapped)}
+            className="absolute bottom-10 right-10 w-32 sm:w-48 aspect-[3/4] sm:aspect-video shadow-2xl transition-all hover:scale-105 active:scale-95 group/pip overflow-hidden rounded-2xl border-2 border-white/10"
+          >
+            <MediaTile {...pip} isPip={true} />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/pip:opacity-100 transition-opacity flex items-center justify-center">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 px-2 py-1 rounded-full shadow-lg">
+                Switch
+              </span>
+            </div>
+          </button>
+        )}
       </div>
     );
   }
@@ -188,7 +229,7 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
     );
   }
 
-  // Case: 1:1 Meeting layout (Optimized)
+  // Case: 1:1 Meeting layout (Standard grid)
   if (layout === 'meeting' && items.length === 2) {
     return (
       <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 min-h-0 bg-[#030305]">

@@ -268,6 +268,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     avatarBg={avatarBg}
                     themeColor={themeColor}
                     onMeetingOpen={() => setIsMeetingModalOpen(true)}
+                    eventTimeZone={eventData?.event_timezone}
                 />
             )}
 

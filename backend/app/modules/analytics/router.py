@@ -1,7 +1,7 @@
 """Analytics module router for IVEP."""
 
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -11,6 +11,7 @@ from bson import ObjectId
 from app.core.dependencies import get_current_user, require_role, require_roles
 from app.modules.auth.enums import Role
 from app.db.mongo import get_database
+from app.db.utils import _oid_or_value
 
 from .latex_service import latex_service
 from .repository import analytics_repo
@@ -31,8 +32,7 @@ from .service import (
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-def _oid_or_value(value: str):
-    return ObjectId(value) if ObjectId.is_valid(value) else value
+
 
 
 async def _assert_event_access_for_organizer(event_id: str, current_user: dict):
@@ -273,7 +273,7 @@ async def get_live_platform_metrics(
 ):
     """Admin live platform analytics with rolling recent activity counters."""
     db = get_database()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
 
     base = await analytics_repo.get_platform_metrics()
@@ -302,7 +302,7 @@ async def get_live_event_metrics(
     if role == Role.ORGANIZER.value:
         await _assert_event_access_for_organizer(event_id, current_user)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
     base = await analytics_repo.get_event_analytics(event_id)
 
@@ -338,7 +338,7 @@ async def get_live_stand_metrics(
             raise HTTPException(status_code=404, detail="Stand not found")
 
     event_id = str(stand.get("event_id")) if stand and stand.get("event_id") else None
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
     base = await analytics_repo.get_stand_analytics(stand_id)
 

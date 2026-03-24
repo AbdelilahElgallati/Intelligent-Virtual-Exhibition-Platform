@@ -108,7 +108,6 @@ export default function AudienceRoom({
         ? `Ends in ${formatDuration((end as number) - now)}`
         : `Ended ${formatDuration(now - (end as number))} ago`;
 
-  // The speaker is the non-local participant with owner role (or first remote)
   const speaker = remoteParticipants.find((p) => !p.local) ?? remoteParticipants[0] ?? null;
   const totalWatching = allParticipants.length;
 
@@ -123,134 +122,164 @@ export default function AudienceRoom({
   };
 
   return (
-    <div className="h-screen bg-zinc-100 font-sans text-zinc-900">
+    <div className="h-screen bg-[#070709] font-sans text-zinc-100 overflow-hidden">
       <div className="grid h-full min-w-0 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px]">
 
         {/* ── Left: Video ───────────────────────────────── */}
         <div className="flex min-w-0 flex-col">
-          {/* Header */}
-          <header className="border-b border-zinc-200 bg-white px-5 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Professional Header */}
+          <header className="border-b border-white/5 bg-[#0a0a0f] px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-md bg-red-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-red-600">
+                  <span className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                    Live
+                    Live Event
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-600">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-400 border border-white/5">
                     <Clock3 size={13} />
                     {sessionState}
                   </span>
                   {reconnecting && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-semibold text-amber-500 border border-amber-500/10">
                       <RefreshCw size={12} className="animate-spin" />
                       Reconnecting…
                     </span>
                   )}
                 </div>
-                <h1 className="mt-2 truncate text-base font-bold text-zinc-900">{conferenceTitle}</h1>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                  <span className="inline-flex items-center gap-1.5 font-semibold">
-                    <Users size={13} />
-                    {totalWatching} watching
+                <h1 className="mt-3 truncate text-lg font-extrabold text-white tracking-tight">{conferenceTitle}</h1>
+                <div className="mt-1.5 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+                  <span className="inline-flex items-center gap-1.5 font-medium">
+                    <Users size={14} className="text-zinc-400" />
+                    <span className="text-zinc-300 font-bold">{totalWatching}</span> people watching
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <CalendarClock size={13} />
+                    <CalendarClock size={14} className="text-zinc-600" />
                     {formatDateTime(startTime)} – {formatDateTime(endTime)}
                   </span>
                 </div>
               </div>
               <button
                 onClick={handleLeave}
-                className="rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-200"
+                className="rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-white/10 active:scale-95"
               >
-                Leave
+                Leave Room
               </button>
             </div>
           </header>
 
-          {/* Speaker video */}
-          <main className="relative flex-1 overflow-hidden bg-zinc-950 flex flex-col">
-            <MediaGrid 
-              participants={remoteParticipants} 
-              layout="conference"
-              prominentScreenShare={true} 
-            />
+          {/* Teams-style Stage */}
+          <main className="relative flex-1 overflow-hidden bg-black flex flex-col p-4">
+            <div className="flex-1 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+              <MediaGrid 
+                participants={remoteParticipants} 
+                layout="conference"
+                prominentScreenShare={true} 
+              />
+            </div>
 
             {/* Disconnect overlay */}
             {isDisconnected && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/90 px-4">
-                <div className="max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-center text-zinc-100">
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-amber-400/20 text-amber-300">
-                    <AlertTriangle size={20} />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+                <div className="max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-8 text-center text-zinc-100 shadow-2xl">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    <AlertTriangle size={28} />
                   </div>
-                  <p className="text-sm font-semibold">Connection lost</p>
-                  <p className="mt-1 text-xs text-zinc-300">
-                    The conference is still running. Reconnect to continue watching.
+                  <h3 className="text-lg font-bold">Session Disconnected</h3>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    You've been disconnected from the live stream. Click below to return.
                   </p>
                   <button
                     onClick={handleReconnect}
-                    className="mt-4 inline-flex items-center rounded-lg bg-white px-4 py-2 text-xs font-semibold text-zinc-900"
+                    className="mt-6 inline-flex items-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-black transition-all hover:bg-zinc-200 active:scale-95"
                   >
-                    <RefreshCw size={14} className="mr-1.5" />
-                    Reconnect now
+                    <RefreshCw size={16} className="mr-2" />
+                    Reconnect Stream
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Speaker label */}
-            <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-black/55 px-3 py-2 text-[11px] text-zinc-100">
-              Speaker: {speakerName || enterpriseName || 'Assigned speaker'}
+            {/* Stage Label */}
+            <div className="absolute bottom-10 left-10 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-none">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-white tracking-wide">
+                Stage: {speakerName || enterpriseName || 'Assigned speaker'}
+              </span>
             </div>
           </main>
         </div>
 
-        {/* ── Right: Sidebar ─────────────────────────────── */}
-        <aside className="flex max-h-[45vh] flex-col border-t border-zinc-200 bg-white xl:max-h-none xl:border-l xl:border-t-0">
-          <div className="border-b border-zinc-100 px-5 py-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Session Info</h2>
-            <p className="mt-1 text-sm font-semibold text-zinc-900">Ask questions and follow attendees</p>
-          </div>
-
-          <div className="border-b border-zinc-100 px-5 py-4 text-sm">
-            <p className="font-semibold text-zinc-800">Speaker</p>
-            <p className="mt-1 text-zinc-600">{speakerName || enterpriseName || 'Not specified'}</p>
-            <p className="mt-3 text-xs text-zinc-500 line-clamp-3">
-              {conferenceDescription || 'Watch the live session and use the Q&A panel to ask your questions.'}
-            </p>
-          </div>
-
-          <div className="border-b border-zinc-100 px-5 py-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Attendees</p>
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-700">
-                  <Users size={13} />
-                  Live now: {totalWatching}
-                </span>
-                <span className="text-zinc-500">Registered: {Math.max(attendeeCount, totalWatching)}</span>
+        {/* ── Right: Sidebar (Google Meet style) ─────────────────────────────── */}
+        <aside className="flex flex-col bg-[#0a0a0f] border-l border-white/5 shadow-2xl overflow-hidden">
+          {/* Sidebar Nav/Header */}
+          <div className="px-6 py-5 border-b border-white/5">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Conference Intel</h2>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                <Users size={20} className="text-white" />
               </div>
-              <div className="mt-2 max-h-32 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-2 space-y-1">
-                <div className="rounded-md bg-white px-2 py-1.5 text-xs text-zinc-700">You</div>
-                {remoteParticipants.length === 0 && (
-                  <div className="px-2 py-1 text-xs text-zinc-500">No other attendee connected yet.</div>
-                )}
-                {remoteParticipants.map((p) => (
-                  <div key={p.sessionId} className="rounded-md bg-white px-2 py-1.5 text-xs text-zinc-700">
-                    {p.userName}
-                  </div>
-                ))}
+              <div>
+                <p className="text-sm font-bold text-white leading-none">Audience Panel</p>
+                <p className="text-[10px] text-zinc-500 mt-1">Real-time interaction</p>
               </div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-hidden">
-            {qaEnabled ? (
-              <QAPanel conferenceId={conferenceId} isSpeaker={false} />
-            ) : (
-              <div className="px-5 py-8 text-sm text-zinc-500">Q&A is disabled for this conference.</div>
-            )}
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {/* Session Summary Card */}
+            <div className="p-6">
+              <div className="rounded-2xl bg-white/5 border border-white/5 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Speaker</p>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[9px] font-bold border border-emerald-500/20">Active</span>
+                </div>
+                <p className="text-sm font-bold text-zinc-100">{speakerName || enterpriseName || 'Not specified'}</p>
+                <p className="text-xs text-zinc-400 leading-relaxed italic line-clamp-3">
+                  "{conferenceDescription || 'Join our live expert session and participate in real-time Q&A.'}"
+                </p>
+              </div>
+
+              {/* Attendance quick view */}
+              <div className="mt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Live Attendees</p>
+                  <span className="text-[10px] text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">{totalWatching} online</span>
+                </div>
+                
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/5">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <span className="text-xs font-semibold text-white">You</span>
+                  </div>
+                  {remoteParticipants.map((p) => (
+                    <div key={p.sessionId} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-transparent hover:border-white/5 transition-all">
+                      <div className="w-2 h-2 rounded-full bg-zinc-700" />
+                      <span className="text-xs text-zinc-400 font-medium">{p.userName}</span>
+                    </div>
+                  ))}
+                  {remoteParticipants.length === 0 && (
+                    <p className="text-[10px] text-zinc-600 text-center py-2">No other attendees yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Q&A Section */}
+              <div className="mt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Q&A Session</p>
+                </div>
+                <div className="rounded-2xl bg-zinc-950/50 border border-white/5 overflow-hidden">
+                  {qaEnabled ? (
+                    <QAPanel conferenceId={conferenceId} isSpeaker={false} />
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-xs text-zinc-600">Q&A is currently disabled</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
+import { formatInTZ } from '@/lib/timezone';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ interface ChatPanelProps {
     onMeetingOpen?: () => void;
     /** When true, disables the 15-message limit, announcement banner, and meeting CTA (enterprise mode). */
     disableMessageLimit?: boolean;
+    eventTimeZone?: string;
 }
 
 interface ChatRoom {
@@ -57,7 +59,7 @@ function mergeChatHistory(existing: any[], incoming: any[]) {
     return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
-export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId, isEmbedded, themeColor = '#4f46e5', onMeetingOpen, disableMessageLimit = false }: ChatPanelProps) {
+export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId, isEmbedded, themeColor = '#4f46e5', onMeetingOpen, disableMessageLimit = false, eventTimeZone = 'UTC' }: ChatPanelProps) {
     const { user, isAuthenticated } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(initialRoomId || null);
     const [input, setInput] = useState('');
@@ -219,9 +221,9 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
 
     /* ===================== MODAL MODE (centered) ===================== */
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 backdrop-blur-md p-4" onClick={onClose}>
             <div
-                className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                className="relative w-full max-w-lg bg-white/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_128px_rgba(0,0,0,0.2)] border border-white/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu"
                 style={{ maxHeight: 'min(85vh, 680px)' }}
                 onClick={e => e.stopPropagation()}
             >
@@ -237,39 +239,38 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     function renderHeader(showClose: boolean) {
         return (
             <>
-            <div
-                className="px-5 py-3.5 border-b flex justify-between items-center text-white shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${themeColor}, rgba(${r},${g},${b},0.85))` }}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                        <MessageSquare size={18} className="text-white" />
+            <div className="px-8 py-5 border-b border-black/5 bg-white/40 flex justify-between items-center text-gray-900">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl shadow-inner border border-white/40" style={{ backgroundColor: `${themeColor}15` }}>
+                        <MessageSquare className="w-5 h-5" style={{ color: themeColor }} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm">Chat with {standName}</h3>
-                        <div className="flex items-center gap-1.5 text-xs text-white/70 mt-0.5">
-                            <span className={clsx("w-2 h-2 rounded-full", isConnected ? "bg-green-400" : "bg-red-400")} />
-                            {isConnected ? 'Online' : 'Connecting...'}
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] leading-none mb-1">
+                            Live Chat
+                        </h3>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                            <span className={clsx("w-2 h-2 rounded-full shadow-sm", isConnected ? "bg-emerald-500" : "bg-red-500")} />
+                            {isConnected ? 'Sync Active' : 'Connecting...'}
                             {!disableMessageLimit && !limitReached && myMessageCount > 0 && (
-                                <span className="ml-2 text-white/50">
-                                    · {remaining} message{remaining !== 1 ? 's' : ''} left
+                                <span className="ml-1 opacity-60">
+                                    · {remaining} left
                                 </span>
                             )}
                         </div>
                     </div>
                 </div>
                 {showClose && (
-                    <button onClick={onClose} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors">
-                        <X size={18} />
+                    <button onClick={onClose} className="p-2.5 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-900 transition-all active:scale-90">
+                        <X className="w-5 h-5" />
                     </button>
                 )}
             </div>
             {/* Announcement banner (visitor only) */}
             {!disableMessageLimit && !limitReached && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-100 text-amber-800">
+                <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-500/5 border-b border-amber-500/10 text-amber-900">
                     <AlertCircle size={14} className="shrink-0 text-amber-500" />
-                    <p className="text-[11px] leading-snug">
-                        This chat is limited to <span className="font-semibold">{MAX_VISITOR_MESSAGES} messages</span>. For extended discussions, please request a meeting.
+                    <p className="text-[10px] font-bold uppercase tracking-tight">
+                        Limited to <span className="text-amber-600 underline underline-offset-2">{MAX_VISITOR_MESSAGES} messages</span>. Request meeting for more.
                     </p>
                 </div>
             )}
@@ -279,10 +280,10 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
 
     function renderBody() {
         return (
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/80" style={{ minHeight: 200 }}>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-transparent" style={{ minHeight: 200 }}>
                 {error && !isConnected && (
-                    <div className="px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg text-[11px] text-amber-700 mb-2">
-                        Live sync is reconnecting. You can keep typing and send when the connection returns.
+                    <div className="px-4 py-2.5 bg-amber-50/50 border border-amber-500/10 rounded-2xl text-[10px] font-bold text-amber-700 uppercase tracking-widest text-center animate-pulse">
+                        Connecting to sync service...
                     </div>
                 )}
                 {isLoading ? (
@@ -290,40 +291,48 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                         <Loader2 className="animate-spin" style={{ color: themeColor }} />
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="text-center text-gray-400 text-sm mt-10">
-                        <MessageSquare size={28} className="mx-auto mb-2 opacity-40" />
-                        No messages yet. Say hello!
+                    <div className="text-center text-gray-400 flex flex-col items-center justify-center py-20 bg-black/5 rounded-[2.5rem] border border-dashed border-black/10">
+                        <MessageSquare size={32} className="mb-4 opacity-20" />
+                        <p className="text-[10px] font-black uppercase tracking-widest">No messages yet</p>
                     </div>
                 ) : (
                     messages.map((msg, idx) => {
                         const isMe = msg.sender_id === userId;
                         return (
-                            <div key={idx} className={clsx("flex", isMe ? "justify-end" : "justify-start gap-2")}>
+                            <div key={idx} className={clsx("flex", isMe ? "justify-end" : "justify-start gap-4")}>
                                 {!isMe && (
                                     <div
-                                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1"
-                                        style={{ backgroundColor: avatarBg ?? '#ffffff', border: '1px solid #e5e7eb' }}
+                                        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-black/5"
+                                        style={{ backgroundColor: avatarBg ?? '#ffffff' }}
                                     >
-                                        <User size={14} className="text-gray-500" />
+                                        <User size={16} className="text-gray-400" />
                                     </div>
                                 )}
-                                <div className="flex flex-col max-w-[80%]">
+                                <div className="flex flex-col max-w-[85%]">
+                                    {!isMe && msg.sender_name && (
+                                        <div className="text-[9px] font-black uppercase tracking-[0.15em] mb-1.5 ml-1 opacity-50">
+                                            {msg.sender_name}
+                                        </div>
+                                    )}
                                     <div
                                         className={clsx(
-                                            "rounded-2xl px-4 py-2.5 text-sm shadow-sm",
-                                            isMe ? "text-white rounded-br-sm" : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"
+                                            "rounded-3xl px-5 py-3 text-[13px] font-medium leading-relaxed tracking-tight shadow-sm",
+                                            isMe 
+                                                ? "text-white rounded-tr-sm shadow-xl" 
+                                                : "bg-white text-gray-800 border border-white/60 rounded-tl-sm backdrop-blur-sm"
                                         )}
-                                        style={isMe ? { backgroundColor: themeColor } : undefined}
+                                        style={isMe ? { 
+                                            backgroundColor: themeColor,
+                                            boxShadow: `0 8px 24px -6px ${themeColor}66`
+                                        } : undefined}
                                     >
-                                        {!isMe && msg.sender_name && (
-                                            <div className="text-[10px] font-bold mb-0.5" style={{ color: themeColor }}>
-                                                {msg.sender_name}
-                                            </div>
-                                        )}
                                         {msg.content}
                                     </div>
-                                    <span className="text-[10px] text-gray-400 mt-1 px-1">
-                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <span className={clsx(
+                                        "text-[9px] font-black text-gray-400 mt-1.5 uppercase tracking-tighter opacity-50",
+                                        isMe ? "text-right mr-1" : "ml-1"
+                                    )}>
+                                        {formatInTZ(msg.timestamp, eventTimeZone, 'h:mm a')}
                                     </span>
                                 </div>
                             </div>
@@ -334,24 +343,28 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                 {/* Limit-reached banner (visitor only) */}
                 {!disableMessageLimit && limitReached && (
                     <div
-                        className="rounded-2xl p-5 text-center border animate-in fade-in slide-in-from-bottom-2 duration-500"
-                        style={{ backgroundColor: `rgba(${r},${g},${b},0.06)`, borderColor: `rgba(${r},${g},${b},0.15)` }}
+                        className="rounded-[2.5rem] p-8 text-center border bg-white/40 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-700 shadow-xl"
+                        style={{ borderColor: `${themeColor}22` }}
                     >
-                        <AlertCircle size={26} className="mx-auto mb-2" style={{ color: themeColor }} />
-                        <h4 className="text-sm font-bold text-gray-900">Message Limit Reached</h4>
-                        <p className="text-xs text-gray-600 mt-1 mb-3 leading-relaxed">
-                            You&apos;ve used all {MAX_VISITOR_MESSAGES} messages in this chat.
-                            To continue the conversation, request a formal meeting with the stand team.
+                        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto mb-6">
+                            <AlertCircle size={32} className="text-amber-500" />
+                        </div>
+                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-2">Limit Reached</h4>
+                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed mb-6 px-4">
+                            You&apos;ve used all {MAX_VISITOR_MESSAGES} messages.
+                            Request a formal meeting to continue the discussion with our team.
                         </p>
-                        <Button
-                            size="sm"
-                            className="text-xs h-8 text-white"
-                            style={{ backgroundColor: themeColor }}
+                        <button
+                            className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all duration-300 transform-gpu active:scale-95 hover:brightness-110"
+                            style={{ 
+                                backgroundColor: themeColor,
+                                boxShadow: `0 12px 32px -8px ${themeColor}aa`
+                            }}
                             onClick={handleMeetingRequest}
                         >
-                            <Calendar size={14} className="mr-1.5" />
-                            Request a Meeting
-                        </Button>
+                            <Calendar size={14} />
+                            Request Meeting
+                        </button>
                     </div>
                 )}
 
@@ -372,11 +385,11 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     function renderInput() {
         if (!disableMessageLimit && limitReached) {
             return (
-                <div className="p-3 border-t bg-gray-50 text-center">
-                    <p className="text-xs text-gray-500">Chat limit reached —</p>
+                <div className="p-6 border-t border-black/5 bg-white/40 backdrop-blur-md text-center">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Chat limit reached</p>
                     <button
                         onClick={handleMeetingRequest}
-                        className="text-xs font-semibold mt-0.5 hover:underline"
+                        className="text-[11px] font-black uppercase tracking-widest hover:underline underline-offset-4"
                         style={{ color: themeColor }}
                     >
                         Request a meeting instead →
@@ -386,24 +399,29 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
         }
 
         return (
-            <div className="p-3 border-t bg-white">
-                <form onSubmit={handleSend} className="flex gap-2">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder={isConnected ? 'Type a message...' : 'Connection is recovering...'}
-                        className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                        style={{ ['--tw-ring-color' as string]: `${themeColor}66` }}
-                        disabled={!isConnected}
-                    />
+            <div className="p-5 border-t border-black/5 bg-white/40 backdrop-blur-md">
+                <form onSubmit={handleSend} className="flex gap-3">
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder={isConnected ? 'Type something...' : 'Reconnecting...'}
+                            className="w-full bg-white/60 border border-white/80 rounded-2xl px-5 py-3.5 text-xs font-medium focus:outline-none focus:ring-4 transition-all shadow-inner"
+                            style={{ ['--tw-ring-color' as string]: `${themeColor}22` }}
+                            disabled={!isConnected}
+                        />
+                    </div>
                     <button
                         type="submit"
                         disabled={!input.trim() || !isConnected}
-                        className="text-white p-2.5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:opacity-90"
-                        style={{ backgroundColor: themeColor }}
+                        className="w-12 h-12 flex items-center justify-center rounded-2xl text-white shadow-xl disabled:opacity-30 disabled:grayscale transition-all duration-300 transform-gpu active:scale-90 hover:brightness-110"
+                        style={{ 
+                            backgroundColor: themeColor,
+                            boxShadow: `0 8px 16px -4px ${themeColor}88`
+                         }}
                     >
-                        <Send size={16} />
+                        <Send size={18} />
                     </button>
                 </form>
             </div>

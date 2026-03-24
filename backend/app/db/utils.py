@@ -2,6 +2,13 @@ from typing import Any
 from bson import ObjectId
 
 
+def _oid_or_value(value: Any) -> Any:
+    """Return ObjectId if valid, else original value."""
+    if not isinstance(value, str):
+        return value
+    return ObjectId(value) if ObjectId.is_valid(value) else value
+
+
 def stringify_object_ids(obj: Any) -> Any:
     """
     Recursively convert bson.ObjectId values to strings.

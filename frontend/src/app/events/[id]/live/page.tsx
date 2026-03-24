@@ -108,7 +108,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
                     )}
 
                     {tab === 'conferences' && (
-                        <EventConferencesTab eventId={eventId} />
+                        <EventConferencesTab eventId={eventId} event={event} />
                     )}
                 </>
             )}

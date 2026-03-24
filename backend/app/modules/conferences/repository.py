@@ -3,7 +3,7 @@ Conference repository — MongoDB CRUD for conferences, registrations, Q&A.
 """
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
@@ -17,8 +17,8 @@ class ConferenceRepository:
     # ── Conferences ───────────────────────────────────────────────────────────
 
     async def create(self, doc: dict) -> dict:
-        doc["created_at"] = datetime.utcnow()
-        doc["updated_at"] = datetime.utcnow()
+        doc["created_at"] = datetime.now(timezone.utc)
+        doc["updated_at"] = datetime.now(timezone.utc)
         doc["attendee_count"] = 0
         result = await self.db.conferences.insert_one(doc)
         doc["_id"] = str(result.inserted_id)
@@ -52,7 +52,7 @@ class ConferenceRepository:
         return stringify_object_ids(docs)
 
     async def update(self, conf_id: str, fields: dict) -> Optional[dict]:
-        fields["updated_at"] = datetime.utcnow()
+        fields["updated_at"] = datetime.now(timezone.utc)
         result = await self.db.conferences.find_one_and_update(
             {"_id": ObjectId(conf_id)},
             {"$set": fields},
@@ -61,7 +61,7 @@ class ConferenceRepository:
         return stringify_object_ids(result) if result else None
 
     async def set_status(self, conf_id: str, new_status: str, extra: Optional[dict] = None) -> Optional[dict]:
-        patch = {"status": new_status, "updated_at": datetime.utcnow()}
+        patch = {"status": new_status, "updated_at": datetime.now(timezone.utc)}
         if extra:
             patch.update(extra)
         result = await self.db.conferences.find_one_and_update(
@@ -90,7 +90,7 @@ class ConferenceRepository:
             "conference_id": conf_id,
             "user_id": user_id,
             "user_role": user_role,
-            "registered_at": datetime.utcnow(),
+            "registered_at": datetime.now(timezone.utc),
             "joined_at": None,
             "left_at": None,
         })
@@ -128,7 +128,7 @@ class ConferenceRepository:
             "is_answered": False,
             "answer": None,
             "upvotes": 0,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
         }
         result = await self.db.conference_qa.insert_one(doc)
         doc["_id"] = str(result.inserted_id)

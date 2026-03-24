@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -11,19 +11,23 @@ import {
     Eye,
     MessageSquare,
     MousePointer2,
-    Calendar,
+    Clock,
     ArrowUpRight,
     ArrowDownRight,
-    Globe,
-    Clock
 } from 'lucide-react';
-import { Container } from '@/components/common/Container';
+import clsx from 'clsx';
+
+interface TimeSeriesPoint {
+    timestamp: string;
+    value: number;
+}
 
 interface StandAnalytics {
     total_visits: number;
     unique_visitors: number;
     interaction_count: number;
     interaction_breakdown: Record<string, number>;
+    main_chart: TimeSeriesPoint[];
 }
 
 interface Stand {
@@ -53,6 +57,10 @@ function mapDashboardToStandAnalytics(payload: any): StandAnalytics {
         interaction_breakdown: Object.fromEntries(
             Object.entries(distribution).map(([k, v]) => [k, Number(v || 0)])
         ),
+        main_chart: Array.isArray(dashboard.main_chart) ? dashboard.main_chart.map((p: any) => ({
+            timestamp: p.timestamp,
+            value: Number(p.value || 0)
+        })) : []
     };
 }
 
@@ -87,8 +95,6 @@ const MetricCard = ({ title, value, subValue, icon: Icon, trend, color }: any) =
     </Card>
 );
 
-import clsx from 'clsx';
-
 export default function EnterpriseAnalyticsPage() {
     const [stands, setStands] = useState<Stand[]>([]);
     const [analytics, setAnalytics] = useState<Record<string, StandAnalytics>>({});
@@ -98,20 +104,17 @@ export default function EnterpriseAnalyticsPage() {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            // 1. Fetch Events
             const events = await http.get<any[]>('/enterprise/events');
             const approvedEvents = events.filter(
                 ev => ev.participation?.status === 'approved' || ev.participation?.status === 'guest_approved'
             );
 
-            // 2. Fetch stands
             const standPromises = approvedEvents.map(ev =>
                 http.get<Stand>(`/enterprise/events/${ev.id || ev._id}/stand`).catch(() => null)
             );
             const standResults = (await Promise.all(standPromises)).filter(s => s !== null) as Stand[];
             setStands(standResults);
 
-            // 3. Fetch Analytics for each stand
             const analyticsMap: Record<string, StandAnalytics> = {};
             await Promise.all(standResults.map(async (s) => {
                 try {
@@ -123,7 +126,7 @@ export default function EnterpriseAnalyticsPage() {
                         analyticsMap[s.id] = mapDashboardToStandAnalytics(data);
                     }
                 } catch (e) {
-                    analyticsMap[s.id] = { total_visits: 0, unique_visitors: 0, interaction_count: 0, interaction_breakdown: {} };
+                    analyticsMap[s.id] = { total_visits: 0, unique_visitors: 0, interaction_count: 0, interaction_breakdown: {}, main_chart: [] };
                 }
             }));
             setAnalytics(analyticsMap);
@@ -137,16 +140,53 @@ export default function EnterpriseAnalyticsPage() {
 
     useEffect(() => { fetchData(); }, []);
 
-    // Aggregate stats
-    const aggregated = Object.values(analytics).reduce((acc, curr) => ({
-        total_visits: acc.total_visits + curr.total_visits,
-        unique_visitors: acc.unique_visitors + curr.unique_visitors,
-        interaction_count: acc.interaction_count + curr.interaction_count,
-    }), { total_visits: 0, unique_visitors: 0, interaction_count: 0 });
+    const aggregated = useMemo(() => {
+        const values = Object.values(analytics);
+        const result = values.reduce((acc, curr) => ({
+            total_visits: acc.total_visits + curr.total_visits,
+            unique_visitors: acc.unique_visitors + curr.unique_visitors,
+            interaction_count: acc.interaction_count + curr.interaction_count,
+            interaction_breakdown: acc.interaction_breakdown, // Complex to merge, will handle separately if needed
+            main_chart: acc.main_chart
+        }), { 
+            total_visits: 0, 
+            unique_visitors: 0, 
+            interaction_count: 0, 
+            interaction_breakdown: {} as Record<string, number>,
+            main_chart: [] as TimeSeriesPoint[] 
+        });
+
+        // Merge breakdown
+        values.forEach(a => {
+            Object.entries(a.interaction_breakdown).forEach(([k, v]) => {
+                result.interaction_breakdown[k] = (result.interaction_breakdown[k] || 0) + v;
+            });
+        });
+
+        // Merge main chart (sum values for same timestamps)
+        const chartMap = new Map<string, number>();
+        values.forEach(a => {
+            a.main_chart.forEach(p => {
+                const day = p.timestamp.split('T')[0];
+                chartMap.set(day, (chartMap.get(day) || 0) + p.value);
+            });
+        });
+        result.main_chart = Array.from(chartMap.entries())
+            .map(([ts, val]) => ({ timestamp: ts, value: val }))
+            .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+        return result;
+    }, [analytics]);
 
     const currentStats = selectedStand === 'all'
         ? aggregated
-        : analytics[selectedStand] || { total_visits: 0, unique_visitors: 0, interaction_count: 0 };
+        : analytics[selectedStand] || { total_visits: 0, unique_visitors: 0, interaction_count: 0, interaction_breakdown: {}, main_chart: [] };
+
+    const breakdownItems = Object.entries(currentStats.interaction_breakdown)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4);
+
+    const maxChartValue = Math.max(...currentStats.main_chart.map(p => p.value), 1);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -170,14 +210,12 @@ export default function EnterpriseAnalyticsPage() {
                 </div>
             </div>
 
-            {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <MetricCard
                     title="Impressions"
                     value={currentStats.total_visits}
                     subValue="Total Views"
                     icon={Eye}
-                    trend={12}
                     color="bg-indigo-600"
                 />
                 <MetricCard
@@ -185,7 +223,6 @@ export default function EnterpriseAnalyticsPage() {
                     value={currentStats.interaction_count}
                     subValue="Interactions"
                     icon={MousePointer2}
-                    trend={5}
                     color="bg-emerald-600"
                 />
                 <MetricCard
@@ -193,12 +230,10 @@ export default function EnterpriseAnalyticsPage() {
                     value={currentStats.unique_visitors}
                     subValue="Visitors"
                     icon={Users}
-                    trend={-2}
                     color="bg-purple-600"
                 />
             </div>
 
-            {/* Charts Section Placeholder */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="border-zinc-200 shadow-sm">
                     <CardHeader className="border-b border-zinc-50 bg-zinc-50/30">
@@ -210,51 +245,53 @@ export default function EnterpriseAnalyticsPage() {
                                 <p className="text-3xl font-black text-zinc-900">{currentStats.interaction_count}</p>
                                 <p className="text-[10px] text-zinc-400 font-bold uppercase">Total</p>
                             </div>
-                            {/* Simple visual indicator */}
                             <div className="absolute inset-0 rounded-full border-8 border-indigo-500 border-t-transparent animate-pulse-slow" />
                         </div>
-                        <div className="grid grid-cols-2 gap-8 w-full max-w-xs mt-6">
-                            <div className="text-center">
-                                <div className="flex items-center justify-center gap-1.5 mb-1">
-                                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                                    <span className="text-xs font-bold text-zinc-600">Chats</span>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full max-w-xs mt-6">
+                            {breakdownItems.length > 0 ? breakdownItems.map(([type, count]) => (
+                                <div key={type} className="text-center">
+                                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                                        <span className="text-[10px] font-bold text-zinc-600 uppercase truncate max-w-[80px]">
+                                            {type.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                    <p className="text-lg font-black text-zinc-900">
+                                        {currentStats.interaction_count > 0 ? Math.round((count / currentStats.interaction_count) * 100) : 0}%
+                                    </p>
                                 </div>
-                                <p className="text-lg font-black text-zinc-900">42%</p>
-                            </div>
-                            <div className="text-center">
-                                <div className="flex items-center justify-center gap-1.5 mb-1">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                    <span className="text-xs font-bold text-zinc-600">Product Inquiries</span>
-                                </div>
-                                <p className="text-lg font-black text-zinc-900">38%</p>
-                            </div>
+                            )) : <p className="col-span-2 text-xs text-zinc-400">No interaction data available</p>}
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card className="border-zinc-200 shadow-sm">
                     <CardHeader className="border-b border-zinc-50 bg-zinc-50/30">
-                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Visitors Over Time</CardTitle>
+                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Activity Trend (Last 30 Days)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-8">
                         <div className="h-64 flex flex-col justify-between">
-                            <div className="flex items-end justify-between h-full gap-2 px-4 pb-4">
-                                {[30, 45, 25, 60, 75, 50, 40].map((h, i) => (
+                            <div className="flex items-end justify-between h-full gap-1.5 px-4 pb-4">
+                                {currentStats.main_chart.length > 0 ? currentStats.main_chart.map((p, i) => (
                                     <div key={i} className="flex-1 group relative">
                                         <div
-                                            className="bg-indigo-600/10 group-hover:bg-indigo-600 transition-all rounded-t-lg mx-auto w-Full"
-                                            style={{ height: `${h}%` }}
+                                            className="bg-indigo-600/10 group-hover:bg-indigo-600 transition-all rounded-t-lg mx-auto w-full"
+                                            style={{ height: `${(p.value / maxChartValue) * 100}%`, minHeight: p.value > 0 ? '4px' : '0' }}
                                         />
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {h + 10} views
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap shadow-xl">
+                                            <p className="font-bold">{p.value} views</p>
+                                            <p className="text-white/60 text-[8px]">{p.timestamp}</p>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                                        <p className="text-xs italic">Insufficient data for trend analysis</p>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-between border-t border-zinc-100 pt-4 px-2">
-                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                                    <span key={d} className="text-[10px] font-bold text-zinc-400 uppercase">{d}</span>
-                                ))}
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase">30 Days Ago</span>
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Today</span>
                             </div>
                         </div>
                     </CardContent>

@@ -10,6 +10,7 @@ from uuid import uuid4
 from bson import ObjectId
 
 from app.db.mongo import get_database
+from app.db.utils import stringify_object_ids, _oid_or_value
 from app.modules.analytics.repository import analytics_repo
 from app.modules.analytics.schemas import AnalyticsEventType
 
@@ -24,8 +25,7 @@ def _as_str(value: Any) -> Optional[str]:
     return str(value)
 
 
-def _oid_or_value(value: str) -> Any:
-    return ObjectId(value) if ObjectId.is_valid(value) else value
+
 
 
 def log_event(

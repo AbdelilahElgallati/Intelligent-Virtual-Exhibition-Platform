@@ -269,43 +269,43 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            {/* Backdrop with heavy blur */}
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-md" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-gray-200/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_128px_rgba(0,0,0,0.2)] border border-white/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu">
                 {validationToast && (
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-md rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 shadow-lg">
+                    <div className="absolute top-3 left/2 -translate-x-1/2 z-20 w-[92%] max-w-md rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-xs font-black text-red-700 shadow-xl uppercase tracking-widest">
                         {validationToast}
                     </div>
                 )}
 
                 {/* ---- Header ---- */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100" style={{ backgroundColor: `${themeColor}08` }}>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${themeColor}15` }}>
+                <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 bg-white/40">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl shadow-inner border border-white/40" style={{ backgroundColor: `${themeColor}15` }}>
                             <ShoppingBag className="w-5 h-5" style={{ color: themeColor }} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900">
-                                {view === 'products' ? (activeTab === 'product' ? 'Products' : 'Services') : 'Shopping Cart'}
+                            <h2 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] leading-none mb-1">
+                                {view === 'products' ? (activeTab === 'product' ? 'Store' : 'Specialized Services') : 'Checkout Cart'}
                             </h2>
-                            <p className="text-xs text-gray-500 truncate max-w-[280px]">{standName}</p>
+                            <p className="text-[10px] font-bold text-gray-400 truncate max-w-[280px] uppercase tracking-tighter">{standName}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         {/* Cart toggle button */}
                         <button
                             onClick={() => setView(view === 'products' ? 'cart' : 'products')}
-                            className="relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all border border-gray-200 hover:bg-gray-50"
-                            style={view === 'cart' ? { backgroundColor: `${themeColor}12`, borderColor: themeColor, color: themeColor } : {}}
+                            className="relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border border-white/40 shadow-sm hover:bg-white/80 active:scale-95"
+                            style={view === 'cart' ? { backgroundColor: themeColor, borderColor: themeColor, color: 'white' } : { backgroundColor: 'white/60' }}
                         >
-                            <ShoppingCart className="w-4 h-4" />
-                            <span className="hidden sm:inline">{view === 'products' ? 'Cart' : 'Browse'}</span>
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{view === 'products' ? 'My Cart' : 'Browse Store'}</span>
                             {cartCount > 0 && (
                                 <span
-                                    className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 flex items-center justify-center rounded-full text-[10px] font-bold text-white px-1"
-                                    style={{ backgroundColor: themeColor }}
+                                    className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[9px] font-black text-white px-1 shadow-lg"
+                                    style={{ backgroundColor: view === 'cart' ? 'black' : themeColor }}
                                 >
                                     {cartCount}
                                 </span>
@@ -313,7 +313,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                         </button>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="p-2.5 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-900 transition-all active:scale-90"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -340,39 +340,36 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     {!loading && !error && view === 'products' && (
                         <>
                             {/* Tab toggle */}
-                            <div className="flex gap-2 mb-5">
+                            <div className="flex gap-2 mb-8 bg-black/5 p-1.5 rounded-2xl w-fit">
                                 <button
                                     onClick={() => setActiveTab('product')}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${activeTab === 'product'
-                                            ? 'text-white border-transparent shadow-sm'
-                                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'product'
+                                            ? 'bg-white text-gray-900 shadow-md'
+                                            : 'text-gray-500 hover:text-gray-700'
                                         }`}
-                                    style={activeTab === 'product' ? { backgroundColor: themeColor } : {}}
                                 >
-                                    <Package className="w-4 h-4" />
+                                    <Package className="w-3.5 h-3.5" />
                                     Products
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('service')}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${activeTab === 'service'
-                                            ? 'text-white border-transparent shadow-sm'
-                                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'service'
+                                            ? 'bg-white text-gray-900 shadow-md'
+                                            : 'text-gray-500 hover:text-gray-700'
                                         }`}
-                                    style={activeTab === 'service' ? { backgroundColor: themeColor } : {}}
                                 >
-                                    <Briefcase className="w-4 h-4" />
+                                    <Briefcase className="w-3.5 h-3.5" />
                                     Services
                                 </button>
                             </div>
 
                             {filteredProducts.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                                    {activeTab === 'service' ? <Briefcase className="w-10 h-10 mb-3 text-gray-300" /> : <Package className="w-10 h-10 mb-3 text-gray-300" />}
-                                    <p className="text-sm font-medium text-gray-500">No {activeTab === 'product' ? 'products' : 'services'} yet</p>
-                                    <p className="text-xs text-gray-400 mt-1">This stand hasn&apos;t listed any {activeTab === 'product' ? 'products' : 'services'}.</p>
+                                <div className="flex flex-col items-center justify-center py-24 text-gray-400 bg-black/5 rounded-[2.5rem] border border-dashed border-black/10">
+                                    {activeTab === 'service' ? <Briefcase className="w-12 h-12 mb-4 text-gray-200" /> : <Package className="w-12 h-12 mb-4 text-gray-200" />}
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">No {activeTab}s available</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredProducts.map((product) => {
                                         const inCart = cart[product.id]?.quantity ?? 0;
                                         const isService = isServiceProduct(product);
@@ -381,81 +378,80 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         return (
                                             <div
                                                 key={product.id}
-                                                className="rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                                                className="group relative flex flex-col bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/80 hover:shadow-[0_12px_48px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-1 overflow-hidden"
                                             >
                                                 {/* Product image */}
-                                                {product.image_url && (
-                                                    <div className="relative w-full h-40 bg-gray-100">
-                                                        <img
-                                                            src={resolveMediaUrl(product.image_url)}
-                                                            alt={product.name}
-                                                            className="w-full h-full object-cover"
-                                                            draggable={false}
-                                                            onError={(e) => {
-                                                                e.currentTarget.src = '/stands/office-bg.jpg';
-                                                            }}
-                                                        />
-                                                        {inCart > 0 && (
-                                                            <div
-                                                                className="absolute top-2 right-2 min-w-[24px] h-6 flex items-center justify-center rounded-full text-[10px] font-bold text-white px-1.5"
-                                                                style={{ backgroundColor: themeColor }}
-                                                            >
-                                                                {inCart} in cart
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                <div className="relative w-full h-44 bg-black/5 overflow-hidden">
+                                                    <img
+                                                        src={resolveMediaUrl(product.image_url) || '/stands/office-bg.jpg'}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                        draggable={false}
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = '/stands/office-bg.jpg';
+                                                        }}
+                                                    />
+                                                    {inCart > 0 && (
+                                                        <div
+                                                            className="absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black text-white shadow-xl animate-in zoom-in"
+                                                            style={{ backgroundColor: themeColor }}
+                                                        >
+                                                            {inCart} IN CART
+                                                        </div>
+                                                    )}
+                                                    {isService && (
+                                                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-white text-[9px] font-black shadow-lg uppercase tracking-widest">
+                                                            Service
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                                <div className="p-4 flex-1 flex flex-col">
-                                                    {/* Name & price */}
-                                                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                        <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2">
+                                                <div className="p-6 flex-1 flex flex-col">
+                                                    <div className="flex items-start justify-between gap-3 mb-2">
+                                                        <h3 className="text-xs font-black text-gray-900 uppercase tracking-tight leading-snug line-clamp-2">
                                                             {product.name}
                                                         </h3>
-                                                        <span
-                                                            className="shrink-0 text-sm font-bold"
+                                                        <div
+                                                            className="shrink-0 text-sm font-black"
                                                             style={{ color: themeColor }}
                                                         >
                                                             {fmt(product.price)}
-                                                        </span>
+                                                        </div>
                                                     </div>
 
-                                                    {/* Description */}
                                                     {product.description && (
-                                                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
+                                                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed line-clamp-2 mb-4">
                                                             {product.description}
                                                         </p>
                                                     )}
 
-                                                    {/* Stock badge */}
-                                                    <div className="mb-3 mt-auto">
-                                                        {isService ? (
-                                                            <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[10px] font-semibold">
-                                                                Service
-                                                            </span>
-                                                        ) : outOfStock ? (
-                                                            <span className="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-semibold">
-                                                                Out of Stock
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-semibold">
-                                                                {product.stock} in stock
-                                                            </span>
+                                                    <div className="mt-auto pt-4 flex flex-col gap-4 border-t border-black/5">
+                                                        {!isService && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Availability</span>
+                                                                {outOfStock ? (
+                                                                    <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">Sold Out</span>
+                                                                ) : (
+                                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{product.stock} Units</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {!outOfStock && (
+                                                            <button
+                                                                onClick={() => addToCart(product)}
+                                                                disabled={!isService && inCart >= product.stock}
+                                                                className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.1em] shadow-xl transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-30 hover:brightness-110"
+                                                                style={{
+                                                                    backgroundColor: themeColor,
+                                                                    boxShadow: `0 8px 24px -6px ${themeColor}88`
+                                                                }}
+                                                            >
+                                                                <ShoppingCart className="w-4 h-4" />
+                                                                {inCart > 0 ? 'Add Another' : 'Add to Cart'}
+                                                            </button>
                                                         )}
                                                     </div>
-
-                                                    {/* Add to Cart button */}
-                                                    {!outOfStock && (
-                                                        <button
-                                                            onClick={() => addToCart(product)}
-                                                            disabled={!isService && inCart >= product.stock}
-                                                            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
-                                                            style={{ backgroundColor: themeColor }}
-                                                        >
-                                                            <ShoppingCart className="w-4 h-4" />
-                                                            {inCart > 0 ? 'Add More' : 'Add to Cart'}
-                                                        </button>
-                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -509,55 +505,53 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             ) : (
                                 <div className="space-y-4">
                                     {/* Cart items */}
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         {cartItems.map(({ product, quantity }) => (
                                             <div
                                                 key={product.id}
-                                                className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-white shadow-sm"
+                                                className="flex gap-6 p-6 rounded-[2rem] bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300"
                                             >
                                                 {/* Thumbnail */}
-                                                {product.image_url && (
-                                                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                                        <img
-                                                            src={resolveMediaUrl(product.image_url)}
-                                                            alt={product.name}
-                                                            className="w-full h-full object-cover"
-                                                            draggable={false}
-                                                            onError={(e) => {
-                                                                e.currentTarget.src = '/stands/office-bg.jpg';
-                                                            }}
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <h4 className="text-sm font-bold text-gray-900 line-clamp-1">
+                                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-black/5 shrink-0 shadow-inner">
+                                                    <img
+                                                        src={resolveMediaUrl(product.image_url) || '/stands/office-bg.jpg'}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover"
+                                                        draggable={false}
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = '/stands/office-bg.jpg';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                    <div className="flex items-start justify-between gap-4 mb-1">
+                                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight line-clamp-1">
                                                             {product.name}
                                                         </h4>
                                                         <button
                                                             onClick={() => removeFromCart(product.id)}
-                                                            className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                                                            className="p-2 rounded-xl hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all active:scale-90 shrink-0"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
-                                                    <p className="text-xs text-gray-500 mb-2">
-                                                        {fmt(product.price)} each{isServiceProduct(product) ? '' : ` · ${product.stock} in stock`}
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                                                        {fmt(product.price)} / Unit
                                                     </p>
                                                     {/* Quantity controls */}
-                                                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                    <div className="flex flex-wrap items-center gap-4">
                                                         {isServiceProduct(product) ? (
-                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
-                                                                Service
+                                                            <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[9px] font-black border border-amber-500/20 uppercase tracking-widest">
+                                                                Fixed Service
                                                             </span>
                                                         ) : (
-                                                            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                                            <div className="flex items-center bg-black/5 rounded-xl p-1 shrink-0 border border-black/5">
                                                                 <button
                                                                     onClick={() => updateCartQty(product.id, quantity - 1)}
-                                                                    className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                    className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors disabled:opacity-20"
                                                                     disabled={quantity <= 1}
                                                                 >
-                                                                    <Minus className="w-3.5 h-3.5" />
+                                                                    <Minus className="w-3 h-3" />
                                                                 </button>
                                                                 <input
                                                                     type="number"
@@ -568,18 +562,18 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                                         const val = Number.parseInt(e.target.value, 10);
                                                                         if (!Number.isNaN(val)) updateCartQty(product.id, val);
                                                                     }}
-                                                                    className="w-12 sm:w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50/50 border-x border-gray-200 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    className="w-10 text-center text-xs font-black text-gray-900 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                 />
                                                                 <button
                                                                     onClick={() => updateCartQty(product.id, quantity + 1)}
-                                                                    className="px-2.5 py-1.5 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                                                                    className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors disabled:opacity-20"
                                                                     disabled={quantity >= product.stock}
                                                                 >
-                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                    <Plus className="w-3 h-3" />
                                                                 </button>
                                                             </div>
                                                         )}
-                                                        <span className="text-sm font-bold ml-auto sm:ml-0" style={{ color: themeColor }}>
+                                                        <span className="text-xs font-black ml-auto" style={{ color: themeColor }}>
                                                             {fmt(product.price * (isServiceProduct(product) ? 1 : quantity))}
                                                         </span>
                                                     </div>
@@ -670,43 +664,49 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                 {/* ---- Footer (cart summary + checkout) ---- */}
                 {cartItems.length > 0 && !orderSuccess && (
-                    <div className="border-t border-gray-100 px-4 sm:px-6 py-4 bg-gray-50/60">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="border-t border-black/5 px-8 py-6 bg-white/40">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div>
-                                <p className="text-sm text-gray-500">
-                                    {cartCount} item{cartCount !== 1 ? 's' : ''} in cart
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                                    Total Summary ({cartCount} {cartCount === 1 ? 'Item' : 'Items'})
                                 </p>
-                                <p className="text-lg font-bold text-gray-900">
-                                    Total: {fmt(cartTotal)}
+                                <p className="text-2xl font-black text-gray-900 tracking-tight">
+                                    {fmt(cartTotal)}
                                 </p>
                             </div>
                             {view === 'cart' ? (
                                 <button
                                     onClick={handleCartCheckout}
                                     disabled={checkingOut}
-                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-60"
-                                    style={{ backgroundColor: themeColor }}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-60 hover:brightness-110"
+                                    style={{
+                                        backgroundColor: themeColor,
+                                        boxShadow: `0 12px 32px -8px ${themeColor}aa`
+                                    }}
                                 >
                                     {checkingOut ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Processing…
+                                            Processing
                                         </>
                                     ) : (
                                         <>
                                             <ShoppingBag className="w-4 h-4" />
-                                            Checkout · {fmt(cartTotal)}
+                                            Complete Order
                                         </>
                                     )}
                                 </button>
                             ) : (
                                 <button
                                     onClick={() => setView('cart')}
-                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
-                                    style={{ backgroundColor: themeColor }}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform-gpu active:scale-95 hover:brightness-110"
+                                    style={{
+                                        backgroundColor: themeColor,
+                                        boxShadow: `0 12px 32px -8px ${themeColor}aa`
+                                    }}
                                 >
                                     <ShoppingCart className="w-4 h-4" />
-                                    Go to Cart
+                                    Review Cart
                                 </button>
                             )}
                         </div>

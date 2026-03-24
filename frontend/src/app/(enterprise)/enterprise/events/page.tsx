@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
+import { formatInTZ } from '@/lib/timezone';
 import { Button } from '@/components/ui/Button';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
@@ -143,7 +144,7 @@ function ScheduleSection({ ev }: { ev: any }) {
 
     // Fallback: if no structured days, show key dates
     const fmt = (d?: string) => d
-        ? new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+        ? formatInTZ(d, ev.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')
         : '—';
 
     if (scheduleDays.length === 0) {
@@ -239,8 +240,9 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const canManage = isAccepted && isEventLive;
     const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
 
+    const tz = ev.event_timezone || 'UTC';
     const fmtDate = (d?: string) => d
-        ? new Date(d).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+        ? formatInTZ(d, tz, 'MMMM d, yyyy')
         : null;
     const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
@@ -543,8 +545,9 @@ function EnterpriseEventCard({
         }
     };
 
+    const tz = ev.event_timezone || 'UTC';
     const fmtDate = (d?: string) => d
-        ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+        ? formatInTZ(d, tz, 'MMM d, yyyy')
         : null;
     const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { formatInTZ } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -28,9 +29,11 @@ interface Lead {
     visitor_email?: string;
     visitor_phone?: string;
     stand_id: string;
-    interaction_type: string;
+    last_interaction_type?: string;
+    interaction_type?: string; // Backwards compat
     metadata: any;
-    timestamp: string;
+    last_interaction?: string;
+    timestamp?: string; // Fallback
 }
 
 interface Stand {
@@ -42,6 +45,7 @@ interface Stand {
 export default function EnterpriseLeadsPage() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [stands, setStands] = useState<Stand[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedStand, setSelectedStand] = useState<string>('all');
@@ -50,10 +54,11 @@ export default function EnterpriseLeadsPage() {
         setIsLoading(true);
         try {
             // 1. Fetch Events to find stands
-            const events = await http.get<any[]>('/enterprise/events');
-            const approvedEvents = events.filter(
+            const eventResults = await http.get<any[]>('/enterprise/events');
+            const approvedEvents = eventResults.filter(
                 ev => ev.participation?.status === 'approved' || ev.participation?.status === 'guest_approved'
             );
+            setEvents(approvedEvents);
 
             // 2. Fetch stands
             const standPromises = approvedEvents.map(ev =>
@@ -67,9 +72,11 @@ export default function EnterpriseLeadsPage() {
                 http.get<Lead[]>(`/leads/stand/${s.id}`).catch(() => [])
             );
             const leadResults = await Promise.all(leadPromises);
-            setLeads(leadResults.flat().sort((a, b) =>
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            ));
+            setLeads(leadResults.flat().sort((a, b) => {
+                const da = new Date(a.last_interaction || a.timestamp || 0).getTime();
+                const db = new Date(b.last_interaction || b.timestamp || 0).getTime();
+                return db - da;
+            }));
 
         } catch (err) {
             console.error('Failed to fetch leads', err);
@@ -81,9 +88,10 @@ export default function EnterpriseLeadsPage() {
     useEffect(() => { fetchData(); }, []);
 
     const filteredLeads = leads.filter(l => {
+        const type = l.last_interaction_type || l.interaction_type || '';
         const matchesSearch = !search ||
             (l.visitor_name || '').toLowerCase().includes(search.toLowerCase()) ||
-            (l.interaction_type || '').toLowerCase().includes(search.toLowerCase());
+            type.toLowerCase().includes(search.toLowerCase());
         const matchesStand = selectedStand === 'all' || l.stand_id === selectedStand;
         return matchesSearch && matchesStand;
     });
@@ -111,7 +119,7 @@ export default function EnterpriseLeadsPage() {
                     <CardContent className="p-6">
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Visits</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
-                            {leads.filter(l => l.interaction_type === 'visit').length}
+                            {leads.filter(l => (l.last_interaction_type || l.interaction_type) === 'stand_visit').length}
                         </h3>
                     </CardContent>
                 </Card>
@@ -119,7 +127,7 @@ export default function EnterpriseLeadsPage() {
                     <CardContent className="p-6">
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Chat Inquiries</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
-                            {leads.filter(l => l.interaction_type === 'chat').length}
+                            {leads.filter(l => (l.last_interaction_type || l.interaction_type) === 'chat_message').length}
                         </h3>
                     </CardContent>
                 </Card>
@@ -127,7 +135,7 @@ export default function EnterpriseLeadsPage() {
                     <CardContent className="p-6">
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Action Rate</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
-                            {leads.length > 0 ? Math.round((leads.filter(l => l.interaction_type !== 'visit').length / leads.length) * 100) : 0}%
+                            {leads.length > 0 ? Math.round((leads.filter(l => !['stand_visit', 'event_view'].includes(l.last_interaction_type || l.interaction_type || '')).length / leads.length) * 100) : 0}%
                         </h3>
                     </CardContent>
                 </Card>
@@ -209,10 +217,10 @@ export default function EnterpriseLeadsPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <span className="p-1.5 rounded-lg bg-zinc-100 group-hover:bg-white border border-transparent group-hover:border-zinc-100 transition-all">
-                                                    {getInteractionIcon(lead.interaction_type)}
+                                                    {getInteractionIcon(lead.last_interaction_type || lead.interaction_type || '')}
                                                 </span>
                                                 <span className="text-xs font-medium text-zinc-700 capitalize">
-                                                    {(lead.interaction_type || 'unknown').replace('_', ' ')}
+                                                    {(lead.last_interaction_type || lead.interaction_type || 'unknown').replace('_', ' ')}
                                                 </span>
                                             </div>
                                         </td>
@@ -224,10 +232,20 @@ export default function EnterpriseLeadsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="text-xs text-zinc-600">
-                                                {new Date(lead.timestamp).toLocaleDateString()}
+                                                {(() => {
+                                                    const stand = stands.find(s => s.id === lead.stand_id);
+                                                    const event = events.find(e => (e.id || e._id) === stand?.event_id);
+                                                    const tz = event?.event_timezone || 'UTC';
+                                                    return formatInTZ(lead.last_interaction || lead.timestamp || '', tz, 'MMM d, yyyy');
+                                                })()}
                                             </p>
                                             <p className="text-[10px] text-zinc-400">
-                                                {new Date(lead.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {(() => {
+                                                    const stand = stands.find(s => s.id === lead.stand_id);
+                                                    const event = events.find(e => (e.id || e._id) === stand?.event_id);
+                                                    const tz = event?.event_timezone || 'UTC';
+                                                    return formatInTZ(lead.last_interaction || lead.timestamp || '', tz, 'h:mm a');
+                                                })()}
                                             </p>
                                         </td>
                                         <td className="px-6 py-4 text-right">

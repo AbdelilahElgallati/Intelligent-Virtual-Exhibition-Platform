@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { formatInTZ } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -29,6 +30,7 @@ interface ChatRoom {
     members: string[];
     created_at: string;
     last_message?: any;
+    event_id?: string;
 }
 
 interface Meeting {
@@ -70,7 +72,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
                         {room.name || `Chat #${(room.id || room._id).slice(-4)}`}
                     </h4>
                     <span className="text-[10px] text-zinc-400">
-                        {new Date(room.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        {formatInTZ(room.created_at, 'UTC', 'MMM d')}
                     </span>
                 </div>
                 <p className="text-xs text-zinc-500 truncate">
@@ -89,7 +91,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
 
 // ─── Meeting Item ────────────────────────────────────────────────────────────
 
-const MeetingItem = ({ meeting, onStatusUpdate }: { meeting: Meeting; onStatusUpdate: (id: string, status: string) => void }) => {
+const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; timeZone: string; onStatusUpdate: (id: string, status: string) => void }) => {
     const statusStyles = {
         pending: 'bg-amber-50 text-amber-700 border-amber-100',
         approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -113,7 +115,7 @@ const MeetingItem = ({ meeting, onStatusUpdate }: { meeting: Meeting; onStatusUp
                                 </h4>
                                 <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                                     <Clock size={12} />
-                                    Submitted {new Date(meeting.created_at).toLocaleDateString()}
+                                    Submitted {formatInTZ(meeting.created_at, timeZone, 'MMM d, yyyy')}
                                 </div>
                             </div>
                         </div>
@@ -122,7 +124,7 @@ const MeetingItem = ({ meeting, onStatusUpdate }: { meeting: Meeting; onStatusUp
                             <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">
                                 <Calendar size={14} className="text-indigo-500" />
                                 <span className="font-semibold">
-                                    {new Date(meeting.start_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                    {formatInTZ(meeting.start_time, timeZone, 'MMM d, h:mm a')}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">
@@ -179,10 +181,26 @@ export default function EnterpriseCommunicationsPage() {
     const [rooms, setRooms] = useState<ChatRoom[]>([]);
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [stands, setStands] = useState<Stand[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
     const [lastSeenByRoom, setLastSeenByRoom] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [activeEventTimeZone, setActiveEventTimeZone] = useState('UTC');
+
+    const fetchEventTimeZone = async (eventId?: string) => {
+        if (!eventId) {
+            setActiveEventTimeZone('UTC');
+            return;
+        }
+        try {
+            const event = await http.get<any>(`/events/${eventId}`);
+            setActiveEventTimeZone(event.event_timezone || 'UTC');
+        } catch (err) {
+            console.error('Failed to fetch event timezone', err);
+            setActiveEventTimeZone('UTC');
+        }
+    };
 
     const fetchRooms = async () => {
         const roomsData = await http.get<ChatRoom[]>('/chat/rooms');
@@ -193,10 +211,11 @@ export default function EnterpriseCommunicationsPage() {
         setIsLoading(true);
         try {
             // 1. Fetch Events to find stands
-            const events = await http.get<any[]>('/enterprise/events');
-            const approvedEvents = events.filter(
+            const eventResults = await http.get<any[]>('/enterprise/events');
+            const approvedEvents = eventResults.filter(
                 ev => ev.participation?.status === 'approved' || ev.participation?.status === 'guest_approved'
             );
+            setEvents(approvedEvents);
 
             // 2. Fetch stands for approved events
             const standPromises = approvedEvents.map(ev =>
@@ -365,6 +384,7 @@ export default function EnterpriseCommunicationsPage() {
                                                 const lastMessageTime = getMessageTime(room.last_message) ?? Date.now();
                                                 setLastSeenByRoom((prev) => ({ ...prev, [roomId]: lastMessageTime }));
                                                 setSelectedRoomId(roomId);
+                                                fetchEventTimeZone(room.event_id);
                                             }}
                                         />
                                     ))
@@ -393,6 +413,7 @@ export default function EnterpriseCommunicationsPage() {
                                     standName={activeRoom?.name || "Member"}
                                     isEmbedded={true}
                                     disableMessageLimit={true}
+                                    eventTimeZone={activeEventTimeZone}
                                     onClose={() => setSelectedRoomId(null)}
                                 />
                             </div>
@@ -423,13 +444,19 @@ export default function EnterpriseCommunicationsPage() {
                             <p className="text-zinc-500">When visitors request meetings with your stands, they will appear here.</p>
                         </Card>
                     ) : (
-                        meetings.map(meeting => (
-                            <MeetingItem
-                                key={meeting.id || meeting._id}
-                                meeting={meeting}
-                                onStatusUpdate={handleUpdateMeetingStatus}
-                            />
-                        ))
+                        meetings.map(meeting => {
+                            const stand = stands.find(s => (s.id || s._id) === meeting.stand_id);
+                            const event = events.find(e => (e.id || e._id) === stand?.event_id);
+                            const tz = event?.event_timezone || 'UTC';
+                            return (
+                                <MeetingItem
+                                    key={meeting.id || meeting._id}
+                                    meeting={meeting}
+                                    timeZone={tz}
+                                    onStatusUpdate={handleUpdateMeetingStatus}
+                                />
+                            );
+                        })
                     )}
                 </div>
             )}

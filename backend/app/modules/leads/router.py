@@ -5,6 +5,8 @@ from .repository import lead_repo
 from ...core.dependencies import get_current_user
 from ..stands.service import get_stand_by_id
 from ..organizations.service import get_organization_by_id
+from ...db.mongo import get_database
+from ...db.utils import _oid_or_value
 
 router = APIRouter()
 
@@ -13,13 +15,24 @@ async def verify_stand_ownership(stand_id: str, user_id: str):
     if not stand:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
     
-    org = await get_organization_by_id(stand["organization_id"])
-    if not org or org["owner_id"] != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="You do not have permission to access leads for this stand"
-        )
-    return stand
+    db = get_database()
+    # Check if user is the organization owner
+    org = await db["organizations"].find_one({"_id": _oid_or_value(stand["organization_id"])})
+    if org and str(org.get("owner_id")) == user_id:
+        return stand
+
+    # Fallback: Check if user is a member of the organization
+    member_doc = await db["organization_members"].find_one({
+        "user_id": user_id,
+        "organization_id": str(stand["organization_id"])
+    })
+    if member_doc:
+        return stand
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, 
+        detail="You do not have permission to access leads for this stand"
+    )
 
 @router.get("/stand/{stand_id}", response_model=List[LeadSchema])
 async def get_leads(stand_id: str, current_user: dict = Depends(get_current_user)):

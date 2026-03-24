@@ -1,6 +1,6 @@
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ...db.mongo import get_database
 from .schemas import MeetingCreate, MeetingUpdate, MeetingSchema
 from ..auth.enums import Role
@@ -21,8 +21,8 @@ class MeetingRepository:
         doc = meeting_data.model_dump()
         doc["status"] = "pending"
         doc["session_status"] = "scheduled"
-        doc["created_at"] = datetime.utcnow()
-        doc["updated_at"] = datetime.utcnow()
+        doc["created_at"] = datetime.now(timezone.utc)
+        doc["updated_at"] = datetime.now(timezone.utc)
         result = await self.collection.insert_one(doc)
         doc["_id"] = str(result.inserted_id)
 
@@ -60,7 +60,7 @@ class MeetingRepository:
         """Mark meeting as live."""
         result = await self.collection.find_one_and_update(
             {"_id": ObjectId(meeting_id)},
-            {"$set": {"session_status": "live", "updated_at": datetime.utcnow()}},
+            {"$set": {"session_status": "live", "updated_at": datetime.now(timezone.utc)}},
             return_document=True
         )
         if result:
@@ -71,7 +71,7 @@ class MeetingRepository:
         """Mark meeting as ended."""
         result = await self.collection.find_one_and_update(
             {"_id": ObjectId(meeting_id)},
-            {"$set": {"session_status": "ended", "status": "completed", "updated_at": datetime.utcnow()}},
+            {"$set": {"session_status": "ended", "status": "completed", "updated_at": datetime.now(timezone.utc)}},
             return_document=True
         )
         if result:
@@ -80,7 +80,7 @@ class MeetingRepository:
 
     async def auto_expire_past_meetings(self):
         """Auto-cancel pending meetings whose time window has passed."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         await self.collection.update_many(
             {
                 "status": "pending",
@@ -141,7 +141,7 @@ class MeetingRepository:
             {"$set": {
                 "status": update.status,
                 "notes": update.notes,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }},
             return_document=True
         )

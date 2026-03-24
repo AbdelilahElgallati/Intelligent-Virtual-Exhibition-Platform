@@ -83,6 +83,10 @@ async def get_recommended_events(
     
     events = await list_events(state=EventState.APPROVED)
     
+    # Fallback to any events if none are specifically approved yet (for development/demo)
+    if not events:
+        events = await list_events()
+    
     # Transform to RecommendationItem
     recommendations = []
     for event in events[:top_k]:
@@ -92,7 +96,7 @@ async def get_recommended_events(
             description=event["description"],
             type="event",
             score=0.9, # Mock score
-            reason="Based on your interests"
+            reason="Featured Event" if event.get('state') == EventState.APPROVED else "New Event"
         ))
         
     return recommendations

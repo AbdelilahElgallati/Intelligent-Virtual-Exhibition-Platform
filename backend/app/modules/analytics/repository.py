@@ -2,7 +2,7 @@
 Analytics repository — real MongoDB aggregations for IVEP.
 """
 from ...db.mongo import get_database
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 
 
@@ -12,7 +12,7 @@ def _date_range_chart(days: int = 30) -> list[dict]:
     """Generate a 30-day time-series filled with 0s (seed for real merging)."""
     return [
         {
-            "timestamp": (datetime.utcnow() - timedelta(days=i)).isoformat() + "Z",
+            "timestamp": (datetime.now(timezone.utc) - timedelta(days=i)).isoformat() + "Z",
             "value": 0,
         }
         for i in range(days, 0, -1)
@@ -38,7 +38,7 @@ class AnalyticsRepository:
         pending_events = await db["events"].count_documents({"state": "pending_approval"})
 
         # 30-day event creation trend (real)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         thirty_ago = now - timedelta(days=30)
 
         pipeline_trend = [
@@ -127,7 +127,7 @@ class AnalyticsRepository:
         )
 
         # Trend over last 14 days
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         fourteen_ago = now - timedelta(days=14)
         pipeline_trend = [
             {"$match": {"event_id": event_id, "created_at": {"$gte": fourteen_ago}}},
@@ -196,8 +196,9 @@ class AnalyticsRepository:
     async def get_stand_analytics(self, stand_id: str, days: int = 30) -> Dict[str, Any]:
         """Real MongoDB aggregations for stand-level KPIs."""
         db = self.db
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         start_date = now - timedelta(days=days)
+        twenty_four_ago = now - timedelta(hours=24)
 
         # 1. KPI Aggregations
         total_visits = await db["analytics_events"].count_documents({
@@ -249,6 +250,31 @@ class AnalyticsRepository:
             for i in range(days + 1)
         ]
 
+        # 2b. Pulse Chart (Hourly for last 24h)
+        pipeline_pulse = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": twenty_four_ago}
+            }},
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%H:00", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        pulse_docs = await db["analytics_events"].aggregate(pipeline_pulse).to_list(length=24)
+        pulse_map = {d["_id"]: d["count"] for d in pulse_docs}
+        pulse_chart = [
+            {
+                "hour": (twenty_four_ago + timedelta(hours=i)).strftime("%H:00"),
+                "value": pulse_map.get((twenty_four_ago + timedelta(hours=i)).strftime("%H:00"), 0)
+            }
+            for i in range(25)
+        ]
+
         # 3. Distribution (Interaction types)
         pipeline_dist = [
             {"$match": {
@@ -270,6 +296,7 @@ class AnalyticsRepository:
                 {"label": "Avg. Engagement", "value": 0.0, "unit": "min", "trend": None}, # Placeholder
             ],
             "main_chart": main_chart,
+            "pulse_chart": pulse_chart,
             "distribution": distribution,
             "recent_activity": [],
         }

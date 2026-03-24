@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -259,7 +259,7 @@ async def organizer_summary_pdf(
         from app.modules.analytics.latex_service import latex_service
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
         
-        filename = f"organizer_report_{event_id}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+        filename = f"organizer_report_{event_id}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
@@ -328,7 +328,7 @@ async def organizer_overall_summary_pdf(
         from app.modules.analytics.latex_service import latex_service
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_overall_report")
         
-        filename = f"overall_performance_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+        filename = f"overall_performance_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",

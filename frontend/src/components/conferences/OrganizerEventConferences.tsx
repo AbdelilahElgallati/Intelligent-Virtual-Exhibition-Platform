@@ -6,6 +6,7 @@ import { OrganizerEvent, EventScheduleDay, EventScheduleSlot } from '@/types/eve
 import { Card } from '@/components/ui/Card';
 import { Video, Mic, UserCheck, X } from 'lucide-react';
 import { http } from '@/lib/http';
+import { formatInTZ } from '@/lib/timezone';
 
 interface Props {
     eventId: string;
@@ -313,8 +314,8 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                         <p className="font-semibold text-gray-900 text-sm truncate">{conf.title}</p>
                                         {conf.speaker_name && <p className="text-xs text-gray-500">🎙️ {conf.speaker_name}</p>}
                                         <p className="text-xs text-gray-400 mt-0.5">
-                                            {new Date(conf.start_time).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
-                                            {' → '}{new Date(conf.end_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                            {formatInTZ(conf.start_time, event.event_timezone || 'UTC', 'dd MMM yyyy HH:mm')}
+                                            {' → '}{formatInTZ(conf.end_time, event.event_timezone || 'UTC', 'HH:mm')}
                                         </p>
                                         <p className="text-xs text-violet-600 mt-0.5">👥 {conf.attendee_count} registered</p>
                                     </div>

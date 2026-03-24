@@ -7,8 +7,12 @@ import { apiClient } from '@/lib/api/client';
 import { Conference } from '@/types/conference';
 import { Meeting } from '@/types/meeting';
 
+import { formatInTZ } from '@/lib/timezone';
+import { Event } from '@/types/event';
+
 interface EventConferencesTabProps {
     eventId: string;
+    event?: Event | null;
 }
 
 type CardStatus = 'live' | 'upcoming' | 'ended' | 'canceled' | 'pending';
@@ -40,15 +44,8 @@ function parseMs(iso: string): number {
     return new Date(iso).getTime();
 }
 
-function formatDateTime(iso: string): string {
-    const d = new Date(iso);
-    return d.toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
+function formatDateTime(iso: string, timeZone: string = 'UTC'): string {
+    return formatInTZ(iso, timeZone, 'dd MMM HH:mm');
 }
 
 function formatDuration(startIso: string, endIso: string): string {
@@ -98,14 +95,17 @@ function statusStyle(status: CardStatus): { label: string; text: string; bg: str
     return { label: 'Ended', text: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
 }
 
-export default function EventConferencesTab({ eventId }: EventConferencesTabProps) {
+export default function EventConferencesTab({ eventId, event: initialEvent }: EventConferencesTabProps) {
     const router = useRouter();
 
+    const [event, setEvent] = useState<Event | null>(initialEvent || null);
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+    const timeZone = event?.event_timezone || 'UTC';
 
     useEffect(() => {
         const interval = setInterval(() => setNowMs(Date.now()), 1000);
@@ -144,9 +144,10 @@ export default function EventConferencesTab({ eventId }: EventConferencesTabProp
         setError(null);
 
         try {
-            const [conferencesRes, meetingsRes] = await Promise.allSettled([
+            const [conferencesRes, meetingsRes, eventRes] = await Promise.allSettled([
                 apiClient.get<Conference[]>(`/conferences/?event_id=${encodeURIComponent(eventId)}`),
                 apiClient.get<Meeting[]>('/meetings/my-meetings'),
+                !event ? apiClient.get<Event>(`/events/${eventId}`) : Promise.resolve(event),
             ]);
 
             if (conferencesRes.status === 'fulfilled') {
@@ -162,18 +163,22 @@ export default function EventConferencesTab({ eventId }: EventConferencesTabProp
                 setMeetings([]);
             }
 
+            if (eventRes.status === 'fulfilled') {
+                setEvent(eventRes.value);
+            }
+
             if (conferencesRes.status === 'rejected') {
                 throw conferencesRes.reason;
             }
         } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : 'Failed to load conference and meeting timeline';
+            const message = e instanceof Error ? e.message : 'Failed to load timeline';
             setError(message);
             setConferences([]);
             setMeetings([]);
         } finally {
             setLoading(false);
         }
-    }, [eventId]);
+    }, [eventId, event]);
 
     useEffect(() => {
         load();
@@ -324,7 +329,7 @@ export default function EventConferencesTab({ eventId }: EventConferencesTabProp
                                         title={m.purpose}
                                         details={[
                                             { icon: <UserRound size={14} />, label: `With: ${m.withWho}` },
-                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(m.startTime)}` },
+                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(m.startTime, timeZone)}` },
                                             { icon: <Clock3 size={14} />, label: `Duration: ${formatDuration(m.startTime, m.endTime)}` },
                                             {
                                                 icon: <Timer size={14} />,
@@ -366,7 +371,7 @@ export default function EventConferencesTab({ eventId }: EventConferencesTabProp
                                         details={[
                                             { icon: <Building2 size={14} />, label: `Host: ${c.enterpriseHost}` },
                                             { icon: <Mic2 size={14} />, label: `Speaker: ${c.speakerName}` },
-                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(c.startTime)}` },
+                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(c.startTime, timeZone)}` },
                                             { icon: <Clock3 size={14} />, label: `Duration: ${formatDuration(c.startTime, c.endTime)}` },
                                             {
                                                 icon: <Timer size={14} />,
