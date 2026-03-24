@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class MeetingStatus(str, Enum):
@@ -26,6 +26,14 @@ class MeetingBase(BaseModel):
     start_time: datetime
     end_time: datetime
     purpose: Optional[str] = None
+
+    @field_validator("start_time", "end_time", mode="after")
+    @classmethod
+    def ensure_utc(cls, v: datetime) -> datetime:
+        """Force awareness and convert to UTC for consistent JSON serialization (Z suffix)."""
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
 class MeetingCreate(MeetingBase):
     meeting_type: MeetingType = MeetingType.ONE_TO_ONE

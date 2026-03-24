@@ -4,7 +4,7 @@ Event schemas for IVEP.
 Defines data models for events and event lifecycle states.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, Union
 from zoneinfo import ZoneInfo
@@ -56,6 +56,14 @@ class EventBase(BaseModel):
     description: Optional[str] = None
     organizer_id: str
     state: EventState
+    
+    @field_validator("start_date", "end_date", mode="after")
+    @classmethod
+    def ensure_utc(cls, v: datetime) -> datetime:
+        """Force awareness and convert to UTC for consistent JSON serialization (Z suffix)."""
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
     @field_validator("state", mode="before")
     @classmethod
