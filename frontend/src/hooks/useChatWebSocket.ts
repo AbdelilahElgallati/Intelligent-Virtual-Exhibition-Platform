@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { API_BASE_URL, API_PREFIX } from '@/lib/config';
+import { getApiUrl } from '@/lib/config';
 
 interface Message {
     _id?: string;
@@ -44,18 +44,14 @@ export function useChatWebSocket(roomId: string | null) {
     const connect = useCallback(() => {
         if (!roomId || !tokens?.access_token) return;
 
-        if (!API_BASE_URL) {
-            setError('Missing API base URL');
-            return;
-        }
-
         // Close existing connection
         if (wsRef.current) {
             wsRef.current.close();
         }
 
-        const wsBaseUrl = API_BASE_URL.startsWith('ws') ? API_BASE_URL : API_BASE_URL.replace(/^http/, 'ws');
-        const wsUrl = `${wsBaseUrl}${API_PREFIX}/chat/ws/chat/${roomId}?token=${tokens.access_token}`;
+        // Use getApiUrl to safely resolve API_BASE_URL + API_PREFIX, then convert http -> ws
+        const endpointUrl = getApiUrl(`/chat/ws/chat/${roomId}?token=${tokens.access_token}`);
+        const wsUrl = endpointUrl.replace(/^http/, 'ws');
 
         try {
             const ws = new WebSocket(wsUrl);
