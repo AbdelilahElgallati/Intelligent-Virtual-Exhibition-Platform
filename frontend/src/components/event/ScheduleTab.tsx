@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Calendar, Clock, Dot, Flame, Mic2, Sparkles } from 'lucide-react';
+import { formatInTZ, getUserTimezone, zonedToUtc } from '@/lib/timezone';
 
 interface ScheduleTabProps {
     event: Event | null;
@@ -37,9 +38,8 @@ function formatTime(time: string): string {
 function getDurationLabel(startTime?: string, endTime?: string): string | null {
     const s = toMinutes(startTime);
     const e = toMinutes(endTime);
-    if (s === null || e === null || e <= s) return null;
-
-    const total = e - s;
+    if (s === null || e === null || e === s) return null;
+    const total = e > s ? e - s : 24 * 60 - s + e;
     const h = Math.floor(total / 60);
     const m = total % 60;
 
@@ -68,6 +68,16 @@ function buildDateForTime(baseDate: Date, time: string | undefined): Date | null
     const d = new Date(baseDate);
     d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
     return d;
+}
+
+function toYmdInTimezone(value: Date, timeZone: string): string {
+    return formatInTZ(value, timeZone, 'yyyy-MM-dd');
+}
+
+function addDaysToYmd(ymd: string, offset: number): string {
+    const base = new Date(`${ymd}T12:00:00Z`);
+    base.setUTCDate(base.getUTCDate() + offset);
+    return base.toISOString().slice(0, 10);
 }
 
 function getSlotKind(slot: EventScheduleSlot): 'conference' | 'talk' | 'activity' {
@@ -104,6 +114,8 @@ interface TimelineSlot {
     startAt: Date | null;
     endAt: Date | null;
     status: SlotStatus;
+    startDisplay: string;
+    endDisplay: string;
 }
 
 function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlot[] {
@@ -111,6 +123,7 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
     const eventStart = event.start_date ? new Date(event.start_date) : null;
     const canUseEventDate = eventStart && !Number.isNaN(eventStart.getTime());
     const eventTimeZone = event.event_timezone || 'UTC';
+    const userTimeZone = getUserTimezone();
 
     const getDatePartsInTimezone = (value: Date, timeZone: string) => {
         const parts = new Intl.DateTimeFormat('en-CA', {
@@ -133,6 +146,7 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
             const ymd = getDatePartsInTimezone(eventStart as Date, eventTimeZone);
             return new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day + dayOffset, 12, 0, 0, 0));
         })();
+        const dayYmd = toYmdInTimezone(baseDate, eventTimeZone);
         const resolvedDayLabel = new Intl.DateTimeFormat('en-GB', {
             weekday: 'short',
             day: '2-digit',
@@ -141,8 +155,29 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
         }).format(baseDate);
 
         return (day.slots || []).map((slot) => {
-            const startAt = buildDateForTime(baseDate, slot.start_time);
-            const endAt = buildDateForTime(baseDate, slot.end_time);
+            const startMinutes = toMinutes(slot.start_time);
+            const endMinutes = toMinutes(slot.end_time);
+            if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+                const fallbackStart = buildDateForTime(baseDate, slot.start_time);
+                const fallbackEnd = buildDateForTime(baseDate, slot.end_time);
+                return {
+                    dayNumber: day.day_number || dayIndex + 1,
+                    dayLabel: resolvedDayLabel,
+                    slot,
+                    kind: getSlotKind(slot),
+                    startAt: fallbackStart,
+                    endAt: fallbackEnd,
+                    status: getSlotStatus(fallbackStart, fallbackEnd, now),
+                    startDisplay: slot.start_time || '--:--',
+                    endDisplay: slot.end_time || '--:--',
+                };
+            }
+
+            const startAt = zonedToUtc(`${dayYmd}T${slot.start_time}:00`, eventTimeZone);
+            const endYmd = endMinutes <= startMinutes ? addDaysToYmd(dayYmd, 1) : dayYmd;
+            const endAt = zonedToUtc(`${endYmd}T${slot.end_time}:00`, eventTimeZone);
+            const startDisplay = formatInTZ(startAt, userTimeZone, 'HH:mm');
+            const endDisplay = formatInTZ(endAt, userTimeZone, 'HH:mm');
 
             return {
                 dayNumber: day.day_number || dayIndex + 1,
@@ -152,6 +187,8 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
                 startAt,
                 endAt,
                 status: getSlotStatus(startAt, endAt, now),
+                startDisplay,
+                endDisplay,
             };
         });
     });
@@ -184,6 +221,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
 
     // If we have structured schedule data
     if (days && days.length > 0) {
+        const viewerTimeZone = getUserTimezone();
         const timelineSlots = buildTimelineSlots(event, days).sort(compareTimelineSlots);
         const liveNow = timelineSlots.find((item) => item.status === 'live') || null;
         const nextUp = timelineSlots.find((item) => item.status === 'upcoming') || null;
@@ -203,6 +241,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                             <p className="text-white/80 mt-2 text-sm md:text-base">
                                 Follow each activity by timeline and track what is happening live.
                             </p>
+                            <p className="text-white/75 mt-1 text-xs">Times shown in your timezone: {viewerTimeZone}</p>
                         </div>
                         <div className="rounded-xl bg-black/20 border border-white/20 px-4 py-3 min-w-[220px]">
                             <p className="text-xs uppercase tracking-wide text-white/70">Schedule Days</p>
@@ -290,6 +329,8 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                                                 slot={slot}
                                                 status={timelineItem?.status || 'upcoming'}
                                                 kind={timelineItem?.kind || getSlotKind(slot)}
+                                                startDisplay={timelineItem?.startDisplay}
+                                                endDisplay={timelineItem?.endDisplay}
                                             />
                                         );
                                     })}
@@ -342,10 +383,14 @@ function SessionSlot({
     slot,
     status,
     kind,
+    startDisplay,
+    endDisplay,
 }: {
     slot: EventScheduleSlot;
     status: SlotStatus;
     kind: 'conference' | 'talk' | 'activity';
+    startDisplay?: string;
+    endDisplay?: string;
 }) {
     const statusStyle =
         status === 'live'
@@ -375,17 +420,22 @@ function SessionSlot({
     const kindLabel =
         kind === 'conference' ? 'Conference' : kind === 'talk' ? 'Talk' : 'Activity';
     const duration = getDurationLabel(slot.start_time, slot.end_time);
+    const crossesMidnight = (() => {
+        const s = toMinutes(slot.start_time);
+        const e = toMinutes(slot.end_time);
+        return s !== null && e !== null && e < s;
+    })();
 
     return (
         <div className="flex gap-5 md:gap-6">
             <div className="flex-shrink-0 w-28 md:w-32 text-right pt-1">
                 <div className="inline-flex items-center justify-end gap-1.5 text-sm font-semibold text-cyan-700">
                     <Clock className="h-4 w-4" />
-                    <span>{formatTime(slot.start_time)}</span>
+                    <span>{startDisplay || formatTime(slot.start_time)}</span>
                 </div>
                 {slot.end_time && (
                     <div className="text-xs text-slate-400 mt-1">
-                        to {formatTime(slot.end_time)}
+                        to {endDisplay || formatTime(slot.end_time)}{crossesMidnight ? ' (+1 day)' : ''}
                     </div>
                 )}
                 {duration && (
@@ -415,8 +465,8 @@ function SessionSlot({
                     </h4>
 
                     <div className="mt-2 text-xs text-slate-500 font-medium">
-                        {formatTime(slot.start_time)}
-                        {slot.end_time ? ` - ${formatTime(slot.end_time)}` : ''}
+                        {startDisplay || formatTime(slot.start_time)}
+                        {slot.end_time ? ` - ${endDisplay || formatTime(slot.end_time)}${crossesMidnight ? ' (+1 day)' : ''}` : ''}
                     </div>
 
                     {(slot.speaker_name || slot.assigned_enterprise_name) && (

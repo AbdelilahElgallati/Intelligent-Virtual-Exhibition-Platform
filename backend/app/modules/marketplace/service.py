@@ -211,7 +211,7 @@ async def create_order(
         "stripe_session_id": stripe_session_id,
         "checkout_group_id": checkout_group_id,
         "stripe_payment_intent_id": "",
-        "status": "pending" if payment_method == "stripe" else "paid", # We will use paid or pending based on COD
+        "status": "pending",
         "fulfillment_status": "requested",
         "fulfillment_note": "",
         "fulfillment_updated_at": now,
@@ -223,7 +223,7 @@ async def create_order(
             }
         ],
         "created_at": now,
-        "paid_at": now if payment_method == "cash_on_delivery" else None,
+        "paid_at": None,
         "shipping_address": shipping_address,
         "delivery_notes": delivery_notes,
         "buyer_phone": buyer_phone,

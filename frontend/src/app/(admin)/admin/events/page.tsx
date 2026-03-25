@@ -6,6 +6,7 @@ import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { resolveMediaUrl } from '@/lib/media';
+import { formatSlotRangeLabel } from '@/lib/schedule';
 import {
     CalendarCheck, RefreshCw, CheckCircle2, XCircle, AlertCircle, X,
     MapPin, Calendar, Tag, Users, DollarSign, Clock, FileText,
@@ -88,7 +89,7 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
                                 return (
                                     <div key={si} className="flex items-start gap-3 p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
                                         <span className="flex-shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-1 whitespace-nowrap tabular-nums">
-                                            {startLabel} → {endLabel}
+                                            {formatSlotRangeLabel(startLabel, endLabel)}
                                         </span>
                                         <p className="text-sm text-zinc-700 leading-snug pt-0.5">
                                             {slot.label || <em className="text-zinc-400">No description</em>}

@@ -19,6 +19,8 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   onMarkAllRead,
 }) => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const getNotificationId = (notification: Notification): string =>
+    String((notification as Notification & { _id?: string }).id || (notification as Notification & { _id?: string })._id || '');
 
   return (
     <Card className="h-full flex flex-col">
@@ -56,7 +58,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           <div className="divide-y">
             {notifications.map((notification, index) => (
               <div
-                key={notification.id ?? index}
+                key={getNotificationId(notification) || index}
                 className={`p-4 transition-colors ${
                   !notification.is_read ? 'bg-primary/5' : ''
                 }`}
@@ -65,7 +67,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                   <p className="text-sm font-medium">{notification.message}</p>
                   {!notification.is_read && (
                     <button
-                      onClick={() => onMarkRead(notification.id)}
+                      onClick={() => onMarkRead(getNotificationId(notification))}
                       className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"
                       title="Mark as read"
                     />

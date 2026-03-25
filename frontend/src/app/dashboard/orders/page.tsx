@@ -79,6 +79,19 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 function normalizeUnifiedOrderStatus(order: UnifiedMarketplaceOrder): UnifiedMarketplaceOrder {
+  if (order.payment_method === 'cash_on_delivery' && order.status !== 'cancelled') {
+    const isFulfillmentCompleted = (order.items || []).some(
+      (item) => String(item.fulfillment_status || '').toLowerCase() === 'completed'
+    );
+    if (isFulfillmentCompleted) {
+      return {
+        ...order,
+        status: 'paid',
+        paid_at: order.paid_at || order.created_at,
+      };
+    }
+    return { ...order, status: 'pending', paid_at: null };
+  }
   const hasPaidEvidence = Boolean(order.paid_at) || (order.items || []).some((item) => String(item.status || '').toLowerCase() === 'paid');
   if (hasPaidEvidence && order.status !== 'paid') {
     return { ...order, status: 'paid' };
@@ -205,6 +218,7 @@ const statusColor: Record<string, string> = {
 };
 
 const fulfillmentColor: Record<string, string> = {
+  approved: 'bg-blue-100 text-blue-700 border-blue-200',
   requested: 'bg-slate-100 text-slate-700 border-slate-200',
   processing: 'bg-blue-100 text-blue-700 border-blue-200',
   packed: 'bg-violet-100 text-violet-700 border-violet-200',
@@ -343,7 +357,10 @@ export default function VisitorOrdersPage() {
     );
   };
 
-  const paidOrders = useMemo(() => orders.filter((o) => o.status === 'paid'), [orders]);
+  const paidOrders = useMemo(
+    () => orders.filter((o) => o.status === 'paid' && o.payment_method !== 'cash_on_delivery'),
+    [orders]
+  );
   const hasOrders = orders.length > 0;
 
   const formatAmount = (amount: number, currency = 'MAD') =>
@@ -352,6 +369,7 @@ export default function VisitorOrdersPage() {
   const handleDownloadReceipt = async (order: UnifiedMarketplaceOrder) => {
     await downloadMarketplaceUnifiedOrderReceiptPdf({
       groupId: order.group_id,
+      orderReference: buildOrderRef(order.group_id, order.created_at),
       standName: order.stand_name,
       paymentMethod: order.payment_method,
       status: order.status,

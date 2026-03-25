@@ -31,6 +31,8 @@ from app.modules.marketplace.schemas import (
     ProductUpdate,
 )
 from app.modules.marketplace.stripe_service import create_payment_session, construct_event
+from app.modules.notifications.schemas import NotificationType
+from app.modules.notifications.service import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -446,6 +448,14 @@ async def update_order_fulfillment_status(
     updated = await mkt_svc.update_order_fulfillment_status(order_id, body.fulfillment_status, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
+    try:
+        await create_notification(
+            user_id=updated["buyer_id"],
+            type=NotificationType.MARKETPLACE_ORDER_UPDATED,
+            message=f"Your order for {updated.get('product_name', 'a product')} is now {body.fulfillment_status.replace('_', ' ')}.",
+        )
+    except Exception:
+        logger.warning("Failed to create order update notification for order %s", order_id)
     return updated
 
 
@@ -469,6 +479,14 @@ async def cancel_order(
     updated = await mkt_svc.cancel_order(order_id, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
+    try:
+        await create_notification(
+            user_id=updated["buyer_id"],
+            type=NotificationType.MARKETPLACE_ORDER_CANCELLED,
+            message=f"Your order for {updated.get('product_name', 'a product')} was cancelled by the stand.",
+        )
+    except Exception:
+        logger.warning("Failed to create cancellation notification for order %s", order_id)
     return updated
 
 
@@ -591,8 +609,6 @@ async def get_order_receipt(
         "currency": (order.get("currency") or (product.get("currency") if product else "MAD") or "MAD").upper(),
         "status": order.get("status", "unknown"),
         "payment_method": order.get("payment_method", "stripe"),
-        "stripe_session_id": order.get("stripe_session_id", ""),
-        "stripe_payment_intent_id": order.get("stripe_payment_intent_id", ""),
         "buyer_name": user.get("full_name", user.get("name", "")),
         "buyer_email": user.get("email", ""),
         "seller_name": seller_name,

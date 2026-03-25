@@ -7,6 +7,7 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 import os
 import uuid
 from typing import Optional
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse, parse_qs
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
@@ -368,21 +369,31 @@ async def assign_conference_to_slot(
             ent_user = await db.users.find_one({"_id": _OID(data.assigned_enterprise_id)})
         enterprise_name = (ent_user.get("full_name") or ent_user.get("email", "")) if ent_user else ""
 
-        # Build conference start/end from event start_date + slot times
+        # Build conference start/end from event start_date + slot times in event timezone.
         event_date = event.get("start_date")
         if isinstance(event_date, str):
             event_date = _dt.fromisoformat(event_date)
+        if event_date.tzinfo is None:
+            event_date = event_date.replace(tzinfo=_tz.utc)
         # Use day offset
         from datetime import timedelta
+        event_tz_name = str(event.get("event_timezone") or "UTC")
+        try:
+            event_tz = ZoneInfo(event_tz_name)
+        except Exception:
+            event_tz = _tz.utc
+        event_local_start = event_date.astimezone(event_tz)
         day_offset = timedelta(days=data.day_index)
-        base_date = event_date + day_offset
+        base_local_date = event_local_start + day_offset
 
         sh, sm = (int(x) for x in slot["start_time"].split(":"))
         eh, em = (int(x) for x in slot["end_time"].split(":"))
-        conf_start = base_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
-        conf_end = base_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+        conf_start_local = base_local_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
+        conf_end_local = base_local_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+        conf_start = conf_start_local.astimezone(_tz.utc)
+        conf_end = conf_end_local.astimezone(_tz.utc)
         if conf_end <= conf_start:
-            conf_end = conf_end + timedelta(days=1)
+            conf_end = (conf_end_local + timedelta(days=1)).astimezone(_tz.utc)
 
         conf_title = data.title or slot.get("label") or "Conference"
 

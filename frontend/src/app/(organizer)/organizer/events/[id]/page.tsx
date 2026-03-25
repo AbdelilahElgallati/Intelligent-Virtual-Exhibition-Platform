@@ -31,6 +31,7 @@ import OrganizerEventConferences from "@/components/conferences/OrganizerEventCo
 import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatSlotRangeLabel } from '@/lib/schedule';
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
@@ -109,7 +110,7 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
               {day.slots.map((slot, si) => (
                 <div key={si} className={`flex items-start gap-3 p-2.5 rounded-lg border ${slot.is_conference ? 'border-violet-200 bg-violet-50/50' : 'border-indigo-100 bg-indigo-50/50'}`}>
                   <span className={`shrink-0 text-xs font-semibold rounded-md px-2 py-1 whitespace-nowrap tabular-nums ${slot.is_conference ? 'text-violet-700 bg-violet-100 border border-violet-200' : 'text-indigo-700 bg-indigo-100 border border-indigo-200'}`}>
-                    {slot.start_time} → {slot.end_time}
+                    {formatSlotRangeLabel(slot.start_time, slot.end_time)}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-zinc-700 leading-snug pt-0.5">

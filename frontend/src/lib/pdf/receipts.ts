@@ -32,6 +32,7 @@ type MarketplaceUnifiedOrderReceiptItem = {
 
 type MarketplaceUnifiedOrderReceiptInput = {
   groupId: string;
+  orderReference?: string;
   standName?: string;
   paymentMethod?: string;
   status?: string;
@@ -248,7 +249,7 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
 
   const currency = (input.items[0]?.currency || 'MAD').toUpperCase();
   const total = input.items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
-  const receiptNo = `MKT-${new Date(createdAtIso).getFullYear()}-${String(input.groupId || '').replaceAll(/[^a-zA-Z0-9]/g, '').slice(-10).toUpperCase()}`;
+  const receiptNo = input.orderReference || `MKT-${new Date(createdAtIso).getFullYear()}-${String(input.groupId || '').replaceAll(/[^a-zA-Z0-9]/g, '').slice(-10).toUpperCase()}`;
 
   doc.setFontSize(22);
   doc.setTextColor(79, 70, 229);
@@ -273,7 +274,7 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
 
   doc.setFontSize(10);
   doc.setTextColor(60);
-  doc.text(`Order Group: ${input.groupId}`, 14, 64);
+  doc.text(`Order Ref: ${receiptNo}`, 14, 64);
   doc.text(`Paid At: ${formatInTZ(paidAtIso, tz, 'MMMM d, yyyy hh:mm a')}`, 14, 70);
 
   doc.setFont('helvetica', 'bold');

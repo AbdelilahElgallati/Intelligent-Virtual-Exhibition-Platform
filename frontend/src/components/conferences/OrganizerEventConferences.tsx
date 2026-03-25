@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Video, Mic, UserCheck, X } from 'lucide-react';
 import { http } from '@/lib/http';
 import { formatInTZ } from '@/lib/timezone';
+import { formatSlotRangeLabel } from '@/lib/schedule';
 
 interface Props {
     eventId: string;
@@ -191,7 +192,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-0.5 whitespace-nowrap tabular-nums">
-                                                            {slot.start_time} → {slot.end_time}
+                                                            {formatSlotRangeLabel(slot.start_time, slot.end_time)}
                                                         </span>
                                                         {slot.is_conference && (
                                                             <span className="text-xs font-bold text-violet-700 bg-violet-100 border border-violet-200 rounded-full px-2 py-0.5 flex items-center gap-1">

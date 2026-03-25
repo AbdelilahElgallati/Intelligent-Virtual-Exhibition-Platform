@@ -46,7 +46,7 @@ export default function VisitorDashboard() {
   const fetchNotifications = async () => {
     try {
       const data = await apiClient.get<Notification[]>(ENDPOINTS.NOTIFICATIONS.LIST);
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -55,10 +55,14 @@ export default function VisitorDashboard() {
   };
 
   const handleMarkRead = async (id: string) => {
+    if (!id) return;
     try {
       await apiClient.post(ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) => {
+          const notificationId = String((n as Notification & { _id?: string }).id || (n as Notification & { _id?: string })._id || '');
+          return notificationId === id ? { ...n, is_read: true } : n;
+        })
       );
     } catch (error) {
       console.error('Failed to mark notification as read:', error);

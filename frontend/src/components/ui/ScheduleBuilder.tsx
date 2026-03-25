@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Plus, Trash2, Clock, GripVertical, CalendarDays } from 'lucide-react';
+import { formatSlotRangeLabel } from '@/lib/schedule';
 
 // ── Default slot ─────────────────────────────────────────────────────────────
 const emptySlot = (): EventScheduleSlot => ({ start_time: '09:00', end_time: '17:00', label: '' });
@@ -151,7 +152,7 @@ function DayCard({
 
     const summary =
         day.slots.length > 0
-            ? `${day.slots[0].start_time} → ${day.slots[day.slots.length - 1].end_time} · ${day.slots.length} slot${day.slots.length !== 1 ? 's' : ''}`
+            ? `${formatSlotRangeLabel(day.slots[0].start_time, day.slots[day.slots.length - 1].end_time)} · ${day.slots.length} slot${day.slots.length !== 1 ? 's' : ''}`
             : null;
 
     return (

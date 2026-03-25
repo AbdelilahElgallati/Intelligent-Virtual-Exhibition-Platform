@@ -28,6 +28,8 @@ class NotificationType(str, Enum):
     CONFERENCE_LIVE = "conference_live"
     MEETING_APPROVED = "meeting_approved"
     MEETING_REJECTED = "meeting_rejected"
+    MARKETPLACE_ORDER_UPDATED = "marketplace_order_updated"
+    MARKETPLACE_ORDER_CANCELLED = "marketplace_order_cancelled"
 
 
 
