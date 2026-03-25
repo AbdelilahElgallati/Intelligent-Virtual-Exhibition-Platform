@@ -51,22 +51,22 @@ def _date_label(dt: datetime) -> str:
 # ─── individual metric queries ────────────────────────────────────────────────
 
 async def _visitor_counts(db, event_id_ref: str | list[str]) -> tuple[int, int]:
-    """Return (approved_visitors, approved_enterprises) for the specified event(s)."""
-    match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
-    pipeline = [
-        {"$match": match_q},
-        {"$group": {"_id": "$role", "approved": {
-            "$sum": {"$cond": [{"$in": ["$status", ["approved", "guest_approved"]]}, 1, 0]}
-        }, "total": {"$sum": 1}}},
-    ]
-    rows = await db["participants"].aggregate(pipeline).to_list(length=None)
-    visitors = enterprises = 0
-    for row in rows:
-        if row["_id"] == "visitor":
-            visitors = row["approved"]
-        elif row["_id"] == "enterprise":
-            enterprises = row["approved"]
-    return visitors, enterprises
+    """
+    Return (active_visitors, approved_enterprises).
+    active_visitors: Distinct user_ids in analytics_events for this event.
+    approved_enterprises: Role 'enterprise' with status 'approved'/'guest_approved' in participants.
+    """
+    ids_to_check = [event_id_ref] if isinstance(event_id_ref, str) else list(event_id_ref)
+    
+    # 1. Active Visitors (Distinct from Analytics)
+    active_visitors = await db["analytics_events"].distinct("user_id", {"event_id": {"$in": ids_to_check}})
+    visitors_count = len(active_visitors)
+
+    # 2. Approved Enterprises (From Participants)
+    match_q = {"event_id": {"$in": ids_to_check}, "role": "enterprise", "status": {"$in": ["approved", "guest_approved"]}}
+    enterprises_count = await db["participants"].count_documents(match_q)
+    
+    return visitors_count, enterprises_count
 
 
 async def _enterprise_rate(db, event_id_ref: str | list[str]) -> float:
@@ -184,69 +184,58 @@ async def _safety_metrics(db, event_id_ref: str | list[str]) -> SafetyMetrics:
 
 
 async def _revenue(db, event_id_ref: str | list[str], approved_visitors: int, approved_enterprises: int) -> RevenueSummary:
-    if isinstance(event_id_ref, list):
-        # Bulk revenue across all events
-        oids = [_to_oid(eid) for eid in event_id_ref if _to_oid(eid)]
-        cursor = db["events"].find({"_id": {"$in": oids}})
-        events = await cursor.to_list(length=None)
-        
-        ticket_rev = 0.0
-        stand_rev = 0.0
-        total = 0.0
-        
-        # This is tricky because approved_visitors/enterprises are already aggregated.
-        # For overall summary, we might need a different approach if prices vary.
-        # However, for now, we'll assume we can use the stored payment_amount if it exists.
-        
-        for event in events:
-            is_p = event.get("is_paid", False)
-            t_p = float(event.get("ticket_price") or 0)
-            s_p = float(event.get("stand_price") or 0)
-            
-            # We need per-event visitor/enterprise counts for accurate calculation if prices vary.
-            # But get_organizer_summary usually works per event.
-            # For "Overall", we'll use a simplified model: sum of all payment_amounts.
-            if event.get("payment_amount"):
-                total += float(event["payment_amount"])
-            
-            # Rough estimate for categories if needed
-            # (In a real system we'd aggregate per event then sum)
-            
-        return RevenueSummary(ticket_revenue=0.0, stand_revenue=0.0, total_revenue=round(total, 2))
+    ids_to_check = [event_id_ref] if isinstance(event_id_ref, str) else list(event_id_ref)
+    
+    # 1. Ticket Revenue (Actual paid event_payments)
+    paid_cursor = db["event_payments"].aggregate([
+        {"$match": {"event_id": {"$in": ids_to_check}, "status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+    ])
+    paid_rows = await paid_cursor.to_list(length=1)
+    ticket_rev = float(paid_rows[0]["total"]) if paid_rows else 0.0
 
-    event = await db["events"].find_one(
-        {"_id": _to_oid(event_id_ref)} if _to_oid(event_id_ref) else {"_id": event_id_ref}
-    )
-    if not event:
-        return RevenueSummary()
+    # 2. Stand Revenue (Participants with role 'enterprise' and stand_fee_paid=True)
+    # We sum the stand_price from the corresponding events
+    stand_rev = 0.0
+    oids = [_to_oid(eid) for eid in ids_to_check if _to_oid(eid)]
+    ev_cursor = db["events"].find({"_id": {"$in": oids}}, {"stand_price": 1})
+    event_prices = {str(e["_id"]): float(e.get("stand_price") or 0) async for e in ev_cursor}
 
-    is_paid      = event.get("is_paid", False)
-    ticket_price = float(event.get("ticket_price") or 0)
-    stand_price  = float(event.get("stand_price") or 0)
+    part_cursor = db["participants"].find({
+        "event_id": {"$in": ids_to_check},
+        "role": "enterprise",
+        "$or": [{"stand_fee_paid": True}, {"payment_reference": {"$exists": True, "$ne": ""}}]
+    }, {"event_id": 1})
+    
+    async for p in part_cursor:
+        ev_id = p.get("event_id")
+        stand_rev += event_prices.get(ev_id, 0.0)
 
-    ticket_rev = round(approved_visitors * ticket_price, 2) if is_paid else 0.0
-    stand_rev  = round(approved_enterprises * stand_price, 2)
-    total      = round(ticket_rev + stand_rev, 2)
-    # If payment_amount is set by admin, honour it as total
-    if event.get("payment_amount"):
-        total = float(event["payment_amount"])
-
-    return RevenueSummary(ticket_revenue=ticket_rev, stand_revenue=stand_rev, total_revenue=total)
+    total = round(ticket_rev + stand_rev, 2)
+    return RevenueSummary(ticket_revenue=round(ticket_rev, 2), stand_revenue=round(stand_rev, 2), total_revenue=total)
 
 
 # ─── time-series trends ───────────────────────────────────────────────────────
 
 async def _trend_participants(db, event_id_ref: str | list[str]) -> list[TrendPoint]:
-    match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
+    """Group distinct daily visitors by date from analytics events."""
+    ids_to_check = [event_id_ref] if isinstance(event_id_ref, str) else list(event_id_ref)
+    
     pipeline = [
-        {"$match": {**match_q, "role": "visitor", "status": {"$in": ["approved", "guest_approved"]}}},
+        {"$match": {"event_id": {"$in": ids_to_check}}},
         {"$group": {
-            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
-            "value": {"$sum": 1},
+            "_id": {
+                "date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+                "user_id": "$user_id"
+            }
+        }},
+        {"$group": {
+            "_id": "$_id.date",
+            "value": {"$sum": 1}
         }},
         {"$sort": {"_id": 1}},
     ]
-    rows = await db["participants"].aggregate(pipeline).to_list(length=None)
+    rows = await db["analytics_events"].aggregate(pipeline).to_list(length=None)
     return [TrendPoint(date=r["_id"], value=r["value"]) for r in rows if r.get("_id")]
 
 
