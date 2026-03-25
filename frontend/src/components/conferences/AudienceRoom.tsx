@@ -8,11 +8,12 @@
  * Same visual design preserved: header + speaker video + Q&A sidebar.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
+import React, { useEffect, useState } from 'react';
+import { useDailyRoom } from '@/hooks/useDailyRoom';
 import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
-import { AlertTriangle, CalendarClock, Clock3, RefreshCw, Users } from 'lucide-react';
+import ConferenceChatPanel from './ConferenceChatPanel';
+import { AlertTriangle, CalendarClock, Clock3, Mic, MicOff, RefreshCw, Users, Video, VideoOff } from 'lucide-react';
 
 interface AudienceRoomProps {
   token: string;
@@ -71,16 +72,20 @@ export default function AudienceRoom({
   qaEnabled = true,
   onLeave,
   onRefreshToken,
-}: AudienceRoomProps) {
+}: Readonly<AudienceRoomProps>) {
   const [now, setNow] = useState(() => Date.now());
   const [isDisconnected, setIsDisconnected] = useState(false);
+  const [activePanel, setActivePanel] = useState<'chat' | 'qa'>('chat');
 
   const {
-    joined,
-    error,
     reconnecting,
+    localParticipant,
     remoteParticipants,
     allParticipants,
+    roomMessages,
+    toggleMic,
+    toggleCam,
+    sendRoomMessage,
     leave,
     reconnect,
   } = useDailyRoom({
@@ -93,23 +98,43 @@ export default function AudienceRoom({
   });
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+    const timer = globalThis.setInterval(() => setNow(Date.now()), 1000);
+    return () => globalThis.clearInterval(timer);
   }, []);
 
   const start = startTime ? new Date(startTime).getTime() : null;
   const end = endTime ? new Date(endTime).getTime() : null;
   const isInSession = Boolean(start && end && now >= start && now < end);
-  const sessionState = !start
-    ? 'Live session'
-    : now < start
-      ? `Starts in ${formatDuration(start - now)}`
-      : isInSession
-        ? `Ends in ${formatDuration((end as number) - now)}`
-        : `Ended ${formatDuration(now - (end as number))} ago`;
+  let sessionState = 'Live session';
+  if (start && now < start) {
+    sessionState = `Starts in ${formatDuration(start - now)}`;
+  } else if (start && end && isInSession) {
+    sessionState = `Ends in ${formatDuration(end - now)}`;
+  } else if (start && end) {
+    sessionState = `Ended ${formatDuration(now - end)} ago`;
+  }
 
-  const speaker = remoteParticipants.find((p) => !p.local) ?? remoteParticipants[0] ?? null;
   const totalWatching = allParticipants.length;
+  const micOn = localParticipant?.audioOn ?? false;
+  const camOn = localParticipant?.videoOn ?? false;
+  let sidePanelContent: React.ReactNode;
+  if (activePanel === 'chat') {
+    sidePanelContent = (
+      <ConferenceChatPanel
+        title="Audience Chat"
+        messages={roomMessages}
+        onSend={sendRoomMessage}
+      />
+    );
+  } else if (qaEnabled) {
+    sidePanelContent = <QAPanel conferenceId={conferenceId} isSpeaker={false} />;
+  } else {
+    sidePanelContent = (
+      <div className="p-8 text-center">
+        <p className="text-xs text-zinc-600">Q&A is currently disabled</p>
+      </div>
+    );
+  }
 
   const handleLeave = async () => {
     await leave();
@@ -134,7 +159,7 @@ export default function AudienceRoom({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                    Live Event
+                    <span>Live Event</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-400 border border-white/5">
                     <Clock3 size={13} />
@@ -178,6 +203,12 @@ export default function AudienceRoom({
               />
             </div>
 
+            {localParticipant && (
+              <div className="absolute top-6 right-6 z-20 w-28 sm:w-44 aspect-video rounded-xl overflow-hidden border border-white/15 shadow-2xl">
+                <MediaGrid participants={[localParticipant]} layout="conference" prominentScreenShare={false} />
+              </div>
+            )}
+
             {/* Disconnect overlay */}
             {isDisconnected && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
@@ -206,6 +237,31 @@ export default function AudienceRoom({
               <span className="text-xs font-bold text-white tracking-wide">
                 Stage: {speakerName || enterpriseName || 'Assigned speaker'}
               </span>
+            </div>
+
+            <div className="absolute bottom-8 right-8 z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 px-4 py-3 backdrop-blur-xl">
+              <button
+                onClick={toggleMic}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition ${micOn ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-red-400/30 bg-red-500/15 text-red-300 hover:bg-red-500/25'}`}
+                title={micOn ? 'Mute microphone' : 'Unmute microphone'}
+              >
+                {micOn ? <Mic size={18} /> : <MicOff size={18} />}
+              </button>
+
+              <button
+                onClick={toggleCam}
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition ${camOn ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-red-400/30 bg-red-500/15 text-red-300 hover:bg-red-500/25'}`}
+                title={camOn ? 'Turn off camera' : 'Turn on camera'}
+              >
+                {camOn ? <Video size={18} /> : <VideoOff size={18} />}
+              </button>
+
+              <button
+                onClick={handleLeave}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-red-500/30 bg-red-500 px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-red-600"
+              >
+                Leave
+              </button>
             </div>
           </main>
         </div>
@@ -267,16 +323,23 @@ export default function AudienceRoom({
               {/* Q&A Section */}
               <div className="mt-8">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Q&A Session</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActivePanel('chat')}
+                      className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'chat' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
+                    >
+                      Chat
+                    </button>
+                    <button
+                      onClick={() => setActivePanel('qa')}
+                      className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'qa' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
+                    >
+                      Q&A
+                    </button>
+                  </div>
                 </div>
                 <div className="rounded-2xl bg-zinc-950/50 border border-white/5 overflow-hidden">
-                  {qaEnabled ? (
-                    <QAPanel conferenceId={conferenceId} isSpeaker={false} />
-                  ) : (
-                    <div className="p-8 text-center">
-                      <p className="text-xs text-zinc-600">Q&A is currently disabled</p>
-                    </div>
-                  )}
+                  {sidePanelContent}
                 </div>
               </div>
             </div>

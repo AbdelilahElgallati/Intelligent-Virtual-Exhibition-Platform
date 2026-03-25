@@ -14,9 +14,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 // We import the global daily-js build (compatible with Next.js SSR)
-// Types are inlined so we don't need a @types package
-type DailyCall = any;
-type DailyEventObject = any;
+// Types are intentionally broad so we don't need a @types package.
 
 // ── Participant shape exposed by this hook ─────────────────────────────────
 
@@ -30,6 +28,15 @@ export interface DailyParticipant {
   videoOn: boolean;
   audioOn: boolean;
   screenVideoTrack: MediaStreamTrack | null;
+}
+
+export interface DailyRoomMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+  local: boolean;
 }
 
 // ── Hook options ───────────────────────────────────────────────────────────
@@ -54,7 +61,7 @@ export interface UseDailyRoomOptions {
 // ── Hook return type ───────────────────────────────────────────────────────
 
 export interface UseDailyRoomResult {
-  callObject: DailyCall | null;
+  callObject: any;
   joined: boolean;
   error: string | null;
   reconnecting: boolean;
@@ -62,9 +69,12 @@ export interface UseDailyRoomResult {
   remoteParticipants: DailyParticipant[];
   /** All participants including local */
   allParticipants: DailyParticipant[];
+  roomMessages: DailyRoomMessage[];
   toggleMic: () => Promise<void>;
   toggleCam: () => Promise<void>;
   toggleScreenShare: () => Promise<void>;
+  sendRoomMessage: (text: string) => Promise<void>;
+  removeParticipant: (sessionId: string) => Promise<boolean>;
   leave: () => Promise<void>;
   reconnect: () => Promise<void>;
 }
@@ -97,11 +107,25 @@ export function useDailyRoom({
   onLeft,
   onError,
 }: UseDailyRoomOptions): UseDailyRoomResult {
-  const callRef = useRef<DailyCall | null>(null);
+  const callRef = useRef<any>(null);
+  const localUserIdRef = useRef<string>('');
+  const seenMsgIdsRef = useRef<Set<string>>(new Set());
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const [participants, setParticipants] = useState<Record<string, DailyParticipant>>({});
+  const [roomMessages, setRoomMessages] = useState<DailyRoomMessage[]>([]);
+
+  const pushRoomMessage = useCallback((message: DailyRoomMessage) => {
+    if (!message.text.trim()) return;
+    if (seenMsgIdsRef.current.has(message.id)) return;
+    seenMsgIdsRef.current.add(message.id);
+    setRoomMessages((prev) => {
+      const next = [...prev, message];
+      if (next.length > 200) return next.slice(-200);
+      return next;
+    });
+  }, []);
 
   // ── Refresh participant state from the call object ──────────────────────
 
@@ -121,7 +145,7 @@ export function useDailyRoom({
   useEffect(() => {
     if (!roomUrl || !token) return;
 
-    let co: DailyCall | null = null;
+    let co: any = null;
 
     const init = async () => {
       try {
@@ -132,10 +156,11 @@ export function useDailyRoom({
 
         // ── Event listeners ───────────────────────────────────────────────
 
-        co.on('joined-meeting', (evt: DailyEventObject) => {
+        co.on('joined-meeting', (evt: any) => {
           setJoined(true);
           setError(null);
           setReconnecting(false);
+          localUserIdRef.current = String(evt?.participant?.user_id || '');
           refreshParticipants();
           onJoined?.();
         });
@@ -143,7 +168,32 @@ export function useDailyRoom({
         co.on('left-meeting', () => {
           setJoined(false);
           setParticipants({});
+          setRoomMessages([]);
+          seenMsgIdsRef.current.clear();
           onLeft?.();
+        });
+
+        co.on('app-message', (evt: any) => {
+          const payload = evt?.data;
+          if (payload?.type !== 'conference-chat') return;
+
+          const text = String(payload.text || '').trim();
+          if (!text) return;
+
+          const createdAt = String(payload.createdAt || new Date().toISOString());
+          const senderId = String(payload.senderId || evt?.fromId || evt?.fromSessionId || '');
+          const senderName = String(payload.senderName || evt?.fromUserName || 'Participant');
+          const id = String(payload.id || `${senderId}:${createdAt}:${text.slice(0, 24)}`);
+          const isLocal = senderId.length > 0 && senderId === localUserIdRef.current;
+
+          pushRoomMessage({
+            id,
+            senderId,
+            senderName,
+            text,
+            createdAt,
+            local: isLocal,
+          });
         });
 
         co.on('participant-joined', refreshParticipants);
@@ -152,16 +202,25 @@ export function useDailyRoom({
         co.on('track-started', refreshParticipants);
         co.on('track-stopped', refreshParticipants);
 
-        co.on('network-connection', (evt: DailyEventObject) => {
-          if (evt.event === 'interrupted') setReconnecting(true);
-          if (evt.event === 'connected') {
+        co.on('network-connection', (evt: any) => {
+          const state = evt?.event || evt?.status || evt?.state;
+          if (state === 'interrupted' || state === 'reconnecting') {
+            setReconnecting(true);
+          }
+          if (state === 'connected') {
             setReconnecting(false);
+            setError(null);
             refreshParticipants();
           }
         });
 
-        co.on('error', (evt: DailyEventObject) => {
+        co.on('error', (evt: any) => {
           const msg = evt?.errorMsg || 'Daily.co connection error';
+          // Keep transient network glitches recoverable instead of hard-failing the room.
+          if (/network|connection|reconnect|timeout|ice/i.test(msg)) {
+            setReconnecting(true);
+            return;
+          }
           setError(msg);
           onError?.(msg);
         });
@@ -225,6 +284,57 @@ export function useDailyRoom({
     refreshParticipants();
   }, [refreshParticipants]);
 
+  const sendRoomMessage = useCallback(async (text: string) => {
+    const co = callRef.current;
+    const msgText = text.trim();
+    if (!co || !msgText) return;
+
+    const local = co.participants()?.local;
+    const senderId = String(local?.user_id || local?.session_id || localUserIdRef.current || 'local');
+    const senderName = String(local?.user_name || 'You');
+    const createdAt = new Date().toISOString();
+    const id = `${senderId}:${createdAt}:${Math.random().toString(36).slice(2, 10)}`;
+
+    const payload = {
+      type: 'conference-chat',
+      id,
+      senderId,
+      senderName,
+      text: msgText,
+      createdAt,
+    };
+
+    pushRoomMessage({
+      id,
+      senderId,
+      senderName,
+      text: msgText,
+      createdAt,
+      local: true,
+    });
+
+    await co.sendAppMessage(payload, '*');
+  }, [pushRoomMessage]);
+
+  const removeParticipant = useCallback(async (sessionId: string) => {
+    const co = callRef.current;
+    if (!co || !sessionId) return false;
+
+    if (typeof co.eject === 'function') {
+      await co.eject(sessionId);
+      refreshParticipants();
+      return true;
+    }
+
+    if (typeof co.removeParticipant === 'function') {
+      await co.removeParticipant(sessionId);
+      refreshParticipants();
+      return true;
+    }
+
+    return false;
+  }, [refreshParticipants]);
+
   const leave = useCallback(async () => {
     const co = callRef.current;
     if (!co) return;
@@ -260,9 +370,12 @@ export function useDailyRoom({
     localParticipant,
     remoteParticipants,
     allParticipants: all,
+    roomMessages,
     toggleMic,
     toggleCam,
     toggleScreenShare,
+    sendRoomMessage,
+    removeParticipant,
     leave,
     reconnect,
   };

@@ -2,9 +2,9 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { DailyParticipant } from '@/hooks/useDailyRoom';
-import { 
-  MicOff, Maximize, Minimize, User, 
-  ScreenShare, VideoOff 
+import {
+  MicOff, Maximize, Minimize, User,
+  ScreenShare
 } from 'lucide-react';
 
 interface MediaGridProps {
@@ -30,7 +30,7 @@ interface MediaTileProps {
   isPip?: boolean;
 }
 
-function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit, isPip }: MediaTileProps) {
+function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit, isPip }: Readonly<MediaTileProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -45,13 +45,14 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
-    } else {
+    if (document.fullscreenElement) {
       document.exitFullscreen();
+      return;
     }
+
+    containerRef.current.requestFullscreen().catch((err) => {
+      console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+    });
   };
 
   useEffect(() => {
@@ -126,7 +127,7 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
 
 // ── Main Grid ──────────────────────────────────────────────────────────────
 
-export default function MediaGrid({ participants, layout = 'meeting', prominentScreenShare = true }: MediaGridProps) {
+export default function MediaGrid({ participants, layout = 'meeting', prominentScreenShare = true }: Readonly<MediaGridProps>) {
   const items = useMemo(() => {
     const list: (MediaTileProps & { id: string })[] = [];
     participants.forEach((p) => {
@@ -159,6 +160,16 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
 
   const [isSwapped, setIsSwapped] = useState(false);
 
+  const cameraItems = useMemo(() => items.filter((item) => !item.isScreen), [items]);
+  const localCamera = useMemo(() => cameraItems.find((item) => item.isLocal) ?? null, [cameraItems]);
+  const remoteCamera = useMemo(() => cameraItems.find((item) => !item.isLocal) ?? null, [cameraItems]);
+
+  useEffect(() => {
+    if (!localCamera || !remoteCamera) {
+      setIsSwapped(false);
+    }
+  }, [localCamera, remoteCamera]);
+
   if (items.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 bg-[#030305] text-zinc-500 font-sans">
@@ -178,11 +189,8 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
 
   // Case: WhatsApp Style (1:1 PIP with swap capability)
   if (layout === 'whatsapp' && items.length >= 1) {
-    const remote = items.find(i => !i.isLocal) || items[0];
-    const local = items.find(i => i.isLocal && i !== remote) || (items[0].isLocal ? items[0] : null);
-
-    const main = isSwapped ? local : remote;
-    const pip = isSwapped ? remote : local;
+    const main = isSwapped ? localCamera ?? remoteCamera ?? items[0] : remoteCamera ?? localCamera ?? items[0];
+    const pip = isSwapped ? remoteCamera : localCamera;
 
     return (
       <div className="flex-1 relative overflow-hidden bg-[#030305]">
@@ -197,7 +205,8 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
         {pip && (
           <button 
             onClick={() => setIsSwapped(!isSwapped)}
-            className="absolute bottom-10 right-10 w-32 sm:w-48 aspect-[3/4] sm:aspect-video shadow-2xl transition-all hover:scale-105 active:scale-95 group/pip overflow-hidden rounded-2xl border-2 border-white/10"
+            className="absolute top-6 right-6 w-28 sm:w-44 aspect-[3/4] sm:aspect-video shadow-2xl transition-all hover:scale-105 active:scale-95 group/pip overflow-hidden rounded-2xl border-2 border-white/10 z-20"
+            aria-label="Switch main and picture-in-picture videos"
           >
             <MediaTile {...pip} isPip={true} />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/pip:opacity-100 transition-opacity flex items-center justify-center">
@@ -254,12 +263,15 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
   }
 
   // Fallback: Standard masonry-ish grid
+  let fallbackGridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+  if (items.length === 1) {
+    fallbackGridClass = 'grid-cols-1';
+  } else if (items.length <= 4) {
+    fallbackGridClass = 'grid-cols-1 md:grid-cols-2';
+  }
+
   return (
-    <div className={`flex-1 grid gap-4 p-4 min-h-0 bg-[#030305] ${
-      items.length === 1 ? 'grid-cols-1' :
-      items.length <= 4 ? 'grid-cols-1 md:grid-cols-2' :
-      'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-    }`}>
+    <div className={`flex-1 grid gap-4 p-4 min-h-0 bg-[#030305] ${fallbackGridClass}`}>
       {items.map((item) => (
         <div key={item.id} className="relative w-full h-full min-h-[200px]">
           <MediaTile {...item} />

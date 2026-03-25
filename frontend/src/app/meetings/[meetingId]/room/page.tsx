@@ -16,7 +16,7 @@ type MeetingLite = {
     event_id?: string;
 };
 
-function MeetingRoomContent({ meetingId }: { meetingId: string }) {
+function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
     const router = useRouter();
     const [tokenData, setTokenData] = useState<MeetingJoinResponse | null>(null);
     const [eventData, setEventData] = useState<Event | null>(null);
@@ -65,11 +65,11 @@ function MeetingRoomContent({ meetingId }: { meetingId: string }) {
     }, [meetingId]);
 
     useEffect(() => {
-        const timer = window.setInterval(() => {
+        const timer = globalThis.setInterval(() => {
             setTimelineNow(Date.now());
         }, 30000);
 
-        return () => window.clearInterval(timer);
+        return () => globalThis.clearInterval(timer);
     }, []);
 
     useEffect(() => {
@@ -85,11 +85,11 @@ function MeetingRoomContent({ meetingId }: { meetingId: string }) {
             return;
         }
 
-        const timer = window.setTimeout(() => {
+        const timer = globalThis.setTimeout(() => {
             autoEndMeeting();
         }, delay);
 
-        return () => window.clearTimeout(timer);
+        return () => globalThis.clearTimeout(timer);
     }, [tokenData?.ends_at, autoEndMeeting]);
 
     useEffect(() => {
@@ -141,12 +141,13 @@ function MeetingRoomContent({ meetingId }: { meetingId: string }) {
         <MeetingRoom
             token={tokenData.token}
             roomUrl={tokenData.room_url}
+            endsAt={tokenData.ends_at}
             onSessionEnd={handleEnd}
         />
     );
 }
 
-export default function MeetingRoomPage({ params }: { params: Promise<{ meetingId: string }> }) {
+export default function MeetingRoomPage({ params }: Readonly<{ params: Promise<{ meetingId: string }> }>) {
     const { meetingId } = use(params);
     return (
         <Suspense fallback={<LoadingState message="Loading…" />}>

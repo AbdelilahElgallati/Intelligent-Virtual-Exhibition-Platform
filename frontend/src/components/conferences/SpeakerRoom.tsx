@@ -12,9 +12,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
 import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
+import ConferenceChatPanel from './ConferenceChatPanel';
 import {
-  AlertTriangle, CalendarClock, Clock3, Mic, MicOff,
-  MonitorUp, RefreshCw, Users, Video, VideoOff,
+  AlertTriangle, Clock3, Mic, MicOff,
+  MonitorUp, RefreshCw, Shield, Users, Video, VideoOff,
 } from 'lucide-react';
 
 interface SpeakerRoomProps {
@@ -75,22 +76,25 @@ export default function SpeakerRoom({
   eventId,
   onEndSession,
   onRefreshToken,
-}: SpeakerRoomProps) {
+}: Readonly<SpeakerRoomProps>) {
   const [now, setNow] = useState(() => Date.now());
   const [endingSession, setEndingSession] = useState(false);
   const [showDisconnectOverlay, setShowDisconnectOverlay] = useState(false);
+  const [activePanel, setActivePanel] = useState<'chat' | 'qa'>('chat');
+  const [moderationMsg, setModerationMsg] = useState<string | null>(null);
   const disconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
-    joined,
-    error,
     reconnecting,
     localParticipant,
     remoteParticipants,
     allParticipants,
+    roomMessages,
     toggleMic,
     toggleCam,
     toggleScreenShare,
+    sendRoomMessage,
+    removeParticipant,
     leave,
     reconnect,
   } = useDailyRoom({
@@ -110,24 +114,35 @@ export default function SpeakerRoom({
   });
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+    const timer = globalThis.setInterval(() => setNow(Date.now()), 1000);
+    return () => globalThis.clearInterval(timer);
   }, []);
 
   useEffect(() => () => {
     if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
   }, []);
 
+  const handleRemoveParticipant = async (participant: DailyParticipant) => {
+    const ok = await removeParticipant(participant.sessionId);
+    setModerationMsg(
+      ok
+        ? `${participant.userName} was removed from the conference.`
+        : 'Participant removal is not available in this browser session.'
+    );
+    globalThis.setTimeout(() => setModerationMsg(null), 2600);
+  };
+
   const start = startTime ? new Date(startTime).getTime() : null;
   const end = endTime ? new Date(endTime).getTime() : null;
   const isInSession = Boolean(start && end && now >= start && now < end);
-  const sessionState = !start
-    ? 'Live session'
-    : now < start
-      ? `Starts in ${formatDuration(start - now)}`
-      : isInSession
-        ? `Ends in ${formatDuration((end as number) - now)}`
-        : `Ended ${formatDuration(now - (end as number))} ago`;
+  let sessionState = 'Live session';
+  if (start && now < start) {
+    sessionState = `Starts in ${formatDuration(start - now)}`;
+  } else if (start && end && isInSession) {
+    sessionState = `Ends in ${formatDuration(end - now)}`;
+  } else if (start && end) {
+    sessionState = `Ended ${formatDuration(now - end)} ago`;
+  }
 
   const handleExplicitEnd = async () => {
     if (!confirm('Are you sure you want to end this session for everyone?')) return;
@@ -149,6 +164,24 @@ export default function SpeakerRoom({
   const camOn = localParticipant?.videoOn ?? false;
   const screenOn = !!localParticipant?.screenVideoTrack;
   const liveCount = allParticipants.length;
+  let engagementPanel: React.ReactNode;
+  if (activePanel === 'chat') {
+    engagementPanel = (
+      <ConferenceChatPanel
+        title="Speaker Chat"
+        messages={roomMessages}
+        onSend={sendRoomMessage}
+      />
+    );
+  } else if (qaEnabled) {
+    engagementPanel = <QAPanel conferenceId={conferenceId} isSpeaker={true} />;
+  } else {
+    engagementPanel = (
+      <div className="flex items-center justify-center h-full p-8 text-center">
+        <p className="text-xs text-zinc-600 italic">Audience interaction is disabled for this session.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#070709] font-sans text-zinc-100 overflow-hidden">
@@ -163,7 +196,7 @@ export default function SpeakerRoom({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-red-500 border border-red-500/20">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                    Broadcasting Live
+                    <span>Broadcasting Live</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-400 border border-white/5">
                     <Clock3 size={13} />
@@ -182,7 +215,7 @@ export default function SpeakerRoom({
               <div className="flex items-center gap-3">
                 {eventId && (
                   <button
-                    onClick={() => { window.location.href = `/enterprise/events/${eventId}/manage`; }}
+                    onClick={() => { globalThis.location.href = `/enterprise/events/${eventId}/manage`; }}
                     className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition-all hover:bg-white/10"
                   >
                     Event Settings
@@ -366,19 +399,56 @@ export default function SpeakerRoom({
 
               {/* Interaction Panel */}
               <div className="pt-4 h-[400px]">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Engagement (Q&A)</h3>
+                <div className="mb-4 flex items-center gap-2">
+                  <button
+                    onClick={() => setActivePanel('chat')}
+                    className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'chat' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
+                  >
+                    Live Chat
+                  </button>
+                  <button
+                    onClick={() => setActivePanel('qa')}
+                    className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'qa' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
+                  >
+                    Q&A
+                  </button>
                   <div className="flex-1 h-px bg-white/5" />
                 </div>
                 <div className="h-full rounded-2xl bg-zinc-950/50 border border-white/5 overflow-hidden shadow-inner">
-                  {qaEnabled ? (
-                    <QAPanel conferenceId={conferenceId} isSpeaker={true} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full p-8 text-center">
-                      <p className="text-xs text-zinc-600 italic">Audience interaction is disabled for this session.</p>
+                  {engagementPanel}
+                </div>
+              </div>
+
+              {/* Moderation controls */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Moderation</h3>
+                  <div className="flex-1 h-px bg-white/5" />
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
+                  {remoteParticipants.map((p) => (
+                    <div key={`${p.sessionId}-mod`} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <Shield size={12} className="text-zinc-500" />
+                        <span className="text-xs text-zinc-300 font-semibold truncate max-w-[180px]">{p.userName}</span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveParticipant(p)}
+                        className="rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-red-300 hover:bg-red-500/20"
+                      >
+                        Remove
+                      </button>
                     </div>
+                  ))}
+
+                  {remoteParticipants.length === 0 && (
+                    <p className="text-[10px] text-zinc-600 text-center py-2">No audience connected.</p>
                   )}
                 </div>
+                {moderationMsg && (
+                  <p className="mt-2 text-[10px] font-semibold text-zinc-400">{moderationMsg}</p>
+                )}
               </div>
             </div>
           </div>
