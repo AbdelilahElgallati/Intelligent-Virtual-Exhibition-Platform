@@ -35,6 +35,7 @@ interface MeetingRequestModalProps {
     eventEndDate?: string;
     scheduleDays?: EventScheduleDay[];
     eventTimeZone?: string;
+    themeColor?: string;
 }
 
 interface BusySlot {
@@ -77,6 +78,15 @@ function parseClockTime(value?: string): [number, number] | null {
     const [hours, minutes] = value.split(':').map(Number);
     if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
     return [hours, minutes];
+}
+
+function hexToRgb(hex: string) {
+    const h = hex.replace('#', '');
+    return {
+        r: parseInt(h.substring(0, 2), 16) || 79,
+        g: parseInt(h.substring(2, 4), 16) || 70,
+        b: parseInt(h.substring(4, 6), 16) || 229,
+    };
 }
 
 function timeToMinutes(value: string): number | null {
@@ -147,6 +157,7 @@ export function MeetingRequestModal({
     eventEndDate,
     scheduleDays,
     eventTimeZone = 'UTC',
+    themeColor = '#4f46e5',
 }: MeetingRequestModalProps) {
     const router = useRouter();
     const [activeView, setActiveView] = useState<'list' | 'request'>('list');
@@ -165,6 +176,7 @@ export function MeetingRequestModal({
         endTime: '',
         purpose: '',
     });
+    const { r, g, b } = hexToRgb(themeColor);
 
     const fetchMeetings = useCallback(async (silent = false) => {
         if (!silent || meetings.length === 0) {
@@ -411,8 +423,20 @@ export function MeetingRequestModal({
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+            <div
+                className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 border"
+                style={{
+                    borderColor: `rgba(${r},${g},${b},0.22)`,
+                    boxShadow: `0 20px 56px -26px rgba(${r},${g},${b},0.42), 0 8px 20px -14px rgba(15,23,42,0.42)`,
+                }}
+            >
+                <div
+                    className="px-6 py-4 border-b flex justify-between items-center"
+                    style={{
+                        borderBottomColor: `rgba(${r},${g},${b},0.16)`,
+                        background: `linear-gradient(180deg, rgba(${r},${g},${b},0.11) 0%, rgba(255,255,255,0.98) 75%)`,
+                    }}
+                >
                     <div>
                         <h3 className="font-bold text-gray-900">Meetings with {standName}</h3>
                         <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints • Times shown in {eventTimeZone}</p>
@@ -423,13 +447,17 @@ export function MeetingRequestModal({
                 </div>
 
                 <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-76px)]">
-                    <div className="flex items-center gap-2 bg-zinc-100 p-1 rounded-xl w-fit">
+                    <div
+                        className="flex items-center gap-2 p-1 rounded-xl w-fit"
+                        style={{ backgroundColor: `rgba(${r},${g},${b},0.10)` }}
+                    >
                         <button
                             onClick={() => setActiveView('list')}
                             className={clsx(
                                 'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
-                                activeView === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                                activeView === 'list' ? 'bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
                             )}
+                            style={activeView === 'list' ? { color: themeColor } : undefined}
                         >
                             <MessageSquare size={14} className="inline mr-1.5 -mt-0.5" /> My Meetings
                         </button>
@@ -437,8 +465,9 @@ export function MeetingRequestModal({
                             onClick={() => setActiveView('request')}
                             className={clsx(
                                 'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
-                                activeView === 'request' ? 'bg-white text-indigo-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                                activeView === 'request' ? 'bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
                             )}
+                            style={activeView === 'request' ? { color: themeColor } : undefined}
                         >
                             <Calendar size={14} className="inline mr-1.5 -mt-0.5" /> Request New
                         </button>
@@ -461,7 +490,11 @@ export function MeetingRequestModal({
                                 <div className="h-40 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-2xl border border-zinc-200">
                                     <Calendar size={36} className="text-zinc-300 mb-2" />
                                     <p className="font-semibold text-zinc-500">No meetings with this enterprise in this event yet.</p>
-                                    <Button className="mt-3 bg-indigo-600 hover:bg-indigo-700" onClick={() => setActiveView('request')}>
+                                    <Button
+                                        className="mt-3 text-white"
+                                        style={{ backgroundColor: themeColor }}
+                                        onClick={() => setActiveView('request')}
+                                    >
                                         Request a Meeting
                                     </Button>
                                 </div>
@@ -533,7 +566,13 @@ export function MeetingRequestModal({
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="flex items-start gap-2 p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700">
+                            <div
+                                className="flex items-start gap-2 p-3 rounded-lg text-xs"
+                                style={{
+                                    backgroundColor: `rgba(${r},${g},${b},0.10)`,
+                                    color: themeColor,
+                                }}
+                            >
                                 <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                 <span>
                                     Meeting requests are constrained by event schedule, your availability, enterprise availability, and conference overlaps.
@@ -555,12 +594,15 @@ export function MeetingRequestModal({
                                                 }}
                                                 className={clsx(
                                                     'px-4 py-2 rounded-xl text-sm font-semibold border transition-all',
-                                                    meetingForm.date === day.dateStr
-                                                        ? 'bg-indigo-600 text-white border-indigo-600'
-                                                        : day.disabled
+                                                    day.disabled
                                                             ? 'bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed'
-                                                            : 'bg-white text-zinc-700 border-zinc-200 hover:border-indigo-300'
+                                                            : 'bg-white text-zinc-700 border-zinc-200'
                                                 )}
+                                                style={meetingForm.date === day.dateStr
+                                                    ? { backgroundColor: themeColor, borderColor: themeColor, color: '#fff' }
+                                                    : day.disabled
+                                                        ? undefined
+                                                        : { borderColor: `rgba(${r},${g},${b},0.26)` }}
                                             >
                                                 {day.label}
                                             </button>
@@ -598,9 +640,14 @@ export function MeetingRequestModal({
                                                             isDisabled
                                                                 ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
                                                                 : meetingForm.startTime === time
-                                                                    ? 'bg-indigo-600 text-white'
-                                                                    : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                                                    ? 'text-white'
+                                                                    : 'bg-zinc-50 text-zinc-700 border border-zinc-200'
                                                         )}
+                                                        style={isDisabled
+                                                            ? undefined
+                                                            : meetingForm.startTime === time
+                                                                ? { backgroundColor: themeColor }
+                                                                : { borderColor: `rgba(${r},${g},${b},0.24)` }}
                                                     >
                                                         {time}
                                                     </button>
@@ -634,9 +681,14 @@ export function MeetingRequestModal({
                                                         isDisabled
                                                             ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
                                                             : meetingForm.endTime === time
-                                                                ? 'bg-emerald-600 text-white'
-                                                                : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-emerald-300 hover:bg-emerald-50'
+                                                                ? 'text-white'
+                                                                : 'bg-zinc-50 text-zinc-700 border border-zinc-200'
                                                     )}
+                                                        style={isDisabled
+                                                            ? undefined
+                                                            : meetingForm.endTime === time
+                                                                ? { backgroundColor: themeColor }
+                                                                : { borderColor: `rgba(${r},${g},${b},0.24)` }}
                                                 >
                                                     {time}
                                                 </button>
@@ -648,7 +700,10 @@ export function MeetingRequestModal({
                             )}
 
                             {meetingForm.startTime && meetingForm.endTime && (
-                                <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl text-sm text-indigo-700 font-medium">
+                                <div
+                                    className="flex items-center gap-2 p-3 rounded-xl text-sm font-medium"
+                                    style={{ backgroundColor: `rgba(${r},${g},${b},0.10)`, color: themeColor }}
+                                >
                                     <Clock size={16} />
                                     {meetingForm.startTime} <ArrowRight size={12} /> {meetingForm.endTime}
                                 </div>
@@ -661,7 +716,8 @@ export function MeetingRequestModal({
                                     value={meetingForm.purpose}
                                     onChange={(e) => setMeetingForm((f) => ({ ...f, purpose: e.target.value }))}
                                     placeholder="Briefly describe what you'd like to discuss..."
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent resize-none"
+                                    style={{ ['--tw-ring-color' as string]: `${themeColor}44` }}
                                 />
                             </div>
 
@@ -676,7 +732,8 @@ export function MeetingRequestModal({
                                 </Button>
                                 <Button
                                     type="submit"
-                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                                    className="flex-1 text-white"
+                                    style={{ backgroundColor: themeColor }}
                                     disabled={loading}
                                 >
                                     {loading ? 'Sending Request...' : 'Send Request'}

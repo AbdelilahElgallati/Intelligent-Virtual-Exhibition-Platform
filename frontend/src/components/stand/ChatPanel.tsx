@@ -232,11 +232,11 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
             <div
-                className="relative w-full max-w-lg bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu"
+                className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl border flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu"
                 style={{
-                    maxHeight: 'min(85vh, 680px)',
-                    borderColor: `rgba(${r},${g},${b},0.22)`,
-                    boxShadow: `0 24px 64px -20px rgba(${r},${g},${b},0.55), 0 18px 42px -26px rgba(15,23,42,0.9)`,
+                    maxHeight: 'min(88vh, 760px)',
+                    borderColor: `rgba(${r},${g},${b},0.26)`,
+                    boxShadow: `0 20px 60px -26px rgba(${r},${g},${b},0.48), 0 8px 24px -16px rgba(15,23,42,0.45)`,
                 }}
                 onClick={e => e.stopPropagation()}
             >
@@ -253,16 +253,25 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
         return (
             <>
             <div
-                className="px-5 py-4 border-b border-black/5 flex justify-between items-center text-white"
-                style={{ background: `linear-gradient(135deg, ${themeColor}, rgba(${r},${g},${b},0.82))` }}
+                className="px-5 py-4 border-b flex justify-between items-center"
+                style={{
+                    borderBottomColor: `rgba(${r},${g},${b},0.16)`,
+                    background: `linear-gradient(180deg, rgba(${r},${g},${b},0.12) 0%, rgba(255,255,255,0.98) 75%)`,
+                }}
             >
                 <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center shadow-sm">
-                        <MessageSquare className="w-4 h-4 text-white" />
+                    <div
+                        className="w-9 h-9 rounded-full border flex items-center justify-center shadow-sm"
+                        style={{
+                            backgroundColor: `rgba(${r},${g},${b},0.14)`,
+                            borderColor: `rgba(${r},${g},${b},0.24)`,
+                        }}
+                    >
+                        <MessageSquare className="w-4 h-4" style={{ color: themeColor }} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-semibold leading-none mb-1">Chat with {standName}</h3>
-                        <div className="flex items-center gap-2 text-[11px] text-white/80">
+                        <h3 className="text-sm font-bold leading-none mb-1 text-zinc-900">Chat with {standName}</h3>
+                        <div className="flex items-center gap-2 text-[11px] text-zinc-600">
                             <span className={clsx("w-2 h-2 rounded-full shadow-sm", isConnected ? "bg-emerald-500" : "bg-red-500")} />
                             {isConnected ? 'Sync Active' : 'Connecting...'}
                             {!disableMessageLimit && !limitReached && myMessageCount > 0 && (
@@ -274,15 +283,22 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                     </div>
                 </div>
                 {showClose && (
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 text-white/90 hover:text-white transition-all active:scale-90">
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-zinc-100 text-zinc-500 hover:text-zinc-700 transition-all active:scale-90">
                         <X className="w-5 h-5" />
                     </button>
                 )}
             </div>
             {/* Announcement banner (visitor only) */}
             {!disableMessageLimit && !limitReached && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50/95 border-b border-amber-100 text-amber-800">
-                    <AlertCircle size={14} className="shrink-0 text-amber-500" />
+                <div
+                    className="flex items-center gap-2 px-4 py-2 border-b"
+                    style={{
+                        backgroundColor: `rgba(${r},${g},${b},0.08)`,
+                        borderBottomColor: `rgba(${r},${g},${b},0.16)`,
+                        color: '#4b5563',
+                    }}
+                >
+                    <AlertCircle size={14} className="shrink-0" style={{ color: themeColor }} />
                     <p className="text-[11px] leading-snug">
                         Limited to <span className="font-semibold">{MAX_VISITOR_MESSAGES} messages</span>. Request a meeting for longer discussion.
                     </p>
@@ -298,7 +314,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                 className="flex-1 overflow-y-auto p-4 space-y-4"
                 style={{
                     minHeight: 200,
-                    background: `radial-gradient(120% 80% at 50% 0%, rgba(${r},${g},${b},0.10) 0%, rgba(248,250,252,0.96) 45%, rgba(248,250,252,0.98) 100%)`,
+                    background: `linear-gradient(180deg, rgba(${r},${g},${b},0.06) 0%, #f8fafc 38%, #f8fafc 100%)`,
                 }}
             >
                 {error && !isConnected && (
@@ -421,7 +437,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     function renderInput() {
         if (!disableMessageLimit && limitReached) {
             return (
-                <div className="p-5 border-t border-black/5 bg-white/90 text-center">
+                <div className="p-5 border-t border-zinc-200 bg-white text-center">
                     <p className="text-xs font-medium text-gray-500 mb-1">Chat limit reached</p>
                     <button
                         onClick={handleMeetingRequest}
@@ -436,7 +452,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
 
         return (
             <div
-                className="p-4 border-t bg-white/90"
+                className="p-4 border-t bg-white"
                 style={{ borderTopColor: `rgba(${r},${g},${b},0.16)` }}
             >
                 <form onSubmit={handleSend} className="flex gap-3">

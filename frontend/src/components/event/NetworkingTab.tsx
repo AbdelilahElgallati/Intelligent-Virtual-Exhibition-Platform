@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
-import { formatInTZ } from '@/lib/timezone';
 import { Event } from '@/types/event';
-import { Stand, StandsListResponse } from '@/types/stand';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { Briefcase, Building2, Calendar, Clock, ExternalLink, Globe, Mail, MapPin, Search, Sparkles, Target, Users, X } from 'lucide-react';
+import { Briefcase, Building2, ExternalLink, Globe, Mail, MapPin, Search, Target, Users, X } from 'lucide-react';
 
 /* ── Types ── */
 
@@ -43,31 +40,14 @@ interface Attendee {
     networking_goals?: string[];
 }
 
-interface Meeting {
-    id: string;
-    _id?: string;
-    visitor_id: string;
-    stand_id: string;
-    start_time: string;
-    end_time: string;
-    purpose?: string;
-    status: 'pending' | 'approved' | 'rejected' | 'canceled' | 'completed';
-    created_at: string;
-}
-
 /* ── Main Component ── */
 
-export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
+export function NetworkingTab({ eventId }: NetworkingTabProps) {
     const { user } = useAuth();
     const [attendees, setAttendees] = useState<Attendee[]>([]);
-    const [stands, setStands] = useState<Stand[]>([]);
-    const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loadingAttendees, setLoadingAttendees] = useState(true);
-    const [loadingMeetings, setLoadingMeetings] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAttendee, setSelectedAttendee] = useState<Attendee | null>(null);
-
-    const eventTimeZone = event?.event_timezone || 'UTC';
     const roleStats = attendees.reduce((acc, attendee) => {
         const role = String(attendee.role || 'visitor').toLowerCase();
         acc[role] = (acc[role] || 0) + 1;
@@ -102,30 +82,6 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
         };
         fetchAttendees();
     }, [eventId, user?.id, user?._id, user?.email]);
-
-    // Fetch stands (for meeting cards) + my meetings
-    useEffect(() => {
-        const fetchStands = async () => {
-            try {
-                const response = await apiClient.get<StandsListResponse>(ENDPOINTS.STANDS.LIST(eventId));
-                setStands(response.items || []);
-            } catch {
-                setStands([]);
-            }
-        };
-        const fetchMeetings = async () => {
-            try {
-                const response = await apiClient.get<Meeting[]>('/meetings/my-meetings');
-                setMeetings(response || []);
-            } catch {
-                setMeetings([]);
-            } finally {
-                setLoadingMeetings(false);
-            }
-        };
-        fetchStands();
-        fetchMeetings();
-    }, [eventId]);
 
     // Filter attendees by search
     const filtered = searchQuery
@@ -179,9 +135,9 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 gap-10">
                 {/* Section 1: Attendees List */}
-                <section className="lg:col-span-2 space-y-6">
+                <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <h3 className="text-lg font-bold text-gray-900">Attendees</h3>
@@ -246,68 +202,6 @@ export function NetworkingTab({ event, eventId }: NetworkingTabProps) {
                     )}
                 </section>
 
-                {/* Section 2: Sidebar (Meetings + Tips) */}
-                <div className="space-y-8">
-                    {/* My Meetings Container */}
-                    <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 overflow-hidden relative">
-                        <div className="flex items-center gap-3 mb-6 relative">
-                            <div className="p-2 rounded-xl bg-gray-900 text-white">
-                                <Calendar size={18} />
-                            </div>
-                            <h3 className="text-sm font-bold text-gray-900">My Meetings</h3>
-                        </div>
-
-                        {loadingMeetings ? (
-                            <div className="space-y-4 animate-pulse">
-                                {[1, 2].map((i) => (
-                                    <div key={i} className="h-20 bg-slate-100 rounded-3xl" />
-                                ))}
-                            </div>
-                        ) : meetings.length > 0 ? (
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                                {meetings.map((meeting, idx) => (
-                                    <MeetingCard
-                                        key={`${meeting.id || meeting.start_time}-${idx}`}
-                                        meeting={meeting}
-                                        stands={stands}
-                                        eventTimeZone={eventTimeZone}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-gray-50 rounded-2xl p-8 text-center border border-dashed border-gray-200">
-                                <Calendar className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-                                <h4 className="text-xs font-semibold text-gray-900 mb-1">No meetings</h4>
-                                <p className="text-xs text-gray-500 leading-relaxed">
-                                    Browse the stands to schedule professional meetings with exhibitors.
-                                </p>
-                            </div>
-                        )}
-                    </section>
-
-                    {/* Pro Tips */}
-                    <section className="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700" />
-                        <div className="flex items-center gap-2 mb-4 relative">
-                            <Sparkles size={16} className="text-indigo-200" />
-                            <h3 className="text-xs font-semibold tracking-wide text-indigo-100">Networking Tips</h3>
-                        </div>
-                        <div className="space-y-4 relative">
-                            <div className="flex gap-3">
-                                <div className="mt-1.5 w-1 h-1 rounded-full bg-indigo-300 shrink-0" />
-                                <p className="text-xs font-medium text-indigo-50 leading-relaxed">
-                                    Target profiles with shared interests for more productive conversations.
-                                </p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="mt-1.5 w-1 h-1 rounded-full bg-indigo-300 shrink-0" />
-                                <p className="text-xs font-medium text-indigo-50 leading-relaxed">
-                                    Reach out early to schedule meetings during peak event hours.
-                                </p>
-                            </div>
-                        </div>
-                    </section>
-                </div>
             </div>
 
             {selectedAttendee && (
@@ -346,9 +240,13 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
         : hasVisitorDetails
             ? attendee.experience_level
             : null;
+    const displayedInterests = (attendee.interests || []).slice(0, 2);
+    const hiddenInterestsCount = Math.max((attendee.interests || []).length - displayedInterests.length, 0);
+    const displayedGoals = (attendee.networking_goals || []).slice(0, 1);
+    const hiddenGoalsCount = Math.max((attendee.networking_goals || []).length - displayedGoals.length, 0);
 
     return (
-        <div className="group relative bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
+        <div className="group relative h-full min-h-[320px] bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col">
             <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-indigo-600">
                     <Mail size={14} />
@@ -391,9 +289,9 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
             </div>
 
             {/* Tags & Bio */}
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-4 flex-1 flex flex-col">
                 {attendee.industry && (
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-gray-600 line-clamp-1">
                         <span className="font-semibold text-gray-700">Industry:</span> {attendee.industry}
                     </div>
                 )}
@@ -406,26 +304,36 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
 
                 {(attendee.interests && attendee.interests.length > 0) && (
                     <div className="flex flex-wrap gap-1.5">
-                        {attendee.interests.slice(0, 3).map((tag) => (
-                            <span key={`${attendee.id}-interest-${tag}`} className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-700 text-[11px] font-medium border border-gray-200">
+                        {displayedInterests.map((tag) => (
+                            <span key={`${attendee.id}-interest-${tag}`} className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-700 text-[11px] font-medium border border-gray-200 truncate max-w-[120px]">
                                 {tag}
                             </span>
                         ))}
+                        {hiddenInterestsCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200">
+                                +{hiddenInterestsCount}...
+                            </span>
+                        )}
                     </div>
                 )}
 
                 {(attendee.networking_goals && attendee.networking_goals.length > 0) && (
                     <div className="flex flex-wrap gap-1.5">
-                        {attendee.networking_goals.slice(0, 2).map((goal) => (
-                            <span key={`${attendee.id}-goal-${goal}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-medium border border-indigo-200">
+                        {displayedGoals.map((goal) => (
+                            <span key={`${attendee.id}-goal-${goal}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-medium border border-indigo-200 truncate max-w-[170px]">
                                 <Target size={10} /> {goal}
                             </span>
                         ))}
+                        {hiddenGoalsCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-semibold border border-indigo-200">
+                                +{hiddenGoalsCount}...
+                            </span>
+                        )}
                     </div>
                 )}
 
                 {profileTag && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 line-clamp-1">
                         <span className="font-semibold text-gray-700">{hasEnterpriseDetails ? 'Org Type:' : 'Experience:'}</span> {profileTag}
                     </div>
                 )}
@@ -439,7 +347,7 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
                     <p className="text-xs text-gray-500 line-clamp-2">{attendee.bio}</p>
                 )}
 
-                <div className="h-px bg-gray-100 w-full" />
+                <div className="h-px bg-gray-100 w-full mt-auto" />
                 
                 <button
                     onClick={onReachOut}
@@ -460,8 +368,8 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="relative h-28 bg-indigo-600 overflow-hidden">
+            <div className="w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
+                <div className="relative h-28 bg-indigo-600 overflow-hidden shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-800 opacity-90" />
                     <div className="absolute top-0 right-0 p-6">
                         <button onClick={onClose} className="p-2 rounded-full bg-white/20 text-white hover:bg-white/40 transition-all">
@@ -470,7 +378,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                     </div>
                 </div>
 
-                <div className="px-8 pt-6 pb-8 relative">
+                <div className="px-8 pt-6 pb-8 relative overflow-y-auto">
                     <div className="flex items-start gap-5 mb-6">
                         {attendee.avatar_url ? (
                             <img src={attendee.avatar_url} alt={identity} className="w-[72px] h-[72px] rounded-2xl object-cover border border-gray-200 shadow-sm" />
@@ -640,77 +548,6 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-/* ── Meeting Card ── */
-
-function MeetingCard({ 
-    meeting, 
-    stands, 
-    eventTimeZone 
-}: { 
-    meeting: Meeting; 
-    stands: Stand[]; 
-    eventTimeZone: string;
-}) {
-    const stand = stands.find((s) => (s as any).id === meeting.stand_id || (s as any)._id === meeting.stand_id);
-    const router = useRouter();
-
-    const statusConfig: Record<string, { label: string; cls: string }> = {
-        pending: { label: 'Pending', cls: 'bg-amber-50 text-amber-600 border-amber-100' },
-        approved: { label: 'Approved', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-600 border-red-100' },
-        canceled: { label: 'Canceled', cls: 'bg-slate-100 text-slate-500 border-slate-200' },
-        completed: { label: 'Completed', cls: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-    };
-
-    const status = statusConfig[meeting.status] || statusConfig.pending;
-
-    return (
-        <div className="group bg-white rounded-3xl border border-slate-100 p-4 hover:border-indigo-100 transition-all">
-            <div className="flex items-center gap-4 mb-3">
-                <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-100/50"
-                    style={{ backgroundColor: stand?.theme_color || '#F1F5F9' }}
-                >
-                    {stand?.logo_url ? (
-                        <img src={stand.logo_url} alt={stand.name} className="w-8 h-8 object-contain brightness-0 invert opacity-90" />
-                    ) : (
-                        <Briefcase className="h-5 w-5 text-white/50" />
-                    )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-900 truncate text-xs">{stand?.name || 'Exhibitor Stand'}</h4>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                        <Clock size={10} className="text-slate-400" />
-                        <p className="text-[10px] font-black text-slate-500 uppercase">
-                            {formatInTZ(meeting.start_time, eventTimeZone, 'MMM d • h:mm a')}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${status.cls}`}>
-                    {status.label}
-                </span>
-
-                {(meeting.status === 'approved' || (meeting as any).session_status === 'live') ? (
-                    <button
-                        onClick={() => router.push(`/meetings/${meeting.id || (meeting as any)._id}/room`)}
-                        className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-                    >
-                        Join Room
-                    </button>
-                ) : (
-                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-2">
-                        Details
-                    </span>
-                )}
             </div>
         </div>
     );
