@@ -319,6 +319,23 @@ export function MeetingRequestModal({
         );
     }, [selectedDay, selectedDaySegments, isPastDateTime]);
 
+    const isSlotBusy = useCallback((time: string, isEnd = false) => {
+        if (!meetingForm.date) return null;
+        const dtMs = getDateTimeValue(meetingForm.date, time);
+        for (const bs of busySlots) {
+            const bsStartMs = new Date(bs.start_time).getTime();
+            const bsEndMs = new Date(bs.end_time).getTime();
+            if (isEnd) {
+                if (!meetingForm.startTime) return null;
+                const startMs = getDateTimeValue(meetingForm.date, meetingForm.startTime);
+                if (dtMs > bsStartMs && startMs < bsEndMs) return bs;
+            } else if (dtMs >= bsStartMs && dtMs < bsEndMs) {
+                return bs;
+            }
+        }
+        return null;
+    }, [meetingForm.date, meetingForm.startTime, busySlots, getDateTimeValue]);
+
     const durationOptions = useMemo(() => {
         if (!selectedDay || !meetingForm.startTime) return [];
 
@@ -362,23 +379,6 @@ export function MeetingRequestModal({
             setMeetingForm((prev) => ({ ...prev, endTime: '', durationMinutes: 0 }));
         }
     }, [meetingForm.startTime, meetingForm.durationMinutes, meetingForm.endTime, durationOptions]);
-
-    const isSlotBusy = useCallback((time: string, isEnd = false) => {
-        if (!meetingForm.date) return null;
-        const dtMs = getDateTimeValue(meetingForm.date, time);
-        for (const bs of busySlots) {
-            const bsStartMs = new Date(bs.start_time).getTime();
-            const bsEndMs = new Date(bs.end_time).getTime();
-            if (isEnd) {
-                if (!meetingForm.startTime) return null;
-                const startMs = getDateTimeValue(meetingForm.date, meetingForm.startTime);
-                if (dtMs > bsStartMs && startMs < bsEndMs) return bs;
-            } else if (dtMs >= bsStartMs && dtMs < bsEndMs) {
-                return bs;
-            }
-        }
-        return null;
-    }, [meetingForm.date, meetingForm.startTime, busySlots, getDateTimeValue]);
 
     const handleUpdateMeetingStatus = async (meetingId: string, status: 'canceled') => {
         try {
