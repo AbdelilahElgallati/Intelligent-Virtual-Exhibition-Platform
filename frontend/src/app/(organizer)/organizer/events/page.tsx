@@ -7,6 +7,7 @@ import { OrganizerEvent, EventStatus } from '@/types/event';
 import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -149,8 +150,8 @@ export default function OrganizerEvents() {
                                         <div className="text-xs text-gray-400 mt-0.5">{event.category}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600 whitespace-nowrap">
-                                        <div>{new Date(event.start_date).toLocaleDateString()}</div>
-                                        <div className="text-xs text-gray-400">→ {new Date(event.end_date).toLocaleDateString()}</div>
+                                        <div>{formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                                        <div className="text-xs text-gray-400">→ {formatInUserTZ(event.end_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600">
                                         {event.num_enterprises ?? '—'}

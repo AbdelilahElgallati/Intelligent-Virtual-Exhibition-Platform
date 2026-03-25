@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import { EventScheduleDay } from '@/types/event';
 import { Meeting } from '@/types/meeting';
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+import { fromZonedTime } from 'date-fns-tz';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface MeetingRequestModalProps {
     isOpen: boolean;
@@ -165,6 +166,7 @@ export function MeetingRequestModal({
 }: MeetingRequestModalProps) {
     const router = useRouter();
     const [activeView, setActiveView] = useState<'list' | 'request'>('list');
+    const viewerTimeZone = getUserTimezone();
 
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loadingMeetings, setLoadingMeetings] = useState(false);
@@ -246,43 +248,87 @@ export function MeetingRequestModal({
     const eventDays = useMemo(() => {
         if (!eventStartDate || !eventEndDate) return [];
 
+        // Build request-day keys and slot times in the viewer timezone so "today" and
+        // past/future availability are evaluated consistently with what the user sees.
+        const toYmdInEventTz = (value: Date): string => formatInTZ(value, eventTimeZone, 'yyyy-MM-dd');
+        const addDaysToYmdInEventTz = (ymd: string, offsetDays: number): string => {
+            // Use UTC noon anchor to avoid DST edge cases while shifting by whole days.
+            const base = new Date(`${ymd}T12:00:00Z`);
+            base.setUTCDate(base.getUTCDate() + offsetDays);
+            return formatInTZ(base, eventTimeZone, 'yyyy-MM-dd');
+        };
+
         if (scheduleDays && scheduleDays.length > 0) {
-            return scheduleDays.map((sd) => {
-                const base = new Date(eventStartDate);
-                base.setDate(base.getDate() + sd.day_number - 1);
+            const startYmd = toYmdInEventTz(new Date(eventStartDate));
+            return scheduleDays.map((sd, index) => {
+                // Some payloads send day_number as calendar day (25, 26, 27...), not 1..N.
+                const dayOffset = index;
+                const eventDayYmd = addDaysToYmdInEventTz(startYmd, dayOffset);
+                const dayAnchorUtc = fromZonedTime(`${eventDayYmd}T12:00:00`, eventTimeZone);
+                const viewerDayYmd = formatInTZ(dayAnchorUtc, viewerTimeZone, 'yyyy-MM-dd');
+                const convertedSlots = (sd.slots || [])
+                    .map((slot) => {
+                        const startMinutes = timeToMinutes(slot.start_time || '');
+                        const endMinutes = timeToMinutes(slot.end_time || '');
+                        if (startMinutes === null || endMinutes === null) return null;
+                        const endEventYmd = endMinutes <= startMinutes
+                            ? addDaysToYmdInEventTz(eventDayYmd, 1)
+                            : eventDayYmd;
+                        const startUtc = fromZonedTime(`${eventDayYmd}T${slot.start_time}:00`, eventTimeZone);
+                        const endUtc = fromZonedTime(`${endEventYmd}T${slot.end_time}:00`, eventTimeZone);
+                        return {
+                            start_time: formatInTZ(startUtc, viewerTimeZone, 'HH:mm'),
+                            end_time: formatInTZ(endUtc, viewerTimeZone, 'HH:mm'),
+                        };
+                    })
+                    .filter((slot): slot is { start_time: string; end_time: string } => slot !== null);
                 return {
-                    dateStr: formatLocalDate(base),
+                    dateStr: viewerDayYmd,
                     label: sd.date_label || `Day ${sd.day_number}`,
-                    slots: sd.slots,
+                    slots: convertedSlots,
                 };
             });
         }
 
         const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
-        const start = new Date(eventStartDate);
-        const end = new Date(eventEndDate);
-        const d = new Date(start);
+        const startYmd = toYmdInEventTz(new Date(eventStartDate));
+        const endYmd = toYmdInEventTz(new Date(eventEndDate));
+
+        const startAnchor = new Date(`${startYmd}T12:00:00Z`);
+        const endAnchor = new Date(`${endYmd}T12:00:00Z`);
+
+        const eventDateLabel = (d: Date, index: number) =>
+            `Day ${index} — ${new Intl.DateTimeFormat('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                timeZone: eventTimeZone,
+            }).format(d)}`;
+
+        let d = new Date(startAnchor);
         let index = 1;
-        while (d <= end) {
+        while (d <= endAnchor) {
             days.push({
-                dateStr: formatLocalDate(d),
-                label: `Day ${index} — ${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}`,
+                dateStr: formatInTZ(d, eventTimeZone, 'yyyy-MM-dd'),
+                label: eventDateLabel(d, index),
                 slots: [{ start_time: '09:00', end_time: '18:00' }],
             });
-            d.setDate(d.getDate() + 1);
+            d = new Date(d.getTime());
+            d.setUTCDate(d.getUTCDate() + 1);
             index += 1;
         }
+
         return days;
-    }, [eventStartDate, eventEndDate, scheduleDays]);
+    }, [eventStartDate, eventEndDate, scheduleDays, eventTimeZone, viewerTimeZone]);
 
     const getDateTimeValue = useCallback((dateStr: string, time: string) => {
-        return fromZonedTime(`${dateStr}T${time}:00`, eventTimeZone).getTime();
-    }, [eventTimeZone]);
+        return fromZonedTime(`${dateStr}T${time}:00`, viewerTimeZone).getTime();
+    }, [viewerTimeZone]);
 
     const isPastDate = useCallback((dateStr: string) => {
-        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, eventTimeZone).getTime();
+        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, viewerTimeZone).getTime();
         return targetEndOfDay < Date.now();
-    }, [eventTimeZone]);
+    }, [viewerTimeZone]);
 
     const isPastDateTime = useCallback((dateStr: string, time: string) => {
         return getDateTimeValue(dateStr, time) <= Date.now() + 30000;
@@ -406,8 +452,8 @@ export function MeetingRequestModal({
                 throw new Error('Please select date and time');
             }
 
-            const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, eventTimeZone);
-            const endTime = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, eventTimeZone);
+            const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, viewerTimeZone);
+            const endTime = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, viewerTimeZone);
             const now = Date.now();
 
             if (!startTime || Number.isNaN(startTime.getTime())) {
@@ -471,7 +517,7 @@ export function MeetingRequestModal({
                 >
                     <div>
                         <h3 className="font-bold text-gray-900">Meetings with {standName}</h3>
-                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints • Times shown in {eventTimeZone}</p>
+                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints • Times shown in {viewerTimeZone}</p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X size={20} />
@@ -557,11 +603,11 @@ export function MeetingRequestModal({
                                                     </div>
                                                     <p className="text-sm font-semibold text-zinc-900">{m.purpose || 'General discussion'}</p>
                                                     <p className="text-xs text-zinc-500 mt-1">
-                                                        {formatInTimeZone(new Date(m.start_time), eventTimeZone, 'MMM d, yyyy')}
+                                                        {formatInTZ(m.start_time, viewerTimeZone, 'MMM d, yyyy')}
                                                         {' · '}
-                                                        {formatInTimeZone(new Date(m.start_time), eventTimeZone, 'h:mm a')}
+                                                        {formatInTZ(m.start_time, viewerTimeZone, 'h:mm a')}
                                                         {' - '}
-                                                        {formatInTimeZone(new Date(m.end_time), eventTimeZone, 'h:mm a')}
+                                                        {formatInTZ(m.end_time, viewerTimeZone, 'h:mm a')}
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-2 w-full md:w-auto">

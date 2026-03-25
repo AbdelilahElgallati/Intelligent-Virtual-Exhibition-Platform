@@ -64,7 +64,35 @@ export default function OrganizerProfile() {
 
         try {
             await http.put('/users/me', form);
+            // Ensure the selected timezone is available immediately in localStorage,
+            // so schedule components can re-render using the correct viewer timezone.
+            try {
+                if (typeof window !== 'undefined') {
+                    const raw = localStorage.getItem('auth_user');
+                    const parsed = raw ? (JSON.parse(raw) as any) : {};
+                    localStorage.setItem(
+                        'auth_user',
+                        JSON.stringify({ ...parsed, timezone: form.timezone })
+                    );
+                }
+            } catch {
+                // Best-effort only.
+            }
             await refreshUser?.();
+            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
+            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            try {
+                if (typeof window !== 'undefined') {
+                    const raw = localStorage.getItem('auth_user');
+                    const parsed = raw ? (JSON.parse(raw) as any) : {};
+                    localStorage.setItem('auth_user', JSON.stringify({ ...parsed, timezone: form.timezone }));
+                }
+            } catch {
+                // Best-effort only.
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('ivep:auth-user-updated'));
+            }
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });

@@ -8,6 +8,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { useAuth } from '@/context/AuthContext';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import type { Event } from '@/types/event';
 import type { MarketplaceOrder, UnifiedMarketplaceOrder } from '@/types/marketplace';
 import type { Stand } from '@/lib/api/types';
@@ -455,7 +456,7 @@ export default function VisitorOrdersPage() {
               <div>
                 <p className="text-sm font-semibold text-gray-900">{order.stand_name || 'Enterprise Stand'}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Order Ref: {buildOrderRef(order.group_id, order.created_at)} · {new Date(order.created_at).toLocaleString()}
+                  Order Ref: {buildOrderRef(order.group_id, order.created_at)} · {formatInTZ(order.created_at, getUserTimezone(), 'MMM d, yyyy, h:mm a')}
                 </p>
               </div>
               <div className="flex items-center gap-2">

@@ -172,7 +172,7 @@ function ProfileSection({
 // ── Main Profile Page ────────────────────────────────────────────────
 
 export default function ProfilePage() {
-    const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { user: authUser, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
     const [profile, setProfile] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -265,6 +265,33 @@ export default function ProfilePage() {
             setProfile(updated);
             populateForm(updated);
             setSaveMessage({ type: 'success', text: 'Your profile has been saved successfully!' });
+            // Ensure the user's timezone preference is immediately applied across the app.
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('auth_user', JSON.stringify({ ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}), timezone }));
+                }
+            } catch {
+                // Best-effort only.
+            }
+            await refreshUser?.();
+            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
+            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(
+                        'auth_user',
+                        JSON.stringify({
+                            ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}),
+                            timezone,
+                        })
+                    );
+                }
+            } catch {
+                // Best-effort only.
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('ivep:auth-user-updated'));
+            }
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(() => setSaveMessage(null), 5000);
         } catch (err: any) {

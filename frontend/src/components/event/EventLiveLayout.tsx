@@ -12,6 +12,7 @@ import { Calendar, MapPin, User } from 'lucide-react';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { resolveMediaUrl } from '@/lib/media';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface EventLiveLayoutProps {
     eventId: string;
@@ -28,6 +29,14 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
     const currentTab = searchParams.get('tab') || 'overview';
 
     useEffect(() => {
+        // Guard against transient/invalid route props that would trigger 404 requests.
+        if (!eventId) {
+            setEvent(null);
+            setParticipantStatus('NOT_JOINED');
+            setLoading(false);
+            return;
+        }
+
         const fetchEvent = async () => {
             try {
                 const [eventData, statusData] = await Promise.all([
@@ -149,7 +158,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <Calendar className="h-4 w-4" />
-                                    <span>{new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(event.start_date))}</span>
+                                    <span>{formatInTZ(event.start_date, getUserTimezone(), 'MMMM d, yyyy, h:mm a')}</span>
                                 </div>
                                 {event.location && (
                                     <div className="flex items-center gap-1">

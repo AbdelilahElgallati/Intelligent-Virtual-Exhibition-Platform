@@ -23,6 +23,7 @@ import {
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent } from '@/types/event';
 import { resolveMediaUrl } from '@/lib/media';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -260,7 +261,7 @@ function EventTimeline({ event }: { event: OrganizerEvent }) {
                                 </span>
                                 {date && (node.key === 'live' || node.key === 'closed') && (
                                     <span className="text-xs text-zinc-400">
-                                        {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        {formatInUserTZ(date, { month: 'short', day: 'numeric' })}
                                     </span>
                                 )}
                             </div>
@@ -574,19 +575,13 @@ export default function AdminEventDetailPage() {
                             <Calendar className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                             <span>
                                 {event.start_date
-                                    ? new Date(event.start_date).toLocaleString(undefined, {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short',
-                                    })
+                                    ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' })
                                     : '—'}
                             </span>
                             <span className="text-zinc-300">→</span>
                             <span>
                                 {event.end_date
-                                    ? new Date(event.end_date).toLocaleString(undefined, {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short',
-                                    })
+                                    ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' })
                                     : '—'}
                             </span>
                         </div>
@@ -647,11 +642,7 @@ export default function AdminEventDetailPage() {
                             <div className="flex items-center gap-2.5 text-sm text-zinc-500">
                                 <Clock className="w-4 h-4 text-zinc-400" />
                                 Created{' '}
-                                {new Date(event.created_at).toLocaleDateString(undefined, {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                })}
+                                {formatInUserTZ(event.created_at, { year: 'numeric', month: 'short', day: 'numeric' })}
                             </div>
                         )}
                         {state === 'payment_done' && (
@@ -659,12 +650,7 @@ export default function AdminEventDetailPage() {
                                 <p className="text-xs text-indigo-700 font-medium">
                                     ⏰ Auto-start is scheduled when{' '}
                                     <span className="font-bold">
-                                        {event.start_date
-                                            ? new Date(event.start_date).toLocaleString(undefined, {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            })
-                                            : 'start date'}
+                                        {event.start_date ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'start date'}
                                     </span>{' '}
                                     is reached.
                                 </p>
@@ -675,12 +661,7 @@ export default function AdminEventDetailPage() {
                                 <p className="text-xs text-emerald-700 font-medium">
                                     🟢 Event is live. Auto-close scheduled when{' '}
                                     <span className="font-bold">
-                                        {event.end_date
-                                            ? new Date(event.end_date).toLocaleString(undefined, {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            })
-                                            : 'end date'}
+                                        {event.end_date ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'end date'}
                                     </span>{' '}
                                     passes.
                                 </p>

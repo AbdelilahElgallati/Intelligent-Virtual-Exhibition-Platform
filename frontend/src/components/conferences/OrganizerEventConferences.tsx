@@ -6,7 +6,7 @@ import { OrganizerEvent, EventScheduleDay, EventScheduleSlot } from '@/types/eve
 import { Card } from '@/components/ui/Card';
 import { Video, Mic, UserCheck, X } from 'lucide-react';
 import { http } from '@/lib/http';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatSlotRangeLabel } from '@/lib/schedule';
 
 interface Props {
@@ -31,10 +31,11 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
     const [assignForm, setAssignForm] = useState({ assigned_enterprise_id: '', speaker_name: '', title: '' });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const viewerTimeZone = getUserTimezone();
 
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
         const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-        const tz = event.event_timezone || 'UTC';
+        const tz = viewerTimeZone;
         const start = new Date(event.start_date || new Date().toISOString());
         if (Number.isNaN(start.getTime())) return 'Invalid date';
 
@@ -315,8 +316,8 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                         <p className="font-semibold text-gray-900 text-sm truncate">{conf.title}</p>
                                         {conf.speaker_name && <p className="text-xs text-gray-500">🎙️ {conf.speaker_name}</p>}
                                         <p className="text-xs text-gray-400 mt-0.5">
-                                            {formatInTZ(conf.start_time, event.event_timezone || 'UTC', 'dd MMM yyyy HH:mm')}
-                                            {' → '}{formatInTZ(conf.end_time, event.event_timezone || 'UTC', 'HH:mm')}
+                                            {formatInTZ(conf.start_time, viewerTimeZone, 'dd MMM yyyy HH:mm')}
+                                            {' → '}{formatInTZ(conf.end_time, viewerTimeZone, 'HH:mm')}
                                         </p>
                                         <p className="text-xs text-violet-600 mt-0.5">👥 {conf.attendee_count} registered</p>
                                     </div>

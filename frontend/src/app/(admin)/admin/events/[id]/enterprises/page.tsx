@@ -21,6 +21,7 @@ import {
     User2,
     CheckCircle,
 } from 'lucide-react';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ─── Status badge ────────────────────────────────────────────────────────────
 
@@ -240,7 +241,7 @@ export default function EnterpriseRequestsPage() {
     };
 
     const fmt = (d?: string) =>
-        d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+        d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Calendar, Clock, Dot, Flame, Mic2, Sparkles } from 'lucide-react';
 import { formatInTZ, getUserTimezone, zonedToUtc } from '@/lib/timezone';
+import { useAuth } from '@/context/AuthContext';
 
 interface ScheduleTabProps {
     event: Event | null;
@@ -118,12 +119,11 @@ interface TimelineSlot {
     endDisplay: string;
 }
 
-function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlot[] {
+function buildTimelineSlots(event: Event, days: EventScheduleDay[], viewerTimeZone: string): TimelineSlot[] {
     const now = new Date();
     const eventStart = event.start_date ? new Date(event.start_date) : null;
     const canUseEventDate = eventStart && !Number.isNaN(eventStart.getTime());
     const eventTimeZone = event.event_timezone || 'UTC';
-    const userTimeZone = getUserTimezone();
 
     const getDatePartsInTimezone = (value: Date, timeZone: string) => {
         const parts = new Intl.DateTimeFormat('en-CA', {
@@ -176,8 +176,8 @@ function buildTimelineSlots(event: Event, days: EventScheduleDay[]): TimelineSlo
             const startAt = zonedToUtc(`${dayYmd}T${slot.start_time}:00`, eventTimeZone);
             const endYmd = endMinutes <= startMinutes ? addDaysToYmd(dayYmd, 1) : dayYmd;
             const endAt = zonedToUtc(`${endYmd}T${slot.end_time}:00`, eventTimeZone);
-            const startDisplay = formatInTZ(startAt, userTimeZone, 'HH:mm');
-            const endDisplay = formatInTZ(endAt, userTimeZone, 'HH:mm');
+            const startDisplay = formatInTZ(startAt, viewerTimeZone, 'HH:mm');
+            const endDisplay = formatInTZ(endAt, viewerTimeZone, 'HH:mm');
 
             return {
                 dayNumber: day.day_number || dayIndex + 1,
@@ -203,6 +203,7 @@ function compareTimelineSlots(a: TimelineSlot, b: TimelineSlot): number {
 }
 
 export function ScheduleTab({ event }: ScheduleTabProps) {
+    const { user } = useAuth();
     if (!event) {
         return (
             <div className="bg-white rounded-xl shadow p-12 text-center">
@@ -221,8 +222,10 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
 
     // If we have structured schedule data
     if (days && days.length > 0) {
-        const viewerTimeZone = getUserTimezone();
-        const timelineSlots = buildTimelineSlots(event, days).sort(compareTimelineSlots);
+        // Prefer the saved timezone (localStorage) so schedule display always matches the selected profile timezone,
+        // even if the in-memory AuthContext user state is slightly stale.
+        const viewerTimeZone = getUserTimezone() || user?.timezone || 'UTC';
+        const timelineSlots = buildTimelineSlots(event, days, viewerTimeZone).sort(compareTimelineSlots);
         const liveNow = timelineSlots.find((item) => item.status === 'live') || null;
         const nextUp = timelineSlots.find((item) => item.status === 'upcoming') || null;
 
@@ -511,8 +514,12 @@ function StatusCard({
                 <>
                     <p className="mt-2 font-semibold text-slate-900 text-base">{item.slot.label || 'Untitled Session'}</p>
                     <p className="mt-1 text-sm text-slate-600">
-                        Day {item.dayNumber} {item.dayLabel ? `• ${item.dayLabel}` : ''} • {formatTime(item.slot.start_time)}
-                        {item.slot.end_time ? ` - ${formatTime(item.slot.end_time)}` : ''}
+                        Day {item.dayNumber} {item.dayLabel ? `• ${item.dayLabel}` : ''} • {item.startDisplay || formatTime(item.slot.start_time)}
+                        {item.slot.end_time ? ` - ${item.endDisplay || formatTime(item.slot.end_time)}${(() => {
+                            const s = toMinutes(item.slot.start_time);
+                            const e = toMinutes(item.slot.end_time);
+                            return s !== null && e !== null && e < s ? ' (+1 day)' : '';
+                        })()}` : ''}
                     </p>
                 </>
             ) : (

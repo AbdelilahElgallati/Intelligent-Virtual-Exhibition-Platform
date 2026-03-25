@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/api/client';
 import { Conference } from '@/types/conference';
 import { Meeting } from '@/types/meeting';
 
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { Event } from '@/types/event';
 
 interface EventConferencesTabProps {
@@ -126,7 +126,7 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
     const [error, setError] = useState<string | null>(null);
     const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
-    const timeZone = event?.event_timezone || 'UTC';
+    const timeZone = getUserTimezone();
 
     useEffect(() => {
         const interval = setInterval(() => setNowMs(Date.now()), 1000);

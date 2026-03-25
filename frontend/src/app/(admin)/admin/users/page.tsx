@@ -9,6 +9,7 @@ import {
     Hash
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { formatInUserTZ } from '@/lib/timezone';
 
 const ROLE_BADGE: Record<string, string> = {
     admin: 'bg-rose-50   text-rose-700   border border-rose-200',
@@ -163,7 +164,7 @@ function UserPanel({
     onActivate: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <>
@@ -321,7 +322,7 @@ export default function AdminUsersPage() {
         finally { setActionId(null); }
     };
 
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">

@@ -7,6 +7,7 @@ import { eventsApi } from "@/lib/api/events";
 import { organizerService } from "@/services/organizer.service";
 import { resolveMediaUrl } from "@/lib/media";
 import { OrganizerEvent } from "@/types/event";
+import { formatInUserTZ } from "@/lib/timezone";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { organizationsApi } from "@/lib/api/organizations";
@@ -753,7 +754,7 @@ export default function EventAnalyticsPage() {
                 <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">Timeline</div>
                 <div className="text-sm font-bold flex items-center gap-1.5">
                   <Calendar size={14} className="text-zinc-500" />
-                  {event.start_date ? new Date(event.start_date).toLocaleDateString() : 'Not scheduled'}
+                  {event.start_date ? formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not scheduled'}
                 </div>
               </div>
               <div className="space-y-1">

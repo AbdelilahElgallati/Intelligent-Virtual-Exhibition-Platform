@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { DailyRoomMessage } from '@/hooks/useDailyRoom';
 import { Send } from 'lucide-react';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface ConferenceChatPanelProps {
   title?: string;
@@ -13,12 +14,7 @@ interface ConferenceChatPanelProps {
 }
 
 function fmtClock(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return formatInTZ(value, getUserTimezone(), 'h:mm a');
 }
 
 export default function ConferenceChatPanel({

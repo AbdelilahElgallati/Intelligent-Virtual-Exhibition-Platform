@@ -14,6 +14,7 @@ import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
 import ConferenceChatPanel from './ConferenceChatPanel';
 import { AlertTriangle, CalendarClock, Clock3, Mic, MicOff, RefreshCw, Users, Video, VideoOff } from 'lucide-react';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface AudienceRoomProps {
   token: string;
@@ -35,12 +36,7 @@ interface AudienceRoomProps {
 
 function formatDateTime(value?: string) {
   if (!value) return 'Not set';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not set';
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short', hour: '2-digit', minute: '2-digit',
-    month: 'short', day: '2-digit',
-  }).format(date);
+  return formatInTZ(value, getUserTimezone(), 'EEE, MMM d, h:mm a');
 }
 
 function formatDuration(ms: number) {

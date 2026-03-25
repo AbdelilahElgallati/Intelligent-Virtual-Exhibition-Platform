@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { http } from "@/lib/http";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { formatInUserTZ } from "@/lib/timezone";
 import type { MarketplaceOrder } from "@/types/marketplace";
 import {
     ArrowLeft,
@@ -450,7 +451,7 @@ export default function EnterpriseEventRequestsPage() {
                                                 {titleCase(status)}
                                             </span>
                                             <span className="ml-auto text-xs text-zinc-500">
-                                                {new Date(order.created_at).toLocaleString()}
+                                                {formatInUserTZ(order.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
 
@@ -595,7 +596,7 @@ export default function EnterpriseEventRequestsPage() {
                                                 {req.status}
                                             </span>
                                             <span className="ml-auto text-xs text-zinc-500">
-                                                {new Date(req.created_at).toLocaleString()}
+                                                {formatInUserTZ(req.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
 

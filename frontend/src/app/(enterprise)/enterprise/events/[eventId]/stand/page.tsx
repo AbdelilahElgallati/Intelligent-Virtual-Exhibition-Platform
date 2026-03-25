@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
+import { formatInUserTZ } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -610,7 +611,7 @@ export default function StandConfigPage() {
                                     <div className="bg-white rounded-xl p-4 border border-zinc-100">
                                         <p className="text-zinc-500 text-xs mb-1">Last Indexed</p>
                                         <p className="font-bold text-zinc-900 text-sm">
-                                            {ragStatus.last_indexed_at ? new Date(ragStatus.last_indexed_at).toLocaleDateString() : 'Never'}
+                                            {ragStatus.last_indexed_at ? formatInUserTZ(ragStatus.last_indexed_at, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Never'}
                                         </p>
                                     </div>
                                 </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { X, Send, User, Loader2, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
@@ -71,6 +71,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
 
     const userId = user?.id || (user as any)?._id;
     const { r, g, b } = hexToRgb(themeColor);
+    const viewerTimeZone = getUserTimezone();
 
     /* ---- Persist / restore limit per room (visitor only) ---- */
     const limitKey = roomId ? `chat-limit-${roomId}` : null;
@@ -377,7 +378,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                                         "text-[10px] text-gray-400 mt-1.5 opacity-70",
                                         isMe ? "text-right mr-1" : "ml-1"
                                     )}>
-                                        {formatInTZ(msg.timestamp, eventTimeZone, 'h:mm a')}
+                                        {formatInTZ(msg.timestamp, viewerTimeZone, 'h:mm a')}
                                     </span>
                                 </div>
                             </div>

@@ -14,6 +14,7 @@ import {
 import { adminService } from '@/services/admin.service';
 import { LiveMetrics, MetricDataPoint } from '@/types/monitoring';
 import { OrganizerEvent } from '@/types/event';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -294,7 +295,7 @@ function ActiveUsersPanel({ users }: { users: LiveMetrics['active_users'] }) {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-zinc-900 truncate">{user.full_name}</p>
                                     <p className="text-xs text-zinc-400">
-                                        Since {new Date(user.connected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        Since {formatInUserTZ(user.connected_at, { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                 </div>
                             </div>
@@ -366,7 +367,7 @@ function FlagAlertsPanel({ flags, eventId, router }: {
                                     </div>
                                     <p className="text-sm font-medium text-zinc-900 mt-1 truncate">{flag.reason}</p>
                                     <p className="text-xs text-zinc-400 mt-0.5">
-                                        {new Date(flag.created_at).toLocaleString()}
+                                        {formatInUserTZ(flag.created_at, { dateStyle: 'medium', timeStyle: 'short' })}
                                     </p>
                                 </div>
                                 <button
@@ -407,10 +408,10 @@ export default function EventMonitoringPage() {
             const data = await adminService.getLiveMetrics(id);
             setMetrics(data);
             setError(null);
-            setLastUpdated(new Date().toLocaleTimeString());
+            setLastUpdated(formatInUserTZ(new Date(), { hour: '2-digit', minute: '2-digit' }));
 
             // Append to history for line chart (keep last HISTORY_WINDOW points)
-            const label = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const label = formatInUserTZ(new Date(), { hour: '2-digit', minute: '2-digit' });
             setHistory(prev => {
                 const next = [...prev, { time: label, value: data.kpis.messages_per_minute }];
                 return next.slice(-HISTORY_WINDOW);

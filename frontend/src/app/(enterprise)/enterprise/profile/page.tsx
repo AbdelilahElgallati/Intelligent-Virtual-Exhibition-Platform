@@ -182,7 +182,35 @@ export default function EnterpriseProfilePage() {
                 tags: normalizedTags,
             });
             await http.put('/users/me', { timezone: accountTimezone });
+            // Ensure the selected timezone is available immediately in localStorage
+            // so live schedule pages use the correct viewer timezone without reload.
+            try {
+                if (typeof window !== 'undefined') {
+                    const raw = localStorage.getItem('auth_user');
+                    const parsed = raw ? (JSON.parse(raw) as any) : {};
+                    localStorage.setItem(
+                        'auth_user',
+                        JSON.stringify({ ...parsed, timezone: accountTimezone })
+                    );
+                }
+            } catch {
+                // Best-effort only.
+            }
             await refreshUser?.();
+            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
+            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            try {
+                if (typeof window !== 'undefined') {
+                    const raw = localStorage.getItem('auth_user');
+                    const parsed = raw ? (JSON.parse(raw) as any) : {};
+                    localStorage.setItem('auth_user', JSON.stringify({ ...parsed, timezone: accountTimezone }));
+                }
+            } catch {
+                // Best-effort only.
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('ivep:auth-user-updated'));
+            }
             setProfile(prev => ({ ...prev, tags: normalizedTags }));
             setTagsInput(normalizedTags.join(', '));
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
