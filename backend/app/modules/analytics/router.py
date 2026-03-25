@@ -28,8 +28,7 @@ from .service import (
     validate_event_report_consistency,
 )
 
-
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+router = APIRouter(prefix="/metrics", tags=["Analytics"])
 
 
 

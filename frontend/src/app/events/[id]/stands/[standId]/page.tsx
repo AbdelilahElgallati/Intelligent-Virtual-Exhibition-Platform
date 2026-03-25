@@ -73,7 +73,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
 
                 // Track visit
                 try {
-                    await apiClient.post('/analytics/log', {
+                    await apiClient.post('/metrics/log', {
                         type: 'stand_visit',
                         event_id: id,
                         stand_id: resolvedStandId,

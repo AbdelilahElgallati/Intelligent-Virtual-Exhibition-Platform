@@ -111,10 +111,10 @@ export default function EventAnalyticsPage() {
 
             // 2. Fetch live analytics for this stand (with fallback)
             try {
-                const liveData = await http.get<any>(`/analytics/live/stands/${standData.id}`);
+                const liveData = await http.get<any>(`/metrics/live/stands/${standData.id}`);
                 setAnalytics(mapDashboardToStandAnalytics(liveData));
             } catch {
-                const data = await http.get<any>(`/analytics/stand/${standData.id}`);
+                const data = await http.get<any>(`/metrics/stand/${standData.id}`);
                 setAnalytics(mapDashboardToStandAnalytics(data));
             }
         } catch (err: any) {

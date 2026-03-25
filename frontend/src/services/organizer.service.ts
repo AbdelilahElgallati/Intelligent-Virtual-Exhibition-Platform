@@ -56,14 +56,14 @@ export const organizerService = {
      * Get live event analytics snapshot for organizer-owned events.
      */
     async getLiveEventAnalytics(eventId: string): Promise<{ dashboard: DashboardData; live: Record<string, number> }> {
-        return http.get(`/analytics/live/events/${eventId}`);
+        return http.get(`/metrics/live/events/${eventId}`);
     },
 
     /**
      * Fallback event analytics (non-live dashboard structure).
      */
     async getEventAnalytics(eventId: string): Promise<DashboardData> {
-        return http.get(`/analytics/event/${eventId}`);
+        return http.get(`/metrics/event/${eventId}`);
     },
 
 

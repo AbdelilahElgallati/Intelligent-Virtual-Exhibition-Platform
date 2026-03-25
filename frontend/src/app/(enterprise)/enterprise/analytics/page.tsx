@@ -141,10 +141,10 @@ export default function EnterpriseAnalyticsPage() {
             await Promise.all(standEntries.map(async (s) => {
                 try {
                     try {
-                        const liveData = await http.get<any>(`/analytics/live/stands/${s.id}`);
+                        const liveData = await http.get<any>(`/metrics/live/stands/${s.id}`);
                         analyticsMap[s.id] = mapDashboardToStandAnalytics(liveData);
                     } catch {
-                        const data = await http.get<any>(`/analytics/stand/${s.id}`);
+                        const data = await http.get<any>(`/metrics/stand/${s.id}`);
                         analyticsMap[s.id] = mapDashboardToStandAnalytics(data);
                     }
                 } catch {

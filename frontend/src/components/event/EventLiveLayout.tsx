@@ -40,7 +40,7 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
 
                 // Silently log view analytics
                 try {
-                    await apiClient.post('/analytics/log', {
+                    await apiClient.post('/metrics/log', {
                         type: 'event_view',
                         event_id: eventId,
                     });

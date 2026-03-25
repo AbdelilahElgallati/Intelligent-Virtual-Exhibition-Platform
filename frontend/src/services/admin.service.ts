@@ -112,16 +112,16 @@ export const adminService = {
 
     async getPlatformAnalytics(): Promise<DashboardData> {
         try {
-            const live = await http.get<{ dashboard?: DashboardData }>('/analytics/live/platform');
+            const live = await http.get<{ dashboard?: DashboardData }>('/metrics/live/platform');
             if (live?.dashboard) return live.dashboard;
         } catch {
             // Fallback to non-live endpoint for backward compatibility.
         }
-        return http.get('/analytics/platform');
+        return http.get('/metrics/platform');
     },
 
     async getEventAnalytics(eventId: string): Promise<DashboardData> {
-        return http.get(`/analytics/event/${eventId}`);
+        return http.get(`/metrics/event/${eventId}`);
     },
 
     // ── Health (Day 8) ────────────────────────────────────────────────
@@ -298,7 +298,7 @@ export const adminService = {
      */
     async exportPlatformReportPDF(): Promise<void> {
         await this._downloadPDF(
-            '/analytics/report/export?format=pdf',
+            '/metrics/report/export?format=pdf',
             `platform_report_${new Date().toISOString().split('T')[0]}.pdf`
         );
     },

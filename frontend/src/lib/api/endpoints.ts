@@ -25,7 +25,7 @@ export const ENDPOINTS = {
       `/events/${id}/submit-proof?proof_url=${encodeURIComponent(proofUrl)}`,
     UPLOAD_PAYMENT_PROOF: (id: string) => `/events/${id}/upload-payment-proof`,
     DELETE: (id: string) => `/events/${id}`,
-    ANALYTICS: (id: string) => `/analytics/event/${id}`,
+    ANALYTICS: (id: string) => `/metrics/event/${id}`,
   },
   ADMIN: {
     PENDING_EVENTS: '/events?state=pending_approval',
