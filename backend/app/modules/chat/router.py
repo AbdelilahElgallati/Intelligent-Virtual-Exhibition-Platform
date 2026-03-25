@@ -235,7 +235,7 @@ async def websocket_endpoint(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    await manager.connect(user_id_str, websocket)
+    manager.connect(user_id_str, websocket)
     print(f"[WS] Connected: User {user_id_str} to room {room_id}")
     
     try:

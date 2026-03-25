@@ -7,7 +7,7 @@ class ConnectionManager:
         # user_id -> List of WebSockets (allowing multiple devices)
         self.active_connections: Dict[str, List[WebSocket]] = {}
 
-    async def connect(self, user_id: str, websocket: WebSocket):
+    def connect(self, user_id: str, websocket: WebSocket):
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)
@@ -22,8 +22,16 @@ class ConnectionManager:
     async def send_personal_message(self, message: dict, user_id: str):
         uid = str(user_id)
         if uid in self.active_connections:
-            for connection in self.active_connections[uid]:
-                await connection.send_json(message)
+            stale_connections: List[WebSocket] = []
+            # Iterate over a copy to allow safe cleanup on send failures.
+            for connection in self.active_connections[uid][:]:
+                try:
+                    await connection.send_json(message)
+                except Exception:
+                    stale_connections.append(connection)
+
+            for stale in stale_connections:
+                self.disconnect(uid, stale)
 
     async def broadcast_to_room(self, message: dict, member_ids: List[str]):
         for user_id in member_ids:
