@@ -56,7 +56,7 @@ async def _visitor_counts(db, event_id_ref: str | list[str]) -> tuple[int, int]:
     pipeline = [
         {"$match": match_q},
         {"$group": {"_id": "$role", "approved": {
-            "$sum": {"$cond": [{"$eq": ["$status", "approved"]}, 1, 0]}
+            "$sum": {"$cond": [{"$in": ["$status", ["approved", "guest_approved"]]}, 1, 0]}
         }, "total": {"$sum": 1}}},
     ]
     rows = await db["participants"].aggregate(pipeline).to_list(length=None)
@@ -77,7 +77,7 @@ async def _enterprise_rate(db, event_id_ref: str | list[str]) -> float:
         {"$group": {
             "_id": None,
             "total": {"$sum": 1},
-            "approved": {"$sum": {"$cond": [{"$eq": ["$status", "approved"]}, 1, 0]}},
+            "approved": {"$sum": {"$cond": [{"$in": ["$status", ["approved", "guest_approved"]]}, 1, 0]}},
         }},
     ]
     rows = await db["participants"].aggregate(pipeline).to_list(length=1)
@@ -239,7 +239,7 @@ async def _revenue(db, event_id_ref: str | list[str], approved_visitors: int, ap
 async def _trend_participants(db, event_id_ref: str | list[str]) -> list[TrendPoint]:
     match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
     pipeline = [
-        {"$match": {**match_q, "role": "visitor", "status": "approved"}},
+        {"$match": {**match_q, "role": "visitor", "status": {"$in": ["approved", "guest_approved"]}}},
         {"$group": {
             "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
             "value": {"$sum": 1},
@@ -251,15 +251,31 @@ async def _trend_participants(db, event_id_ref: str | list[str]) -> list[TrendPo
 
 
 async def _trend_engagement(event_id_ref: str | list[str]) -> list[TrendPoint]:
-    """Group in-memory analytics events by date."""
-    ids_to_check = set(event_id_ref) if isinstance(event_id_ref, list) else {event_id_ref}
-    day_counts: dict[str, int] = {}
-    for e in ANALYTICS_STORE:
-        if str(e.get("event_id", "")) in ids_to_check:
-            d = _date_label(e["created_at"]) if isinstance(e.get("created_at"), datetime) else None
-            if d:
-                day_counts[d] = day_counts.get(d, 0) + 1
-    return [TrendPoint(date=d, value=v) for d, v in sorted(day_counts.items())]
+    """Group analytics events by date from database."""
+    db = get_database()
+    ids_to_check = [event_id_ref] if isinstance(event_id_ref, str) else list(event_id_ref)
+    
+    pipeline = [
+        {"$match": {"event_id": {"$in": ids_to_check}}},
+        {
+            "$group": {
+                "_id": {
+                    "$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}
+                },
+                "count": {"$sum": 1}
+            }
+        },
+        {"$sort": {"_id": 1}}
+    ]
+    
+    points = []
+    async for res in db.analytics_events.aggregate(pipeline):
+        points.append(TrendPoint(date=res["_id"], value=res["count"]))
+        
+    # Merge with in-memory store for very recent events not yet persisted if necessary,
+    # but for a dashboard, DB-only is usually preferred for consistency.
+    # To be safe, we'll just use DB as it's the source of truth now.
+    return points
 
 
 async def _trend_leads(db, stand_ids: list[str]) -> list[TrendPoint]:
@@ -282,7 +298,7 @@ async def _trend_leads(db, stand_ids: list[str]) -> list[TrendPoint]:
 async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> list[EnterpriseSummary]:
     """Fetch basic info for all approved enterprises in the specified event(s)."""
     match_q = {"event_id": {"$in": event_id_ref}} if isinstance(event_id_ref, list) else {"event_id": event_id_ref}
-    cursor = db["participants"].find({**match_q, "role": "enterprise", "status": "approved"})
+    cursor = db["participants"].find({**match_q, "role": "enterprise", "status": {"$in": ["approved", "guest_approved"]}})
     participants = await cursor.to_list(length=None)
     
     org_ids = []

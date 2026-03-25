@@ -15,6 +15,7 @@ from app.modules.monitoring.schemas import (
     KPIs,
     LiveMetricsResponse,
     RecentFlagRead,
+    StandActivity,
 )
 
 
@@ -49,9 +50,20 @@ async def _count_active_stands(db, event_id: str, active_user_ids: set) -> int:
     pipeline = [
         {"$match": {"timestamp": {"$gte": cutoff}}},
         {
+            "$addFields": {
+                "room_id_obj": {
+                    "$cond": [
+                        {"$regexMatch": {"input": "$room_id", "regex": "^[0-9a-fA-F]{24}$"}},
+                        {"$toObjectId": "$room_id"},
+                        "$room_id"
+                    ]
+                }
+            }
+        },
+        {
             "$lookup": {
                 "from": "chat_rooms",
-                "localField": "room_id",
+                "localField": "room_id_obj",
                 "foreignField": "_id",
                 "as": "room",
             }
@@ -195,6 +207,84 @@ async def _get_open_flags(db, event_id: str, limit: int = 5) -> tuple[int, list]
     return total, flags
 
 
+async def _get_top_active_stands(db, event_id: str, active_user_ids: set, limit: int = 5) -> list[StandActivity]:
+    """
+    Return the top active stands for the event, ranked by:
+    1. Active users currently in the stand's chat room.
+    2. Recent message count.
+    """
+    # Get all stands for this event
+    all_stands = []
+    async for s in db.stands.find({"event_id": event_id}, {"_id": 1, "title": 1, "name": 1}):
+        all_stands.append(s)
+
+    if not all_stands:
+        return []
+
+    stand_ids = [str(s["_id"]) for s in all_stands]
+    stand_names = {str(s["_id"]): s.get("title") or s.get("name", "Unnamed Stand") for s in all_stands}
+
+    # 1. Count current presence
+    stand_presence: dict[str, int] = {}
+    if active_user_ids:
+        async for room in db.chat_rooms.find(
+            {
+                "stand_id": {"$in": stand_ids},
+                "members": {"$in": list(active_user_ids)},
+            },
+            {"stand_id": 1, "members": 1},
+        ):
+            sid = room["stand_id"]
+            members = set(room.get("members", []))
+            active_mems = members.intersection(active_user_ids)
+            stand_presence[sid] = stand_presence.get(sid, 0) + len(active_mems)
+
+    # 2. Add recent message weight (last 30 min)
+    cutoff = _now() - timedelta(minutes=30)
+    pipeline = [
+        {"$match": {"timestamp": {"$gte": cutoff}}},
+        {
+            "$addFields": {
+                "room_id_obj": {
+                    "$cond": [
+                        {"$regexMatch": {"input": "$room_id", "regex": "^[0-9a-fA-F]{24}$"}},
+                        {"$toObjectId": "$room_id"},
+                        "$room_id"
+                    ]
+                }
+            }
+        },
+        {
+            "$lookup": {
+                "from": "chat_rooms",
+                "localField": "room_id_obj",
+                "foreignField": "_id",
+                "as": "room",
+            }
+        },
+        {"$unwind": "$room"},
+        {"$match": {"room.stand_id": {"$in": stand_ids}}},
+        {"$group": {"_id": "$room.stand_id", "msg_count": {"$sum": 1}}},
+    ]
+
+    async for res in db.chat_messages.aggregate(pipeline):
+        sid = res["_id"]
+        # Weight presence higher than messages for "Live" feel
+        stand_presence[sid] = stand_presence.get(sid, 0) + (res["msg_count"] * 0.5)
+
+    # Sort and return top N
+    sorted_stands = sorted(stand_presence.items(), key=lambda x: x[1], reverse=True)[:limit]
+
+    return [
+        StandActivity(
+            id=sid,
+            name=stand_names.get(sid, "Unknown"),
+            active_count=int(score),  # Rounding score to int for UI
+        )
+        for sid, score in sorted_stands if score > 0
+    ]
+
+
 # ─── Main aggregation ─────────────────────────────────────────────────────────
 
 async def get_live_metrics(event_id: str) -> LiveMetricsResponse:
@@ -211,13 +301,14 @@ async def get_live_metrics(event_id: str) -> LiveMetricsResponse:
     active_count = get_active_count(event_id)
     active_user_ids = {u["user_id"] for u in active_users_raw}
 
-    # Run the 5 independent DB queries in parallel
+    # Run the independent DB queries in parallel
     results = await asyncio.gather(
         _count_active_stands(db, event_id, active_user_ids),
         _count_ongoing_meetings(db, event_id),
         _count_messages_per_minute(db, event_id),
         _count_downloads_last_hour(db, event_id),
         _get_open_flags(db, event_id),
+        _get_top_active_stands(db, event_id, active_user_ids),
         return_exceptions=True,
     )
 
@@ -230,6 +321,7 @@ async def get_live_metrics(event_id: str) -> LiveMetricsResponse:
     messages_per_min = _safe_int(results[2])
     downloads_hour  = _safe_int(results[3])
     flags_result    = results[4]
+    top_stands      = results[5] if isinstance(results[5], list) else []
 
     if isinstance(flags_result, tuple):
         flags_open_count, recent_flags = flags_result
@@ -247,6 +339,7 @@ async def get_live_metrics(event_id: str) -> LiveMetricsResponse:
         ),
         active_users=[ActiveUserRead(**u) for u in active_users_raw],
         recent_flags=recent_flags,
+        top_active_stands=top_stands,
         timestamp=_now().isoformat(),
     )
 

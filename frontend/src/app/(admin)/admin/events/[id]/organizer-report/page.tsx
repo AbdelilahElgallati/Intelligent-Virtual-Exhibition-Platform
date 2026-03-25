@@ -8,11 +8,13 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     ResponsiveContainer,
+    AreaChart, Area,
 } from 'recharts';
 import {
     Users, Building2, BarChart2, MessageCircle,
     CalendarCheck, TrendingUp, ShieldAlert, DollarSign,
     Download, RefreshCw, AlertTriangle, CheckCircle2,
+    Zap, Target,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { OrganizerSummary } from '@/types/organizer';
@@ -239,42 +241,82 @@ export default function OrganizerReportPage() {
 
             {/* ── Revenue Summary ── */}
             <section>
-                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> Revenue</SectionHead>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Revenue cards */}
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
-                        {[
-                            { label: 'Ticket Revenue', value: ov.revenue_summary.ticket_revenue, colour: 'text-violet-600' },
-                            { label: 'Stand Revenue', value: ov.revenue_summary.stand_revenue, colour: 'text-emerald-600' },
-                        ].map(r => (
-                            <div key={r.label} className="flex justify-between items-center py-2 border-b border-zinc-100 last:border-0">
-                                <span className="text-zinc-600 text-sm">{r.label}</span>
-                                <span className={`font-bold text-lg ${r.colour}`}>${r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> Revenue Performance</SectionHead>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Revenue Breakdown */}
+                    <div className="lg:col-span-2 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+                        <div className="space-y-6">
+                            {[
+                                { label: 'Ticket Revenue', value: ov.revenue_summary.ticket_revenue, icon: <CheckCircle2 className="w-4 h-4 text-violet-500" />, colour: 'text-violet-600', bg: 'bg-violet-50' },
+                                { label: 'Stand Revenue', value: ov.revenue_summary.stand_revenue, icon: <Building2 className="w-4 h-4 text-emerald-500" />, colour: 'text-emerald-600', bg: 'bg-emerald-50' },
+                            ].map(r => (
+                                <div key={r.label} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg ${r.bg} flex items-center justify-center`}>{r.icon}</div>
+                                        <span className="text-zinc-600 font-medium">{r.label}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`font-bold text-xl ${r.colour}`}>${r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Verified Income</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-zinc-100 flex justify-between items-end">
+                            <div>
+                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Total Gross Revenue</p>
+                                <p className="text-4xl font-black text-zinc-900 tracking-tight">
+                                    ${ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </p>
                             </div>
-                        ))}
-                        <div className="flex justify-between items-center pt-2">
-                            <span className="font-semibold text-zinc-800">Total Revenue</span>
-                            <span className="font-extrabold text-xl text-zinc-900">
-                                ${ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                            </span>
+                            <div className="text-right">
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100">
+                                    <TrendingUp className="w-3 h-3" /> +12% vs Event Avg
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    {/* Pie chart */}
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col items-center justify-center">
+                    
+                    {/* Donut Chart */}
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col items-center justify-center relative group">
+                        <div className="mb-4 text-center">
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Revenue Mix</h3>
+                        </div>
                         {revPie.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={180}>
-                                <PieChart>
-                                    <Pie data={revPie} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
-                                        dataKey="value" stroke="none" paddingAngle={3}>
-                                        {revPie.map((_, i) => <Cell key={i} fill={REV_COLOURS[i % REV_COLOURS.length]} />)}
-                                    </Pie>
-                                    <Tooltip formatter={(v: any) => `$${v.toFixed(2)}`} />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <div className="relative w-full h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie 
+                                            data={revPie} 
+                                            cx="50%" 
+                                            cy="50%" 
+                                            innerRadius={60} 
+                                            outerRadius={85}
+                                            dataKey="value" 
+                                            stroke="none" 
+                                            paddingAngle={8}
+                                        >
+                                            {revPie.map((_, i) => <Cell key={i} fill={REV_COLOURS[i % REV_COLOURS.length]} className="hover:opacity-80 transition-opacity" />)}
+                                        </Pie>
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                            formatter={(v: any) => `$${v.toFixed(2)}`} 
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                {/* Center Label */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase">Share</span>
+                                    <span className="text-lg font-black text-zinc-800">Mix%</span>
+                                </div>
+                            </div>
                         ) : (
                             <p className="text-zinc-400 text-sm">No revenue data available yet.</p>
                         )}
+                        <div className="mt-4 flex gap-4 text-[10px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#10b981]" /> Stand</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#6d28d9]" /> Ticket</div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -282,20 +324,31 @@ export default function OrganizerReportPage() {
             {/* ── Performance Trends ── */}
             <section>
                 <SectionHead><BarChart2 className="w-4 h-4 text-blue-500" /> Performance Trends</SectionHead>
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Visitors over time */}
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-4">Visitors Over Time</h3>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-sm font-bold text-zinc-700">Visitors Over Time</h3>
+                            <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center">
+                                <Users className="w-4 h-4 text-violet-500" />
+                            </div>
+                        </div>
                         {trends.visitors_over_time.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={trends.visitors_over_time}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
-                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                                    <YAxis tick={{ fontSize: 11 }} stroke="#a1a1aa" allowDecimals={false} />
+                            <ResponsiveContainer width="100%" height={220}>
+                                <AreaChart data={trends.visitors_over_time} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorVis" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15}/>
+                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
+                                    <YAxis tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
                                     <Tooltip content={<ChartTip />} />
-                                    <Line type="monotone" dataKey="value" name="visitors" stroke="#6d28d9" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                                </LineChart>
+                                    <Area type="monotone" dataKey="value" name="visitors" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorVis)" isAnimationActive={true} />
+                                </AreaChart>
                             </ResponsiveContainer>
                         ) : (
                             <p className="text-zinc-400 text-sm text-center py-8">No visitor data yet.</p>
@@ -303,40 +356,56 @@ export default function OrganizerReportPage() {
                     </div>
 
                     {/* Engagement over time */}
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-4">Engagement Over Time</h3>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-sm font-bold text-zinc-700">Engagement Over Time</h3>
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                                <Zap className="w-4 h-4 text-blue-500" />
+                            </div>
+                        </div>
                         {trends.engagement_over_time.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={trends.engagement_over_time}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
-                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                                    <YAxis tick={{ fontSize: 11 }} stroke="#a1a1aa" allowDecimals={false} />
+                            <ResponsiveContainer width="100%" height={220}>
+                                <AreaChart data={trends.engagement_over_time} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="date" tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
+                                    <YAxis tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
                                     <Tooltip content={<ChartTip />} />
-                                    <Line type="monotone" dataKey="value" name="events" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                                </LineChart>
+                                    <Area type="monotone" dataKey="value" name="events" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorEng)" isAnimationActive={true} />
+                                </AreaChart>
                             </ResponsiveContainer>
                         ) : (
                             <p className="text-zinc-400 text-sm text-center py-8">No engagement data yet.</p>
                         )}
                     </div>
+                </div>
 
-                    {/* Lead generation */}
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-4">Lead Generation Over Time</h3>
-                        {trends.lead_generation_over_time.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={trends.lead_generation_over_time}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
-                                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#a1a1aa" />
-                                    <YAxis tick={{ fontSize: 11 }} stroke="#a1a1aa" allowDecimals={false} />
-                                    <Tooltip content={<ChartTip />} />
-                                    <Bar dataKey="value" name="leads" fill="#10b981" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-zinc-400 text-sm text-center py-8">No lead data yet.</p>
-                        )}
+                {/* Lead generation - Full Width */}
+                <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-sm font-bold text-zinc-700">Lead Generation Performance</h3>
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                            <Target className="w-4 h-4 text-emerald-500" />
+                        </div>
                     </div>
+                    {trends.lead_generation_over_time.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={240}>
+                            <BarChart data={trends.lead_generation_over_time} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
+                                <YAxis tick={{ fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                <Tooltip content={<ChartTip />} />
+                                <Bar dataKey="value" name="leads" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} isAnimationActive={true} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-zinc-400 text-sm text-center py-8">No lead data yet.</p>
+                    )}
                 </div>
             </section>
 

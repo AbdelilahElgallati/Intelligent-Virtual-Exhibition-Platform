@@ -81,18 +81,26 @@ interface KPICardProps {
 
 function KPICard({ label, value, icon, accent, bg, border, alert }: KPICardProps) {
     return (
-        <div className={`relative rounded-2xl border ${border} ${bg} p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow`}>
+        <div className={`relative rounded-2xl border ${border} ${bg} p-5 flex flex-col gap-3 shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden`}>
+            {/* Background Glow */}
+            <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity ${accent}`} />
+            
             {alert && value > 0 && (
-                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="absolute top-3 right-3 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
             )}
-            <div className={`w-10 h-10 rounded-xl ${accent} flex items-center justify-center flex-shrink-0`}>
+            
+            <div className={`w-12 h-12 rounded-2xl ${accent} flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-500`}>
                 {icon}
             </div>
+            
             <div>
-                <p className="text-2xl font-bold text-zinc-900 font-mono leading-none">
+                <p className="text-3xl font-black text-zinc-900 tracking-tight leading-none">
                     <AnimatedNumber value={value} />
                 </p>
-                <p className="text-xs text-zinc-500 mt-1 font-medium">{label}</p>
+                <p className="text-[11px] text-zinc-400 mt-2 font-bold uppercase tracking-wider">{label}</p>
             </div>
         </div>
     );
@@ -138,16 +146,19 @@ function ChartsSection({ history, metrics }: {
     const pieData = Object.entries(roleCounts).map(([name, value]) => ({ name, value }));
     const hasPieData = pieData.length > 0;
 
-    // Stand activity: use active_stands as a single bar for now
-    const standData = [
-        { stand: 'Event', active: metrics.kpis.active_stands },
-    ];
+    // Top active stands: map from metrics.top_active_stands
+    const standData = metrics.top_active_stands?.length > 0
+        ? metrics.top_active_stands.map(s => ({ name: s.name, active: s.active_count }))
+        : [{ name: 'No activity', active: 0 }];
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Messages / min sparkline */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <TrendingUp className="w-12 h-12 text-indigo-500" />
+                </div>
+                <div className="flex items-center gap-2 mb-4 relative">
                     <TrendingUp className="w-4 h-4 text-indigo-500" />
                     <h3 className="text-sm font-semibold text-zinc-700">Messages / min (last 15 min)</h3>
                 </div>
@@ -158,49 +169,63 @@ function ChartsSection({ history, metrics }: {
                 ) : (
                     <ResponsiveContainer width="100%" height={160}>
                         <LineChart data={history} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-                            <XAxis dataKey="time" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                            <defs>
+                                <linearGradient id="colorMsg" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <XAxis dataKey="time" tick={{ fontSize: 10 }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} axisLine={false} tickLine={false} />
                             <Tooltip
-                                contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e4e4e7' }}
+                                contentStyle={{ fontSize: 11, borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                 labelStyle={{ fontWeight: 600 }}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="value"
                                 stroke="#6366f1"
-                                strokeWidth={2}
-                                dot={false}
+                                strokeWidth={3}
+                                dot={{ r: 0 }}
+                                activeDot={{ r: 4, strokeWidth: 0 }}
                                 name="msgs/min"
-                                isAnimationActive={false}
+                                isAnimationActive={true}
                             />
                         </LineChart>
                     </ResponsiveContainer>
                 )}
             </div>
 
-            {/* Stand activity bar */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4">
+            {/* Stand activity leaderboard */}
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Building2 className="w-12 h-12 text-emerald-500" />
+                </div>
+                <div className="flex items-center gap-2 mb-4 relative">
                     <Building2 className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-sm font-semibold text-zinc-700">Stand Activity</h3>
+                    <h3 className="text-sm font-semibold text-zinc-700">Top Active Stands</h3>
                 </div>
                 <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={standData} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
-                        <XAxis dataKey="stand" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <BarChart data={standData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 40 }}>
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10, width: 80 }} width={80} axisLine={false} tickLine={false} />
                         <Tooltip
-                            contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e4e4e7' }}
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ fontSize: 11, borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                         />
-                        <Bar dataKey="active" fill="#10b981" radius={[4, 4, 0, 0]} name="Active Stands" />
+                        <Bar dataKey="active" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} name="Activity Score" />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
 
             {/* Role distribution pie */}
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Users className="w-12 h-12 text-amber-500" />
+                </div>
+                <div className="flex items-center gap-2 mb-4 relative">
                     <Users className="w-4 h-4 text-amber-500" />
-                    <h3 className="text-sm font-semibold text-zinc-700">User Role Distribution</h3>
+                    <h3 className="text-sm font-semibold text-zinc-700">User Distribution</h3>
                 </div>
                 {!hasPieData ? (
                     <div className="flex items-center justify-center h-40 text-xs text-zinc-400">
@@ -213,23 +238,24 @@ function ChartsSection({ history, metrics }: {
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius={40}
+                                innerRadius={45}
                                 outerRadius={65}
-                                paddingAngle={3}
+                                paddingAngle={5}
                                 dataKey="value"
-                                isAnimationActive={false}
+                                isAnimationActive={true}
                             >
                                 {pieData.map((entry, index) => (
                                     <Cell
                                         key={entry.name}
                                         fill={ROLE_COLORS[entry.name] ?? PIE_COLORS[index % PIE_COLORS.length]}
+                                        stroke="none"
                                     />
                                 ))}
                             </Pie>
                             <Tooltip
-                                contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e4e4e7' }}
+                                contentStyle={{ fontSize: 11, borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                             />
-                            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                            <Legend iconType="circle" iconSize={8} verticalAlign="bottom" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
                         </PieChart>
                     </ResponsiveContainer>
                 )}

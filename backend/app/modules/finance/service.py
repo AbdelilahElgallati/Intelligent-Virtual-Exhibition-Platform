@@ -28,6 +28,8 @@ def _normalize_transaction_status(value: str | None) -> str:
 
 def _to_datetime(value) -> Optional[datetime]:
     if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
         return value
     return None
 
@@ -254,6 +256,10 @@ async def _build_marketplace_transactions() -> list[FinancialTransaction]:
 
     # 2) Standalone rows (single-item Stripe or non-Stripe flows)
     for o in standalone_orders:
+        payment_method = _to_str(o.get("payment_method")).lower()
+        if payment_method != "stripe":
+            continue
+
         oid = _to_str(o.get("_id"))
         stand_id = _to_str(o.get("stand_id"))
         stand_doc = stand_map.get(stand_id)

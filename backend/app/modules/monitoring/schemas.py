@@ -13,7 +13,13 @@ class ActiveUserRead(BaseModel):
     user_id: str
     full_name: str
     role: str
-    connected_at: str  # ISO string (already formatted in presence registry)
+    connected_at: str  # ISO string
+
+
+class StandActivity(BaseModel):
+    id: str
+    name: str
+    active_count: int
 
 
 class RecentFlagRead(BaseModel):
@@ -37,4 +43,5 @@ class LiveMetricsResponse(BaseModel):
     kpis: KPIs
     active_users: List[ActiveUserRead]
     recent_flags: List[RecentFlagRead]
+    top_active_stands: List[StandActivity] = []
     timestamp: str  # ISO string

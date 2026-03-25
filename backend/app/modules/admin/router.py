@@ -406,10 +406,18 @@ async def get_detailed_enterprises(current_user: dict = Depends(require_role(Rol
         user_id = str(user["_id"])
         
         org = await db.organizations.find_one({"owner_id": user_id})
-        
-        stands_count = await db.stands.count_documents({"enterprise_id": user_id})
-        leads_count = await db.leads.count_documents({"enterprise_id": user_id})
-        meetings_count = await db.meetings.count_documents({"enterprise_id": user_id})
+        org_id = str(org["_id"]) if org else None
+
+        if org_id:
+            stands = await db.stands.find({"organization_id": org_id}, {"_id": 1}).to_list(length=None)
+            stand_ids = [str(s["_id"]) for s in stands]
+            stands_count = len(stand_ids)
+            leads_count = await db.leads.count_documents({"stand_id": {"$in": stand_ids}}) if stand_ids else 0
+            meetings_count = await db.meetings.count_documents({"stand_id": {"$in": stand_ids}}) if stand_ids else 0
+        else:
+            stands_count = 0
+            leads_count = 0
+            meetings_count = 0
 
         ent_data = {
             "_id": str(org["_id"]) if org else user_id,
