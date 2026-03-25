@@ -113,11 +113,13 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
             for slot in day.get("slots") or []:
                 start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
                 end_minutes = _parse_hhmm_to_minutes(slot.get("end_time"))
-                if start_minutes is None or end_minutes is None or end_minutes <= start_minutes:
+                if start_minutes is None or end_minutes is None or end_minutes == start_minutes:
                     continue
 
+                end_day_offset = 1 if end_minutes <= start_minutes else 0
+
                 slot_start_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_minutes or 0))
-                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(end_minutes or 0))
+                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(days=end_day_offset, minutes=int(end_minutes or 0))
                 slot_start = slot_start_local.astimezone(timezone.utc)
                 slot_end = slot_end_local.astimezone(timezone.utc)
                 windows.append((slot_start, slot_end))
@@ -386,7 +388,6 @@ async def get_meeting_token(
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     await _ensure_meeting_not_expired(meeting_id, meeting)
-    await _ensure_event_timeline_live(meeting)
 
     uid = str(current_user["_id"])
 
@@ -445,7 +446,6 @@ async def start_meeting_session(
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     await _ensure_meeting_not_expired(meeting_id, meeting)
-    await _ensure_event_timeline_live(meeting)
 
     uid = str(current_user["_id"])
     is_requester = uid == meeting.get("visitor_id") or uid == meeting.get("initiator_id")

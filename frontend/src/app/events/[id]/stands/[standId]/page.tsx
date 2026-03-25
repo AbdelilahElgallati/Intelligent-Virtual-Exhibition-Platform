@@ -17,12 +17,28 @@ import { useAuth } from '@/hooks/useAuth';
 import { ParticipantStatus } from '@/lib/api/types';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
-const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
+type StandWithAliases = Stand & {
+    _id?: string;
+    event_id?: string;
+};
+
+type EventWithAliases = Event & {
+    _id?: string;
+};
+
+type FavoriteDoc = {
+    id?: string;
+    _id?: string;
+    target_type?: string;
+    target_id?: string;
+};
+
+const resolveFavoriteDocId = (fav?: FavoriteDoc | null): string => String(fav?.id || fav?._id || '');
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
     const { id, standId } = use(params);
-    const [stand, setStand] = useState<Stand | null>(null);
-    const [eventData, setEventData] = useState<Event | null>(null);
+    const [stand, setStand] = useState<StandWithAliases | null>(null);
+    const [eventData, setEventData] = useState<EventWithAliases | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'resources' | 'about'>('resources');
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -39,8 +55,8 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
         const fetchStand = async () => {
             try {
                 const [data, evt, statusData] = await Promise.all([
-                    apiClient.get<Stand>(ENDPOINTS.STANDS.GET(id, standId)),
-                    apiClient.get<Event>(ENDPOINTS.EVENTS.GET(id)).catch(() => null),
+                    apiClient.get<StandWithAliases>(ENDPOINTS.STANDS.GET(id, standId)),
+                    apiClient.get<EventWithAliases>(ENDPOINTS.EVENTS.GET(id)).catch(() => null),
                     apiClient
                         .get<{ status: ParticipantStatus }>(ENDPOINTS.EVENTS.MY_STATUS(id))
                         .catch(() => ({ status: 'NOT_JOINED' as ParticipantStatus })),
@@ -49,13 +65,13 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 setStand(data);
                 setEventData(evt);
                 setParticipantStatus(statusData.status || 'NOT_JOINED');
-                const resolvedStandId = (data as any).id || (data as any)._id || standId;
+                const resolvedStandId = data.id || data._id || standId;
 
                 // Fetch favorites state
                 if (isAuthenticated) {
                     try {
-                        const favs = await favoritesService.list();
-                        const match = favs.find((f) => f.target_type === 'stand' && (f.target_id === (data as any).id || f.target_id === (data as any)._id));
+                        const favs = await favoritesService.list() as FavoriteDoc[];
+                        const match = favs.find((f) => f.target_type === 'stand' && (f.target_id === data.id || f.target_id === data._id));
                         const favoriteDocId = match ? resolveFavoriteDocId(match) : '';
                         setFavoriteId(favoriteDocId || null);
                     } catch {
@@ -65,7 +81,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
 
                 // Check if stand has marketplace products
                 try {
-                    const products = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(resolvedStandId));
+                    const products = await apiClient.get<unknown[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(resolvedStandId));
                     setHasProducts(Array.isArray(products) && products.length > 0);
                 } catch {
                     /* marketplace check is non-critical */
@@ -78,7 +94,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                         event_id: id,
                         stand_id: resolvedStandId,
                     });
-                } catch (e) {
+                } catch {
                     // ignore
                 }
             } catch (error) {
@@ -111,7 +127,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 await favoritesService.remove(favoriteId);
                 setFavoriteId(null);
             } else {
-                const fav = await favoritesService.add('stand', (stand as any).id || (stand as any)._id);
+                const fav = await favoritesService.add('stand', stand.id || stand._id || '');
                 const favoriteDocId = resolveFavoriteDocId(fav);
                 setFavoriteId(favoriteDocId || null);
             }
@@ -217,7 +233,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
 
     const themeColor = stand.theme_color ?? '#1e293b';
     const avatarBg = stand.presenter_avatar_bg ?? '#ffffff';
-    const resolvedStandId = (stand as any).id || (stand as any)._id || standId;
+    const resolvedStandId = stand.id || stand._id || standId;
 
     return (
         <>
@@ -307,8 +323,18 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 isOpen={isMeetingModalOpen}
                 onClose={() => setIsMeetingModalOpen(false)}
                 standId={resolvedStandId}
+                standAliasIds={[
+                    String(stand.id || ''),
+                    String(stand._id || ''),
+                    String(standId || ''),
+                ]}
                 standName={stand.name}
                 eventId={id}
+                eventAliasIds={[
+                    String(id || ''),
+                    String(stand.event_id || ''),
+                    String(eventData?._id || ''),
+                ]}
                 eventStartDate={eventData?.start_date}
                 eventEndDate={eventData?.end_date}
                 scheduleDays={eventData?.schedule_days}

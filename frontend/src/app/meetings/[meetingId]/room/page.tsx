@@ -6,23 +6,12 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import MeetingRoom from '@/components/meetings/MeetingRoom';
 import { MeetingJoinResponse } from '@/types/meeting';
 import { apiClient } from '@/lib/api/client';
-import { Event } from '@/types/event';
-import { ENDPOINTS } from '@/lib/api/endpoints';
-import { getEventLifecycle } from '@/lib/eventLifecycle';
-
-type MeetingLite = {
-    _id?: string;
-    id?: string;
-    event_id?: string;
-};
 
 function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
     const router = useRouter();
     const [tokenData, setTokenData] = useState<MeetingJoinResponse | null>(null);
-    const [eventData, setEventData] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
 
     const autoEndMeeting = useCallback(async () => {
         try {
@@ -41,36 +30,16 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
                 const tData = await apiClient.get<MeetingJoinResponse>(`/meetings/${meetingId}/token`);
                 setTokenData(tData);
 
-                // Resolve meeting event for lifecycle gating.
-                try {
-                    const myMeetings = await apiClient.get<MeetingLite[]>('/meetings/my-meetings');
-                    const matched = myMeetings.find((m) => (m.id || m._id) === meetingId);
-                    if (matched?.event_id) {
-                        const evt = await apiClient.get<Event>(ENDPOINTS.EVENTS.GET(matched.event_id));
-                        setEventData(evt);
-                    }
-                } catch {
-                    // Keep meeting join flow resilient if event lookup fails.
-                }
-
                 // Start the session (marks as live)
                 await apiClient.post(`/meetings/${meetingId}/start`);
-            } catch (e: any) {
-                setError(e.message || 'Failed to join meeting');
+            } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : 'Failed to join meeting');
             } finally {
                 setLoading(false);
             }
         }
         load();
     }, [meetingId]);
-
-    useEffect(() => {
-        const timer = globalThis.setInterval(() => {
-            setTimelineNow(Date.now());
-        }, 30000);
-
-        return () => globalThis.clearInterval(timer);
-    }, []);
 
     useEffect(() => {
         const endsAt = tokenData?.ends_at;
@@ -91,15 +60,6 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
 
         return () => globalThis.clearTimeout(timer);
     }, [tokenData?.ends_at, autoEndMeeting]);
-
-    useEffect(() => {
-        if (!tokenData || !eventData) return;
-        const lifecycle = getEventLifecycle(eventData, new Date(timelineNow));
-        const timelineIsLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
-        if (!timelineIsLive) {
-            autoEndMeeting();
-        }
-    }, [tokenData, eventData, timelineNow, autoEndMeeting]);
 
     const handleEnd = async () => {
         // Best-effort end session

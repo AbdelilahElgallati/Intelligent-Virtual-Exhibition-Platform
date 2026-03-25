@@ -308,9 +308,11 @@ async def sync_sessions_from_schedule(
                 logger.warning("Skipping malformed slot '%s': %s", label, exc)
                 continue
 
-            if slot_start >= slot_end:
-                logger.warning("Skipping slot '%s' — start >= end", label)
+            if slot_start == slot_end:
+                logger.warning("Skipping slot '%s' — start == end", label)
                 continue
+            if slot_end < slot_start:
+                slot_end = slot_end + timedelta(days=1)
 
             # Idempotency check: skip if a session already exists for this time
             existing = await db.event_sessions.find_one({

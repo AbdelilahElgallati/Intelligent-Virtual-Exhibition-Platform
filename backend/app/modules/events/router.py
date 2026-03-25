@@ -381,6 +381,8 @@ async def assign_conference_to_slot(
         eh, em = (int(x) for x in slot["end_time"].split(":"))
         conf_start = base_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
         conf_end = base_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+        if conf_end <= conf_start:
+            conf_end = conf_end + timedelta(days=1)
 
         conf_title = data.title or slot.get("label") or "Conference"
 

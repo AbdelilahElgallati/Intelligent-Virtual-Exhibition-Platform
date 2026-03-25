@@ -183,7 +183,12 @@ function buildScheduleWindows(event: Event): SlotWindow[] {
             const startMinutes = parseTimeToMinutes(slot.start_time);
             const endMinutes = parseTimeToMinutes(slot.end_time);
 
-            if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) return;
+            if (startMinutes === null || endMinutes === null) return;
+            if (startMinutes === endMinutes) return;
+
+            const endDayYmd = endMinutes <= startMinutes
+                ? addDaysToYmd(dayYmd.year, dayYmd.month, dayYmd.day, 1)
+                : dayYmd;
 
             const start = zonedDateTimeToUtc(
                 dayYmd.year,
@@ -194,9 +199,9 @@ function buildScheduleWindows(event: Event): SlotWindow[] {
                 tz,
             );
             const end = zonedDateTimeToUtc(
-                dayYmd.year,
-                dayYmd.month,
-                dayYmd.day,
+                endDayYmd.year,
+                endDayYmd.month,
+                endDayYmd.day,
                 Math.floor(endMinutes / 60),
                 endMinutes % 60,
                 tz,
@@ -216,7 +221,7 @@ function buildScheduleWindows(event: Event): SlotWindow[] {
 }
 
 export function getEventLifecycle(event: Event, now: Date = new Date()): EventLifecycleSnapshot {
-    const explicitState = String((event as any)?.state || '').toLowerCase();
+    const explicitState = String(event.state || '').toLowerCase();
     const windows = buildScheduleWindows(event);
 
     // If an event is explicitly 'closed', it is ALWAYS ended.

@@ -15,6 +15,10 @@ interface EventConferencesTabProps {
     event?: Event | null;
 }
 
+type EventWithAliases = Event & {
+    _id?: string;
+};
+
 type CardStatus = 'live' | 'upcoming' | 'ended' | 'canceled' | 'pending';
 
 interface MeetingCardModel {
@@ -42,6 +46,23 @@ interface ConferenceCardModel {
 
 function parseMs(iso: string): number {
     return new Date(iso).getTime();
+}
+
+function normalizeComparableId(value: unknown): string {
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        const objectIdMatch = trimmed.match(/^ObjectId\("([a-fA-F0-9]{24})"\)$/);
+        return (objectIdMatch ? objectIdMatch[1] : trimmed).toLowerCase();
+    }
+    if (value && typeof value === 'object') {
+        const asOid = (value as { $oid?: unknown }).$oid;
+        if (typeof asOid === 'string') return asOid.trim().toLowerCase();
+
+        const asId = (value as { id?: unknown }).id;
+        if (typeof asId === 'string') return asId.trim().toLowerCase();
+    }
+    if (value === null || value === undefined) return '';
+    return String(value).trim().toLowerCase();
 }
 
 function formatDateTime(iso: string, timeZone: string = 'UTC'): string {
@@ -156,9 +177,29 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                 setConferences([]);
             }
 
+            const resolvedEvent: EventWithAliases | null =
+                eventRes.status === 'fulfilled'
+                    ? (eventRes.value as EventWithAliases | null)
+                    : (event as EventWithAliases | null);
+
+            const eventAliasIds = new Set(
+                [
+                    eventId,
+                    resolvedEvent?.id,
+                    resolvedEvent?._id,
+                ]
+                    .map((value) => normalizeComparableId(value))
+                    .filter((value) => value.length > 0)
+            );
+
             if (meetingsRes.status === 'fulfilled') {
                 const allMeetings = Array.isArray(meetingsRes.value) ? meetingsRes.value : [];
-                setMeetings(allMeetings.filter((m) => m.event_id === eventId));
+                setMeetings(
+                    allMeetings.filter((m) => {
+                        const meetingEventId = normalizeComparableId(m.event_id);
+                        return meetingEventId.length > 0 && eventAliasIds.has(meetingEventId);
+                    })
+                );
             } else {
                 setMeetings([]);
             }

@@ -81,10 +81,17 @@ def _schedule_end_datetime(event: dict) -> Optional[datetime]:
         for slot in slots:
             if not isinstance(slot, dict):
                 continue
+            start_parts = _parse_time(slot.get("start_time"))
             end_parts = _parse_time(slot.get("end_time"))
-            if end_parts is None:
+            if start_parts is None or end_parts is None:
                 continue
-            slot_end_local = datetime.combine(local_date, time(end_parts[0], end_parts[1]), tzinfo=event_tz)
+            start_total = start_parts[0] * 60 + start_parts[1]
+            end_total = end_parts[0] * 60 + end_parts[1]
+            if start_total == end_total:
+                continue
+
+            end_date = local_date + timedelta(days=1) if end_total <= start_total else local_date
+            slot_end_local = datetime.combine(end_date, time(end_parts[0], end_parts[1]), tzinfo=event_tz)
             slot_end = slot_end_local.astimezone(timezone.utc)
             if latest is None or slot_end > latest:
                 latest = slot_end

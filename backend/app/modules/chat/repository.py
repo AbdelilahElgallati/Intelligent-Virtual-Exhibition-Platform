@@ -16,8 +16,15 @@ class ChatRepository:
     def rooms(self):
         return self.db.chat_rooms
 
+    @staticmethod
+    def _member_variants(user_id: str) -> list:
+        variants = [str(user_id)]
+        if ObjectId.is_valid(str(user_id)):
+            variants.append(ObjectId(str(user_id)))
+        return variants
+
     async def get_room_for_member(self, room_id: str, user_id: str) -> dict | None:
-        query: dict = {"members": str(user_id)}
+        query: dict = {"members": {"$in": self._member_variants(str(user_id))}}
         if ObjectId.is_valid(room_id):
             query["_id"] = ObjectId(room_id)
         else:
@@ -55,10 +62,19 @@ class ChatRepository:
         self, user1_id: str, user2_id: str,
         room_category: str = None, event_id: str = None
     ) -> ChatRoomSchema:
+        user1_id = str(user1_id)
+        user2_id = str(user2_id)
+        user1_variants = self._member_variants(user1_id)
+        user2_variants = self._member_variants(user2_id)
+
         # Build query — match members + category + event
         query: dict = {
             "type": "direct",
-            "members": {"$all": [user1_id, user2_id], "$size": 2}
+            "$and": [
+                {"members": {"$in": user1_variants}},
+                {"members": {"$in": user2_variants}},
+                {"$expr": {"$eq": [{"$size": "$members"}, 2]}},
+            ],
         }
         if room_category:
             query["room_category"] = room_category
@@ -87,7 +103,10 @@ class ChatRepository:
         self, user_id: str,
         event_id: str = None, room_category: str = None
     ) -> List[ChatRoomSchema]:
-        query: dict = {"members": user_id, "last_message": {"$ne": None}}
+        query: dict = {
+            "members": {"$in": self._member_variants(str(user_id))},
+            "last_message": {"$ne": None},
+        }
         if event_id:
             query["event_id"] = event_id
         if room_category:

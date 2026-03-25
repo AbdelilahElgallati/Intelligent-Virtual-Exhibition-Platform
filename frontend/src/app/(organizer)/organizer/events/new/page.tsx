@@ -35,7 +35,6 @@ const LOCAL_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 export default function NewEventRequestPage() {
     const router = useRouter();
     const [saving, setSaving] = useState(false);
-    const [bannerUploading, setBannerUploading] = useState(false);
     const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -127,9 +126,14 @@ export default function NewEventRequestPage() {
                 if (!TIME_24H_REGEX.test(slot.start_time) || !TIME_24H_REGEX.test(slot.end_time)) {
                     return `Day ${day.day_number}: use 24-hour time format (HH:mm) for all slots.`;
                 }
-                if (slot.start_time >= slot.end_time) return `Day ${day.day_number}: end time must be after start time.`;
+                const [startH, startM] = slot.start_time.split(':').map(Number);
+                const [endH, endM] = slot.end_time.split(':').map(Number);
+                const startMinutes = startH * 60 + startM;
+                const endMinutes = endH * 60 + endM;
+                if (startMinutes === endMinutes) {
+                    return `Day ${day.day_number}: start and end time cannot be identical.`;
+                }
                 if (form.start_date === todayIso && day.day_number === 1) {
-                    const [startH, startM] = slot.start_time.split(':').map(Number);
                     const slotStartMinutes = startH * 60 + startM;
                     if (slotStartMinutes < nowMinutes) {
                         return `Day 1: ${slot.start_time} is in the past. Please choose a future time for today's schedule.`;
@@ -174,7 +178,6 @@ export default function NewEventRequestPage() {
 
             // Upload selected banner only when the organizer submits the full event request.
             if (pendingBannerFile) {
-                setBannerUploading(true);
                 const uploaded = await eventsApi.uploadEventBanner(pendingBannerFile);
                 resolvedBannerUrl = uploaded.banner_url || resolvedBannerUrl;
             }
@@ -206,10 +209,10 @@ export default function NewEventRequestPage() {
                 ticket_price: form.is_paid && form.ticket_price ? parseFloat(form.ticket_price) : undefined,
             });
             router.push('/organizer/events');
-        } catch (err: any) {
-            setError(err.message || 'Failed to submit event request. Please try again.');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to submit event request. Please try again.';
+            setError(message);
         } finally {
-            setBannerUploading(false);
             setSaving(false);
         }
     };
@@ -444,7 +447,7 @@ export default function NewEventRequestPage() {
                             <p className="text-xs text-gray-500">
                                 Days are generated automatically from your start &amp; end dates. Add time slots for each day.
                             </p>
-                            <p className="text-xs text-indigo-600 mt-1">Time slots use 24-hour format (HH:mm).</p>
+                            <p className="text-xs text-indigo-600 mt-1">Time slots use 24-hour format (HH:mm). If a slot ends earlier than it starts, it continues into the next day.</p>
                         </div>
 
                         <ScheduleBuilder

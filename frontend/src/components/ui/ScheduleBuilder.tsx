@@ -51,7 +51,6 @@ function SlotRow({
 }) {
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
     const startMin = minStartTime;
-    const endMin = startMin ? maxTime(startMin, slot.start_time) : slot.start_time;
 
     return (
         <div className="flex items-center gap-2 p-3 rounded-xl border border-zinc-200 bg-zinc-50 group hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
@@ -84,14 +83,11 @@ function SlotRow({
                         type="time"
                         value={slot.end_time}
                         onChange={e => {
-                            const selected = e.target.value;
-                            const clamped = selected < endMin ? endMin : selected;
-                            set({ end_time: clamped });
+                            set({ end_time: e.target.value });
                         }}
-                        min={endMin}
                         lang="en-GB"
                         step={60}
-                        title="Use 24-hour format (HH:mm)"
+                        title="Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day."
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
@@ -136,8 +132,10 @@ function DayCard({
         const startSeed = last?.end_time ?? '09:00';
         const start = minStartTime ? maxTime(startSeed, minStartTime) : startSeed;
         const [h, m] = start.split(':').map(Number);
-        const endH = Math.min(h + 1, 23);
-        const end = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const endTotalMinutes = ((h * 60 + m + 60) % (24 * 60));
+        const endH = Math.floor(endTotalMinutes / 60);
+        const endM = endTotalMinutes % 60;
+        const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
         onUpdate({ ...day, slots: [...day.slots, { start_time: start, end_time: end, label: '' }] });
     };
 

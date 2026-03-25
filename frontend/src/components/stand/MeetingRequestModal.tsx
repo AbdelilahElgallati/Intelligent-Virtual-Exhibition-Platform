@@ -28,8 +28,10 @@ interface MeetingRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
     standId: string;
+    standAliasIds?: string[];
     standName: string;
     eventId: string;
+    eventAliasIds?: string[];
     /** Optional event boundaries — when provided the pickers are constrained */
     eventStartDate?: string;
     eventEndDate?: string;
@@ -132,16 +134,16 @@ function buildScheduleSegments(slots: { start_time: string; end_time: string }[]
     }));
 }
 
-function buildHalfHourSteps(startTime: string, endTime: string, includeEnd: boolean): string[] {
+function buildTimeSteps(startTime: string, endTime: string, includeEnd: boolean, stepMinutes = 15): string[] {
     const start = timeToMinutes(startTime);
     const end = timeToMinutes(endTime);
     if (start === null || end === null || end <= start) return [];
 
     const values: string[] = [];
-    for (let current = start; current < end; current += 30) {
+    for (let current = start; current < end; current += stepMinutes) {
         values.push(minutesToTime(current));
     }
-    if (includeEnd) {
+    if (includeEnd && values[values.length - 1] !== minutesToTime(end)) {
         values.push(minutesToTime(end));
     }
     return values;
@@ -151,8 +153,10 @@ export function MeetingRequestModal({
     isOpen,
     onClose,
     standId,
+    standAliasIds,
     standName,
     eventId,
+    eventAliasIds,
     eventStartDate,
     eventEndDate,
     scheduleDays,
@@ -174,6 +178,7 @@ export function MeetingRequestModal({
         date: '',
         startTime: '',
         endTime: '',
+        durationMinutes: 0,
         purpose: '',
     });
     const { r, g, b } = hexToRgb(themeColor);
@@ -184,8 +189,20 @@ export function MeetingRequestModal({
         }
         try {
             const all = await apiClient.get<Meeting[]>('/meetings/my-meetings');
+
+            const standIds = new Set(
+                [standId, ...(standAliasIds || [])]
+                    .map((value) => String(value || '').trim())
+                    .filter((value) => value.length > 0)
+            );
+            const eventIds = new Set(
+                [eventId, ...(eventAliasIds || [])]
+                    .map((value) => String(value || '').trim())
+                    .filter((value) => value.length > 0)
+            );
+
             const filtered = (all || [])
-                .filter((m) => m.stand_id === standId && m.event_id === eventId)
+                .filter((m) => standIds.has(String(m.stand_id || '')) && eventIds.has(String(m.event_id || '')))
                 .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
             setMeetings(filtered);
         } catch (error) {
@@ -193,7 +210,7 @@ export function MeetingRequestModal({
         } finally {
             setLoadingMeetings(false);
         }
-    }, [standId, eventId, meetings.length]);
+    }, [standId, standAliasIds, eventId, eventAliasIds, meetings.length]);
 
     const fetchBusySlots = useCallback(async (silent = false) => {
         if (!silent) {
@@ -214,7 +231,7 @@ export function MeetingRequestModal({
         if (!isOpen) return;
         setActiveView('list');
         setMeetingError(null);
-        setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+        setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
         fetchMeetings();
         fetchBusySlots();
 
@@ -225,8 +242,6 @@ export function MeetingRequestModal({
         
         return () => clearInterval(interval);
     }, [isOpen, fetchMeetings, fetchBusySlots]);
-
-    const nowIsoDate = useMemo(() => formatLocalDate(new Date()), []);
 
     const eventDays = useMemo(() => {
         if (!eventStartDate || !eventEndDate) return [];
@@ -277,7 +292,7 @@ export function MeetingRequestModal({
         return eventDays.map((day) => {
             const segments = buildScheduleSegments(day.slots);
             const hasFutureStart = segments.some((segment) =>
-                buildHalfHourSteps(segment.start, segment.end, false).some((time) => !isPastDateTime(day.dateStr, time))
+                buildTimeSteps(segment.start, segment.end, false, 15).some((time) => !isPastDateTime(day.dateStr, time))
             );
             return {
                 ...day,
@@ -297,15 +312,16 @@ export function MeetingRequestModal({
     const startTimeOptions = useMemo(() => {
         if (!selectedDay) return [];
         return selectedDaySegments.flatMap((segment) =>
-            buildHalfHourSteps(segment.start, segment.end, false).map((time) => ({
+            buildTimeSteps(segment.start, segment.end, false, 15).map((time) => ({
                 time,
                 disabled: isPastDateTime(selectedDay.dateStr, time),
             }))
         );
     }, [selectedDay, selectedDaySegments, isPastDateTime]);
 
-    const endTimeOptions = useMemo(() => {
+    const durationOptions = useMemo(() => {
         if (!selectedDay || !meetingForm.startTime) return [];
+
         const startMinutes = timeToMinutes(meetingForm.startTime);
         if (startMinutes === null) return [];
 
@@ -316,37 +332,53 @@ export function MeetingRequestModal({
         });
         if (!segment) return [];
 
-        return buildHalfHourSteps(meetingForm.startTime, segment.end, true)
-            .slice(1)
-            .map((time) => ({
-                time,
-                disabled: isPastDateTime(selectedDay.dateStr, time),
-            }));
-    }, [selectedDay, selectedDaySegments, meetingForm.startTime, isPastDateTime]);
+        const segmentEndMinutes = timeToMinutes(segment.end);
+        if (segmentEndMinutes === null) return [];
+
+        const allowedDurations = [15, 30, 45, 60];
+        return allowedDurations.map((duration) => {
+            const endMinutes = startMinutes + duration;
+            const endTime = minutesToTime(endMinutes);
+            const inSegment = endMinutes <= segmentEndMinutes;
+            const disabledByPast = !inSegment || isPastDateTime(selectedDay.dateStr, endTime);
+            const conflict = disabledByPast ? null : isSlotBusy(endTime, true);
+            return {
+                duration,
+                endTime,
+                disabled: disabledByPast || !!conflict,
+                conflict,
+            };
+        });
+    }, [selectedDay, meetingForm.startTime, selectedDaySegments, isPastDateTime, isSlotBusy]);
 
     useEffect(() => {
-        if (!meetingForm.startTime || !meetingForm.endTime) return;
-        const stillValid = endTimeOptions.some((option) => option.time === meetingForm.endTime && !option.disabled);
+        if (!meetingForm.startTime || !meetingForm.durationMinutes || !meetingForm.endTime) return;
+        const stillValid = durationOptions.some((option) =>
+            option.duration === meetingForm.durationMinutes &&
+            option.endTime === meetingForm.endTime &&
+            !option.disabled
+        );
         if (!stillValid) {
-            setMeetingForm((prev) => ({ ...prev, endTime: '' }));
+            setMeetingForm((prev) => ({ ...prev, endTime: '', durationMinutes: 0 }));
         }
-    }, [meetingForm.startTime, meetingForm.endTime, endTimeOptions]);
+    }, [meetingForm.startTime, meetingForm.durationMinutes, meetingForm.endTime, durationOptions]);
 
     const isSlotBusy = useCallback((time: string, isEnd = false) => {
         if (!meetingForm.date) return null;
-        const dt = new Date(`${meetingForm.date}T${time}:00`);
+        const dtMs = getDateTimeValue(meetingForm.date, time);
         for (const bs of busySlots) {
-            const bsStart = new Date(bs.start_time);
-            const bsEnd = new Date(bs.end_time);
+            const bsStartMs = new Date(bs.start_time).getTime();
+            const bsEndMs = new Date(bs.end_time).getTime();
             if (isEnd) {
-                const startDt = new Date(`${meetingForm.date}T${meetingForm.startTime}:00`);
-                if (dt > bsStart && startDt < bsEnd) return bs;
-            } else if (dt >= bsStart && dt < bsEnd) {
+                if (!meetingForm.startTime) return null;
+                const startMs = getDateTimeValue(meetingForm.date, meetingForm.startTime);
+                if (dtMs > bsStartMs && startMs < bsEndMs) return bs;
+            } else if (dtMs >= bsStartMs && dtMs < bsEndMs) {
                 return bs;
             }
         }
         return null;
-    }, [meetingForm.date, meetingForm.startTime, busySlots]);
+    }, [meetingForm.date, meetingForm.startTime, busySlots, getDateTimeValue]);
 
     const handleUpdateMeetingStatus = async (meetingId: string, status: 'canceled') => {
         try {
@@ -406,7 +438,7 @@ export function MeetingRequestModal({
                 purpose: meetingForm.purpose || 'General Inquiry',
             });
 
-            setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+            setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
             await Promise.all([fetchMeetings(), fetchBusySlots()]);
             setActiveView('list');
         } catch (error) {
@@ -589,7 +621,7 @@ export function MeetingRequestModal({
                                                 key={day.dateStr}
                                                 disabled={day.disabled}
                                                 onClick={() => {
-                                                    setMeetingForm((f) => ({ ...f, date: day.dateStr, startTime: '', endTime: '' }));
+                                                    setMeetingForm((f) => ({ ...f, date: day.dateStr, startTime: '', endTime: '', durationMinutes: 0 }));
                                                     setMeetingError(null);
                                                 }}
                                                 className={clsx(
@@ -632,7 +664,7 @@ export function MeetingRequestModal({
                                                         disabled={isDisabled}
                                                         title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
                                                         onClick={() => {
-                                                            setMeetingForm((f) => ({ ...f, startTime: time, endTime: '' }));
+                                                            setMeetingForm((f) => ({ ...f, startTime: time, endTime: '', durationMinutes: 0 }));
                                                             setMeetingError(null);
                                                         }}
                                                         className={clsx(
@@ -661,40 +693,38 @@ export function MeetingRequestModal({
 
                             {meetingForm.startTime && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">End Time</label>
-                                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                                        {endTimeOptions.map(({ time, disabled }) => {
-                                            const conflict = disabled ? null : isSlotBusy(time, true);
-                                            const isDisabled = disabled || !!conflict;
+                                    <label className="text-xs font-black uppercase text-zinc-400">Duration</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {durationOptions.map(({ duration, endTime, disabled, conflict }) => {
                                             return (
                                                 <button
                                                     type="button"
-                                                    key={time}
-                                                    disabled={isDisabled}
+                                                    key={duration}
+                                                    disabled={disabled}
                                                     title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
                                                     onClick={() => {
-                                                        setMeetingForm((f) => ({ ...f, endTime: time }));
+                                                        setMeetingForm((f) => ({ ...f, durationMinutes: duration, endTime }));
                                                         setMeetingError(null);
                                                     }}
                                                     className={clsx(
-                                                        'px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all',
-                                                        isDisabled
+                                                        'px-3 py-2 rounded-lg text-xs font-semibold transition-all',
+                                                        disabled
                                                             ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
-                                                            : meetingForm.endTime === time
+                                                            : meetingForm.durationMinutes === duration
                                                                 ? 'text-white'
                                                                 : 'bg-zinc-50 text-zinc-700 border border-zinc-200'
                                                     )}
-                                                        style={isDisabled
+                                                        style={disabled
                                                             ? undefined
-                                                            : meetingForm.endTime === time
+                                                            : meetingForm.durationMinutes === duration
                                                                 ? { backgroundColor: themeColor }
                                                                 : { borderColor: `rgba(${r},${g},${b},0.24)` }}
                                                 >
-                                                    {time}
+                                                    {duration} min
                                                 </button>
                                             );
                                         })}
-                                        {endTimeOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">Select a start time first.</p>}
+                                        {durationOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">No valid durations for this start time.</p>}
                                     </div>
                                 </div>
                             )}
@@ -706,6 +736,9 @@ export function MeetingRequestModal({
                                 >
                                     <Clock size={16} />
                                     {meetingForm.startTime} <ArrowRight size={12} /> {meetingForm.endTime}
+                                    {meetingForm.durationMinutes > 0 && (
+                                        <span className="ml-auto text-xs font-bold">{meetingForm.durationMinutes} min</span>
+                                    )}
                                 </div>
                             )}
 
