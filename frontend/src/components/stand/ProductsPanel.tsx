@@ -5,7 +5,8 @@ import { X, ShoppingBag, ShoppingCart, Package, Minus, Plus, Loader2, Trash2, Al
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { resolveMediaUrl } from '@/lib/media';
-import type { Product, CartCheckoutResponse } from '@/types/marketplace';
+import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
+import type { Product, CartCheckoutResponse, UnifiedMarketplaceOrder } from '@/types/marketplace';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -44,6 +45,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'cash_on_delivery'>('stripe');
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [placedOrderIds, setPlacedOrderIds] = useState<string[]>([]);
+    const [placedCheckoutGroupId, setPlacedCheckoutGroupId] = useState<string | null>(null);
     const [validationToast, setValidationToast] = useState<string | null>(null);
     const deliveryInfoRef = useRef<HTMLDivElement | null>(null);
 
@@ -149,6 +151,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
             } else {
                 // Cash on delivery or other direct completion
                 setPlacedOrderIds(Array.isArray(resp.order_ids) ? resp.order_ids : []);
+                setPlacedCheckoutGroupId(resp.checkout_group_id || null);
                 setCart({});
                 setOrderSuccess(true);
             }
@@ -164,147 +167,87 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD' }).format(amount);
 
     const downloadReceipt = async () => {
-        if (placedOrderIds.length === 0) {
+        if (!placedCheckoutGroupId && placedOrderIds.length === 0) {
             alert('No order receipt available yet.');
             return;
         }
 
-        const { default: jsPDF } = await import('jspdf');
-        const autoTable = (await import('jspdf-autotable')).default;
+        let unifiedOrders: UnifiedMarketplaceOrder[] = [];
+        try {
+            if (placedCheckoutGroupId) {
+                unifiedOrders = await apiClient.get<UnifiedMarketplaceOrder[]>(
+                    ENDPOINTS.MARKETPLACE.UNIFIED_ORDERS_BY_GROUP(placedCheckoutGroupId)
+                );
+            }
+        } catch {
+            unifiedOrders = [];
+        }
 
-        const receiptPairs = await Promise.all(
-            placedOrderIds.map(async (orderId) => {
-                try {
-                    const receipt = await apiClient.get<any>(ENDPOINTS.MARKETPLACE.ORDER_RECEIPT(orderId));
-                    return receipt;
-                } catch {
-                    return null;
-                }
-            })
-        );
-
-        const validReceipts = receiptPairs.filter(Boolean) as any[];
-        if (validReceipts.length === 0) {
+        const targetOrder = unifiedOrders[0];
+        if (!targetOrder) {
             alert('Unable to fetch receipt details. Please try again later.');
             return;
         }
 
-        const firstReceipt = validReceipts[0] || {};
-        const currency = (firstReceipt.currency || 'MAD').toUpperCase();
-        const grandTotal = validReceipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-        const now = new Date();
-        const receiptNo = `RCPT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
-        const doc = new jsPDF();
-        doc.setFontSize(22);
-        doc.setTextColor(79, 70, 229);
-        doc.text('ORDER RECEIPT', 14, 22);
-
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Receipt #: ${receiptNo}`, 14, 32);
-        doc.text(`Date: ${now.toLocaleDateString()}`, 14, 38);
-        doc.text(`Status: ORDER PLACED`, 14, 44);
-
-        doc.setFontSize(12);
-        doc.setTextColor(30);
-        doc.text('Intelligent Virtual Exhibition Platform', 112, 22);
-
-        doc.setDrawColor(200);
-        doc.line(14, 52, 196, 52);
-
-        doc.setFontSize(10);
-        doc.setTextColor(60);
-        doc.text(`Buyer: ${firstReceipt.buyer_name || 'Visitor'}`, 14, 60);
-        if (firstReceipt.buyer_email) doc.text(`Email: ${firstReceipt.buyer_email}`, 14, 66);
-        if (firstReceipt.buyer_phone) doc.text(`Phone: ${firstReceipt.buyer_phone}`, 14, 72);
-        doc.text(`Seller: ${firstReceipt.seller_name || 'Enterprise Stand'}`, 112, 60);
-        doc.text(`Shipping: ${firstReceipt.shipping_address || 'Not provided'}`, 14, 80);
-        doc.text(`Delivery Notes: ${firstReceipt.delivery_notes || '—'}`, 14, 86);
-
-        const rows = validReceipts.map((r: any, i: number) => {
-            const isService = String(r.product_type || 'product') === 'service';
-            const qty = Number(r.quantity || 1);
-            const amount = Number(r.amount || 0);
-            const unitPrice = qty > 0 ? amount / qty : amount;
-            return [
-                String(i + 1),
-                r.product_name || 'Item',
-                isService ? '—' : String(qty),
-                `${unitPrice.toFixed(2)} ${currency}`,
-                `${amount.toFixed(2)} ${currency}`,
-                r.payment_method === 'cash_on_delivery' ? 'Pay on Reception (COD)' : 'Stripe',
-            ];
+        await downloadMarketplaceUnifiedOrderReceiptPdf({
+            groupId: targetOrder.group_id,
+            standName: targetOrder.stand_name,
+            paymentMethod: targetOrder.payment_method,
+            status: targetOrder.status,
+            buyerPhone: targetOrder.buyer_phone,
+            shippingAddress: targetOrder.shipping_address,
+            deliveryNotes: targetOrder.delivery_notes,
+            createdAt: targetOrder.created_at,
+            paidAt: targetOrder.paid_at || undefined,
+            items: targetOrder.items.map((item) => ({
+                product_name: item.product_name,
+                product_type: item.product_type,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                total_amount: item.total_amount,
+                currency: item.currency,
+            })),
         });
-
-        autoTable(doc, {
-            startY: 94,
-            head: [['#', 'Item', 'Qty', 'Unit Price', 'Subtotal', 'Payment']],
-            body: rows,
-            theme: 'striped',
-            headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', fontSize: 10 },
-            styles: { fontSize: 9, cellPadding: 4 },
-            columnStyles: {
-                0: { cellWidth: 12, halign: 'center' },
-                2: { cellWidth: 14, halign: 'center' },
-                3: { cellWidth: 34, halign: 'right' },
-                4: { cellWidth: 34, halign: 'right' },
-            },
-        });
-
-        const finalY = (doc as any).lastAutoTable?.finalY || 140;
-        doc.setFontSize(12);
-        doc.setTextColor(30);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Grand Total: ${grandTotal.toFixed(2)} ${currency}`, 196, finalY + 14, { align: 'right' });
-
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(120);
-        doc.text(`Order IDs: ${placedOrderIds.join(', ')}`, 14, finalY + 14);
-        doc.text('This is an automatically generated receipt.', 14, 285);
-
-        doc.save(`order-receipt-${receiptNo}.pdf`);
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop with heavy blur */}
-            <div className="absolute inset-0 bg-white/40 backdrop-blur-md" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_128px_rgba(0,0,0,0.2)] border border-white/60 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu">
+            <div className="relative w-full max-w-[95%] sm:max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-white/70 flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300 transform-gpu">
                 {validationToast && (
-                    <div className="absolute top-3 left/2 -translate-x-1/2 z-20 w-[92%] max-w-md rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-xs font-black text-red-700 shadow-xl uppercase tracking-widest">
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-md rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-xs font-semibold text-red-700 shadow-lg">
                         {validationToast}
                     </div>
                 )}
 
                 {/* ---- Header ---- */}
-                <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 bg-white/40">
+                <div className="flex items-center justify-between px-6 sm:px-8 py-4 border-b border-gray-100 bg-white">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl shadow-inner border border-white/40" style={{ backgroundColor: `${themeColor}15` }}>
+                        <div className="p-2.5 rounded-xl border border-gray-200" style={{ backgroundColor: `${themeColor}12` }}>
                             <ShoppingBag className="w-5 h-5" style={{ color: themeColor }} />
                         </div>
                         <div>
-                            <h2 className="text-sm font-black text-gray-900 uppercase tracking-[0.2em] leading-none mb-1">
+                            <h2 className="text-sm font-semibold text-gray-900 leading-none mb-1">
                                 {view === 'products' ? (activeTab === 'product' ? 'Store' : 'Specialized Services') : 'Checkout Cart'}
                             </h2>
-                            <p className="text-[10px] font-bold text-gray-400 truncate max-w-[280px] uppercase tracking-tighter">{standName}</p>
+                            <p className="text-[11px] font-medium text-gray-500 truncate max-w-[280px]">{standName}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
                         {/* Cart toggle button */}
                         <button
                             onClick={() => setView(view === 'products' ? 'cart' : 'products')}
-                            className="relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border border-white/40 shadow-sm hover:bg-white/80 active:scale-95"
+                            className="relative inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-[11px] font-semibold transition-all border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-95"
                             style={view === 'cart' ? { backgroundColor: themeColor, borderColor: themeColor, color: 'white' } : { backgroundColor: 'white/60' }}
                         >
                             <ShoppingCart className="w-3.5 h-3.5" />
                             <span className="hidden sm:inline">{view === 'products' ? 'My Cart' : 'Browse Store'}</span>
                             {cartCount > 0 && (
                                 <span
-                                    className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[9px] font-black text-white px-1 shadow-lg"
+                                    className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[9px] font-semibold text-white px-1 shadow-md"
                                     style={{ backgroundColor: view === 'cart' ? 'black' : themeColor }}
                                 >
                                     {cartCount}
@@ -313,7 +256,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                         </button>
                         <button
                             onClick={onClose}
-                            className="p-2.5 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-900 transition-all active:scale-90"
+                            className="p-2 rounded-full hover:bg-black/5 text-gray-400 hover:text-gray-900 transition-all active:scale-90"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -321,7 +264,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 </div>
 
                 {/* ---- Body ---- */}
-                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-6">
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <Loader2 className="w-7 h-7 animate-spin mb-2" />
@@ -340,11 +283,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     {!loading && !error && view === 'products' && (
                         <>
                             {/* Tab toggle */}
-                            <div className="flex gap-2 mb-8 bg-black/5 p-1.5 rounded-2xl w-fit">
+                                <div className="flex gap-2 mb-8 bg-gray-100 p-1.5 rounded-xl w-fit border border-gray-200">
                                 <button
                                     onClick={() => setActiveTab('product')}
-                                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'product'
-                                            ? 'bg-white text-gray-900 shadow-md'
+                                    className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'product'
+                                        ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                                             : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
@@ -353,8 +296,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('service')}
-                                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'service'
-                                            ? 'bg-white text-gray-900 shadow-md'
+                                    className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'service'
+                                        ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                                             : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
@@ -364,9 +307,9 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             </div>
 
                             {filteredProducts.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-24 text-gray-400 bg-black/5 rounded-[2.5rem] border border-dashed border-black/10">
+                                <div className="flex flex-col items-center justify-center py-24 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                                     {activeTab === 'service' ? <Briefcase className="w-12 h-12 mb-4 text-gray-200" /> : <Package className="w-12 h-12 mb-4 text-gray-200" />}
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">No {activeTab}s available</p>
+                                    <p className="text-xs font-semibold text-gray-500">No {activeTab}s available</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -378,14 +321,14 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         return (
                                             <div
                                                 key={product.id}
-                                                className="group relative flex flex-col bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.05)] hover:bg-white/80 hover:shadow-[0_12px_48px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-1 overflow-hidden"
+                                                className="group relative flex flex-col bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                                             >
                                                 {/* Product image */}
-                                                <div className="relative w-full h-44 bg-black/5 overflow-hidden">
+                                                <div className="relative w-full h-44 bg-gray-50 overflow-hidden">
                                                     <img
                                                         src={resolveMediaUrl(product.image_url) || '/stands/office-bg.jpg'}
                                                         alt={product.name}
-                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                        className="w-full h-full object-cover"
                                                         draggable={false}
                                                         onError={(e) => {
                                                             e.currentTarget.src = '/stands/office-bg.jpg';
@@ -393,14 +336,14 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     />
                                                     {inCart > 0 && (
                                                         <div
-                                                            className="absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black text-white shadow-xl animate-in zoom-in"
+                                                            className="absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-semibold text-white shadow-md animate-in zoom-in"
                                                             style={{ backgroundColor: themeColor }}
                                                         >
                                                             {inCart} IN CART
                                                         </div>
                                                     )}
                                                     {isService && (
-                                                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-white text-[9px] font-black shadow-lg uppercase tracking-widest">
+                                                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold shadow-md">
                                                             Service
                                                         </div>
                                                     )}
@@ -408,11 +351,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                                                 <div className="p-6 flex-1 flex flex-col">
                                                     <div className="flex items-start justify-between gap-3 mb-2">
-                                                        <h3 className="text-xs font-black text-gray-900 uppercase tracking-tight leading-snug line-clamp-2">
+                                                        <h3 className="text-sm font-semibold text-gray-900 tracking-tight leading-snug line-clamp-2">
                                                             {product.name}
                                                         </h3>
                                                         <div
-                                                            className="shrink-0 text-sm font-black"
+                                                            className="shrink-0 text-sm font-semibold"
                                                             style={{ color: themeColor }}
                                                         >
                                                             {fmt(product.price)}
@@ -420,7 +363,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     </div>
 
                                                     {product.description && (
-                                                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed line-clamp-2 mb-4">
+                                                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4">
                                                             {product.description}
                                                         </p>
                                                     )}
@@ -428,11 +371,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     <div className="mt-auto pt-4 flex flex-col gap-4 border-t border-black/5">
                                                         {!isService && (
                                                             <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Availability</span>
+                                                                <span className="text-[10px] font-medium text-gray-500">Availability</span>
                                                                 {outOfStock ? (
-                                                                    <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">Sold Out</span>
+                                                                    <span className="text-[10px] font-semibold text-red-500">Sold Out</span>
                                                                 ) : (
-                                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{product.stock} Units</span>
+                                                                    <span className="text-[10px] font-semibold text-emerald-500">{product.stock} Units</span>
                                                                 )}
                                                             </div>
                                                         )}
@@ -441,7 +384,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             <button
                                                                 onClick={() => addToCart(product)}
                                                                 disabled={!isService && inCart >= product.stock}
-                                                                className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.1em] shadow-xl transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-30 hover:brightness-110"
+                                                                className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-white text-xs font-semibold shadow-lg transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-30 hover:brightness-110"
                                                                 style={{
                                                                     backgroundColor: themeColor,
                                                                     boxShadow: `0 8px 24px -6px ${themeColor}88`
@@ -483,6 +426,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         onClick={() => {
                                             setOrderSuccess(false);
                                             setView('products');
+                                            setPlacedCheckoutGroupId(null);
                                         }}
                                         className="mt-6 px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors"
                                     >
@@ -509,7 +453,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         {cartItems.map(({ product, quantity }) => (
                                             <div
                                                 key={product.id}
-                                                className="flex gap-6 p-6 rounded-[2rem] bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300"
+                                                className="flex gap-6 p-6 rounded-2xl bg-white border border-gray-200 shadow-sm transition-all duration-300"
                                             >
                                                 {/* Thumbnail */}
                                                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-black/5 shrink-0 shadow-inner">
@@ -525,7 +469,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                 </div>
                                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                                     <div className="flex items-start justify-between gap-4 mb-1">
-                                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight line-clamp-1">
+                                                        <h4 className="text-sm font-semibold text-gray-900 tracking-tight line-clamp-1">
                                                             {product.name}
                                                         </h4>
                                                         <button
@@ -535,13 +479,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                                                    <p className="text-[10px] font-medium text-gray-500 mb-3">
                                                         {fmt(product.price)} / Unit
                                                     </p>
                                                     {/* Quantity controls */}
                                                     <div className="flex flex-wrap items-center gap-4">
                                                         {isServiceProduct(product) ? (
-                                                            <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[9px] font-black border border-amber-500/20 uppercase tracking-widest">
+                                                            <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[10px] font-semibold border border-amber-500/20">
                                                                 Fixed Service
                                                             </span>
                                                         ) : (
@@ -562,7 +506,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                                         const val = Number.parseInt(e.target.value, 10);
                                                                         if (!Number.isNaN(val)) updateCartQty(product.id, val);
                                                                     }}
-                                                                    className="w-10 text-center text-xs font-black text-gray-900 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    className="w-10 text-center text-xs font-semibold text-gray-900 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                 />
                                                                 <button
                                                                     onClick={() => updateCartQty(product.id, quantity + 1)}
@@ -573,7 +517,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                                 </button>
                                                             </div>
                                                         )}
-                                                        <span className="text-xs font-black ml-auto" style={{ color: themeColor }}>
+                                                        <span className="text-xs font-semibold ml-auto" style={{ color: themeColor }}>
                                                             {fmt(product.price * (isServiceProduct(product) ? 1 : quantity))}
                                                         </span>
                                                     </div>
@@ -664,13 +608,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                 {/* ---- Footer (cart summary + checkout) ---- */}
                 {cartItems.length > 0 && !orderSuccess && (
-                    <div className="border-t border-black/5 px-8 py-6 bg-white/40">
+                    <div className="border-t border-gray-100 px-6 sm:px-8 py-5 bg-white">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                                <p className="text-[10px] font-medium text-gray-500 mb-1">
                                     Total Summary ({cartCount} {cartCount === 1 ? 'Item' : 'Items'})
                                 </p>
-                                <p className="text-2xl font-black text-gray-900 tracking-tight">
+                                <p className="text-2xl font-semibold text-gray-900 tracking-tight">
                                     {fmt(cartTotal)}
                                 </p>
                             </div>
@@ -678,7 +622,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                 <button
                                     onClick={handleCartCheckout}
                                     disabled={checkingOut}
-                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-60 hover:brightness-110"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3 rounded-xl text-white text-xs font-semibold shadow-xl transition-all duration-300 transform-gpu active:scale-95 disabled:opacity-60 hover:brightness-110"
                                     style={{
                                         backgroundColor: themeColor,
                                         boxShadow: `0 12px 32px -8px ${themeColor}aa`
@@ -699,7 +643,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             ) : (
                                 <button
                                     onClick={() => setView('cart')}
-                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-300 transform-gpu active:scale-95 hover:brightness-110"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3 rounded-xl text-white text-xs font-semibold shadow-xl transition-all duration-300 transform-gpu active:scale-95 hover:brightness-110"
                                     style={{
                                         backgroundColor: themeColor,
                                         boxShadow: `0 12px 32px -8px ${themeColor}aa`

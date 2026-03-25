@@ -6,6 +6,7 @@ Loads environment variables and provides application settings.
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -20,6 +21,20 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]  # Override in production
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        """Allow CORS_ORIGINS as JSON array or comma-separated string."""
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return []
+            if raw.startswith("[") and raw.endswith("]"):
+                # Let pydantic parse JSON-like list strings.
+                return value
+            return [origin.strip() for origin in raw.split(",") if origin.strip()]
+        return value
 
     # Security / JWT  (loaded from .env)
     JWT_SECRET_KEY: str = ""  # Preferred variable
@@ -71,6 +86,18 @@ class Settings(BaseSettings):
                 raise ValueError("DEBUG must be False in production")
             if not self.MONGO_URI or "localhost" in self.MONGO_URI:
                 raise ValueError("MONGO_URI must be set to MongoDB Atlas in production")
+            if not self.CORS_ORIGINS:
+                raise ValueError("CORS_ORIGINS must include your frontend domain(s) in production")
+            if not self.FRONTEND_URL:
+                raise ValueError("FRONTEND_URL must be set in production")
+            if not self.STRIPE_SECRET_KEY:
+                raise ValueError("STRIPE_SECRET_KEY must be set in production")
+            if not self.STRIPE_WEBHOOK_SECRET:
+                raise ValueError("STRIPE_WEBHOOK_SECRET must be set in production")
+            if not self.DAILY_API_KEY:
+                raise ValueError("DAILY_API_KEY must be set in production for meetings and conferences")
+            if not self.DAILY_DOMAIN:
+                raise ValueError("DAILY_DOMAIN must be set in production for Daily room URLs")
         # Validate dev requirements
         if self.ENV == "dev":
             self.DEBUG = True  # Always debug in dev

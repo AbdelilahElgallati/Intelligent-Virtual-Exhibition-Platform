@@ -192,6 +192,7 @@ async def create_order(
     currency: str = "MAD",
     payment_method: str = "stripe",
     stripe_session_id: str = "",
+    checkout_group_id: str = "",
     shipping_address: str = "",
     delivery_notes: str = "",
     buyer_phone: str = "",
@@ -208,6 +209,7 @@ async def create_order(
         "currency": (currency or "MAD").upper(),
         "payment_method": payment_method,
         "stripe_session_id": stripe_session_id,
+        "checkout_group_id": checkout_group_id,
         "stripe_payment_intent_id": "",
         "status": "pending" if payment_method == "stripe" else "paid", # We will use paid or pending based on COD
         "fulfillment_status": "requested",
@@ -426,3 +428,141 @@ async def list_orders_for_buyer(buyer_id: str, session_id: str = None) -> list[d
         order["product_type"] = str(product.get("type") or "product")
 
     return orders
+
+
+async def list_unified_orders_for_buyer(
+    buyer_id: str,
+    session_id: str | None = None,
+    group_id: str | None = None,
+) -> list[dict]:
+    query: dict = {"buyer_id": _oid(buyer_id)}
+    if session_id:
+        query["stripe_session_id"] = session_id
+    if group_id:
+        if group_id.startswith("session:"):
+            query["stripe_session_id"] = group_id.split(":", 1)[1]
+        elif group_id.startswith("group:"):
+            query["checkout_group_id"] = group_id.split(":", 1)[1]
+        else:
+            query["$or"] = [
+                {"checkout_group_id": group_id},
+                {"stripe_session_id": group_id},
+            ]
+
+    raw_orders = [d async for d in _db().stand_orders.find(query).sort("created_at", -1)]
+    if not raw_orders:
+        return []
+
+    orders = [_serialize(d) for d in raw_orders]
+
+    product_ids: list[ObjectId] = []
+    stand_ids: list[ObjectId] = []
+    for order in orders:
+        product_oid = _to_object_id(order.get("product_id", ""))
+        stand_oid = _to_object_id(order.get("stand_id", ""))
+        if product_oid:
+            product_ids.append(product_oid)
+        if stand_oid:
+            stand_ids.append(stand_oid)
+
+    products_map: dict[str, dict] = {}
+    stands_map: dict[str, dict] = {}
+    if product_ids:
+        product_cursor = _db().stand_products.find(
+            {"_id": {"$in": product_ids}},
+            {"type": 1},
+        )
+        products_map = {str(doc["_id"]): doc async for doc in product_cursor}
+
+    if stand_ids:
+        stand_cursor = _db().stands.find(
+            {"_id": {"$in": stand_ids}},
+            {"name": 1, "event_id": 1},
+        )
+        stands_map = {str(doc["_id"]): doc async for doc in stand_cursor}
+
+    grouped: dict[str, dict] = {}
+    for order in orders:
+        product = products_map.get(order.get("product_id", ""), {})
+        stand = stands_map.get(order.get("stand_id", ""), {})
+
+        order["product_type"] = str(product.get("type") or "product")
+
+        stripe_session = str(order.get("stripe_session_id") or "").strip()
+        checkout_group = str(order.get("checkout_group_id") or "").strip()
+        if stripe_session:
+            key = f"session:{stripe_session}"
+        elif checkout_group:
+            key = f"group:{checkout_group}"
+        else:
+            key = f"order:{order['id']}"
+
+        created_at = order.get("created_at")
+        paid_at = order.get("paid_at")
+        if key not in grouped:
+            grouped[key] = {
+                "group_id": key,
+                "stripe_session_id": stripe_session,
+                "checkout_group_id": checkout_group,
+                "stand_id": order.get("stand_id", ""),
+                "stand_name": str(stand.get("name") or "Stand"),
+                "event_id": str(stand.get("event_id") or ""),
+                "buyer_id": order.get("buyer_id", ""),
+                "payment_method": order.get("payment_method", "stripe"),
+                "status": order.get("status", "pending"),
+                "currency": str(order.get("currency") or "MAD").upper(),
+                "total_amount": 0.0,
+                "order_count": 0,
+                "shipping_address": order.get("shipping_address", "") or "",
+                "delivery_notes": order.get("delivery_notes", "") or "",
+                "buyer_phone": order.get("buyer_phone", "") or "",
+                "created_at": created_at,
+                "paid_at": paid_at,
+                "items": [],
+                "order_ids": [],
+            }
+
+        group = grouped[key]
+        amount = float(order.get("total_amount") or 0)
+        group["total_amount"] += amount
+        group["order_count"] += 1
+        group["order_ids"].append(order["id"])
+        group["items"].append({
+            "order_id": order["id"],
+            "product_id": order.get("product_id", ""),
+            "product_name": order.get("product_name", ""),
+            "product_type": order.get("product_type", "product"),
+            "quantity": int(order.get("quantity") or 1),
+            "unit_price": float(order.get("unit_price") or 0),
+            "total_amount": amount,
+            "currency": str(order.get("currency") or "MAD").upper(),
+            "status": order.get("status", "pending"),
+            "fulfillment_status": order.get("fulfillment_status", "requested"),
+            "created_at": created_at,
+        })
+
+        # Keep the most advanced payment state for a checkout group.
+        status_rank = {"pending": 0, "paid": 1, "cancelled": 2}
+        current_rank = status_rank.get(str(group.get("status") or "pending"), 0)
+        incoming_rank = status_rank.get(str(order.get("status") or "pending"), 0)
+        if incoming_rank > current_rank:
+            group["status"] = order.get("status", "pending")
+
+        if isinstance(created_at, datetime):
+            group_created = group.get("created_at")
+            if not isinstance(group_created, datetime) or created_at < group_created:
+                group["created_at"] = created_at
+
+        if isinstance(paid_at, datetime):
+            group_paid = group.get("paid_at")
+            if not isinstance(group_paid, datetime) or paid_at > group_paid:
+                group["paid_at"] = paid_at
+
+    result = list(grouped.values())
+    result.sort(
+        key=lambda g: (
+            g.get("created_at").timestamp() if isinstance(g.get("created_at"), datetime) else 0
+        ),
+        reverse=True,
+    )
+    return result

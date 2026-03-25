@@ -248,7 +248,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                             <InfoRow label="Location" value={event.location} />
                             <InfoRow label="Category" value={event.category} />
                             <InfoRow label="Enterprises" value={event.num_enterprises} />
-                            <InfoRow label="Payment" value={event.payment_amount != null ? `$${event.payment_amount}` : 'Auto-calc'} />
+                            <InfoRow label="Payment" value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} MAD` : 'Auto-calc'} />
                         </div>
                     </Section>
 
@@ -275,12 +275,12 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                         <Section icon={DollarSign} title="Pricing">
                             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                                 {event.stand_price != null && (
-                                    <InfoRow label="Stand price" value={`$${event.stand_price.toFixed(2)} / enterprise`} />
+                                    <InfoRow label="Stand price" value={`${event.stand_price.toFixed(2)} MAD / enterprise`} />
                                 )}
                                 <InfoRow
                                     label="Visitor access"
                                     value={event.is_paid
-                                        ? `Paid — $${event.ticket_price != null ? event.ticket_price.toFixed(2) : '?'} / ticket`
+                                        ? `Paid — ${event.ticket_price != null ? `${event.ticket_price.toFixed(2)} MAD` : '?'} / ticket`
                                         : 'Free'}
                                 />
                             </div>

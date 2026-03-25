@@ -4,7 +4,7 @@ This guide deploys:
 
 - Backend on Hetzner VPS (Docker + Compose + NGINX)
 - Frontend on Vercel
-- MongoDB Atlas, Redis, Cloudflare R2, LiveKit Cloud, Stripe
+- MongoDB Atlas, Redis, Cloudflare R2, Daily.co, Stripe
 
 ## 1. Prerequisites
 
@@ -63,7 +63,7 @@ Minimum production values:
 - `FRONTEND_URL=https://app.yourdomain.com`
 - `CORS_ORIGINS=https://app.yourdomain.com`
 - Stripe keys
-- LiveKit keys
+- Daily keys
 - R2 keys
 
 ## 4. Configure NGINX domain
@@ -159,7 +159,7 @@ sudo systemctl start ivep-compose.service
 3. Add environment variables in Vercel project settings:
    - `NEXT_PUBLIC_API_URL=https://api.yourdomain.com`
    - `NEXT_PUBLIC_STRIPE_PUBLIC_KEY=<stripe publishable key>`
-   - `NEXT_PUBLIC_LIVEKIT_URL=<livekit ws/url for frontend>`
+  - `NEXT_PUBLIC_DAILY_DOMAIN=<yourapp.daily.co>`
 4. Deploy.
 5. Set DNS for `app.yourdomain.com` to Vercel.
 

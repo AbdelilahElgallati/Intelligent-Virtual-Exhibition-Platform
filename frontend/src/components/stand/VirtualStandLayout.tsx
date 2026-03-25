@@ -213,15 +213,15 @@ export function VirtualStandLayout({
             </div>
 
             {/* Left wall panel — Logo & Company Info */}
-            <div className="absolute top-[22%] sm:top-[20%] left-3 sm:left-5 lg:left-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block group">
-                <div className="bg-white/70 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/40 transition-all duration-500 hover:bg-white/90 hover:shadow-[0_12px_48px_rgba(0,0,0,0.15)] hover:-translate-y-1">
+            <div className="absolute top-[22%] sm:top-[20%] left-3 sm:left-5 lg:left-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block">
+                <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_24px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/50">
                     {/* Logo */}
                     <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-2xl bg-white/50 flex items-center justify-center overflow-hidden border border-white/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
                         {stand.logo_url ? (
                             <img
                                 src={resolveMediaUrl(stand.logo_url) || STAND_BANNER_FALLBACK}
                                 alt={stand.name}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                className="w-full h-full object-cover"
                                 draggable={false}
                                 onError={(e) => {
                                     e.currentTarget.onerror = null;
@@ -233,18 +233,18 @@ export function VirtualStandLayout({
                         )}
                     </div>
                     {/* Name */}
-                    <h2 className="text-center font-black text-gray-900 text-xs lg:text-sm leading-tight mb-2 line-clamp-2 tracking-tight uppercase">
+                    <h2 className="text-center font-semibold text-gray-900 text-xs lg:text-sm leading-tight mb-2 line-clamp-2 tracking-tight">
                         {stand.name}
                     </h2>
                     {stand.stand_type === 'sponsor' && (
                         <div className="flex justify-center mb-2">
-                            <span className="px-2.5 py-0.5 text-[9px] font-black rounded-full text-amber-700 bg-amber-500/10 border border-amber-500/20 tracking-widest">
+                            <span className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full text-amber-700 bg-amber-500/10 border border-amber-500/20">
                                 ★ SPONSOR
                             </span>
                         </div>
                     )}
                     {stand.category && (
-                        <p className="text-center text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tighter">{stand.category}</p>
+                        <p className="text-center text-[10px] font-medium text-gray-400 mb-2">{stand.category}</p>
                     )}
                     {/* Tags */}
                     {stand.tags && stand.tags.length > 0 && (
@@ -252,7 +252,7 @@ export function VirtualStandLayout({
                             {stand.tags.slice(0, 4).map((tag, i) => (
                                 <span
                                     key={i}
-                                    className="px-2 py-0.5 text-[9px] font-bold rounded-lg bg-black/5 text-gray-500 border border-black/5"
+                                    className="px-2 py-0.5 text-[9px] font-medium rounded-lg bg-black/5 text-gray-500 border border-black/5"
                                 >
                                     {tag}
                                 </span>
@@ -264,11 +264,11 @@ export function VirtualStandLayout({
 
             {/* Right wall panel — Description */}
             <div className="absolute top-[22%] sm:top-[20%] right-3 sm:right-5 lg:right-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block">
-                <div className="bg-white/70 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_32px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/40 transition-all duration-500 hover:bg-white/90 hover:shadow-[0_12px_48px_rgba(0,0,0,0.15)] hover:-translate-y-1">
-                    <h3 className="font-black text-gray-500 mb-3 text-[10px] uppercase tracking-widest opacity-60">
+                <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_24px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/50">
+                    <h3 className="font-semibold text-gray-500 mb-3 text-[10px] tracking-wide opacity-70">
                         Welcome
                     </h3>
-                    <p className="text-[12px] text-gray-600 font-medium leading-relaxed line-clamp-6">
+                    <p className="text-[12px] text-gray-600 font-normal leading-relaxed line-clamp-6">
                         {stand.description ||
                             'Welcome to our virtual stand. Explore our resources and connect with our team.'}
                     </p>
@@ -277,7 +277,7 @@ export function VirtualStandLayout({
                             href={stand.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] mt-4 inline-flex items-center font-black uppercase tracking-widest hover:opacity-70 transition-opacity"
+                            className="text-[10px] mt-4 inline-flex items-center font-semibold hover:opacity-80 transition-opacity"
                             style={{ color: themeColor }}
                         >
                             Visit website <span className="ml-1 text-xs">→</span>
@@ -289,11 +289,11 @@ export function VirtualStandLayout({
             {/* Mobile-only welcome card (below banner) */}
             <div className="absolute top-[20%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
                 <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-white/50">
-                    <h4 className="text-xs font-black text-gray-900 line-clamp-1 mb-1 uppercase tracking-tight">{stand.name}</h4>
+                    <h4 className="text-xs font-semibold text-gray-900 line-clamp-1 mb-1 tracking-tight">{stand.name}</h4>
                     {stand.category && (
-                        <p className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tighter">{stand.category}</p>
+                        <p className="text-[10px] font-medium text-gray-400 mb-2">{stand.category}</p>
                     )}
-                    <p className="text-[11px] text-gray-600 font-medium leading-relaxed line-clamp-3 mb-3">
+                    <p className="text-[11px] text-gray-600 font-normal leading-relaxed line-clamp-3 mb-3">
                         {stand.description ||
                             'Welcome to our virtual stand.'}
                     </p>
@@ -302,7 +302,7 @@ export function VirtualStandLayout({
                             href={stand.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[9px] font-black uppercase tracking-widest"
+                            className="text-[10px] font-semibold"
                             style={{ color: themeColor }}
                         >
                             Website →
@@ -312,14 +312,14 @@ export function VirtualStandLayout({
             </div>
 
             {/* ================ PRESENTER ================ */}
-            <div className="absolute bottom-[2%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center group">
+            <div className="absolute bottom-[2%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center">
                 {/* Name badge ABOVE the presenter */}
                 {stand.presenter_name && (
                     <div
-                        className="mb-[-4rem] sm:mb-[-0.5rem] px-5 py-2 rounded-full shadow-2xl text-center backdrop-blur-xl border border-white/20 transition-all duration-500 group-hover:scale-105"
+                        className="mb-[-4rem] sm:mb-[-0.5rem] px-5 py-2 rounded-full shadow-2xl text-center backdrop-blur-xl border border-white/20"
                         style={{ backgroundColor: `${themeColor}cc` }}
                     >
-                        <p className="text-[10px] sm:text-xs font-black text-white whitespace-nowrap uppercase tracking-widest">
+                        <p className="text-[10px] sm:text-xs font-semibold text-white whitespace-nowrap tracking-wide">
                             {stand.presenter_name}
                         </p>
                     </div>
@@ -327,7 +327,7 @@ export function VirtualStandLayout({
                 <img
                     src={presenterImg}
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
-                    className="h-[38rem] sm:h-80 lg:h-[28rem] w-auto object-contain drop-shadow-[0_8px_40px_rgba(0,0,0,0.25)] transition-all duration-700 group-hover:scale-110"
+                    className="h-[38rem] sm:h-80 lg:h-[28rem] w-auto object-contain drop-shadow-[0_8px_40px_rgba(0,0,0,0.25)]"
                     draggable={false}
                     onError={(e) => {
                         e.currentTarget.onerror = null;
@@ -341,7 +341,7 @@ export function VirtualStandLayout({
             {/* Back button */}
             <Link
                 href={backHref}
-                className="absolute top-5 left-5 z-30 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/60 backdrop-blur-xl shadow-lg text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white hover:scale-105 active:scale-95 transition-all border border-white/40"
+                className="absolute top-5 left-5 z-30 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/70 backdrop-blur-xl shadow-md text-[11px] font-semibold text-gray-700 hover:bg-white active:scale-95 transition-all border border-white/40"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Back to Event</span>
@@ -350,7 +350,7 @@ export function VirtualStandLayout({
             {/* Favorite button */}
             <button
                 onClick={onFavoriteClick}
-                className={`absolute top-5 right-5 z-30 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full backdrop-blur-xl shadow-lg text-[10px] font-black uppercase tracking-widest transition-all border hover:scale-105 active:scale-95 ${favoriteId
+                className={`absolute top-5 right-5 z-30 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full backdrop-blur-xl shadow-md text-[11px] font-semibold transition-all border active:scale-95 ${favoriteId
                     ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/30'
                     : 'bg-white/60 text-gray-700 border-white/40 hover:bg-white'
                     }`}
@@ -372,12 +372,12 @@ export function VirtualStandLayout({
                     : 'opacity-0 translate-y-12 scale-95 pointer-events-none'
                     }`}
             >
-                <div className="w-full max-w-3xl bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_128px_rgba(0,0,0,0.2)] border border-white/60 overflow-hidden transform-gpu">
+                <div className="w-full max-w-3xl bg-white/92 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_24px_72px_rgba(0,0,0,0.18)] border border-white/70 overflow-hidden transform-gpu">
                     {/* Drawer header */}
-                    <div className="flex items-center justify-between px-8 py-5 border-b border-black/5 bg-white/40">
+                    <div className="flex items-center justify-between px-8 py-4 border-b border-black/5 bg-white/50">
                         <div className="flex items-center gap-4">
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: themeColor }} />
-                            <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">
+                            <h3 className="text-sm font-semibold text-gray-900 tracking-wide">
                                 {activeTab === 'resources' ? 'Documents & Resources' : 'About Stand'}
                             </h3>
                         </div>
@@ -389,7 +389,7 @@ export function VirtualStandLayout({
                         </button>
                     </div>
                     {/* Drawer body */}
-                    <div ref={panelBodyRef} className="p-8 max-h-[45vh] overflow-y-auto custom-scrollbar">
+                    <div ref={panelBodyRef} className="p-8 max-h-[45vh] overflow-y-auto custom-scrollbar text-sm text-gray-700">
                         {children}
                     </div>
                 </div>
@@ -397,7 +397,7 @@ export function VirtualStandLayout({
 
             {/* ---------- Bottom action bar ---------- */}
             <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 w-full max-w-fit px-4">
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 p-2 rounded-[2rem] bg-white/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 group/dock">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 p-2 rounded-[2rem] bg-white/75 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.14)] border border-white/50 group/dock">
                     {/* Resources */}
                     <ActionBarBtn
                         active={activeTab === 'resources' && showPanel}
@@ -485,20 +485,20 @@ function ActionBarBtn({
     themeColor: string;
 }) {
     const base =
-        'flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-[1.25rem] transition-all duration-300 transform-gpu active:scale-95 group/btn';
+        'flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-[1.25rem] transition-all duration-300 active:scale-95 group/btn';
 
     if (glow) {
         return (
             <button
                 onClick={onClick}
-                className={`${base} text-white shadow-xl hover:brightness-110 hover:-translate-y-1 animate-pulse hover:animate-none`}
+                className={`${base} text-white shadow-lg hover:brightness-110`}
                 style={{
                     backgroundColor: themeColor,
                     boxShadow: `0 8px 16px -4px ${themeColor}88, 0 4px 8px -2px ${themeColor}44`,
                 }}
             >
                 {icon}
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none hidden sm:block">{label}</span>
+                <span className="text-[10px] sm:text-xs font-semibold leading-none hidden sm:block">{label}</span>
             </button>
         );
     }
@@ -507,11 +507,11 @@ function ActionBarBtn({
         return (
             <button
                 onClick={onClick}
-                className={`${base} text-white shadow-lg hover:brightness-110 hover:-translate-y-1`}
+                className={`${base} text-white shadow-lg hover:brightness-110`}
                 style={{ backgroundColor: themeColor }}
             >
                 {icon}
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest leading-none hidden sm:block">{label}</span>
+                <span className="text-[10px] sm:text-xs font-semibold leading-none hidden sm:block">{label}</span>
             </button>
         );
     }
@@ -519,12 +519,10 @@ function ActionBarBtn({
     return (
         <button
             onClick={onClick}
-            className={`${base} text-gray-500 hover:bg-black/5 hover:text-gray-900 hover:-translate-y-0.5`}
+            className={`${base} text-gray-500 hover:bg-black/5 hover:text-gray-900`}
         >
-            <div className="transition-transform group-hover/btn:scale-110 duration-300">
-                {icon}
-            </div>
-            <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.1em] leading-none hidden sm:block opacity-60 group-hover/btn:opacity-100 transition-opacity">
+            <div>{icon}</div>
+            <span className="text-[10px] sm:text-xs font-medium tracking-wide leading-none hidden sm:block opacity-80">
                 {label}
             </span>
         </button>

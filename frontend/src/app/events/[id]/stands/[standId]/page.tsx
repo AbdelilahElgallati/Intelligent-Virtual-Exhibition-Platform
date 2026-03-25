@@ -240,16 +240,16 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 {activeTab === 'resources' ? (
                     <div className="space-y-5">
                         <StandResources standId={resolvedStandId} />
-                        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
-                            <h4 className="font-bold text-indigo-900 mb-1 text-sm">Recommended for You</h4>
-                            <p className="text-xs text-indigo-700">
+                        <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100">
+                            <h4 className="font-semibold text-indigo-900 mb-1 text-sm">Recommended for You</h4>
+                            <p className="text-xs text-indigo-700 leading-relaxed">
                                 Based on your profile, this stand matches your interest in <strong>AI Technology</strong>.
                             </p>
                         </div>
                     </div>
                 ) : (
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-3">About Us</h3>
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">About Us</h3>
                         <p className="text-gray-600 leading-relaxed text-sm">
                             {stand.description || 'Company description coming soon.'}
                         </p>

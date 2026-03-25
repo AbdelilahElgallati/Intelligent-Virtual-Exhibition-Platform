@@ -126,3 +126,40 @@ class CheckoutResponse(BaseModel):
 class CartCheckoutResponse(BaseModel):
     payment_url: Optional[str] = None
     order_ids: list[str]
+    checkout_group_id: Optional[str] = None
+
+
+class UnifiedOrderItemOut(BaseModel):
+    order_id: str
+    product_id: str
+    product_name: str = ""
+    product_type: str = "product"
+    quantity: int
+    unit_price: float = 0
+    total_amount: float
+    currency: str = "MAD"
+    status: str = "pending"
+    fulfillment_status: str = "requested"
+    created_at: datetime
+
+
+class UnifiedOrderOut(BaseModel):
+    group_id: str
+    stripe_session_id: str = ""
+    checkout_group_id: str = ""
+    stand_id: str
+    stand_name: str = ""
+    event_id: str = ""
+    buyer_id: str
+    payment_method: str = "stripe"
+    status: str = "pending"
+    currency: str = "MAD"
+    total_amount: float
+    order_count: int
+    shipping_address: str = ""
+    delivery_notes: str = ""
+    buyer_phone: str = ""
+    created_at: datetime
+    paid_at: Optional[datetime] = None
+    items: list[UnifiedOrderItemOut] = Field(default_factory=list)
+    order_ids: list[str] = Field(default_factory=list)

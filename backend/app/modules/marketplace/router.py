@@ -6,6 +6,7 @@ Completely isolated from the existing event payment system.
 import logging
 import math
 import os
+import uuid
 
 import stripe
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
@@ -24,6 +25,7 @@ from app.modules.marketplace.schemas import (
     OrderCancelRequest,
     OrderFulfillmentUpdate,
     OrderOut,
+    UnifiedOrderOut,
     ProductCreate,
     ProductOut,
     ProductUpdate,
@@ -205,6 +207,7 @@ async def checkout_product(
         unit_price=float(product["price"]),
         currency=product.get("currency", "MAD"),
         payment_method=body.payment_method,
+        checkout_group_id=str(uuid.uuid4()),
         shipping_address=body.shipping_address,
         delivery_notes=body.delivery_notes,
         buyer_phone=body.buyer_phone,
@@ -274,6 +277,7 @@ async def cart_checkout(
     stand = await _get_stand(stand_id)  # validate stand exists
 
     order_ids: list[str] = []
+    checkout_group_id = str(uuid.uuid4())
     total_cart_amount = 0.0
     product_names: list[str] = []
 
@@ -304,6 +308,7 @@ async def cart_checkout(
             unit_price=float(product["price"]),
             currency=product.get("currency", "MAD"),
             payment_method=body.payment_method,
+            checkout_group_id=checkout_group_id,
             shipping_address=body.shipping_address,
             delivery_notes=body.delivery_notes,
             buyer_phone=body.buyer_phone,
@@ -313,7 +318,7 @@ async def cart_checkout(
         product_names.append(product["name"])
 
     if body.payment_method == "cash_on_delivery":
-        return CartCheckoutResponse(payment_url=None, order_ids=order_ids)
+        return CartCheckoutResponse(payment_url=None, order_ids=order_ids, checkout_group_id=checkout_group_id)
 
     origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
     origin = origin.rstrip("/")
@@ -363,7 +368,11 @@ async def cart_checkout(
     except Exception as exc:
         logger.error("Failed to update orders with session id: %s", exc)
 
-    return CartCheckoutResponse(payment_url=stripe_result["url"], order_ids=order_ids)
+    return CartCheckoutResponse(
+        payment_url=stripe_result["url"],
+        order_ids=order_ids,
+        checkout_group_id=checkout_group_id,
+    )
 
 
 # ── Stripe Webhook (server-to-server notification) ────────────────
@@ -495,6 +504,20 @@ async def list_orders_by_session(
             logger.warning("Session status sync skipped for %s: %s", session_id, exc)
 
     return orders
+
+
+@router.get("/orders/unified", response_model=list[UnifiedOrderOut])
+async def list_unified_orders(
+    session_id: str | None = Query(None, description="Stripe session ID"),
+    group_id: str | None = Query(None, description="Checkout group ID"),
+    user: dict = Depends(get_current_user),
+):
+    """Return visitor orders grouped as unified checkout orders (products + services together)."""
+    return await mkt_svc.list_unified_orders_for_buyer(
+        str(user["_id"]),
+        session_id=session_id,
+        group_id=group_id,
+    )
 
 
 @router.get("/orders/{order_id}/receipt")

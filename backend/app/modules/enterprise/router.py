@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from typing import Any, List, Optional
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 import uuid
 import os
 import shutil
@@ -33,6 +34,11 @@ from app.core.storage import store_upload
 from app.core.storage import delete_managed_upload_by_url
 
 router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
+
+
+def _to_cents(amount: float) -> int:
+    normalized = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return int(normalized * 100)
 
 PRODUCT_IMAGE_DIR = "uploads/product_images"
 PROFILE_IMAGE_DIR = "uploads/enterprise_profile"
@@ -603,7 +609,6 @@ async def enterprise_pay_stand_fee(
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
     """Create Payzone payment session for stand fee: returns payment_url for redirect."""
-    import math
     from app.modules.marketplace.stripe_service import create_payment_session as st_create
 
     org = await get_enterprise_org(current_user)
@@ -639,7 +644,7 @@ async def enterprise_pay_stand_fee(
             await ensure_enterprise_stand(event_id, org_id, org_hint=org)
         return stringify_object_ids(updated)
 
-    amount_cents = int(math.ceil(stand_fee * 100))
+    amount_cents = _to_cents(stand_fee)
     participant_id = str(participant["_id"])
 
     origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
