@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { Button } from '@/components/ui/Button';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
@@ -108,6 +108,31 @@ const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null
         end: ev?.end_date ? new Date(ev.end_date) : (ev?.schedule?.end_date ? new Date(ev.schedule.end_date) : null),
     };
 };
+
+function resolveEnterpriseEventTimeline(ev: any) {
+    const lifecycle = getEventLifecycle(ev);
+    const explicitState = String(ev?.state || '').toLowerCase();
+    const explicitClosed = explicitState === 'closed';
+    const explicitLive = explicitState === 'live';
+
+    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+    const timelineLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+
+    // If schedule slots exist, trust timeline windows first.
+    // Keep explicit "live" as fallback when timeline data is absent OR unexpectedly evaluates to ended.
+    const explicitLiveFallback = explicitLive && (!lifecycle.hasScheduleSlots || lifecycle.status === 'ended');
+    const isLive = !explicitClosed && (timelineLive || explicitLiveFallback);
+    const isEnded = explicitClosed || (!isLive && lifecycle.status === 'ended');
+    const isUpcoming = !isLive && !isEnded && !isBetweenSlots;
+
+    return {
+        lifecycle,
+        isLive,
+        isEnded,
+        isUpcoming,
+        isBetweenSlots,
+    };
+}
 
 // ─── Day-by-Day Schedule Panel ───────────────────────────────────────────────
 
@@ -231,16 +256,19 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';
     const statusConf = partStatus ? STATUS_CONFIG[partStatus] : null;
     const standPrice = getStandPrice(ev);
-    const evState = ev.state || '';
-    const lifecycle = getEventLifecycle(ev);
-    const isEventEnded = evState === 'closed' || lifecycle.status === 'ended';
-    const isEventLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
-    const isEventUpcoming = lifecycle.status === 'upcoming';
-    const canConfigure = isAccepted && !isEventEnded;
-    const canManage = isAccepted && isEventLive;
+    const evState = String(ev.state || '');
+    const {
+        lifecycle,
+        isLive: isEventLive,
+        isEnded: isEventEnded,
+        isUpcoming: isEventUpcoming,
+        isBetweenSlots: isEventInProgress,
+    } = resolveEnterpriseEventTimeline(ev);
+    const canConfigure = isAccepted;
+    const canManage = isAccepted && lifecycle.hasScheduleSlots;
     const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
 
-    const tz = ev.event_timezone || 'UTC';
+    const tz = ev.event_timezone || getUserTimezone();
     const fmtDate = (d?: string) => d
         ? formatInTZ(d, tz, 'MMMM d, yyyy')
         : null;
@@ -250,15 +278,41 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     // Accent color based on event lifecycle
     const accentColor = isEventLive
         ? 'from-emerald-500 to-teal-500'
-        : isEventEnded
-            ? 'from-zinc-400 to-zinc-500'
-            : isEventUpcoming
-                ? 'from-indigo-500 to-purple-500'
-                : 'from-amber-500 to-orange-500';
+        : isEventInProgress
+            ? 'from-sky-500 to-blue-500'
+            : isEventEnded
+                ? 'from-zinc-400 to-zinc-500'
+                : isEventUpcoming
+                    ? 'from-indigo-500 to-purple-500'
+                    : 'from-amber-500 to-orange-500';
 
-    const accentText = isEventLive ? 'text-emerald-600' : isEventEnded ? 'text-zinc-500' : isEventUpcoming ? 'text-indigo-600' : 'text-amber-600';
-    const accentBg = isEventLive ? 'bg-emerald-50' : isEventEnded ? 'bg-zinc-50' : isEventUpcoming ? 'bg-indigo-50' : 'bg-amber-50';
-    const accentBorder = isEventLive ? 'border-emerald-200' : isEventEnded ? 'border-zinc-200' : isEventUpcoming ? 'border-indigo-200' : 'border-amber-200';
+    const accentText = isEventLive
+        ? 'text-emerald-600'
+        : isEventInProgress
+            ? 'text-blue-700'
+            : isEventEnded
+                ? 'text-zinc-500'
+                : isEventUpcoming
+                    ? 'text-indigo-600'
+                    : 'text-amber-600';
+    const accentBg = isEventLive
+        ? 'bg-emerald-50'
+        : isEventInProgress
+            ? 'bg-blue-50'
+            : isEventEnded
+                ? 'bg-zinc-50'
+                : isEventUpcoming
+                    ? 'bg-indigo-50'
+                    : 'bg-amber-50';
+    const accentBorder = isEventLive
+        ? 'border-emerald-200'
+        : isEventInProgress
+            ? 'border-blue-200'
+            : isEventEnded
+                ? 'border-zinc-200'
+                : isEventUpcoming
+                    ? 'border-indigo-200'
+                    : 'border-amber-200';
 
     const downloadReceipt = async () => {
         try {
@@ -327,7 +381,15 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             {/* Event status */}
                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${accentText}`}>
                                 {isEventLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
-                                {isEventLive ? 'Live Now' : isEventEnded ? 'Event Ended' : isEventUpcoming ? 'Upcoming' : (evState || '').replace(/_/g, ' ')}
+                                {isEventLive
+                                    ? 'Live Now'
+                                    : isEventInProgress
+                                        ? 'In Progress'
+                                        : isEventEnded
+                                            ? 'Event Ended'
+                                            : isEventUpcoming
+                                                ? 'Upcoming'
+                                                : (evState || '').replace(/_/g, ' ')}
                             </span>
                             {/* Participation status */}
                             {statusConf && (
@@ -348,6 +410,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                         {isEventUpcoming && lifecycle.nextSlotStart && (
                             <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full">
                                 {formatTimeToStart(lifecycle.nextSlotStart)}
+                            </span>
+                        )}
+                        {isEventInProgress && lifecycle.nextSlotStart && (
+                            <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">
+                                Next slot: {formatTimeToStart(lifecycle.nextSlotStart)}
                             </span>
                         )}
                     </div>
@@ -545,7 +612,7 @@ function EnterpriseEventCard({
         }
     };
 
-    const tz = ev.event_timezone || 'UTC';
+    const tz = ev.event_timezone || getUserTimezone();
     const fmtDate = (d?: string) => d
         ? formatInTZ(d, tz, 'MMM d, yyyy')
         : null;
@@ -553,23 +620,25 @@ function EnterpriseEventCard({
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
 
     // Timeline status
-    const evState = ev.state || '';
-    const lifecycle = getEventLifecycle(ev);
-    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
-    const isEventEnded = evState === 'closed' || lifecycle.status === 'ended';
-    const isEventLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
-    const isEventUpcoming = lifecycle.status === 'upcoming' && !isBetweenSlots;
+    const evState = String(ev.state || '');
+    const {
+        lifecycle,
+        isBetweenSlots,
+        isLive: isEventLive,
+        isEnded: isEventEnded,
+        isUpcoming: isEventUpcoming,
+    } = resolveEnterpriseEventTimeline(ev);
     const isEventNotReady = ['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(evState);
-    const canManage = isAccepted && lifecycle.hasScheduleSlots && lifecycle.status === 'live';
-    const canConfigure = isAccepted && !isEventEnded;
+    const canManage = isAccepted && lifecycle.hasScheduleSlots;
+    const canConfigure = isAccepted;
 
     // Single status label for the card
     const timelineBadge = isEventLive
         ? { label: 'Live', class: 'bg-emerald-500 text-white', pulse: true }
-        : isEventEnded
-            ? { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false }
-            : isBetweenSlots
-                ? { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false }
+        : isBetweenSlots
+            ? { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false }
+            : isEventEnded
+                ? { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false }
                 : isEventUpcoming && !isEventNotReady
                     ? { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false }
                     : isEventNotReady
@@ -720,11 +789,11 @@ function EnterpriseEventCard({
                         {canManage && (
                             <Link href={`/enterprise/events/${evId}/manage`} className="flex-1">
                                 <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
-                                    <MessageSquare size={14} /> Manage Event
+                                    <MessageSquare size={14} /> Manage
                                 </Button>
                             </Link>
                         )}
-                        {!canManage && isAccepted && !isEventEnded && !canConfigure && (
+                        {!canManage && isAccepted && !isEventEnded && evState !== 'closed' && (
                             <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100 text-zinc-400">
                                 Scheduled
                             </Button>
@@ -782,6 +851,7 @@ export default function EnterpriseEventsPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const [search, setSearch] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'in_progress' | 'upcoming' | 'ended' | 'mine'>('all');
     const searchParams = useSearchParams();
     const paymentSuccess = searchParams.get('payment_success') === 'true';
     const paymentCancelled = searchParams.get('payment_cancelled') === 'true';
@@ -833,12 +903,28 @@ export default function EnterpriseEventsPage() {
         }
     };
 
-    const filtered = events.filter(ev =>
-        !search ||
-        ev.title?.toLowerCase().includes(search.toLowerCase()) ||
-        ev.description?.toLowerCase().includes(search.toLowerCase()) ||
-        ev.organizer_name?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = events.filter(ev => {
+        // Text search
+        if (search) {
+            const q = search.toLowerCase();
+            const matchText =
+                ev.title?.toLowerCase().includes(q) ||
+                ev.description?.toLowerCase().includes(q) ||
+                ev.organizer_name?.toLowerCase().includes(q);
+            if (!matchText) return false;
+        }
+        // Status filter
+        if (filterStatus !== 'all') {
+            const { isLive, isEnded, isUpcoming, isBetweenSlots } = resolveEnterpriseEventTimeline(ev);
+            const hasPart = Boolean(ev.participation);
+            if (filterStatus === 'live' && !isLive) return false;
+            if (filterStatus === 'in_progress' && !isBetweenSlots) return false;
+            if (filterStatus === 'upcoming' && !isUpcoming) return false;
+            if (filterStatus === 'ended' && !isEnded) return false;
+            if (filterStatus === 'mine' && !hasPart) return false;
+        }
+        return true;
+    });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -860,15 +946,31 @@ export default function EnterpriseEventsPage() {
                     <p className="mt-1">You were moved out of the live management room because this event timeline has ended.</p>
                 </div>
             )}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-zinc-500 text-sm">Browse available events and manage your participation.</p>
-                <input
-                    type="text"
-                    placeholder="Search events…"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="w-full sm:w-64 pl-4 pr-4 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
-                />
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    {/* Status filter */}
+                    <select
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+                        className="pl-3 pr-8 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition text-zinc-700 cursor-pointer"
+                    >
+                        <option value="all">All Events</option>
+                        <option value="live">🔴 Live Now</option>
+                        <option value="in_progress">🔵 In Progress</option>
+                        <option value="upcoming">🔵 Upcoming</option>
+                        <option value="ended">⚫ Ended</option>
+                        <option value="mine">✅ My Events</option>
+                    </select>
+                    {/* Text search */}
+                    <input
+                        type="text"
+                        placeholder="Search events…"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full sm:w-56 pl-4 pr-4 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+                    />
+                </div>
             </div>
 
             {isLoading ? (

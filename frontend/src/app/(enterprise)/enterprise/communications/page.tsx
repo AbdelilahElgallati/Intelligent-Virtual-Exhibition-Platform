@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -72,7 +72,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
                         {room.name || `Chat #${(room.id || room._id).slice(-4)}`}
                     </h4>
                     <span className="text-[10px] text-zinc-400">
-                        {formatInTZ(room.created_at, 'UTC', 'MMM d')}
+                        {formatInTZ(room.created_at, getUserTimezone(), 'MMM d')}
                     </span>
                 </div>
                 <p className="text-xs text-zinc-500 truncate">

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -9,7 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
     Palette, Package, FileText, Cpu, CheckCircle2,
-    Plus, Trash2, Upload, Zap, AlertCircle
+    Plus, Trash2, Upload, Zap, AlertCircle,
+    BarChart3, MessageSquare, ChevronLeft
 } from 'lucide-react';
 
 type Tab = 'branding' | 'products' | 'resources' | 'ai';
@@ -303,9 +305,31 @@ export default function StandConfigPage() {
     return (
         <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-20 mt-4">
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white text-center shadow-lg">
-                <h2 className="text-3xl font-extrabold mb-2">Configure Your Stand</h2>
-                <p className="text-indigo-100">Managing: <span className="font-semibold text-white">{stand.name}</span></p>
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="text-center sm:text-left">
+                        <h2 className="text-3xl font-extrabold mb-2">Configure Your Stand</h2>
+                        <p className="text-indigo-100">Managing: <span className="font-semibold text-white">{stand.name}</span></p>
+                    </div>
+                    {/* Shortcut buttons */}
+                    <div className="flex flex-wrap gap-2 justify-center sm:justify-end mt-2 sm:mt-0">
+                        <Link href={`/enterprise/events/${eventId}/manage`}>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
+                                <MessageSquare size={15} /> Manage Event
+                            </button>
+                        </Link>
+                        <Link href={`/enterprise/events/${eventId}/analytics`}>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
+                                <BarChart3 size={15} /> Analytics
+                            </button>
+                        </Link>
+                        <Link href="/enterprise/events">
+                            <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-sm font-medium rounded-xl border border-white/20 transition-all backdrop-blur-sm">
+                                <ChevronLeft size={15} /> All Events
+                            </button>
+                        </Link>
+                    </div>
+                </div>
             </div>
 
             {/* Message Banner */}

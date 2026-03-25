@@ -68,3 +68,16 @@ export function getTodayInTZ(timeZone: string): string {
 export function formatTimeInTZ(date: string | number | Date, timeZone: string): string {
   return formatInTZ(date, timeZone, 'h:mm a');
 }
+
+/**
+ * Returns the current user's local timezone (e.g. "Africa/Casablanca", "Europe/London")
+ * using the native browser Intl API.
+ */
+export function getUserTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch (e) {
+    return 'UTC';
+  }
+}
+

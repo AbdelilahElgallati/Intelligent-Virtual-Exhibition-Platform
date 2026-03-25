@@ -24,6 +24,7 @@ type EnterpriseStandReceiptInput = {
 export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInput) {
   const { default: jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
+  const { formatInTZ, getUserTimezone } = await import('@/lib/timezone');
 
   const paidAt = new Date(input.paidAt || new Date().toISOString());
   const amount = Number(input.amount || 0);
@@ -38,11 +39,16 @@ export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInp
   doc.setTextColor(79, 70, 229);
   doc.text('EVENT TICKET RECEIPT', 14, 22);
 
+  const paidAtStr = input.paidAt || new Date().toISOString();
+  const tz = getUserTimezone();
+  const displayDate = formatInTZ(paidAtStr, tz, 'MMMM d, yyyy');
+  const displayTime = formatInTZ(paidAtStr, tz, 'hh:mm:ss a');
+
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`Receipt #: ${receiptNo}`, 14, 32);
-  doc.text(`Date: ${paidAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 38);
-  doc.text(`Time: ${paidAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, 14, 44);
+  doc.text(`Date: ${displayDate}`, 14, 38);
+  doc.text(`Time: ${displayTime}`, 14, 44);
   doc.text('Status: PAID', 14, 50);
 
   doc.setFontSize(12);
@@ -113,6 +119,7 @@ export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInp
 export async function downloadEnterpriseStandFeeReceiptPdf(input: EnterpriseStandReceiptInput) {
   const { default: jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
+  const { formatInTZ, getUserTimezone } = await import('@/lib/timezone');
 
   const paidAt = new Date(input.paidAt || new Date().toISOString());
   const amount = Number(input.amount || 0);
@@ -127,11 +134,16 @@ export async function downloadEnterpriseStandFeeReceiptPdf(input: EnterpriseStan
   doc.setTextColor(79, 70, 229);
   doc.text('STAND FEE RECEIPT', 14, 22);
 
+  const paidAtStr = input.paidAt || new Date().toISOString();
+  const tz = getUserTimezone();
+  const displayDate = formatInTZ(paidAtStr, tz, 'MMMM d, yyyy');
+  const displayTime = formatInTZ(paidAtStr, tz, 'hh:mm:ss a');
+
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`Invoice #: ${invoiceNo}`, 14, 32);
-  doc.text(`Date: ${paidAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 38);
-  doc.text(`Time: ${paidAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`, 14, 44);
+  doc.text(`Date: ${displayDate}`, 14, 38);
+  doc.text(`Time: ${displayTime}`, 14, 44);
   doc.text('Status: PAID', 14, 50);
 
   doc.setFontSize(12);

@@ -30,6 +30,7 @@ import { organizerService } from "@/services/organizer.service";
 import OrganizerEventConferences from "@/components/conferences/OrganizerEventConferences";
 import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 const STATE_LABELS: Record<EventStatus, string> = {
   pending_approval: "Pending Review",
@@ -57,7 +58,7 @@ const STATE_COLORS: Record<EventStatus, string> = {
 function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
   const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
     const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-    const tz = event.event_timezone || 'UTC';
+    const tz = event.event_timezone || getUserTimezone();
     const start = new Date(event.start_date || new Date().toISOString());
     if (Number.isNaN(start.getTime())) return 'Invalid date';
 
@@ -659,7 +660,7 @@ const handleConfirmPayment = async () => {
             label="Start Date"
             value={
               event.start_date
-                ? new Date(event.start_date).toLocaleString()
+                ? formatInTZ(event.start_date, event.event_timezone || getUserTimezone(), 'MMM d, yyyy, h:mm a')
                 : undefined
             }
           />
@@ -667,7 +668,7 @@ const handleConfirmPayment = async () => {
             label="End Date"
             value={
               event.end_date
-                ? new Date(event.end_date).toLocaleString()
+                ? formatInTZ(event.end_date, event.event_timezone || getUserTimezone(), 'MMM d, yyyy, h:mm a')
                 : undefined
             }
           />

@@ -153,7 +153,7 @@ export default function EnterpriseProductsPage() {
                 <p className="text-zinc-500 text-sm">Manage your catalog of products and services.</p>
                 {!isAdding && (
                     <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2">
-                        <Plus size={18} /> Add Product
+                        <Plus size={18} /> Add Product / Service
                     </Button>
                 )}
             </div>
@@ -164,7 +164,9 @@ export default function EnterpriseProductsPage() {
                     <CardContent className="p-8">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-zinc-900">
-                                {editingProduct ? 'Edit Product' : 'Add New Product'}
+                                {editingProduct
+                                    ? (formData.type === 'service' ? 'Edit Service' : 'Edit Product')
+                                    : (formData.type === 'service' ? 'Add New Service' : 'Add New Product')}
                             </h3>
                             <button onClick={resetForm} className="text-zinc-400 hover:text-zinc-600">
                                 <X size={20} />
@@ -322,7 +324,9 @@ export default function EnterpriseProductsPage() {
                             <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
                                 <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
                                 <Button type="submit">
-                                    {editingProduct ? 'Update Product' : 'Create Product'}
+                                    {editingProduct
+                                        ? (formData.type === 'service' ? 'Update Service' : 'Update Product')
+                                        : (formData.type === 'service' ? 'Create Service' : 'Create Product')}
                                 </Button>
                             </div>
                         </form>

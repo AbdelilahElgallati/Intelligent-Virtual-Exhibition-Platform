@@ -44,7 +44,7 @@ import {
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
@@ -486,10 +486,13 @@ export default function EventManagementHub() {
         // Prefer schedule_days if available
         if (eventData.schedule_days && eventData.schedule_days.length > 0) {
             return eventData.schedule_days.map(sd => {
-                // Compute actual date from event start + day_number
-                const base = new Date(eventData.start_date);
-                base.setDate(base.getDate() + sd.day_number - 1);
-                const dateStr = base.toISOString().split('T')[0];
+                const tz = eventData.event_timezone || getUserTimezone();
+                const baseTimestamp = new Date(eventData.start_date || new Date().toISOString()).getTime();
+                const dayOffset = Math.max(0, sd.day_number - 1);
+                // Move safely forward by 'dayOffset' days (86400000 ms) in UTC.
+                const offsetDate = new Date(baseTimestamp + dayOffset * 24 * 60 * 60 * 1000);
+                const dateStr = formatInTZ(offsetDate, tz, 'yyyy-MM-dd');
+
                 return {
                     dateStr,
                     label: sd.date_label || `Day ${sd.day_number}`,
@@ -499,7 +502,7 @@ export default function EventManagementHub() {
         }
         // Fallback: generate from start_date to end_date
         const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
-        const tz = eventData.event_timezone || 'UTC';
+        const tz = eventData.event_timezone || getUserTimezone();
         const start = new Date(eventData.start_date);
         const end = new Date(eventData.end_date);
         let d = new Date(start);
@@ -724,13 +727,7 @@ export default function EventManagementHub() {
         return { gate: 'not-ready' as const, title: eventData.title, state };
     }, [eventData, timelineNow]);
 
-    useEffect(() => {
-        if (!eventTimeline || eventTimeline.gate !== 'ended') return;
-        const timer = window.setTimeout(() => {
-            router.replace('/enterprise/events?event_ended=true');
-        }, 2500);
-        return () => window.clearTimeout(timer);
-    }, [eventTimeline, router]);
+    // Allow users to view data for ended events.
 
     if (isLoading && !stand && !isForbidden) {
         return (

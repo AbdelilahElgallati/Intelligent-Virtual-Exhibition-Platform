@@ -1,4 +1,5 @@
 import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
+import { getUserTimezone } from './timezone';
 
 export type EventLifecycleStatus = 'upcoming' | 'live' | 'ended';
 
@@ -66,6 +67,10 @@ function parseScheduleDays(event: Event): EventScheduleDay[] {
         return event.schedule_days;
     }
 
+    if (Array.isArray(event.event_timeline)) {
+        return event.event_timeline;
+    }
+
     if (!event.event_timeline || typeof event.event_timeline !== 'string') {
         return [];
     }
@@ -79,7 +84,7 @@ function parseScheduleDays(event: Event): EventScheduleDay[] {
 }
 
 function getEventTimezone(event: Event): string {
-    return event.event_timezone || 'UTC';
+    return event.event_timezone || getUserTimezone();
 }
 
 function getDatePartsInTimezone(value: Date, timeZone: string): TimezoneParts {
@@ -214,24 +219,31 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
     const explicitState = String((event as any)?.state || '').toLowerCase();
     const windows = buildScheduleWindows(event);
 
+    // If an event is explicitly 'closed', it is ALWAYS ended.
+    if (explicitState === 'closed') {
+        const first = windows[0];
+        const last = windows[windows.length - 1];
+        const startDate = first ? first.start : parseDate(event.start_date, 'start');
+        const endDate = last ? last.end : parseDate(event.end_date, 'end');
+        return {
+            status: 'ended',
+            startsAt: startDate,
+            endsAt: endDate,
+            nextSlotStart: null,
+            activeSlotLabel: null,
+            source: windows.length > 0 ? 'schedule' : 'dates',
+            hasScheduleSlots: windows.length > 0,
+            scheduleSlotCount: windows.length,
+            withinScheduleWindow: false,
+        };
+    }
+
     if (windows.length > 0) {
         const first = windows[0];
         const last = windows[windows.length - 1];
         const active = windows.find((w) => now >= w.start && now <= w.end) || null;
 
-        if (explicitState === 'closed') {
-            return {
-                status: 'ended',
-                startsAt: first.start,
-                endsAt: last.end,
-                nextSlotStart: null,
-                activeSlotLabel: null,
-                source: 'schedule',
-                hasScheduleSlots: true,
-                scheduleSlotCount: windows.length,
-                withinScheduleWindow: false,
-            };
-        }
+
 
         if (now < first.start) {
             return {
@@ -292,19 +304,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
     const startDate = parseDate(event.start_date, 'start');
     const endDate = parseDate(event.end_date, 'end');
 
-    if (explicitState === 'closed') {
-        return {
-            status: 'ended',
-            startsAt: startDate,
-            endsAt: endDate,
-            nextSlotStart: null,
-            activeSlotLabel: null,
-            source: 'dates',
-            hasScheduleSlots: false,
-            scheduleSlotCount: 0,
-            withinScheduleWindow: false,
-        };
-    }
+
 
     if (startDate && now < startDate) {
         return {
