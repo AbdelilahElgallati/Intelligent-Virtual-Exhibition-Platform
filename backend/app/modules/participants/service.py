@@ -132,6 +132,7 @@ async def list_event_attendees(event_id: str) -> List[dict]:
                     }
 
         prof = user_doc.get("professional_info") or {}
+        event_prefs = user_doc.get("event_preferences") or {}
         items.append({
             "id": user_doc.get("id") or user_doc.get("_id"),
             "full_name": user_doc.get("full_name"),
@@ -140,9 +141,16 @@ async def list_event_attendees(event_id: str) -> List[dict]:
             "role": user_doc.get("role"),
             "bio": user_doc.get("bio"),
             "job_title": prof.get("job_title"),
+            "experience_level": prof.get("experience_level"),
             "company": prof.get("company") or (org_info.get("name") if org_info else None),
             "industry": prof.get("industry") or (org_info.get("industry") if org_info else None),
+            "language": user_doc.get("language"),
+            "timezone": user_doc.get("timezone"),
+            "preferred_event_types": event_prefs.get("types") or [],
+            "preferred_languages": event_prefs.get("languages") or [],
+            "preferred_regions": event_prefs.get("regions") or [],
             "org_name": org_info.get("name") if org_info else None,
+            "org_type": user_doc.get("org_type"),
             "org_website": org_info.get("website") if org_info else None,
             "org_contact_email": org_info.get("contact_email") if org_info else None,
             "org_contact_phone": org_info.get("contact_phone") if org_info else None,

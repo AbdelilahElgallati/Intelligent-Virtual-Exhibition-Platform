@@ -78,4 +78,41 @@ export interface CartItem {
 export interface CartCheckoutResponse {
   payment_url: string | null;
   order_ids: string[];
+  checkout_group_id?: string | null;
+}
+
+export interface UnifiedMarketplaceOrderItem {
+  order_id: string;
+  product_id: string;
+  product_name: string;
+  product_type: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  currency: string;
+  status: string;
+  fulfillment_status?: string;
+  created_at: string;
+}
+
+export interface UnifiedMarketplaceOrder {
+  group_id: string;
+  stripe_session_id?: string;
+  checkout_group_id?: string;
+  stand_id: string;
+  stand_name: string;
+  event_id: string;
+  buyer_id: string;
+  payment_method: string;
+  status: string;
+  currency: string;
+  total_amount: number;
+  order_count: number;
+  shipping_address?: string;
+  delivery_notes?: string;
+  buyer_phone?: string;
+  created_at: string;
+  paid_at?: string | null;
+  items: UnifiedMarketplaceOrderItem[];
+  order_ids: string[];
 }

@@ -5,7 +5,7 @@ Payzone-based event ticket payments for visitors.
 """
 
 import logging
-import math
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
@@ -47,6 +47,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Payments"])
 
 
+def _to_cents(amount: float) -> int:
+    normalized = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return int(normalized * 100)
+
+
 # ============== Visitor Endpoints ==============
 
 
@@ -82,7 +87,7 @@ async def create_event_checkout(
 
     amount = event.get("ticket_price", 0) or 0
     currency = "MAD"
-    amount_cents = int(math.ceil(amount * 100))
+    amount_cents = _to_cents(amount)
 
     # Create pending payment record
     payment = await create_payment(

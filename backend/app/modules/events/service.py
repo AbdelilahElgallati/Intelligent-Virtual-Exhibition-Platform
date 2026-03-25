@@ -6,6 +6,7 @@ Provides MongoDB-backed event storage and CRUD operations.
 
 import secrets
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Sequence
 
 from bson import ObjectId
@@ -39,6 +40,12 @@ def _calculate_payment(num_enterprises: int, start_date: datetime, end_date: dat
     return round(num_enterprises * days * PRICE_PER_ENTERPRISE_PER_DAY, 2)
 
 
+def _normalize_money(value: Optional[float]) -> Optional[float]:
+    if value is None:
+        return None
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
 async def create_event(data: EventCreate, organizer_id) -> dict:
     """
     Submit a new event request — goes directly to PENDING_APPROVAL state.
@@ -65,9 +72,9 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "extended_details": data.extended_details,
         "additional_info": data.additional_info,
         # Pricing fields (set by organizer)
-        "stand_price": data.stand_price,
+        "stand_price": _normalize_money(data.stand_price),
         "is_paid": data.is_paid,
-        "ticket_price": data.ticket_price if data.is_paid else None,
+        "ticket_price": _normalize_money(data.ticket_price) if data.is_paid else None,
         # Payment & links (set later)
         "payment_amount": None,
         "enterprise_link": None,
@@ -136,7 +143,12 @@ async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
     Only non-None values from the payload are applied.
     """
     collection = get_events_collection()
-    update_data = {k: v for k, v in data.model_dump(exclude_none=True).items()}
+    update_data = dict(data.model_dump(exclude_none=True).items())
+
+    if "stand_price" in update_data:
+        update_data["stand_price"] = _normalize_money(update_data.get("stand_price"))
+    if "ticket_price" in update_data:
+        update_data["ticket_price"] = _normalize_money(update_data.get("ticket_price"))
     
     if not update_data:
         return await get_event_by_id(event_id)

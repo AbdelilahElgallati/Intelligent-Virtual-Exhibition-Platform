@@ -26,6 +26,12 @@ import {
   Globe,
   Info,
   CheckCircle2,
+  RefreshCw,
+  Search,
+  PieChart,
+  Table2,
+  Activity,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface Kpi {
@@ -50,9 +56,9 @@ interface EnterpriseSummary {
 interface EventAnalytics {
   kpis: Kpi[];
   distribution: DistributionItem[];
-  total_visitors?: number;
-  total_enterprises?: number;
-  total_stand_interactions?: number;
+  total_visitors: number;
+  total_enterprises: number;
+  total_stand_interactions: number;
   enterprises?: EnterpriseSummary[];
 }
 
@@ -90,21 +96,42 @@ function normalizeDistribution(distribution: EventAnalytics["distribution"] | Re
   }
 
   if (Array.isArray(distribution)) {
-    return distribution;
+    return distribution.map((item) => ({
+      label: String(item.label || 'Unlabeled'),
+      value: Number.isFinite(Number(item.value)) ? Number(item.value) : 0,
+      percentage: Number.isFinite(Number(item.percentage)) ? Number(item.percentage) : undefined,
+    }));
   }
 
   return Object.entries(distribution).map(([label, value]) => ({
-    label,
-    value,
+    label: String(label || 'Unlabeled'),
+    value: Number.isFinite(Number(value)) ? Number(value) : 0,
   }));
 }
 
 function normalizeAnalyticsPayload(payload: AnalyticsPayload): EventAnalytics {
+  const rawKpis = payload.kpis ?? [];
+  const normalizedKpis: Kpi[] = rawKpis.map((kpi) => ({
+    label: String(kpi.label || 'Untitled metric'),
+    value: Number.isFinite(Number(kpi.value)) ? Number(kpi.value) : 0,
+    description: kpi.description,
+  }));
+
+  const normalizedEnterprises = (payload.enterprises ?? []).map((ent, index) => ({
+    id: String(ent.id || `enterprise-${index}`),
+    name: String(ent.name || 'Unnamed enterprise'),
+    logo_url: ent.logo_url,
+    industry: ent.industry,
+  }));
+
   return {
     ...payload,
-    kpis: payload.kpis ?? [],
+    kpis: normalizedKpis,
     distribution: normalizeDistribution(payload.distribution),
-    enterprises: payload.enterprises ?? [],
+    enterprises: normalizedEnterprises,
+    total_visitors: Number.isFinite(Number(payload.total_visitors)) ? Number(payload.total_visitors) : 0,
+    total_enterprises: Number.isFinite(Number(payload.total_enterprises)) ? Number(payload.total_enterprises) : normalizedEnterprises.length,
+    total_stand_interactions: Number.isFinite(Number(payload.total_stand_interactions)) ? Number(payload.total_stand_interactions) : 0,
   };
 }
 
@@ -250,6 +277,11 @@ export default function EventAnalyticsPage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [activeView, setActiveView] = useState<"overview" | "engagement" | "enterprises">("overview");
+  const [distributionMode, setDistributionMode] = useState<"percent" | "absolute">("percent");
+  const [enterpriseQuery, setEnterpriseQuery] = useState("");
+  const [kpiQuery, setKpiQuery] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -271,6 +303,7 @@ export default function EventAnalyticsPage() {
         const livePayload = await organizerService.getLiveEventAnalytics(eventId);
         if (isMounted) {
           setAnalytics(mapLiveAnalyticsPayload(livePayload));
+          setLastUpdatedAt(new Date());
           setError(null);
         }
         return;
@@ -282,6 +315,7 @@ export default function EventAnalyticsPage() {
         const fallbackPayload = await organizerService.getEventAnalytics(eventId);
         if (isMounted) {
           setAnalytics(normalizeAnalyticsPayload(fallbackPayload as AnalyticsPayload));
+          setLastUpdatedAt(new Date());
           setError(null);
         }
       } catch (fallbackErr) {
@@ -363,24 +397,50 @@ export default function EventAnalyticsPage() {
     );
   }
 
-  const totalVisitors =
+  const totalVisitors = Number(
     analytics?.total_visitors ??
-    analytics?.kpis?.find((k) =>
-      k.label.toLowerCase().includes("visitor")
-    )?.value ??
-    "—";
+    analytics?.kpis?.find((k) => k.label.toLowerCase().includes("visitor"))?.value ??
+    0
+  );
 
-  const totalInteractions =
+  const totalInteractions = Number(
     analytics?.total_stand_interactions ??
-    analytics?.kpis?.find((k) =>
-      k.label.toLowerCase().includes("interaction")
-    )?.value ??
-    "—";
+    analytics?.kpis?.find((k) => k.label.toLowerCase().includes("interaction"))?.value ??
+    0
+  );
 
   const maxDist =
     Array.isArray(analytics?.distribution) && analytics.distribution.length > 0
       ? Math.max(...analytics.distribution.map((d) => d.value))
       : 1;
+
+  const engagementRate =
+    totalVisitors > 0
+      ? Math.round((totalInteractions / totalVisitors) * 100)
+      : 0;
+
+  const enterpriseCount = analytics?.enterprises?.length ?? 0;
+  const leadsKpi = analytics?.kpis?.find((k) => k.label.toLowerCase().includes("lead"))?.value ?? 0;
+  const meetingsKpi = analytics?.kpis?.find((k) => k.label.toLowerCase().includes("meeting"))?.value ?? 0;
+
+  const filteredEnterprises = (analytics?.enterprises || []).filter((ent) => {
+    const q = enterpriseQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      ent.name.toLowerCase().includes(q) ||
+      String(ent.industry || "").toLowerCase().includes(q)
+    );
+  });
+
+  const sortedDistribution = [...(analytics?.distribution || [])].sort((a, b) => b.value - a.value);
+  const filteredKpis = (analytics?.kpis || []).filter((kpi) => {
+    const q = kpiQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      kpi.label.toLowerCase().includes(q) ||
+      String(kpi.description || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20">
@@ -399,6 +459,13 @@ export default function EventAnalyticsPage() {
                 {event.state.replace('_', ' ')}
               </span>
               <p className="text-sm text-zinc-400 font-medium">Performance Metrics & Analysis</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <RefreshCw className="w-3.5 h-3.5" />
+              {lastUpdatedAt ? `Last refresh: ${lastUpdatedAt.toLocaleTimeString()}` : 'Waiting for first data refresh...'}
+            </div>
+            <div className="text-xs text-zinc-500">
+              Coverage: <span className="font-semibold text-zinc-700">{analytics?.kpis?.length ?? 0}</span> metrics · <span className="font-semibold text-zinc-700">{sortedDistribution.length}</span> funnel stages
             </div>
           </div>
         </div>
@@ -438,6 +505,28 @@ export default function EventAnalyticsPage() {
         </Card>
       ) : (
         <>
+          {/* Interactive View Switch */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-2 inline-flex gap-2 shadow-sm">
+            <button
+              onClick={() => setActiveView("overview")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "overview" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveView("engagement")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "engagement" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
+            >
+              Engagement
+            </button>
+            <button
+              onClick={() => setActiveView("enterprises")}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "enterprises" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
+            >
+              Enterprises
+            </button>
+          </div>
+
           {/* High-Level Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <Card className="p-6 border-zinc-200 shadow-sm rounded-2xl group hover:border-purple-200 transition-all">
@@ -447,7 +536,7 @@ export default function EventAnalyticsPage() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-zinc-900">
-                    {analytics?.enterprises?.length ?? event.num_enterprises ?? "—"}
+                    {enterpriseCount}
                   </div>
                   <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">Participating Enterprises</div>
                 </div>
@@ -479,15 +568,51 @@ export default function EventAnalyticsPage() {
             </Card>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Engagement Rate</p>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-emerald-600">{engagementRate}%</p>
+                <Activity className="w-5 h-5 text-emerald-500" />
+              </div>
+            </Card>
+            <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Leads Captured</p>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-indigo-600">{leadsKpi}</p>
+                <ArrowUpRight className="w-5 h-5 text-indigo-500" />
+              </div>
+            </Card>
+            <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Meetings Initiated</p>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-purple-600">{meetingsKpi}</p>
+                <Users className="w-5 h-5 text-purple-500" />
+              </div>
+            </Card>
+          </div>
+
+          {activeView !== "enterprises" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* KPI Detailed Grid */}
             <Card className="p-8 rounded-[2rem] border-zinc-200 shadow-sm h-full">
-              <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] mb-8 flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-indigo-500" /> Key Performance Indicators
-              </h2>
+              <div className="flex items-center justify-between mb-6 gap-3">
+                <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                  <BarChart2 className="w-4 h-4 text-indigo-500" /> Key Performance Indicators
+                </h2>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                  <input
+                    value={kpiQuery}
+                    onChange={(e) => setKpiQuery(e.target.value)}
+                    placeholder="Filter KPI"
+                    className="h-8 pl-7 pr-3 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {analytics.kpis.map((kpi, idx) => (
-                  <div key={idx} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 hover:bg-white hover:border-zinc-200 transition-all hover:shadow-sm">
+                {filteredKpis.map((kpi) => (
+                  <div key={`${kpi.label}-${kpi.description || 'metric'}`} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 hover:bg-white hover:border-zinc-200 transition-all hover:shadow-sm">
                     <div className="mb-3">{getIcon(kpi.label)}</div>
                     <div>
                       <div className="text-2xl font-bold text-zinc-900 leading-none mb-1">{kpi.value}</div>
@@ -503,25 +628,42 @@ export default function EventAnalyticsPage() {
 
             {/* Engagement Distribution */}
             <Card className="p-8 rounded-[2rem] border-zinc-200 shadow-sm h-full">
-              <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] mb-8 flex items-center gap-2">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-500" /> Engagement Funnel
-              </h2>
+                </h2>
+                <div className="inline-flex rounded-lg border border-zinc-200 p-1 bg-zinc-50">
+                  <button
+                    onClick={() => setDistributionMode("percent")}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition ${distributionMode === "percent" ? "bg-white text-zinc-900" : "text-zinc-500"}`}
+                  >
+                    <PieChart className="w-3 h-3 inline-block mr-1" /> Percent
+                  </button>
+                  <button
+                    onClick={() => setDistributionMode("absolute")}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition ${distributionMode === "absolute" ? "bg-white text-zinc-900" : "text-zinc-500"}`}
+                  >
+                    <Table2 className="w-3 h-3 inline-block mr-1" /> Value
+                  </button>
+                </div>
+              </div>
               <div className="space-y-6">
-                {analytics.distribution.map((item, idx) => {
+                {sortedDistribution.map((item) => {
                   const pct = item.percentage ?? Math.round((item.value / maxDist) * 100);
+                  const barWidth = distributionMode === "percent" ? pct : Math.round((item.value / maxDist) * 100);
                   return (
-                    <div key={idx} className="group/bar">
+                    <div key={item.label} className="group/bar">
                       <div className="flex items-center justify-between text-sm mb-2 px-1">
                         <span className="font-semibold text-zinc-700">{item.label}</span>
                         <div className="flex items-baseline gap-1">
                           <span className="font-bold text-zinc-900">{item.value}</span>
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">({pct}%)</span>
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{distributionMode === "percent" ? `(${pct}%)` : 'events'}</span>
                         </div>
                       </div>
                       <div className="w-full bg-zinc-100 rounded-full h-3 p-0.5 overflow-hidden">
                         <div
                           className="bg-indigo-600 h-full rounded-full transition-all duration-1000 shadow-sm shadow-indigo-200 group-hover/bar:bg-indigo-500"
-                          style={{ width: `${pct}%` }}
+                          style={{ width: `${barWidth}%` }}
                         />
                       </div>
                     </div>
@@ -530,21 +672,34 @@ export default function EventAnalyticsPage() {
               </div>
             </Card>
           </div>
+          )}
 
           {/* Participating Enterprises Section */}
+          {(activeView === "overview" || activeView === "enterprises") && (
           <Card className="p-8 rounded-[2rem] border-zinc-200 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] flex items-center gap-2">
                 <Store className="w-4 h-4 text-purple-500" /> Participating Enterprises
               </h2>
-              <div className="text-[10px] font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border border-purple-100">
-                {analytics.enterprises?.length || 0} Registered
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                  <input
+                    value={enterpriseQuery}
+                    onChange={(e) => setEnterpriseQuery(e.target.value)}
+                    placeholder="Search enterprise"
+                    className="h-8 pl-7 pr-3 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+                <div className="text-[10px] font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border border-purple-100">
+                  {enterpriseCount} Registered
+                </div>
               </div>
             </div>
 
-            {analytics.enterprises && analytics.enterprises.length > 0 ? (
+            {filteredEnterprises.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {analytics.enterprises.map((ent) => (
+                {filteredEnterprises.map((ent) => (
                   <div key={ent.id} className="bg-white border border-zinc-100 rounded-[2.5rem] p-7 hover:border-indigo-200 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 group/ent cursor-default relative overflow-hidden flex flex-col items-center">
                     <div className="w-28 h-28 bg-white rounded-[2rem] mb-6 border border-zinc-100 shadow-md group-hover/ent:shadow-xl group-hover/ent:scale-110 group-hover/ent:-rotate-2 transition-all duration-700 overflow-hidden flex items-center justify-center relative">
                       <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent opacity-0 group-hover/ent:opacity-100 transition-opacity z-20" />
@@ -575,10 +730,11 @@ export default function EventAnalyticsPage() {
               </div>
             ) : (
               <div className="py-12 text-center border-2 border-dashed border-zinc-100 rounded-[2rem]">
-                <p className="text-zinc-400 text-sm font-medium">No enterprises found for this event yet.</p>
+                <p className="text-zinc-400 text-sm font-medium">No enterprises match your filter.</p>
               </div>
             )}
           </Card>
+          )}
 
           {/* Quick Stats Row */}
           <Card className="px-8 py-6 rounded-3xl border-zinc-200 shadow-sm bg-gradient-to-r from-zinc-900 to-zinc-800 text-white">
@@ -590,14 +746,14 @@ export default function EventAnalyticsPage() {
               <div className="space-y-1">
                 <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-[0.15em] mb-1">Engagement Rate</div>
                 <div className="text-xl font-bold text-emerald-400">
-                  {totalVisitors !== '—' && totalVisitors !== 0 ? Math.round((Number(totalInteractions) / Number(totalVisitors)) * 100) : 0}%
+                  {engagementRate}%
                 </div>
               </div>
               <div className="space-y-1">
                 <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">Timeline</div>
                 <div className="text-sm font-bold flex items-center gap-1.5">
                   <Calendar size={14} className="text-zinc-500" />
-                  {event.start_date ? new Date(event.start_date).toLocaleDateString() : '—'}
+                  {event.start_date ? new Date(event.start_date).toLocaleDateString() : 'Not scheduled'}
                 </div>
               </div>
               <div className="space-y-1">
