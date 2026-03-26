@@ -64,16 +64,14 @@ class ChatRepository:
 
     async def get_or_create_direct_room(
         self, user1_id: str, user2_id: str,
-        room_category: str = None, event_id: str = None
+        room_category: str = None, event_id: str = None, stand_id: str = None
     ) -> ChatRoomSchema:
         user1_id = str(user1_id)
         user2_id = str(user2_id)
         user1_variants = self._member_variants(user1_id)
         user2_variants = self._member_variants(user2_id)
 
-        # Build query — match members + category + event.
-        # Use MongoDB native {$size: 2} instead of $expr/$size so the check works
-        # correctly regardless of whether member IDs are stored as strings or ObjectIds.
+        # Build query — match members + category + event + stand (if stand chat)
         query: dict = {
             "type": "direct",
             "members": {"$size": 2},
@@ -86,6 +84,9 @@ class ChatRepository:
             query["room_category"] = room_category
         if event_id:
             query["event_id"] = {"$in": self._member_variants(str(event_id))}
+        # Scope by stand_id for stand chats (visitor room_category)
+        if room_category == "visitor" and stand_id:
+            query["stand_id"] = stand_id
 
         room = await self.rooms.find_one(query)
         if room:
@@ -101,6 +102,8 @@ class ChatRepository:
             "event_id": event_id,
             "last_message": None,
         }
+        if room_category == "visitor" and stand_id:
+            new_room["stand_id"] = stand_id
         result = await self.rooms.insert_one(new_room)
         new_room["_id"] = result.inserted_id
         return ChatRoomSchema(**new_room)

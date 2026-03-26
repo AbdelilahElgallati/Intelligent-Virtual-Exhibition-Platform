@@ -119,7 +119,9 @@ async def initiate_chat_with_stand(
     event_id = stand.get("event_id")
     room = await chat_repo.get_or_create_direct_room(
         str(current_user["_id"]), owner_id,
-        room_category="visitor", event_id=str(event_id) if event_id else None,
+        room_category="visitor",
+        event_id=str(event_id) if event_id else None,
+        stand_id=str(stand_id),
     )
 
     # Best-effort analytics instrumentation.

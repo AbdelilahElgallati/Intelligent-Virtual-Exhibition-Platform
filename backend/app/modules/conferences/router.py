@@ -201,6 +201,34 @@ async def _enrich(conf: dict, current_user_id: Optional[str] = None) -> dict:
             conf["assigned_enterprise_name"] = user.get("full_name") or user.get("email")
     if current_user_id:
         conf["is_registered"] = await conf_repo.is_registered(conf["_id"], current_user_id)
+
+    # --- Dynamic status patch: show 'live' if within window ---
+    from datetime import datetime, timezone
+    def _parse_utc_datetime(value):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value.replace(tzinfo=timezone.utc)
+            return value.astimezone(timezone.utc)
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                return parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except Exception:
+            return None
+
+    now_utc = datetime.now(timezone.utc)
+    start = _parse_utc_datetime(conf.get("start_time"))
+    end = _parse_utc_datetime(conf.get("end_time"))
+    if (
+        conf.get("status") == "scheduled"
+        and start is not None and end is not None
+        and start <= now_utc < end
+    ):
+        conf["status"] = "live"
+
     return conf
 
 
