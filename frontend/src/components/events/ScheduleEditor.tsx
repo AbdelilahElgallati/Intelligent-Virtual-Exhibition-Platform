@@ -123,7 +123,7 @@ export default function ScheduleEditor({ eventId, initialDays, onSave, onCancel 
           <div className="p-4 space-y-4">
             {day.slots.map((slot, sIdx) => (
               <div key={sIdx} className="group relative bg-white border border-zinc-100 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-md transition-all">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   {/* Time Range */}
                   <div className="lg:col-span-3 space-y-2">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function ScheduleEditor({ eventId, initialDays, onSave, onCancel 
                   </div>
 
                   {/* Label / Description */}
-                  <div className="lg:col-span-4 space-y-2">
+                  <div className="lg:col-span-6 space-y-2">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Activity Label</label>
                     <input 
                       type="text" 
@@ -159,7 +159,7 @@ export default function ScheduleEditor({ eventId, initialDays, onSave, onCancel 
                   </div>
 
                   {/* Conference Toggle */}
-                  <div className="lg:col-span-5 space-y-3">
+                  <div className="lg:col-span-3 space-y-3">
                     <div className="flex items-center justify-between">
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                         <Video className="w-3 h-3" /> Conference

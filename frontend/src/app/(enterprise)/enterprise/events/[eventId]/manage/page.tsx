@@ -985,32 +985,6 @@ export default function EventManagementHub() {
                             </Button>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <div>
-                                <span className="font-semibold">Enterprises:</span> {eventData?.num_enterprises}
-                            </div>
-                            <div>
-                                <span className="font-semibold">Tags:</span> {eventData?.tags?.join(', ')}
-                            </div>
-                            <div>
-                                <span className="font-semibold">Stand Price:</span> {eventData?.stand_price} MAD
-                            </div>
-                            <div>
-                                <span className="font-semibold">Ticket:</span> {eventData?.is_paid ? `${eventData.ticket_price} MAD` : 'Free'}
-                            </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <div className="flex flex-col gap-2 w-full">
-                            <div className="flex flex-wrap gap-4 items-center">
-                                <span className="font-semibold">Invite Links:</span>
-                                <span>Enterprise: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.enterprise_link}</span></span>
-                                <span>Visitor: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.visitor_link}</span></span>
-                                <span>Publicity: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.publicity_link}</span></span>
-                            </div>
-                        </div>
-                    </CardFooter>
                 </Card>
 
 

@@ -97,7 +97,8 @@ async def initiate_chat_with_stand(
 
     # Resolve to internal ID for consistency in other services
     resolved_stand_id = await resolve_stand_id(stand_id)
-    org = await get_organization_by_id(resolved_stand_id)
+    org_id = stand.get("organization_id")
+    org = await get_organization_by_id(org_id) if org_id else None
     if org:
         owner_id = org.get("owner_id")
     else:
@@ -124,7 +125,7 @@ async def initiate_chat_with_stand(
         str(current_user["_id"]), owner_id,
         room_category="visitor",
         event_id=str(event_id) if event_id else None,
-        stand_id=str(stand_id),
+        stand_id=str(stand["_id"]),
     )
 
     # Best-effort analytics instrumentation.
