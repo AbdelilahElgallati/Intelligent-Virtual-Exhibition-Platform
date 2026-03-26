@@ -106,6 +106,7 @@ export interface EventUpdatePayload {
     tags?: string[];
     num_enterprises?: number;
     event_timeline?: string;
+    schedule_days?: EventScheduleDay[];
     extended_details?: string;
     additional_info?: string;
     stand_price?: number;
