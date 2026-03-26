@@ -169,7 +169,7 @@ export default function OrganizerEvents() {
                                     <td className="px-4 py-4">
                                         <div className="flex items-center justify-end gap-2 flex-wrap">
                                             {/* View details — always shown */}
-                                            <Link href={`/organizer/events/${event.id}`}>
+                                            <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                 <Button variant="outline" size="sm" className="gap-1">
                                                     <Eye className="w-3.5 h-3.5" />
                                                     View
@@ -178,7 +178,7 @@ export default function OrganizerEvents() {
 
                                             {/* Pay — when waiting_for_payment */}
                                             {event.state === 'waiting_for_payment' && (
-                                                <Link href={`/organizer/events/${event.id}`}>
+                                                <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600 gap-1">
                                                         <CreditCard className="w-3.5 h-3.5" />
                                                         Pay Now
@@ -215,7 +215,7 @@ export default function OrganizerEvents() {
 
                                             {/* Analytics — live or closed */}
                                             {(effectiveState === 'live' || effectiveState === 'closed') && (
-                                                <Link href={`/organizer/events/${event.id}/analytics`}>
+                                                <Link href={`/organizer/events/${event.slug || event.id}/analytics`}>
                                                     <Button variant="outline" size="sm" className="gap-1">
                                                         <BarChart2 className="w-3.5 h-3.5" />
                                                         Analytics

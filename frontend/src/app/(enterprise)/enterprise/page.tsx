@@ -226,7 +226,7 @@ export default function EnterpriseDashboardPage() {
                     ) : (
                         <div className="divide-y divide-zinc-50">
                             {recentEvents.map(ev => {
-                                const evId = ev.id || ev._id;
+                                const evId = ev.slug || ev.id || ev._id;
                                 const s = ev.participation?.status;
                                 const style = STATUS_STYLE[s] || { label: s || 'Unknown', cls: 'bg-zinc-50 text-zinc-500 border-zinc-200' };
                                 const isApproved = s === 'approved' || s === 'guest_approved';

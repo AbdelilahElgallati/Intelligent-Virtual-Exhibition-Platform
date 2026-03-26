@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.enums import Role
-from app.modules.events.service import get_event_by_id
+from app.modules.events.service import get_event_by_id, resolve_event_id
 from app.modules.notifications.schemas import NotificationType
 from app.modules.notifications.service import create_notification
 from app.modules.participants.schemas import (
@@ -47,6 +47,7 @@ async def invite_user_to_event(
     request: InviteRequest,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> ParticipantRead:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -74,6 +75,7 @@ async def request_to_join_event(
     event_id: str,
     current_user: dict = Depends(require_roles([Role.VISITOR, Role.ENTERPRISE])),
 ) -> ParticipantRead:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -92,6 +94,7 @@ async def approve_event_participant(
     participant_id: str,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> ParticipantRead:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         print(f"DEBUG: Event {event_id} not found")
@@ -145,6 +148,7 @@ async def reject_event_participant(
     body: RejectRequest = RejectRequest(),
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> ParticipantRead:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -182,6 +186,7 @@ async def get_event_participants(
     event_id: str,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> list[ParticipantRead]:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -192,16 +197,19 @@ async def get_event_participants(
     participants = await list_event_participants(event_id)
     return [ParticipantRead(**p) for p in participants]
 
+
 @router.get("/attendees")
 async def get_event_attendees(
     event_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """Public endpoint: list approved participants with profile info for networking."""
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return await list_event_attendees(event_id)
+
 
 @router.get("/enterprises", response_model=list[EnrichedParticipantRead])
 async def get_event_enterprise_participants(
@@ -221,6 +229,9 @@ async def get_event_enterprise_participants(
     org_members_col = db["organization_members"]
     organizations_col = db["organizations"]
     users_col = db["users"]
+
+    # Resolve slug if needed
+    event_id = await resolve_event_id(event_id)
 
     # Only approved enterprises
     cursor = collection.find({

@@ -56,6 +56,9 @@ async def create_payment(
 
 async def get_user_payment(event_id: str, user_id: str) -> Optional[dict]:
     """Get the latest payment record for a user/event pair."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     collection = get_payments_collection()
     doc = await collection.find_one(
         {"event_id": str(event_id), "user_id": str(user_id)},

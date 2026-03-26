@@ -352,7 +352,13 @@ export function StandsGrid({
                     }>
                         <HallScene
                             stands={stands}
-                            onStandClick={(standId) => router.push(`/events/${eventId}/stands/${standId}`)}
+                            onStandClick={(standId) => {
+                                // Prefer slug for clicked stand if available
+                                const clickedStand = stands.find(s => ((s as any).id || (s as any)._id) === standId);
+                                const standRef = (clickedStand as any)?.slug || standId;
+                                const eventRef = (clickedStand as any)?.event_slug || eventId;
+                                router.push(`/events/${eventRef}/stands/${standRef}`);
+                            }}
                             eventTitle={eventTitle}
                             eventBannerUrl={eventBannerUrl}
                             onViewAllStands={() => router.push(`/events/${eventId}/live?tab=stands&view=grid`)}
@@ -364,6 +370,9 @@ export function StandsGrid({
                         {stands.map((stand) => {
                             const standId = (stand as any).id || (stand as any)._id;
                             const standIdStr = String(standId || '');
+                            // Use slugs when available; fall back to raw IDs for pre-existing data
+                            const standRef  = (stand as any).slug  || standIdStr;
+                            const eventRef  = (stand as any).event_slug || stand.event_id;
                             const favoriteId = standIdStr ? (standFavoriteMap.get(standIdStr) ?? null) : null;
                             const bgImage = stand.stand_background_url || stand.logo_url;
                             const resolvedBgImage = resolveMediaUrl(bgImage);
@@ -373,7 +382,7 @@ export function StandsGrid({
                             return (
                                 <Link
                                     key={standId}
-                                    href={`/events/${stand.event_id}/stands/${standId}`}
+                                    href={`/events/${eventRef}/stands/${standRef}`}
                                     className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     style={{ aspectRatio: '4 / 3' }}
                                 >

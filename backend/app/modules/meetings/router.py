@@ -9,7 +9,7 @@ from ...core.dependencies import get_current_user
 from ...core.config import settings
 from ..stands.service import get_stand_by_id
 from ..organizations.service import get_organization_by_id
-from ..events.service import get_event_by_id
+from ..events.service import get_event_by_id, resolve_event_id
 from ..daily import service as daily_svc
 from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
@@ -179,6 +179,7 @@ async def get_busy_slots(
     within the given event. Includes meetings (pending/approved) and
     conferences (scheduled/live).
     """
+    event_id = await resolve_event_id(event_id)
     uid = str(current_user["_id"])
     db = meeting_repo.db
 
@@ -191,12 +192,16 @@ async def get_busy_slots(
         if my_stand:
             my_stand_id = str(my_stand["_id"])
 
-    # Fetch my busy meeting slots
+    # Fetch my busy meeting slots.
+    # For the "stand" side (inbound meetings from others on MY stand) we only count
+    # APPROVED meetings — a visitor's pending request that hasn't been accepted yet
+    # should not block the enterprise owner from making outgoing requests at that time.
     my_slots = await meeting_repo.get_busy_slots(
         event_id,
         uid,
         my_stand_id,
-        statuses=["pending", "approved"],
+        statuses=["pending", "approved"],   # my OWN outgoing requests: pending counts
+        stand_statuses=["approved"],         # inbound on my stand: only approved counts
     )
 
     # Fetch partner's busy meeting slots
@@ -208,11 +213,14 @@ async def get_busy_slots(
             org = await get_organization_by_id(partner_stand["organization_id"])
             partner_uid = org.get("owner_id") if org else None
             if partner_uid:
-                participant_ids.append(str(partner_uid))
+                partner_uid = str(partner_uid)
+                # Ensure partner_stand_id is the internal _id (in case a slug was passed)
+                internal_stand_id = str(partner_stand["_id"])
+                participant_ids.append(partner_uid)
                 partner_slots = await meeting_repo.get_busy_slots(
                     event_id,
-                    str(partner_uid),
-                    partner_stand_id,
+                    partner_uid,
+                    internal_stand_id,
                     statuses=["approved"],
                 )
 
@@ -242,6 +250,23 @@ async def request_meeting(
     meeting: MeetingCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    # Auto-fill "SELF" so the frontend can request B2B meetings without
+    # having to know its own Mongo _id on the client side.
+    # Resolve event_id if it's a slug
+    resolved_event_id = await resolve_event_id(meeting.event_id)
+    
+    # Resolve stand_id if it's a slug and get internal _id
+    stand = await get_stand_by_id(meeting.stand_id)
+    if not stand:
+        raise HTTPException(status_code=404, detail="Target stand not found")
+    internal_stand_id = str(stand["_id"])
+
+    # Update meeting model with resolved internal IDs for database storage
+    meeting = meeting.model_copy(update={
+        "event_id": resolved_event_id,
+        "stand_id": internal_stand_id
+    })
+
     # Auto-fill "SELF" so the frontend can request B2B meetings without
     # having to know its own Mongo _id on the client side.
     if meeting.visitor_id == "SELF":
@@ -287,10 +312,7 @@ async def request_meeting(
         raise HTTPException(status_code=403, detail="You must be an approved participant of this event to request meetings")
 
     # 3. Participant Approval Validation (Target Stand)
-    stand = await get_stand_by_id(meeting.stand_id)
-    if not stand:
-        raise HTTPException(status_code=404, detail="Target stand not found")
-    
+    # stand already resolved above
     target_part = await get_user_participation(meeting.event_id, organization_id=str(stand["organization_id"]))
     if not target_part or target_part.get("status") != "approved":
         raise HTTPException(status_code=403, detail="The target enterprise is not an approved participant for this event")
@@ -311,7 +333,9 @@ async def request_meeting(
     target_org = await get_organization_by_id(stand["organization_id"])
     conference_participants = [str(current_user["_id"])]
     if target_org and target_org.get("owner_id"):
-        conference_participants.append(str(target_org["owner_id"]))
+        owner_id = str(target_org["owner_id"])
+        if owner_id not in conference_participants:
+            conference_participants.append(owner_id)
 
     conf_conflict = await db.conferences.find_one({
         "event_id": meeting.event_id,
@@ -369,8 +393,14 @@ async def get_stand_meetings(
     stand_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    await verify_stand_ownership(stand_id, str(current_user["_id"]))
-    return await meeting_repo.get_stand_meetings(stand_id)
+    # Resolve slug to _id for ownership verification and repository query
+    stand = await get_stand_by_id(stand_id)
+    if not stand:
+        raise HTTPException(status_code=404, detail="Stand not found")
+    internal_stand_id = str(stand["_id"])
+
+    await verify_stand_ownership(internal_stand_id, str(current_user["_id"]))
+    return await meeting_repo.get_stand_meetings(internal_stand_id)
 
 
 @router.get("/{meeting_id}/token", response_model=MeetingJoinResponse)

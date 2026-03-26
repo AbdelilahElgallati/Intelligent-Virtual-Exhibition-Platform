@@ -143,7 +143,7 @@ export default function OrganizerDashboard() {
         }
 
         return filteredRecentEvents.map((event) => (
-            <Link key={event.id} href={`/organizer/events/${event.id}`} className="block">
+            <Link key={event.id} href={`/organizer/events/${event.slug || event.id}`} className="block">
                 <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 group">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-100 rounded flex items-center justify-center text-indigo-600 font-bold">

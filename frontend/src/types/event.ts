@@ -29,6 +29,7 @@ export interface EventScheduleDay {
 
 export interface OrganizerEvent {
     id: string;
+    slug?: string;           // URL-safe slug, e.g. "tech-summit-2025-ab3f"
     title: string;
     description?: string;
     organizer_id: string;

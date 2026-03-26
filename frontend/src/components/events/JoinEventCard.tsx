@@ -11,6 +11,7 @@ interface JoinEventCardProps {
   onJoin: () => void;
   loading: boolean;
   eventId: string;
+  eventSlug?: string;   // URL-safe slug; falls back to eventId
   event?: Event | null;
 }
 
@@ -19,8 +20,11 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
   onJoin,
   loading,
   eventId,
+  eventSlug,
   event,
 }) => {
+  // Use slug when available so the URL shows a human-readable name, not an ObjectId
+  const eventRef = eventSlug || eventId;
   const lifecycle = event ? getEventLifecycle(event) : null;
   const isBetweenSlots = !!(lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow);
   const isAccepted = status === 'APPROVED' || status === 'GUEST_APPROVED';
@@ -82,7 +86,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
               Your registration is approved. You can access the live event now.
             </div>
             <Button asChild className="w-full h-12 text-lg">
-              <Link href={`/events/${eventId}/live`}>Enter Event</Link>
+              <Link href={`/events/${eventRef}/live`}>Enter Event</Link>
             </Button>
           </>
         );
@@ -111,7 +115,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
               )}
             </div>
             <Button asChild className="w-full h-12 text-lg">
-              <Link href={`/events/${eventId}/payment`}>Pay Now</Link>
+              <Link href={`/events/${eventRef}/payment`}>Pay Now</Link>
             </Button>
           </>
         );
@@ -135,7 +139,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
               Your payment is being processed. You&apos;ll be granted access shortly.
             </div>
             <Button asChild className="w-full h-12 text-lg">
-              <Link href={`/events/${eventId}/payment`}>Check Payment Status</Link>
+              <Link href={`/events/${eventRef}/payment`}>Check Payment Status</Link>
             </Button>
           </>
         );

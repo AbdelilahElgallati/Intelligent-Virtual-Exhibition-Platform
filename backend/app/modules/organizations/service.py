@@ -4,6 +4,8 @@ Organizations service for IVEP.
 Provides MongoDB storage and CRUD operations for organizations.
 """
 
+import re
+import unicodedata
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
@@ -16,9 +18,17 @@ from app.db.mongo import get_database
 from app.modules.organizations.schemas import OrganizationCreate, OrgMemberRole
 
 
+def _slugify(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^\w\s-]", "", text).strip().lower()
+    return re.sub(r"[-\s]+", "-", text)
+
+
 def _id_query(oid) -> dict:
     s = str(oid)
-    return {"_id": ObjectId(s)} if ObjectId.is_valid(s) else {"_id": s}
+    if ObjectId.is_valid(s):
+        return {"_id": ObjectId(s)}
+    return {"slug": s}
 
 
 def get_organizations_collection() -> AsyncIOMotorCollection:
@@ -39,8 +49,21 @@ async def create_organization(data: OrganizationCreate, owner_id) -> dict:
     """
     now = datetime.now(timezone.utc)
     
+    if not data.slug:
+        base_slug = _slugify(data.name)
+        slug = base_slug
+        counter = 1
+        org_coll = get_organizations_collection()
+        while await org_coll.find_one({"slug": slug}):
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        slug_to_use = slug
+    else:
+        slug_to_use = data.slug
+
     organization = {
         "name": data.name,
+        "slug": slug_to_use,
         "description": data.description,
         "owner_id": str(owner_id),
         "created_at": now,
@@ -65,10 +88,21 @@ async def create_organization(data: OrganizationCreate, owner_id) -> dict:
 
 
 async def get_organization_by_id(organization_id) -> Optional[dict]:
-    """Get organization by _id."""
+    """Get organization by _id or slug."""
     collection = get_organizations_collection()
     doc = await collection.find_one(_id_query(organization_id))
     return stringify_object_ids(doc) if doc else None
+
+
+async def resolve_organization_id(identifier: str) -> str:
+    """Returns the internal ObjectId string for a given slug or ID."""
+    if ObjectId.is_valid(identifier):
+        return identifier
+    collection = get_organizations_collection()
+    doc = await collection.find_one({"slug": identifier}, {"_id": 1})
+    if doc:
+        return str(doc["_id"])
+    return identifier
 
 
 async def list_organizations() -> list[dict]:

@@ -223,17 +223,19 @@ function buildScheduleWindows(event: Event): SlotWindow[] {
 export function getEventLifecycle(event: Event, now: Date = new Date()): EventLifecycleSnapshot {
     const explicitState = String(event.state || '').toLowerCase();
     const windows = buildScheduleWindows(event);
+    const startDate = parseDate(event.start_date, 'start');
+    const endDate = parseDate(event.end_date, 'end');
 
-    // If an event is explicitly 'closed', it is ALWAYS ended.
+    // If an event is explicitly 'closed', i.e. it is ALWAYS ended.
     if (explicitState === 'closed') {
         const first = windows[0];
         const last = windows[windows.length - 1];
-        const startDate = first ? first.start : parseDate(event.start_date, 'start');
-        const endDate = last ? last.end : parseDate(event.end_date, 'end');
+        const displayStart = first ? first.start : startDate;
+        const displayEnd = last ? last.end : endDate;
         return {
             status: 'ended',
-            startsAt: startDate,
-            endsAt: endDate,
+            startsAt: displayStart,
+            endsAt: displayEnd,
             nextSlotStart: null,
             activeSlotLabel: null,
             source: windows.length > 0 ? 'schedule' : 'dates',
@@ -248,13 +250,29 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
         const last = windows[windows.length - 1];
         const active = windows.find((w) => now >= w.start && now <= w.end) || null;
 
-
+        // Determine if we are past the point where the event should be considered 'ended'.
+        // We trust the explicit 'endDate' if it is later than the last scheduled slot.
+        const effectiveEnd = (endDate && endDate > last.end) ? endDate : last.end;
 
         if (now < first.start) {
+            // Check if we are still technically after the startDate but before the first slot
+            if (startDate && now >= startDate) {
+                return {
+                    status: 'upcoming',
+                    startsAt: first.start,
+                    endsAt: effectiveEnd,
+                    nextSlotStart: first.start,
+                    activeSlotLabel: null,
+                    source: 'schedule',
+                    hasScheduleSlots: true,
+                    scheduleSlotCount: windows.length,
+                    withinScheduleWindow: true,
+                };
+            }
             return {
                 status: 'upcoming',
                 startsAt: first.start,
-                endsAt: last.end,
+                endsAt: effectiveEnd,
                 nextSlotStart: first.start,
                 activeSlotLabel: null,
                 source: 'schedule',
@@ -264,11 +282,11 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             };
         }
 
-        if (now > last.end) {
+        if (now > effectiveEnd) {
             return {
                 status: 'ended',
                 startsAt: first.start,
-                endsAt: last.end,
+                endsAt: effectiveEnd,
                 nextSlotStart: null,
                 activeSlotLabel: null,
                 source: 'schedule',
@@ -282,7 +300,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             return {
                 status: 'live',
                 startsAt: first.start,
-                endsAt: last.end,
+                endsAt: effectiveEnd,
                 nextSlotStart: null,
                 activeSlotLabel: active.label,
                 source: 'schedule',
@@ -292,11 +310,12 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             };
         }
 
+        // We are between slots but not yet past effectiveEnd
         const next = windows.find((w) => w.start > now) || null;
         return {
             status: 'upcoming',
             startsAt: first.start,
-            endsAt: last.end,
+            endsAt: effectiveEnd,
             nextSlotStart: next ? next.start : null,
             activeSlotLabel: null,
             source: 'schedule',
@@ -305,10 +324,6 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             withinScheduleWindow: true,
         };
     }
-
-    const startDate = parseDate(event.start_date, 'start');
-    const endDate = parseDate(event.end_date, 'end');
-
 
 
     if (startDate && now < startDate) {

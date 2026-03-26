@@ -326,14 +326,17 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 standAliasIds={[
                     String(stand.id || ''),
                     String(stand._id || ''),
+                    String(stand.slug || ''),
                     String(standId || ''),
                 ]}
                 standName={stand.name}
-                eventId={id}
+                eventId={String(eventData?.id || id)}
                 eventAliasIds={[
                     String(id || ''),
                     String(stand.event_id || ''),
+                    String(eventData?.id || ''),
                     String(eventData?._id || ''),
+                    String(eventData?.slug || ''),
                 ]}
                 eventStartDate={eventData?.start_date}
                 eventEndDate={eventData?.end_date}

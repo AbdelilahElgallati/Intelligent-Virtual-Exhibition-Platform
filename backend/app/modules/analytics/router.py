@@ -3,6 +3,7 @@
 import io
 from datetime import datetime, timedelta, timezone
 from typing import Any, List
+from app.modules.events.service import resolve_event_id
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import StreamingResponse
@@ -27,25 +28,27 @@ from .service import (
     log_event_persistent,
     validate_event_report_consistency,
 )
+from app.modules.stands.service import resolve_stand_id
 
 router = APIRouter(prefix="/metrics", tags=["Analytics"])
 
 
-
-
-
 async def _assert_event_access_for_organizer(event_id: str, current_user: dict):
     db = get_database()
+    event_id = await resolve_event_id(event_id)
     event = await db["events"].find_one({"_id": _oid_or_value(event_id)})
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     if str(event.get("organizer_id")) != str(current_user.get("_id")):
         raise HTTPException(status_code=403, detail="You are not allowed to access this event analytics")
+    # Store slug for filename use
+    event["id"] = str(event["_id"])
     return event
 
 
 async def _assert_stand_access_for_enterprise(stand_id: str, current_user: dict):
     db = get_database()
+    stand_id = await resolve_stand_id(stand_id)
     stand = await db["stands"].find_one({"_id": _oid_or_value(stand_id)})
     if not stand:
         raise HTTPException(status_code=404, detail="Stand not found")
@@ -53,6 +56,8 @@ async def _assert_stand_access_for_enterprise(stand_id: str, current_user: dict)
     member_doc = await db["organization_members"].find_one({"user_id": str(current_user.get("_id"))})
     if not member_doc or str(member_doc.get("organization_id")) != str(stand.get("organization_id")):
         raise HTTPException(status_code=403, detail="You are not allowed to access this stand analytics")
+    # Store slug for filename use
+    stand["id"] = str(stand["_id"])
     return stand
 
 
@@ -62,11 +67,13 @@ async def log_analytics_event(
     current_user: dict = Depends(get_current_user),
 ) -> AnalyticsEventRead:
     """Log an analytics event (authenticated users only, persisted)."""
+    event_id = await resolve_event_id(data.event_id) if data.event_id else None
+    stand_id = await resolve_stand_id(data.stand_id) if data.stand_id else None
     event = await log_event_persistent(
         type=data.type,
         user_id=str(current_user.get("_id")),
-        event_id=data.event_id,
-        stand_id=data.stand_id,
+        event_id=event_id,
+        stand_id=stand_id,
         metadata=data.metadata,
     )
     return AnalyticsEventRead(**event)
@@ -79,6 +86,7 @@ async def get_analytics_events(
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> List[AnalyticsEventRead]:
     """Get analytics events (Admin or Organizer only)."""
+    event_id = await resolve_event_id(event_id) if event_id else None
     events = await list_events_persistent(limit=limit, event_id=event_id)
     if not events:
         events = list_events(limit=limit)
@@ -90,10 +98,11 @@ async def get_stand_metrics(
     id: str,
     current_user: dict = Depends(get_current_user),
 ):
+    resolved_id = await resolve_stand_id(id)
     role = current_user.get("role")
     if role == Role.ENTERPRISE.value:
-        await _assert_stand_access_for_enterprise(id, current_user)
-    return await analytics_repo.get_stand_analytics(id)
+        await _assert_stand_access_for_enterprise(resolved_id, current_user)
+    return await analytics_repo.get_stand_analytics(resolved_id)
 
 
 @router.get("/event/{id}", response_model=DashboardData)
@@ -101,10 +110,11 @@ async def get_event_metrics(
     id: str,
     current_user: dict = Depends(get_current_user),
 ):
+    resolved_id = await resolve_event_id(id)
     role = current_user.get("role")
     if role == Role.ORGANIZER.value:
-        await _assert_event_access_for_organizer(id, current_user)
-    return await analytics_repo.get_event_analytics(id)
+        await _assert_event_access_for_organizer(resolved_id, current_user)
+    return await analytics_repo.get_event_analytics(resolved_id)
 
 
 @router.get("/report/export")
@@ -205,17 +215,21 @@ async def get_organizer_event_report(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
     """Organizer event-specific report with export options."""
+    resolved_id = await resolve_event_id(event_id)
     try:
-        report = await build_organizer_event_report(event_id, organizer_user_id=str(current_user["_id"]))
+        report = await build_organizer_event_report(resolved_id, organizer_user_id=str(current_user["_id"]))
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     if format == "json":
         return report
+    
+    # Use slug in filename
+    filename_slug = report.get("event_slug") or event_id
     return _render_report_export(
         report=report,
         format=format,
         template_name="organizer_event_report",
-        filename_base=f"organizer_event_{event_id}",
+        filename_base=f"organizer_event_{filename_slug}",
     )
 
 
@@ -243,14 +257,17 @@ async def get_enterprise_event_report(
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
     """Enterprise event report for the authenticated enterprise member."""
-    report = await build_enterprise_event_report(event_id, str(current_user["_id"]))
+    resolved_id = await resolve_event_id(event_id)
+    report = await build_enterprise_event_report(resolved_id, str(current_user["_id"]))
     if format == "json":
         return report
+    
+    filename_slug = report.get("event_slug") or event_id
     return _render_report_export(
         report=report,
         format=format,
         template_name="report",
-        filename_base=f"enterprise_event_{event_id}",
+        filename_base=f"enterprise_event_{filename_slug}",
     )
 
 
@@ -260,9 +277,8 @@ async def get_event_consistency_report(
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ):
     """Cross-domain consistency report for a single event."""
-    report = await validate_event_report_consistency(event_id)
-    if report.get("issue_count", 0) > 0:
-        return report
+    resolved_id = await resolve_event_id(event_id)
+    report = await validate_event_report_consistency(resolved_id)
     return report
 
 
@@ -296,24 +312,25 @@ async def get_live_event_metrics(
     current_user: dict = Depends(require_roles([Role.ORGANIZER, Role.ADMIN])),
 ):
     """Organizer/Admin live event analytics with rolling counters."""
+    resolved_id = await resolve_event_id(event_id)
     db = get_database()
     role = current_user.get("role")
     if role == Role.ORGANIZER.value:
-        await _assert_event_access_for_organizer(event_id, current_user)
+        await _assert_event_access_for_organizer(resolved_id, current_user)
 
     now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
-    base = await analytics_repo.get_event_analytics(event_id)
+    base = await analytics_repo.get_event_analytics(resolved_id)
 
     live = {
-        "active_conferences": await db["conferences"].count_documents({"event_id": str(event_id), "status": "live"}),
-        "live_meetings": await db["meetings"].count_documents({"event_id": str(event_id), "session_status": "live"}),
-        "messages_last_15m": await db["chat_messages"].count_documents({"event_id": str(event_id), "timestamp": {"$gte": since_15m}}),
-        "events_last_15m": await db["analytics_events"].count_documents({"event_id": str(event_id), "created_at": {"$gte": since_15m}}),
+        "active_conferences": await db["conferences"].count_documents({"event_id": str(resolved_id), "status": "live"}),
+        "live_meetings": await db["meetings"].count_documents({"event_id": str(resolved_id), "session_status": "live"}),
+        "messages_last_15m": await db["chat_messages"].count_documents({"event_id": str(resolved_id), "timestamp": {"$gte": since_15m}}),
+        "events_last_15m": await db["analytics_events"].count_documents({"event_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
     }
     return {
         "scope": "live_event",
-        "event_id": str(event_id),
+        "event_id": str(resolved_id),
         "generated_at": now.isoformat(),
         "dashboard": base,
         "live": live,
@@ -326,32 +343,33 @@ async def get_live_stand_metrics(
     current_user: dict = Depends(require_roles([Role.ENTERPRISE, Role.ADMIN])),
 ):
     """Enterprise/Admin live stand analytics with rolling counters."""
+    resolved_id = await resolve_stand_id(stand_id)
     db = get_database()
     role = current_user.get("role")
     stand = None
     if role == Role.ENTERPRISE.value:
-        stand = await _assert_stand_access_for_enterprise(stand_id, current_user)
+        stand = await _assert_stand_access_for_enterprise(resolved_id, current_user)
     else:
-        stand = await db["stands"].find_one({"_id": _oid_or_value(stand_id)})
+        stand = await db["stands"].find_one({"_id": _oid_or_value(resolved_id)})
         if not stand:
             raise HTTPException(status_code=404, detail="Stand not found")
 
     event_id = str(stand.get("event_id")) if stand and stand.get("event_id") else None
     now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
-    base = await analytics_repo.get_stand_analytics(stand_id)
+    base_metrics = await analytics_repo.get_stand_analytics(resolved_id)
 
     live = {
-        "live_meetings": await db["meetings"].count_documents({"stand_id": str(stand_id), "session_status": "live"}),
+        "live_meetings": await db["meetings"].count_documents({"stand_id": str(resolved_id), "session_status": "live"}),
         "messages_last_15m": await db["chat_messages"].count_documents({"event_id": event_id, "timestamp": {"$gte": since_15m}}) if event_id else 0,
-        "stand_events_last_15m": await db["analytics_events"].count_documents({"stand_id": str(stand_id), "created_at": {"$gte": since_15m}}),
-        "leads_last_15m": await db["leads"].count_documents({"stand_id": str(stand_id), "last_interaction": {"$gte": since_15m}}),
+        "stand_events_last_15m": await db["analytics_events"].count_documents({"stand_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
+        "leads_last_15m": await db["leads"].count_documents({"stand_id": str(resolved_id), "last_interaction": {"$gte": since_15m}}),
     }
     return {
         "scope": "live_stand",
-        "stand_id": str(stand_id),
+        "stand_id": str(resolved_id),
         "event_id": event_id,
         "generated_at": now.isoformat(),
-        "dashboard": base,
+        "dashboard": base_metrics,
         "live": live,
     }

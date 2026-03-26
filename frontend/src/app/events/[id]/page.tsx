@@ -448,6 +448,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
           <div className="lg:col-span-1">
             <JoinEventCard
               eventId={id!}
+              eventSlug={event?.slug}
               status={status}
               onJoin={handleJoin}
               loading={joinLoading}

@@ -27,14 +27,15 @@ from app.db.mongo import get_database
 from app.modules.daily import service as daily_svc
 from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
-from app.modules.events.service import get_event_by_id
+from app.modules.events.service import get_event_by_id, resolve_event_id
 
 router = APIRouter(tags=["conferences"])
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 async def _get_conf_or_404(conf_id: str) -> dict:
-    conf = await conf_repo.get_by_id(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await conf_repo.get_by_id(resolved_id)
     if not conf:
         raise HTTPException(status_code=404, detail="Conference not found")
     return conf
@@ -99,54 +100,78 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
     if str(event.get("state") or "").lower() == "closed":
         return False
 
-    days = _extract_schedule_days(event)
-    start_date = _parse_utc_datetime(event.get("start_date"))
-
-    if days and start_date:
-        tz_name = str(event.get("event_timezone") or "UTC")
-        try:
-            event_tz = ZoneInfo(tz_name)
-        except Exception:
-            event_tz = timezone.utc
-
-        base_local_date = start_date.astimezone(event_tz).date()
-        windows: list[tuple[datetime, datetime]] = []
-
-        for idx, day in enumerate(days):
-            day_num = int(day.get("day_number") or (idx + 1))
-            day_offset = max(0, day_num - 1)
-            day_date = base_local_date + timedelta(days=day_offset)
-
-            for slot in day.get("slots") or []:
-                start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
-                end_minutes = _parse_hhmm_to_minutes(slot.get("end_time"))
-                if start_minutes is None or end_minutes is None or end_minutes == start_minutes:
-                    continue
-
-                end_day_offset = 1 if end_minutes <= start_minutes else 0
-
-                slot_start_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_minutes or 0))
-                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(days=end_day_offset, minutes=int(end_minutes or 0))
-                slot_start = slot_start_local.astimezone(timezone.utc)
-                slot_end = slot_end_local.astimezone(timezone.utc)
-                windows.append((slot_start, slot_end))
-
-        if windows:
-            return any(start <= now_utc <= end for start, end in windows)
-
+    # 1. Check explicit dates first for basic access window
     event_start = _parse_utc_datetime(event.get("start_date"))
     event_end = _parse_utc_datetime(event.get("end_date"))
+
     if event_start and now_utc < event_start:
         return False
     if event_end and now_utc > event_end:
         return False
-    return True
+
+    # 2. If no schedule days, we trust the date range (which we already validated)
+    days = _extract_schedule_days(event)
+    if not days:
+        return True
+
+    # 3. If schedule days exist, we determine if we are precisely within a slot.
+    # For Conferences, we might want to be strict, but for general event "Liveness":
+    # If the user is between slots on an active event day, we should usually allow access.
+    tz_name = str(event.get("event_timezone") or "UTC")
+    try:
+        from zoneinfo import ZoneInfo
+        event_tz = ZoneInfo(tz_name)
+    except Exception:
+        event_tz = timezone.utc
+
+    base_local_date = event_start.astimezone(event_tz).date() if event_start else now_utc.astimezone(event_tz).date()
+    windows: list[tuple[datetime, datetime]] = []
+
+    for idx, day in enumerate(days):
+        day_num_raw = day.get("day_number")
+        day_num = int(day_num_raw) if day_num_raw is not None else (idx + 1)
+        day_offset = max(0, day_num - 1)
+        day_date = base_local_date + timedelta(days=day_offset)
+
+        for slot in day.get("slots") or []:
+            start_min_raw = slot.get("start_time")
+            end_min_raw = slot.get("end_time")
+            start_min = _parse_hhmm_to_minutes(start_min_raw)
+            end_min = _parse_hhmm_to_minutes(end_min_raw)
+            
+            if start_min is None or end_min is None:
+                continue
+
+            end_day_offset = 1 if end_min <= start_min else 0
+            # Use explicit int() only after checking None to satisfy linter
+            slot_start = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_min))
+            slot_end = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(days=end_day_offset, minutes=int(end_min))
+            windows.append((slot_start.astimezone(timezone.utc), slot_end.astimezone(timezone.utc)))
+
+    if not windows:
+        return True
+
+    # If windows exist, determine if we are within the absolute bounds of the schedule
+    schedule_start = min(w[0] for w in windows)
+    schedule_end = max(w[1] for w in windows)
+
+    # We allow access if we are within the overall schedule window [first slot start, last slot end]
+    # OR if we are within the explicit [start_date, end_date] (which we just calculated)
+    within_date_range = True
+    if event_start is not None and now_utc < event_start:
+        within_date_range = False
+    if event_end is not None and now_utc > event_end:
+        within_date_range = False
+
+    # We allow access if we are within the overall schedule window [first slot start, last slot end]
+    # OR if we are within the explicit [start_date, end_date] (which we just calculated)
+    return (schedule_start <= now_utc <= schedule_end) or within_date_range
 
 
 def _is_conference_live_window(conf: dict, now_utc: datetime) -> bool:
     start = _parse_utc_datetime(conf.get("start_time"))
     end = _parse_utc_datetime(conf.get("end_time"))
-    if not isinstance(start, datetime) or not isinstance(end, datetime):
+    if start is None or end is None:
         return True
     return start <= now_utc < end
 
@@ -192,6 +217,7 @@ async def organizer_create_conference(
     data: ConferenceCreate,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
+    event_id = await resolve_event_id(event_id)
     doc = data.model_dump()
     doc["event_id"] = event_id
     doc["organizer_id"] = str(current_user["_id"])
@@ -222,6 +248,7 @@ async def organizer_list_conferences(
     event_id: str,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
+    event_id = await resolve_event_id(event_id)
     confs = await conf_repo.list_by_event(event_id)
     return [await _enrich(c) for c in confs]
 
@@ -237,6 +264,7 @@ async def organizer_update_conference(
     data: ConferenceUpdate,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
+    event_id = await resolve_event_id(event_id)
     conf = await _get_conf_or_404(conf_id)
     if conf.get("organizer_id") != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not your event")
@@ -255,10 +283,11 @@ async def organizer_cancel_conference(
     conf_id: str,
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     if conf.get("organizer_id") != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not your event")
-    await conf_repo.set_status(conf_id, "canceled")
+    await conf_repo.set_status(resolved_id, "canceled")
     return {"detail": "Conference canceled"}
 
 
@@ -273,6 +302,7 @@ async def enterprise_my_conferences(
     event_id: Optional[str] = Query(None),
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
+    event_id = await resolve_event_id(event_id) if event_id else None
     confs = await conf_repo.list_by_enterprise(str(current_user["_id"]))
     if event_id:
         confs = [c for c in confs if str(c.get("event_id")) == str(event_id)]
@@ -287,7 +317,8 @@ async def enterprise_start_conference(
     conf_id: str,
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     await _assert_assigned_enterprise(conf, current_user)
     await _ensure_conference_event_live(conf)
 
@@ -300,7 +331,9 @@ async def enterprise_start_conference(
     if conf["status"] not in ("scheduled", "live"):
         raise HTTPException(status_code=400, detail=f"Cannot start a conference with status '{conf['status']}'")
 
-    room_name = f"conf-{conf_id}"
+    # Use slug if available for room name
+    slug = conf.get("slug") or str(resolved_id)
+    room_name = f"conf-{slug}"
     created = await daily_svc.create_room(room_name)
     if not created:
         raise HTTPException(
@@ -309,7 +342,7 @@ async def enterprise_start_conference(
         )
 
     updated = await conf_repo.set_status(
-        conf_id, "live",
+        resolved_id, "live",
         extra={"room_name": room_name}
     )
 
@@ -331,7 +364,7 @@ async def enterprise_start_conference(
 
     # Notify all registered attendees
     try:
-        registrations = await conf_repo.get_registrations(conf_id)
+        registrations = await conf_repo.get_registrations(resolved_id)
         for reg in registrations:
             await create_notification(
                 user_id=reg["user_id"],
@@ -352,18 +385,19 @@ async def enterprise_end_conference(
     conf_id: str,
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     await _assert_assigned_enterprise(conf, current_user)
 
     # Support both old "livekit_room_name" and new "room_name" field (MongoDB back-compat)
     room_name = (
         conf.get("room_name")
         or conf.get("livekit_room_name")
-        or f"conf-{conf_id}"
+        or f"conf-{conf.get('slug') or resolved_id}"
     )
     await daily_svc.delete_room(room_name)
 
-    await conf_repo.set_status(conf_id, "ended")
+    await conf_repo.set_status(resolved_id, "ended")
     return {"session_status": "ended"}
 
 
@@ -376,7 +410,8 @@ async def enterprise_speaker_token(
     conf_id: str,
     current_user: dict = Depends(require_role(Role.ENTERPRISE)),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     await _assert_assigned_enterprise(conf, current_user)
     await _ensure_conference_event_live(conf)
 
@@ -393,7 +428,7 @@ async def enterprise_speaker_token(
     room_name = (
         conf.get("room_name")
         or conf.get("livekit_room_name")
-        or f"conf-{conf_id}"
+        or f"conf-{conf.get('slug') or resolved_id}"
     )
     uid = str(current_user["_id"])
     user_name = current_user.get("full_name") or current_user.get("email", uid)
@@ -419,6 +454,7 @@ async def list_public_conferences(
     conf_status: Optional[str] = Query(None, alias="status"),
     current_user: dict = Depends(get_current_user),
 ):
+    event_id = await resolve_event_id(event_id) if event_id else None
     confs = await conf_repo.list_public(event_id=event_id, status=conf_status)
     uid = str(current_user["_id"])
     return [await _enrich(c, uid) for c in confs]
@@ -433,7 +469,8 @@ async def get_conference(
     conf_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     return await _enrich(conf, str(current_user["_id"]))
 
 
@@ -446,12 +483,13 @@ async def register_for_conference(
     conf_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     if conf["status"] == "canceled":
         raise HTTPException(status_code=400, detail="Conference is canceled")
 
     ok = await conf_repo.register(
-        conf_id, str(current_user["_id"]), str(current_user.get("role", "visitor"))
+        resolved_id, str(current_user["_id"]), str(current_user.get("role", "visitor"))
     )
 
     # Best-effort analytics instrumentation.
@@ -462,7 +500,8 @@ async def register_for_conference(
                 user_id=str(current_user["_id"]),
                 event_id=str(conf.get("event_id")) if conf.get("event_id") else None,
                 metadata={
-                    "conference_id": str(conf_id),
+                    "conference_id": str(resolved_id),
+                    "conference_slug": conf.get("slug"),
                     "action": "register",
                     "role": str(current_user.get("role", "visitor")),
                 },
@@ -483,7 +522,8 @@ async def unregister_from_conference(
     conf_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    await conf_repo.unregister(conf_id, str(current_user["_id"]))
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    await conf_repo.unregister(resolved_id, str(current_user["_id"]))
     return {"detail": "Unregistered"}
 
 
@@ -496,7 +536,8 @@ async def get_audience_token(
     conf_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    conf = await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    conf = await _get_conf_or_404(resolved_id)
     await _ensure_conference_event_live(conf)
 
     if conf["status"] != "live":
@@ -512,7 +553,7 @@ async def get_audience_token(
     user_role = str(current_user.get("role") or "").lower()
     privileged_roles = {Role.ADMIN.value, Role.ORGANIZER.value}
     if user_role not in privileged_roles:
-        is_registered = await conf_repo.is_registered(conf_id, uid)
+        is_registered = await conf_repo.is_registered(resolved_id, uid)
         if not is_registered:
             raise HTTPException(
                 status_code=403,
@@ -530,7 +571,8 @@ async def get_audience_token(
             user_id=uid,
             event_id=str(conf.get("event_id")) if conf.get("event_id") else None,
             metadata={
-                "conference_id": str(conf_id),
+                "conference_id": str(resolved_id),
+                "conference_slug": conf.get("slug"),
                 "action": "audience_join_live",
                 "role": str(current_user.get("role", "visitor")),
                 "room_name": room_name,
@@ -560,10 +602,11 @@ async def submit_question(
     data: QACreate,
     current_user: dict = Depends(get_current_user),
 ):
-    await _get_conf_or_404(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    await _get_conf_or_404(resolved_id)
     user_name = current_user.get("full_name") or current_user.get("email", "Anonymous")
     return await conf_repo.add_question(
-        conf_id, str(current_user["_id"]), user_name, data.question
+        resolved_id, str(current_user["_id"]), user_name, data.question
     )
 
 
@@ -576,8 +619,9 @@ async def list_qa(
     conf_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    await _get_conf_or_404(conf_id)
-    return await conf_repo.list_questions(conf_id)
+    resolved_id = await conf_repo.resolve_conf_id(conf_id)
+    await _get_conf_or_404(resolved_id)
+    return await conf_repo.list_questions(resolved_id)
 
 
 @router.patch(

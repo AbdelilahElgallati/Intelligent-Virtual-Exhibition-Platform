@@ -14,6 +14,7 @@ class StandBase(BaseModel):
     """Base schema for stand data."""
     
     id: str = Field(alias="_id")
+    slug: Optional[str] = None
     event_id: str
     organization_id: str
     name: str
@@ -57,6 +58,7 @@ class StandRead(BaseModel):
     """Schema for reading stand data."""
     
     id: str = Field(alias="_id")
+    slug: Optional[str] = None
     event_id: str
     organization_id: str
     name: str

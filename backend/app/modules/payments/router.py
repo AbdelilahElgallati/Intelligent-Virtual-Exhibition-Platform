@@ -65,6 +65,8 @@ async def create_event_checkout(
     Create a Payzone payment session for a paid event ticket.
     Returns the Payzone payment URL to redirect the browser to.
     """
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -157,6 +159,9 @@ async def verify_event_payment(
     if not payment_id:
         raise HTTPException(status_code=400, detail="payment_id is required")
 
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     # Find the payment record by our internal _id
     payment = await get_payment_by_id(payment_id)
     if not payment:
@@ -349,6 +354,8 @@ async def get_my_receipt(
     if not payment or payment_status != str(PaymentStatus.PAID.value):
         raise HTTPException(status_code=404, detail="No paid payment found for this event")
 
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     event_title = event["title"] if event else "Unknown Event"
 
@@ -390,6 +397,10 @@ async def admin_list_event_payments(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status filter: {payment_status}",
             )
+
+    if event_id:
+        from app.modules.events.service import resolve_event_id
+        event_id = await resolve_event_id(event_id)
 
     payments = await list_payments(status_filter=status_filter, event_id=event_id)
     return [EventPaymentRead(**p) for p in payments]

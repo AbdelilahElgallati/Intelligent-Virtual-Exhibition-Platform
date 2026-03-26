@@ -259,7 +259,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     onPay: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const evId = ev.id || ev._id;
+    const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
     const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';
@@ -594,7 +594,7 @@ function EnterpriseEventCard({
     onJoin: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const evId = ev.id || ev._id;
+    const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
     const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';

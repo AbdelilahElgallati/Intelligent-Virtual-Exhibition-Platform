@@ -54,7 +54,11 @@ class ChatRepository:
         return MessageSchema(**message_data)
 
     async def get_room_messages(self, room_id: str, limit: int = 50, skip: int = 0) -> List[MessageSchema]:
-        cursor = self.messages.find({"room_id": room_id}).sort("timestamp", -1).skip(skip).limit(limit)
+        # Query by both string and ObjectId to handle legacy stored data across devices
+        room_id_variants: list = [room_id]
+        if ObjectId.is_valid(room_id):
+            room_id_variants.append(ObjectId(room_id))
+        cursor = self.messages.find({"room_id": {"$in": room_id_variants}}).sort("timestamp", -1).skip(skip).limit(limit)
         messages = await cursor.to_list(length=limit)
         return [MessageSchema(**msg) for msg in messages]
 
@@ -67,19 +71,21 @@ class ChatRepository:
         user1_variants = self._member_variants(user1_id)
         user2_variants = self._member_variants(user2_id)
 
-        # Build query — match members + category + event
+        # Build query — match members + category + event.
+        # Use MongoDB native {$size: 2} instead of $expr/$size so the check works
+        # correctly regardless of whether member IDs are stored as strings or ObjectIds.
         query: dict = {
             "type": "direct",
+            "members": {"$size": 2},
             "$and": [
                 {"members": {"$in": user1_variants}},
                 {"members": {"$in": user2_variants}},
-                {"$expr": {"$eq": [{"$size": "$members"}, 2]}},
             ],
         }
         if room_category:
             query["room_category"] = room_category
         if event_id:
-            query["event_id"] = event_id
+            query["event_id"] = {"$in": self._member_variants(str(event_id))}
 
         room = await self.rooms.find_one(query)
         if room:

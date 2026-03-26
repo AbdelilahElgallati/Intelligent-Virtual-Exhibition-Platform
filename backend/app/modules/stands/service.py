@@ -1,11 +1,21 @@
 from datetime import datetime, timezone
 from typing import Optional
+import re
 
 from bson import ObjectId
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
+
+
+def _slugify(text: str) -> str:
+    """Convert any string into a URL-safe kebab-case slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text[:60].strip("-")
 
 
 def _id_query(sid) -> dict:
@@ -45,6 +55,14 @@ async def create_stand(event_id, organization_id, name: str, **kwargs) -> dict:
     collection = get_stands_collection()
     result = await collection.insert_one(stand)
     stand["_id"] = result.inserted_id
+
+    # Auto-generate URL-safe slug: stand-name-slug + 4-char hex from _id
+    base_slug = _slugify(name)
+    short_suffix = str(result.inserted_id)[-4:]
+    slug = f"{base_slug}-{short_suffix}" if base_slug else short_suffix
+    await collection.update_one({"_id": result.inserted_id}, {"$set": {"slug": slug}})
+    stand["slug"] = slug
+
     return stringify_object_ids(stand)
 
 
@@ -62,10 +80,29 @@ async def update_stand(stand_id, update_data: dict) -> Optional[dict]:
 
 
 async def get_stand_by_id(stand_id) -> Optional[dict]:
-    """Get stand by _id."""
+    """Get stand by _id **or slug** — transparent backward compat."""
     collection = get_stands_collection()
-    doc = await collection.find_one(_id_query(stand_id))
+    # Try ObjectId first
+    if ObjectId.is_valid(str(stand_id)):
+        doc = await collection.find_one({"_id": ObjectId(str(stand_id))})
+        if doc:
+            return stringify_object_ids(doc)
+    # Fall back to slug
+    doc = await collection.find_one({"slug": str(stand_id)})
     return stringify_object_ids(doc) if doc else None
+
+
+async def resolve_stand_id(slug_or_id: str) -> str:
+    """Helper for sub-routers: resolve a stand slug to its true ObjectId string."""
+    if not slug_or_id:
+        return ""
+    if ObjectId.is_valid(str(slug_or_id)):
+        return str(slug_or_id)
+    collection = get_stands_collection()
+    doc = await collection.find_one({"slug": str(slug_or_id)}, {"_id": 1})
+    if not doc:
+        return str(slug_or_id)  # let it fail downstream
+    return str(doc["_id"])
 
 
 async def get_stand_by_org(event_id, organization_id) -> Optional[dict]:
@@ -93,6 +130,9 @@ async def list_event_stands(
     
     Returns dict with items, total, limit, skip.
     """
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     collection = get_stands_collection()
     query: dict = {"event_id": str(event_id)}
     if category:
