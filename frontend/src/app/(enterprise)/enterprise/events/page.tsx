@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -92,6 +93,9 @@ const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null
                 slotEnd.setHours(0, 0, 0, 0);
                 slotEnd.setDate(slotEnd.getDate() + dayOffset);
                 slotEnd.setHours(endParts[0], endParts[1], 0, 0);
+                if (slotEnd <= slotStart) {
+                    slotEnd.setDate(slotEnd.getDate() + 1);
+                }
 
                 if (!earliest || slotStart < earliest) earliest = slotStart;
                 if (!latest || slotEnd > latest) latest = slotEnd;
@@ -223,11 +227,16 @@ function ScheduleSection({ ev }: { ev: any }) {
                                 {day.slots.map((slot: any, si: number) => (
                                     <div key={si} className="flex items-start gap-3 px-4 py-3">
                                         <div className="flex-shrink-0 text-xs font-mono font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg whitespace-nowrap mt-0.5">
-                                            {slot.start_time} – {slot.end_time}
+                                            {formatSlotRangeLabel(slot.start_time, slot.end_time, '–')}
                                         </div>
                                         <span className="text-sm text-zinc-700 leading-snug">
                                             {slot.label || 'Activity'}
                                         </span>
+                                        {isOvernightSlot(slot.start_time, slot.end_time) && (
+                                            <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 border border-indigo-200 rounded-full px-2 py-0.5">
+                                                Overnight
+                                            </span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -250,7 +259,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     onPay: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const evId = ev.id || ev._id;
+    const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
     const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';
@@ -585,7 +594,7 @@ function EnterpriseEventCard({
     onJoin: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const evId = ev.id || ev._id;
+    const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
     const isAccepted = partStatus === 'approved' || partStatus === 'guest_approved';

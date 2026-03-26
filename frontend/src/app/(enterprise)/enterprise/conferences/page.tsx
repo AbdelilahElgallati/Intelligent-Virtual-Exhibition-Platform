@@ -55,7 +55,12 @@ export default function EnterpriseConferencesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {conferences.map((c) => (
+                {conferences.map((c) => {
+                    const event = events.find(e => (e.id || e._id) === c.event_id);
+                    const eventPathId = event?.slug || c.event_id;
+                    const tz = event?.event_timezone || 'UTC';
+                    
+                    return (
                     <Card key={c._id} className="group border-zinc-200 hover:border-indigo-200 transition-all shadow-sm hover:shadow-xl overflow-hidden rounded-3xl">
                         <div className={clsx(
                             "h-2 w-full",
@@ -85,21 +90,13 @@ export default function EnterpriseConferencesPage() {
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <Calendar size={14} className="text-indigo-500" />
                                     <span>
-                                        {(() => {
-                                            const event = events.find(e => (e.id || e._id) === c.event_id);
-                                            const tz = event?.event_timezone || 'UTC';
-                                            return formatInTZ(c.start_time, tz, 'MMM d, yyyy');
-                                        })()}
+                                        {formatInTZ(c.start_time, tz, 'MMM d, yyyy')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <Clock size={14} className="text-indigo-500" />
                                     <span>
-                                        {(() => {
-                                            const event = events.find(e => (e.id || e._id) === c.event_id);
-                                            const tz = event?.event_timezone || 'UTC';
-                                            return `${formatInTZ(c.start_time, tz, 'h:mm a')} — ${formatInTZ(c.end_time, tz, 'h:mm a')}`;
-                                        })()}
+                                        {`${formatInTZ(c.start_time, tz, 'h:mm a')} — ${formatInTZ(c.end_time, tz, 'h:mm a')}`}
                                     </span>
                                 </div>
                             </div>
@@ -111,21 +108,22 @@ export default function EnterpriseConferencesPage() {
                                         c.status === 'live' ? "bg-emerald-600 hover:bg-emerald-700" : "bg-indigo-600 hover:bg-indigo-700"
                                     )}
                                     // Assuming conferences are event-specific, we might need event_id in the URL
-                                    onClick={() => router.push(`/enterprise/events/${c.event_id}/conferences/${c._id}/live`)}
+                                    onClick={() => router.push(`/enterprise/events/${eventPathId}/conferences/${c._id}/live`)}
                                 >
                                     {c.status === 'live' ? 'Enter Studio' : 'Go Live'}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     className="aspect-square p-0 w-12 h-12 rounded-2xl border-zinc-200"
-                                    onClick={() => router.push(`/enterprise/events/${c.event_id}/manage`)}
+                                    onClick={() => router.push(`/enterprise/events/${eventPathId}/manage`)}
                                 >
                                     <ExternalLink size={18} />
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
-                ))}
+                    );
+                })}
 
                 {conferences.length === 0 && (
                     <div className="col-span-full h-80 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-[2.5rem] border-2 border-dashed border-zinc-200">

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { OrganizerSummary } from '@/types/organizer';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ─── Animated counter ────────────────────────────────────────────────────────
 
@@ -191,9 +192,7 @@ export default function OrganizerReportPage() {
         { name: 'Ticket Revenue', value: ov.revenue_summary.ticket_revenue },
     ].filter(d => d.value > 0);
 
-    const generatedAt = new Date(data.generated_at).toLocaleString('en-US', {
-        dateStyle: 'medium', timeStyle: 'short',
-    });
+    const generatedAt = formatInUserTZ(data.generated_at, { dateStyle: 'medium', timeStyle: 'short' }, 'en-US');
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">

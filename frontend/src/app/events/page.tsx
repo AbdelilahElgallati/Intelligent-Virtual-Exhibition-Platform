@@ -99,26 +99,47 @@ export default function EventsPage() {
             return;
         }
 
+        const previousFavoriteId = favoriteMap.get(eventId) || null;
+        const optimisticFavoriteId = previousFavoriteId ? null : `optimistic:${eventId}`;
+
         try {
             setFavoriteAnimatingEventId(eventId);
-            const existingFavoriteId = favoriteMap.get(eventId);
-            if (existingFavoriteId) {
-                await favoritesService.remove(existingFavoriteId);
-                setFavoriteMap((prev) => {
-                    const next = new Map(prev);
+            setFavoriteMap((prev) => {
+                const next = new Map(prev);
+                if (optimisticFavoriteId) {
+                    next.set(eventId, optimisticFavoriteId);
+                } else {
                     next.delete(eventId);
-                    return next;
-                });
+                }
+                return next;
+            });
+
+            if (previousFavoriteId) {
+                await favoritesService.remove(previousFavoriteId);
             } else {
                 const created = await favoritesService.add('event', eventId);
                 setFavoriteMap((prev) => {
                     const next = new Map(prev);
-                    next.set(eventId, created.id);
+                    const resolvedFavoriteId = String((created as any)?.id || (created as any)?._id || '');
+                    if (resolvedFavoriteId) {
+                        next.set(eventId, resolvedFavoriteId);
+                    } else {
+                        next.delete(eventId);
+                    }
                     return next;
                 });
             }
         } catch (err) {
             console.error('Failed to toggle event favorite', err);
+            setFavoriteMap((prev) => {
+                const next = new Map(prev);
+                if (previousFavoriteId) {
+                    next.set(eventId, previousFavoriteId);
+                } else {
+                    next.delete(eventId);
+                }
+                return next;
+            });
         } finally {
             window.setTimeout(() => setFavoriteAnimatingEventId((current) => (current === eventId ? null : current)), 250);
         }

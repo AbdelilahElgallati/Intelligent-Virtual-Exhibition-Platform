@@ -19,6 +19,7 @@ class ConferenceStatus(str, Enum):
 class ConferenceCreate(BaseModel):
     """Used by organizer to create and assign a conference to an enterprise."""
     title: str
+    slug: Optional[str] = None                  # Human-readable identifier
     description: Optional[str] = None
     speaker_name: Optional[str] = None         # Display name for the speaker
     assigned_enterprise_id: str                 # Enterprise user _id who will host
@@ -34,6 +35,7 @@ class ConferenceCreate(BaseModel):
 class ConferenceUpdate(BaseModel):
     """Organizer can update any field."""
     title: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     speaker_name: Optional[str] = None
     assigned_enterprise_id: Optional[str] = None
@@ -47,6 +49,7 @@ class ConferenceUpdate(BaseModel):
 class ConferenceRead(BaseModel):
     id: str = Field(alias="_id")
     title: str
+    slug: str
     description: Optional[str] = None
     speaker_name: Optional[str] = None
     assigned_enterprise_id: str

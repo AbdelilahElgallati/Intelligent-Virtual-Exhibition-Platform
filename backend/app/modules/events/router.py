@@ -7,6 +7,7 @@ Handles event request submission, admin review, payment confirmation, and lifecy
 import os
 import uuid
 from typing import Optional
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse, parse_qs
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
@@ -24,6 +25,7 @@ from app.modules.events.schemas import (
     ScheduleSlotConferenceAssign,
 )
 from app.modules.events.service import (
+    resolve_event_id,
     approve_event,
     confirm_event_payment,
     create_event,
@@ -111,6 +113,7 @@ async def get_my_event_status(
     current_user: dict = Depends(get_current_user),
 ):
     """Get current user's participation status for an event."""
+    event_id = await resolve_event_id(event_id)
     participation = await get_user_participation(event_id, current_user["_id"])
     if participation:
         return {"status": participation["status"].upper(), "participant_id": participation.get("_id")}
@@ -127,6 +130,7 @@ async def join_event(
     - Free events: instant APPROVED participant.
     - Paid events: gated by payment proof status.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -138,14 +142,16 @@ async def join_event(
         if existing:
             return ParticipantRead(**existing)
         # Create participant and immediately approve
-        participant = await request_to_join(event_id, current_user["_id"])
+        true_event_id = str(event.get("_id") or event.get("id") or event_id)
+        participant = await request_to_join(true_event_id, current_user["_id"])
         from app.modules.participants.service import approve_participant
         approved = await approve_participant(participant["_id"])
         return ParticipantRead(**approved)
 
     # ── Paid event: check payment status ────────────────────────────────
+    true_event_id = str(event.get("_id") or event.get("id") or event_id)
     from app.modules.payments.service import get_user_payment
-    payment = await get_user_payment(event_id, current_user["_id"])
+    payment = await get_user_payment(true_event_id, current_user["_id"])
 
     if payment and payment["status"] == "paid":
         # Payment completed via Stripe → ensure participant exists and is approved
@@ -155,7 +161,7 @@ async def join_event(
             from app.modules.participants.service import approve_participant
             approved = await approve_participant(existing["_id"])
             return ParticipantRead(**approved)
-        participant = await request_to_join(event_id, current_user["_id"])
+        participant = await request_to_join(true_event_id, current_user["_id"])
         from app.modules.participants.service import approve_participant
         approved = await approve_participant(participant["_id"])
         return ParticipantRead(**approved)
@@ -176,6 +182,7 @@ async def accept_visitor_invite(
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ):
     """Accept organizer visitor invite and grant guest-approved access without payment."""
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -189,7 +196,8 @@ async def accept_visitor_invite(
     elif stored_token or legacy_token:
         raise HTTPException(status_code=403, detail="Invite token is required for this event")
 
-    existing = await get_user_participation(event_id, current_user["_id"])
+    true_event_id = str(event.get("_id") or event.get("id") or event_id)
+    existing = await get_user_participation(true_event_id, current_user["_id"])
     from app.modules.participants.service import approve_participant
 
     if existing:
@@ -198,7 +206,7 @@ async def accept_visitor_invite(
         updated = await approve_participant(existing["_id"], ParticipantStatus.GUEST_APPROVED.value)
         return ParticipantRead(**updated)
 
-    participant = await request_to_join(event_id, current_user["_id"])
+    participant = await request_to_join(true_event_id, current_user["_id"])
     approved = await approve_participant(participant["_id"], ParticipantStatus.GUEST_APPROVED.value)
     return ParticipantRead(**approved)
 
@@ -280,6 +288,7 @@ async def get_all_events(
 @router.get("/{event_id}", response_model=EventRead)
 async def get_event(event_id: str) -> EventRead:
     """Get event by ID. Public endpoint."""
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -293,11 +302,13 @@ async def update_existing_event(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
-    Update a pending event request.
+    Update an event request.
 
-    Only allowed when state is PENDING_APPROVAL.
+    - Allowed when state is PENDING_APPROVAL, APPROVED, PAYMENT_DONE, or LIVE.
+    - Day count in schedule_days cannot be increased by organizers.
     Requires ORGANIZER role and ownership.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -305,11 +316,26 @@ async def update_existing_event(
     if event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this event")
 
-    if event["state"] != EventState.PENDING_APPROVAL:
+    allowed_states = {
+        EventState.PENDING_APPROVAL,
+        EventState.APPROVED,
+        EventState.PAYMENT_DONE,
+        EventState.LIVE
+    }
+    if event["state"] not in allowed_states:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Event can only be edited while in PENDING_APPROVAL state.",
+            detail=f"Event cannot be edited while in {event['state']} state.",
         )
+
+    # Validation: Cannot add/remove days if they are already defined
+    if data.schedule_days is not None:
+        existing_days = event.get("schedule_days") or []
+        if existing_days and len(data.schedule_days) != len(existing_days):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organizers cannot change the number of event days. Please contact an administrator.",
+            )
 
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)
@@ -330,6 +356,7 @@ async def assign_conference_to_slot(
     from datetime import datetime as _dt, timezone as _tz
     from app.db.mongo import get_database
 
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -368,21 +395,31 @@ async def assign_conference_to_slot(
             ent_user = await db.users.find_one({"_id": _OID(data.assigned_enterprise_id)})
         enterprise_name = (ent_user.get("full_name") or ent_user.get("email", "")) if ent_user else ""
 
-        # Build conference start/end from event start_date + slot times
+        # Build conference start/end from event start_date + slot times in event timezone.
         event_date = event.get("start_date")
         if isinstance(event_date, str):
             event_date = _dt.fromisoformat(event_date)
+        if event_date.tzinfo is None:
+            event_date = event_date.replace(tzinfo=_tz.utc)
         # Use day offset
         from datetime import timedelta
+        event_tz_name = str(event.get("event_timezone") or "UTC")
+        try:
+            event_tz = ZoneInfo(event_tz_name)
+        except Exception:
+            event_tz = _tz.utc
+        event_local_start = event_date.astimezone(event_tz)
         day_offset = timedelta(days=data.day_index)
-        base_date = event_date + day_offset
+        base_local_date = event_local_start + day_offset
 
         sh, sm = (int(x) for x in slot["start_time"].split(":"))
         eh, em = (int(x) for x in slot["end_time"].split(":"))
-        conf_start = base_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
-        conf_end = base_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+        conf_start_local = base_local_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
+        conf_end_local = base_local_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+        conf_start = conf_start_local.astimezone(_tz.utc)
+        conf_end = conf_end_local.astimezone(_tz.utc)
         if conf_end <= conf_start:
-            conf_end = conf_end + timedelta(days=1)
+            conf_end = (conf_end_local + timedelta(days=1)).astimezone(_tz.utc)
 
         conf_title = data.title or slot.get("label") or "Conference"
 
@@ -477,6 +514,7 @@ async def delete_existing_event(
     Only allowed when state is PENDING_APPROVAL or REJECTED.
     Requires ORGANIZER role and ownership.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -510,6 +548,7 @@ async def approve_event_request(
     Calculates payment amount (enterprises × days × rate) unless overridden.
     Admin only.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -556,6 +595,7 @@ async def reject_event_request(
     Transition: PENDING_APPROVAL → REJECTED
     Admin only.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -602,6 +642,7 @@ async def submit_proof(
     Submit payment proof for an approved event.
     Transition: WAITING_FOR_PAYMENT → PAYMENT_PROOF_SUBMITTED
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -628,6 +669,7 @@ async def upload_and_submit_payment_proof(
     Upload payment proof file and immediately submit it.
     Transition: WAITING_FOR_PAYMENT -> PAYMENT_PROOF_SUBMITTED
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -663,6 +705,7 @@ async def confirm_payment(
     Transition: PAYMENT_PROOF_SUBMITTED → PAYMENT_DONE
     Generates enterprise and visitor access links.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -709,6 +752,7 @@ async def start_event(
 
     Transition: PAYMENT_DONE → LIVE
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -736,6 +780,7 @@ async def close_event(
 
     Transition: LIVE → CLOSED
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

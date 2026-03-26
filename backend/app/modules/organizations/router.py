@@ -19,6 +19,7 @@ from app.modules.organizations.service import (
     create_organization as service_create_org,
     list_organizations as service_list_orgs,
     get_organization_by_id,
+    resolve_organization_id,
     add_organization_member,
     update_organization_moderation,
 )
@@ -69,7 +70,8 @@ async def invite_to_organization(
     This helps populate members for testing.
     """
     # Check if organization exists
-    organization = await get_organization_by_id(request.organization_id)
+    resolved_id = await resolve_organization_id(request.organization_id)
+    organization = await get_organization_by_id(resolved_id)
     if organization is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -94,7 +96,7 @@ async def invite_to_organization(
     # Real logic: Add member if user exists
     if invited_user:
         await add_organization_member(
-            organization_id=request.organization_id,
+            organization_id=resolved_id,
             user_id=invited_user["_id"],
             role=request.role_in_org
         )
@@ -115,7 +117,8 @@ async def get_organization(
     """
     Get organization by ID.
     """
-    organization = await get_organization_by_id(organization_id)
+    resolved_id = await resolve_organization_id(organization_id)
+    organization = await get_organization_by_id(resolved_id)
     if organization is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -143,7 +146,8 @@ async def admin_verify_organization(
     """
     Admin: Mark an organization as verified.
     """
-    updated = await update_organization_moderation(organization_id, is_verified=True)
+    resolved_id = await resolve_organization_id(organization_id)
+    updated = await update_organization_moderation(resolved_id, is_verified=True)
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     return OrganizationRead(**updated)
@@ -157,10 +161,11 @@ async def admin_flag_organization(
     """
     Admin: Toggle flagged status on an organization.
     """
-    org = await get_organization_by_id(organization_id)
+    resolved_id = await resolve_organization_id(organization_id)
+    org = await get_organization_by_id(resolved_id)
     if org is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
-    updated = await update_organization_moderation(organization_id, is_flagged=not org.get("is_flagged", False))
+    updated = await update_organization_moderation(resolved_id, is_flagged=not org.get("is_flagged", False))
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     return OrganizationRead(**updated)
@@ -174,10 +179,11 @@ async def admin_suspend_organization(
     """
     Admin: Toggle suspended status on an organization.
     """
-    org = await get_organization_by_id(organization_id)
+    resolved_id = await resolve_organization_id(organization_id)
+    org = await get_organization_by_id(resolved_id)
     if org is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
-    updated = await update_organization_moderation(organization_id, is_suspended=not org.get("is_suspended", False))
+    updated = await update_organization_moderation(resolved_id, is_suspended=not org.get("is_suspended", False))
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     return OrganizationRead(**updated)

@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Conference } from '@/types/conference';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import {
@@ -40,12 +41,27 @@ import {
     Phone,
     MapPin,
     Package,
+    Tag,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+
+// Simple Modal implementation
+function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative animate-in fade-in duration-200">
+                <button onClick={onClose} className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-700 text-xl">×</button>
+                {children}
+            </div>
+        </div>
+    );
+}
+
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
 
@@ -309,6 +325,7 @@ export default function EventManagementHub() {
     const { user } = useAuth();
     const eventId = params.eventId as string;
 
+
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings' | 'conferences' | 'partners'>('chats');
     const [chatSubTab, setChatSubTab] = useState<'visitor' | 'b2b'>('visitor');
     const [stand, setStand] = useState<Stand | null>(null);
@@ -336,6 +353,7 @@ export default function EventManagementHub() {
     const [meetingError, setMeetingError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isForbidden, setIsForbidden] = useState(false);
+
 
     // Polling interval ref for auto-refresh
     const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -939,37 +957,64 @@ export default function EventManagementHub() {
         );
     }
 
-    return (
-        <div className="h-[calc(100vh-140px)] flex flex-col gap-6 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 rounded-xl transition-colors text-zinc-500"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
-                            {stand?.name || "Manage Event"}
-                        </h2>
-                        <p className="text-sm text-zinc-500">Live interaction hub for this event.</p>
-                    </div>
-                </div>
 
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
-                        <LayoutDashboard size={14} className="mr-2" /> Analytics
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
-                        <Package size={14} className="mr-2" /> Requests
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
-                        <Calendar size={14} className="mr-2" /> Config
-                    </Button>
-                </div>
-            </div>
+        return (
+            <div className="h-[calc(100vh-140px)] flex flex-col gap-6 animate-in fade-in duration-500">
+                {/* Event Info Section */}
+                <Card className="mb-2">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || 'Event'}</h2>
+                            <div className="text-sm text-zinc-500 mb-1">{eventData?.description}</div>
+                            <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                                <span><Calendar size={12} className="inline mr-1" />{eventData?.start_date?.slice(0, 10)} to {eventData?.end_date?.slice(0, 10)}</span>
+                                <span><Globe size={12} className="inline mr-1" />{eventData?.event_timezone}</span>
+                                {eventData?.location && <span><MapPin size={12} className="inline mr-1" />{eventData.location}</span>}
+                                {eventData?.category && <span><Tag size={12} className="inline mr-1" />{eventData.category}</span>}
+                            </div>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
+                                <LayoutDashboard size={14} className="mr-2" /> Analytics
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
+                                <Package size={14} className="mr-2" /> Requests
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
+                                <Calendar size={14} className="mr-2" /> Config
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <div>
+                                <span className="font-semibold">Enterprises:</span> {eventData?.num_enterprises}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Tags:</span> {eventData?.tags?.join(', ')}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Stand Price:</span> {eventData?.stand_price} MAD
+                            </div>
+                            <div>
+                                <span className="font-semibold">Ticket:</span> {eventData?.is_paid ? `${eventData.ticket_price} MAD` : 'Free'}
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <div className="flex flex-col gap-2 w-full">
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <span className="font-semibold">Invite Links:</span>
+                                <span>Enterprise: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.enterprise_link}</span></span>
+                                <span>Visitor: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.visitor_link}</span></span>
+                                <span>Publicity: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.publicity_link}</span></span>
+                            </div>
+                        </div>
+                    </CardFooter>
+                </Card>
+
+
+                {/* ...existing code... */}
 
             {/* Tabs */}
             <div className="flex gap-1 bg-zinc-100 p-1 rounded-2xl w-fit">
@@ -1006,9 +1051,12 @@ export default function EventManagementHub() {
             </div>
 
             {activeTab === 'chats' && (
-                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm">
+                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm min-h-0 bg-white">
                     {/* Sidebar */}
-                    <div className="w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30">
+                    <div className={clsx(
+                        "w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30",
+                        selectedRoomId ? "hidden md:flex" : "flex"
+                    )}>
                         {/* Chat sub-tabs: Visitor / B2B */}
                         <div className="flex border-b border-zinc-100 bg-white">
                             <button
@@ -1084,16 +1132,34 @@ export default function EventManagementHub() {
                     </div>
 
                     {/* Chat Window */}
-                    <div className="flex-1 bg-white relative">
+                    <div className={clsx(
+                        "flex-1 bg-white relative",
+                        !selectedRoomId ? "hidden md:flex" : "flex flex-col h-full"
+                    )}>
                         {selectedRoomId ? (
-                            <ChatPanel
-                                initialRoomId={selectedRoomId!}
-                                standName={activeRoom?.name || "Member"}
-                                isEmbedded={true}
-                                disableMessageLimit={true}
-                                eventTimeZone={eventData?.event_timezone}
-                                onClose={() => setSelectedRoomId(null)}
-                            />
+                            <>
+                                <div className="md:hidden border-b border-zinc-100 bg-white px-4 py-3.5 flex items-center gap-3">
+                                    <button 
+                                        onClick={() => setSelectedRoomId(null)}
+                                        className="p-1.5 rounded-xl bg-zinc-50 text-zinc-500 hover:bg-zinc-100 transition-all"
+                                    >
+                                        <ArrowLeft size={18} />
+                                    </button>
+                                    <h4 className="font-black text-sm text-zinc-900 truncate">
+                                        {activeRoom?.name || "Chat"}
+                                    </h4>
+                                </div>
+                                <div className="flex-1 min-h-0 relative">
+                                    <ChatPanel
+                                        initialRoomId={selectedRoomId!}
+                                        standName={activeRoom?.name || "Member"}
+                                        isEmbedded={true}
+                                        disableMessageLimit={true}
+                                        eventTimeZone={eventData?.event_timezone}
+                                        onClose={() => setSelectedRoomId(null)}
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center p-10 text-center">
                                 <div className={clsx(

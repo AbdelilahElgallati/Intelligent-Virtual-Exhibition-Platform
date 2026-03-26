@@ -19,15 +19,16 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { Session, SessionStatus, CreateSessionPayload } from '@/types/sessions';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmtTime(iso: string) {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatInUserTZ(iso, { hour: '2-digit', minute: '2-digit' });
 }
 
 function fmtDate(iso: string) {
-    return new Date(iso).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return formatInUserTZ(iso, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function fmtDateKey(iso: string) {

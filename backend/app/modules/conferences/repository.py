@@ -4,9 +4,11 @@ Conference repository — MongoDB CRUD for conferences, registrations, Q&A.
 from bson import ObjectId
 from typing import List, Optional
 from datetime import datetime, timezone
+import re
+import unicodedata
 
 from app.db.mongo import get_database
-from app.db.utils import stringify_object_ids
+from app.db.utils import stringify_object_ids, _oid_or_value
 
 
 class ConferenceRepository:
@@ -16,7 +18,22 @@ class ConferenceRepository:
 
     # ── Conferences ───────────────────────────────────────────────────────────
 
+    def _slugify(self, text: str) -> str:
+        text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+        text = re.sub(r"[^\w\s-]", "", text).strip().lower()
+        return re.sub(r"[-\s]+", "-", text)
+
     async def create(self, doc: dict) -> dict:
+        if not doc.get("slug"):
+            base_slug = self._slugify(doc.get("title", "conference"))
+            # Ensure uniqueness
+            slug = base_slug
+            counter = 1
+            while await self.db.conferences.find_one({"slug": slug}):
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            doc["slug"] = slug
+            
         doc["created_at"] = datetime.now(timezone.utc)
         doc["updated_at"] = datetime.now(timezone.utc)
         doc["attendee_count"] = 0
@@ -25,10 +42,25 @@ class ConferenceRepository:
         return doc
 
     async def get_by_id(self, conf_id: str) -> Optional[dict]:
-        if not ObjectId.is_valid(conf_id):
-            return None
-        doc = await self.db.conferences.find_one({"_id": ObjectId(conf_id)})
+        """Resolves either ObjectId string or slug."""
+        if ObjectId.is_valid(conf_id):
+            doc = await self.db.conferences.find_one({"_id": ObjectId(conf_id)})
+        else:
+            doc = await self.db.conferences.find_one({"slug": conf_id})
         return stringify_object_ids(doc) if doc else None
+
+    async def get_by_slug(self, slug: str) -> Optional[dict]:
+        doc = await self.db.conferences.find_one({"slug": slug})
+        return stringify_object_ids(doc) if doc else None
+
+    async def resolve_conf_id(self, identifier: str) -> str:
+        """Returns the internal ObjectId string for a given slug or ID."""
+        if ObjectId.is_valid(identifier):
+            return identifier
+        doc = await self.db.conferences.find_one({"slug": identifier}, {"_id": 1})
+        if doc:
+            return str(doc["_id"])
+        return identifier
 
     async def list_by_event(self, event_id: str) -> List[dict]:
         cursor = self.db.conferences.find({"event_id": event_id}).sort("start_time", 1)

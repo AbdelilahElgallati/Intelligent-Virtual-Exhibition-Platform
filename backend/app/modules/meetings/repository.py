@@ -91,7 +91,11 @@ class MeetingRepository:
 
     async def get_visitor_meetings(self, visitor_id: str) -> List[dict]:
         await self.auto_expire_past_meetings()
-        cursor = self.collection.find({"visitor_id": visitor_id})
+        # Query by both string and ObjectId variants to handle legacy stored data
+        visitor_variants: list = [visitor_id]
+        if ObjectId.is_valid(visitor_id):
+            visitor_variants.append(ObjectId(visitor_id))
+        cursor = self.collection.find({"visitor_id": {"$in": visitor_variants}})
         meetings = await cursor.to_list(length=100)
 
         enriched = []
@@ -111,7 +115,13 @@ class MeetingRepository:
 
     async def get_stand_meetings(self, stand_id: str) -> List[dict]:
         await self.auto_expire_past_meetings()
-        cursor = self.collection.find({"stand_id": str(stand_id)})
+        
+        # Resolve slug to _id if needed
+        from ..stands.service import get_stand_by_id
+        stand = await get_stand_by_id(stand_id)
+        internal_id = str(stand["_id"]) if stand else stand_id
+
+        cursor = self.collection.find({"stand_id": str(internal_id)})
         meetings = await cursor.to_list(length=100)
 
         enriched = []
@@ -156,34 +166,71 @@ class MeetingRepository:
         user_id: str,
         stand_id: str | None = None,
         statuses: list[str] | None = None,
+        stand_statuses: list[str] | None = None,
     ) -> list[dict]:
         """
-        Return all existing meetings (pending/approved) for a user or their stand in this event.
-        Used for conflict detection when scheduling new meetings.
+        Return busy time slots for a user and optionally their stand.
+
+        - `statuses` controls which meeting statuses count for the user's OWN
+          outgoing requests (as requester).  Defaults to [pending, approved].
+        - `stand_statuses` controls which statuses count for inbound meetings ON
+          the user's stand.  Defaults to `statuses` when not provided, but
+          callers should pass ["approved"] here so that a visitor's un-accepted
+          pending request does not block the stand owner's outgoing schedule.
         """
         allowed_statuses = statuses or ["pending", "approved"]
-        conditions = []
+        allowed_stand_statuses = stand_statuses if stand_statuses is not None else allowed_statuses
 
-        # Meetings where this user is the requester
-        conditions.append({"visitor_id": user_id, "event_id": event_id})
-
-        # Meetings on this user's stand (inbound)
+        # Resolve slugs to internal IDs if needed
+        from ..events.service import resolve_event_id
+        from ..stands.service import get_stand_by_id
+        event_id = await resolve_event_id(event_id)
         if stand_id:
-            conditions.append({"stand_id": stand_id, "event_id": event_id})
+            s_doc = await get_stand_by_id(stand_id)
+            if s_doc:
+                stand_id = str(s_doc["_id"])
 
-        cursor = self.collection.find({
-            "$or": conditions,
+        seen_ids: set = set()
+        slots: list[dict] = []
+
+        # ── Requester side: meetings where this user is the visitor ──────────
+        req_cursor = self.collection.find({
+            "visitor_id": user_id,
+            "event_id": event_id,
             "status": {"$in": allowed_statuses},
         })
-        meetings = await cursor.to_list(length=500)
-        slots = []
-        for m in meetings:
-            slots.append({
-                "start_time": m["start_time"],
-                "end_time": m["end_time"],
-                "type": "meeting",
-                "label": m.get("purpose") or "Meeting",
+        for m in await req_cursor.to_list(length=500):
+            mid = str(m["_id"])
+            if mid not in seen_ids:
+                seen_ids.add(mid)
+                slots.append({
+                    "start_time": m["start_time"],
+                    "end_time": m["end_time"],
+                    "type": "meeting",
+                    "label": m.get("purpose") or "Meeting",
+                })
+
+        # ── Stand side: inbound meetings on this user's own stand ────────────
+        # Uses `stand_statuses` so callers can limit to approved-only, preventing
+        # another visitor's pending request from polluting the stand owner's
+        # outgoing availability calendar.
+        if stand_id:
+            stand_cursor = self.collection.find({
+                "stand_id": stand_id,
+                "event_id": event_id,
+                "status": {"$in": allowed_stand_statuses},
             })
+            for m in await stand_cursor.to_list(length=500):
+                mid = str(m["_id"])
+                if mid not in seen_ids:
+                    seen_ids.add(mid)
+                    slots.append({
+                        "start_time": m["start_time"],
+                        "end_time": m["end_time"],
+                        "type": "meeting",
+                        "label": m.get("purpose") or "Meeting",
+                    })
+
         return slots
 
     async def check_conflict(self, event_id: str, user_id: str, stand_id: str,
@@ -192,6 +239,14 @@ class MeetingRepository:
         Check if either participant has an overlapping meeting.
         Returns a conflict description string, or None if free.
         """
+        # Resolve slugs
+        from ..events.service import resolve_event_id
+        from ..stands.service import get_stand_by_id
+        event_id = await resolve_event_id(event_id)
+        s_doc = await get_stand_by_id(stand_id)
+        if s_doc:
+            stand_id = str(s_doc["_id"])
+
         # Check requester's meetings
         requester_conflict = await self.collection.find_one({
             "event_id": event_id,
@@ -203,11 +258,16 @@ class MeetingRepository:
         if requester_conflict:
             return "You already have a meeting at this time"
 
-        # Check target stand's meetings
+        # Check target stand's meetings.
+        # Only APPROVED meetings definitively block a stand slot.
+        # Pending requests are not yet accepted; blocking everyone else because
+        # of one pending request (which may be rejected) creates a poor UX where
+        # a single visitor can accidentally lock an entire time window for all
+        # other visitors before the enterprise has decided anything.
         stand_conflict = await self.collection.find_one({
             "event_id": event_id,
             "stand_id": stand_id,
-            "status": {"$in": ["pending", "approved"]},
+            "status": {"$in": ["approved"]},
             "start_time": {"$lt": end_time},
             "end_time": {"$gt": start_time},
         })

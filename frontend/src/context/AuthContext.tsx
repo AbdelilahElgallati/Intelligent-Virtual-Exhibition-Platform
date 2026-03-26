@@ -54,6 +54,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
+    const syncUserFromLocalStorage = () => {
+        if (typeof window === 'undefined') return;
+        const raw = localStorage.getItem('auth_user');
+        if (!raw) return;
+        try {
+            const parsedUser = JSON.parse(raw) as User;
+            setUser((prev) => {
+                // Preserve existing timezone if localStorage doesn't have it yet.
+                if (!parsedUser?.timezone && prev?.timezone) {
+                    return { ...parsedUser, timezone: prev.timezone };
+                }
+                return parsedUser;
+            });
+        } catch {
+            // ignore parse errors
+        }
+    };
+
     const detectBrowserTimezone = (): string => {
         try {
             return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -96,6 +114,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         }
         setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handler = () => syncUserFromLocalStorage();
+        window.addEventListener('ivep:auth-user-updated', handler);
+        window.addEventListener('storage', handler);
+
+        // Best-effort sync after mount (covers cases where localStorage changed without context update).
+        syncUserFromLocalStorage();
+
+        return () => {
+            window.removeEventListener('ivep:auth-user-updated', handler);
+            window.removeEventListener('storage', handler);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const getRoleRedirect = (role: string): string => {

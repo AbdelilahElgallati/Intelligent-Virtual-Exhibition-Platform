@@ -22,6 +22,7 @@ import {
 import { organizerService } from '@/services/organizer.service';
 import { Button } from '@/components/ui/Button';
 import { OrganizerSummary } from '@/types/organizer';
+import { formatInUserTZ } from '@/lib/timezone';
 
 export default function OrganizerDashboard() {
     const { user } = useAuth();
@@ -142,7 +143,7 @@ export default function OrganizerDashboard() {
         }
 
         return filteredRecentEvents.map((event) => (
-            <Link key={event.id} href={`/organizer/events/${event.id}`} className="block">
+            <Link key={event.id} href={`/organizer/events/${event.slug || event.id}`} className="block">
                 <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 group">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-100 rounded flex items-center justify-center text-indigo-600 font-bold">
@@ -150,7 +151,9 @@ export default function OrganizerDashboard() {
                         </div>
                         <div>
                             <div className="text-sm font-medium text-gray-900">{event.title}</div>
-                            <div className="text-xs text-gray-500">{new Date(event.start_date).toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-500">
+                                {formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -170,7 +173,7 @@ export default function OrganizerDashboard() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name?.split(' ')[0]}</h1>
                     <p className="text-gray-500">Here's what's happening with your events today.</p>
-                    <p className="text-xs text-gray-400 mt-1">{lastSyncedAt ? `Last synced: ${lastSyncedAt.toLocaleTimeString()}` : 'Waiting for first sync...'}</p>
+                    <p className="text-xs text-gray-400 mt-1">{lastSyncedAt ? `Last synced: ${formatInUserTZ(lastSyncedAt, { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first sync...'}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button

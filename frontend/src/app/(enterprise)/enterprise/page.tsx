@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import Link from 'next/link';
 import { http } from '@/lib/http';
+import { formatInUserTZ } from '@/lib/timezone';
 import {
     Package,
     MessageSquare,
@@ -225,7 +226,7 @@ export default function EnterpriseDashboardPage() {
                     ) : (
                         <div className="divide-y divide-zinc-50">
                             {recentEvents.map(ev => {
-                                const evId = ev.id || ev._id;
+                                const evId = ev.slug || ev.id || ev._id;
                                 const s = ev.participation?.status;
                                 const style = STATUS_STYLE[s] || { label: s || 'Unknown', cls: 'bg-zinc-50 text-zinc-500 border-zinc-200' };
                                 const isApproved = s === 'approved' || s === 'guest_approved';
@@ -238,7 +239,7 @@ export default function EnterpriseDashboardPage() {
                                             <p className="font-semibold text-zinc-900 text-sm truncate">{ev.title}</p>
                                             <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                                                 <Calendar size={10} />
-                                                {ev.start_date ? new Date(ev.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}
+                                                {ev.start_date ? formatInUserTZ(ev.start_date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : 'TBD'}
                                             </p>
                                         </div>
                                         <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.cls}`}>

@@ -1,6 +1,8 @@
 export interface Stand {
     id: string;
+    slug?: string;           // URL-safe slug, e.g. "acme-corp-ab3f"
     event_id: string;
+    event_slug?: string;     // parent event's slug for URL construction
     organization_id: string;
     name: string;
     description?: string;

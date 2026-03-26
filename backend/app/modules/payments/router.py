@@ -65,6 +65,8 @@ async def create_event_checkout(
     Create a Payzone payment session for a paid event ticket.
     Returns the Payzone payment URL to redirect the browser to.
     """
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -157,6 +159,9 @@ async def verify_event_payment(
     if not payment_id:
         raise HTTPException(status_code=400, detail="payment_id is required")
 
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     # Find the payment record by our internal _id
     payment = await get_payment_by_id(payment_id)
     if not payment:
@@ -228,7 +233,7 @@ async def verify_event_payment(
             event_id=str(event_id),
             metadata={
                 "payment_id": payment.get("_id"),
-                "stripe_session_id": session_id,
+                "stripe_session_id": st_session_id,
                 "amount": payment.get("amount"),
                 "currency": payment.get("currency"),
             },
@@ -283,6 +288,20 @@ async def global_payment_webhook(request: Request):
                 )
                 if updated:
                     logger.info("Enterprise stand fee paid for participant %s", participant_id)
+            return {"status": "ok"}
+            
+        if source == "marketplace":
+            order_id_str = metadata.get("order_id") or session.get("client_reference_id", "")
+            if order_id_str:
+                from app.modules.marketplace import service as mkt_svc
+                ids_to_process = [oid.strip() for oid in order_id_str.split(",") if oid.strip()]
+                for oid in ids_to_process:
+                    order, changed = await mkt_svc.mark_order_paid_if_pending(oid, transaction_id)
+                    if order and changed:
+                        product = await mkt_svc.get_product(order["product_id"])
+                        if product and str(product.get("type") or "product") != "service":
+                            await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
+                logger.info("Marketplace orders %s confirmed via global Stripe webhook", order_id_str)
             return {"status": "ok"}
             
         if order_id:
@@ -349,6 +368,8 @@ async def get_my_receipt(
     if not payment or payment_status != str(PaymentStatus.PAID.value):
         raise HTTPException(status_code=404, detail="No paid payment found for this event")
 
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     event_title = event["title"] if event else "Unknown Event"
 
@@ -390,6 +411,10 @@ async def admin_list_event_payments(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status filter: {payment_status}",
             )
+
+    if event_id:
+        from app.modules.events.service import resolve_event_id
+        event_id = await resolve_event_id(event_id)
 
     payments = await list_payments(status_filter=status_filter, event_id=event_id)
     return [EventPaymentRead(**p) for p in payments]

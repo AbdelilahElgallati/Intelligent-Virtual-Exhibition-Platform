@@ -13,6 +13,9 @@ from app.modules.leads.schemas import LeadInteraction
 from app.modules.participants.service import get_user_participation
 from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
+from app.modules.stands.service import resolve_stand_id
+from app.modules.organizations.service import resolve_organization_id
+from app.modules.events.service import resolve_event_id
 
 router = APIRouter()
 
@@ -22,9 +25,12 @@ async def get_my_rooms(
     room_category: str = None,
     current_user: dict = Depends(get_current_user),
 ):
+    # Resolve event_id if it's a slug
+    resolved_event_id = await resolve_event_id(event_id) if event_id else None
+    
     rooms = await chat_repo.get_user_rooms(
         str(current_user["_id"]),
-        event_id=event_id,
+        event_id=resolved_event_id,
         room_category=room_category,
     )
     
@@ -89,7 +95,9 @@ async def initiate_chat_with_stand(
     if not stand:
         raise HTTPException(status_code=404, detail="Stand not found")
 
-    org = await get_organization_by_id(stand["organization_id"])
+    # Resolve to internal ID for consistency in other services
+    resolved_stand_id = await resolve_stand_id(stand_id)
+    org = await get_organization_by_id(resolved_stand_id)
     if org:
         owner_id = org.get("owner_id")
     else:
@@ -104,7 +112,7 @@ async def initiate_chat_with_stand(
         try:
             await lead_service.log_interaction(LeadInteraction(
                 visitor_id=str(current_user["_id"]),
-                stand_id=stand_id,
+                stand_id=resolved_stand_id,
                 interaction_type="chat",
                 metadata={"stand_name": stand.get("name")}
             ))
@@ -114,7 +122,9 @@ async def initiate_chat_with_stand(
     event_id = stand.get("event_id")
     room = await chat_repo.get_or_create_direct_room(
         str(current_user["_id"]), owner_id,
-        room_category="visitor", event_id=str(event_id) if event_id else None,
+        room_category="visitor",
+        event_id=str(event_id) if event_id else None,
+        stand_id=str(stand_id),
     )
 
     # Best-effort analytics instrumentation.
@@ -161,11 +171,12 @@ async def initiate_b2b_chat(
     if not current_participation or current_participation.get("status") != "approved":
         raise HTTPException(status_code=403, detail="Your enterprise is not approved for this event")
     
-    partner_org = await get_organization_by_id(partner_org_id)
+    resolved_partner_org_id = await resolve_organization_id(partner_org_id)
+    partner_org = await get_organization_by_id(resolved_partner_org_id)
     if not partner_org:
         raise HTTPException(status_code=404, detail="Partner organization not found")
 
-    partner_participation = await get_user_participation(event_id, organization_id=str(partner_org_id))
+    partner_participation = await get_user_participation(event_id, organization_id=resolved_partner_org_id)
     if not partner_participation or partner_participation.get("status") != "approved":
         raise HTTPException(status_code=403, detail="The partner enterprise is not approved for this event")
     

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Download, Heart } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { StandsListResponse } from '@/types/stand';
+import { isOvernightSlot } from '@/lib/schedule';
 
 const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
@@ -33,6 +34,7 @@ interface ScheduleSlotPreview {
   startTime?: string;
   endTime?: string;
   label: string;
+  crossesMidnight?: boolean;
 }
 
 interface StandPreview {
@@ -282,6 +284,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
           startTime: slot?.start_time,
           endTime: slot?.end_time,
           label: slot?.label || 'Session',
+          crossesMidnight: isOvernightSlot(slot?.start_time, slot?.end_time),
         });
       });
     });
@@ -422,7 +425,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
                         </div>
                         <p className="mt-1 text-sm text-zinc-600">
                           {slot.dateLabel ? `${slot.dateLabel} • ` : ''}
-                          {slot.startTime || '--:--'}{slot.endTime ? ` - ${slot.endTime}` : ''}
+                          {slot.startTime || '--:--'}{slot.endTime ? ` - ${slot.endTime}${slot.crossesMidnight ? ' (+1 day)' : ''}` : ''}
                         </p>
                       </div>
                     ))}
@@ -445,6 +448,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
           <div className="lg:col-span-1">
             <JoinEventCard
               eventId={id!}
+              eventSlug={event?.slug}
               status={status}
               onJoin={handleJoin}
               loading={joinLoading}

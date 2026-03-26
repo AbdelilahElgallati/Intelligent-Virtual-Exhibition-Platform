@@ -18,6 +18,7 @@ from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.enums import Role
 from app.modules.organizer_report.schemas import OrganizerSummaryResponse
 from app.modules.organizer_report.service import get_organizer_summary, get_organizer_overall_summary
+from app.modules.events.service import resolve_event_id
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ async def organizer_summary(
     event_id: str,
     _admin=Depends(require_role(Role.ADMIN)),
 ):
+    event_id = await resolve_event_id(event_id)
     try:
         return await get_organizer_summary(event_id)
     except Exception as exc:
@@ -177,12 +179,14 @@ async def organizer_event_report(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
     """Event-specific LaTeX report for organizers."""
+    event_id = await resolve_event_id(event_id)
     summary = await get_organizer_summary(event_id)
     
     # Prepare data for LaTeX
+    event_slug = summary.event_slug or event_id
     data = {
-        "report_title": f"Event Performance: {event_id}",
-        "overview_description": f"Detailed performance metrics for event {event_id}, including visitor engagement and revenue analysis.",
+        "report_title": f"Event Performance: {event_slug}",
+        "overview_description": f"Detailed performance metrics for event {event_slug}, including visitor engagement and revenue analysis.",
         "kpis": [
             {"label": "Total Visitors", "value": summary.overview.total_visitors},
             {"label": "Enterprise Rate", "value": summary.overview.enterprise_participation_rate, "unit": "%"},
@@ -212,14 +216,14 @@ async def organizer_event_report(
         return Response(
             content=tex_content,
             media_type="application/x-tex",
-            headers={"Content-Disposition": f'attachment; filename="event_{event_id}_report.tex"'}
+            headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.tex"'}
         )
     
     pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="event_{event_id}_report.pdf"'}
+        headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.pdf"'}
     )
 
 
@@ -232,13 +236,15 @@ async def organizer_summary_pdf(
     event_id: str,
     _admin=Depends(require_role(Role.ADMIN)),
 ):
+    event_id = await resolve_event_id(event_id)
     try:
         summary = await get_organizer_summary(event_id)
+        event_slug = summary.event_slug or event_id
         
         # Prepare data for LaTeX
         data = {
-            "report_title": f"Organizer Summary: Event {event_id}",
-            "overview_description": f"Summary report generated for administration review regarding event {event_id}.",
+            "report_title": f"Organizer Summary: Event {event_slug}",
+            "overview_description": f"Summary report generated for administration review regarding event {event_slug}.",
             "kpis": [
                 {"label": "Total Visitors", "value": summary.overview.total_visitors},
                 {"label": "Leads", "value": summary.overview.leads_generated},
@@ -259,7 +265,7 @@ async def organizer_summary_pdf(
         from app.modules.analytics.latex_service import latex_service
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
         
-        filename = f"organizer_report_{event_id}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
+        filename = f"organizer_report_{event_slug}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",

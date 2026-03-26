@@ -75,9 +75,41 @@ export function formatTimeInTZ(date: string | number | Date, timeZone: string): 
  */
 export function getUserTimezone(): string {
   try {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('auth_user');
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as { timezone?: unknown };
+          const tz = parsed?.timezone;
+          if (typeof tz === 'string' && tz.length > 0) return tz;
+        } catch {
+          // Ignore parse errors and fallback to browser timezone.
+        }
+      }
+    }
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch (e) {
     return 'UTC';
+  }
+}
+
+/**
+ * Formats a date/time using the user's saved timezone (falls back to browser auto).
+ * This is useful when you previously used `date.toLocale*` which always uses browser timezone.
+ */
+export function formatInUserTZ(
+  date: string | number | Date,
+  options: Intl.DateTimeFormatOptions,
+  locale?: string,
+): string {
+  const timeZone = getUserTimezone();
+  const d = toUTCDate(date);
+  if (isNaN(d.getTime())) return '';
+  try {
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(d);
+  } catch {
+    // If timezone is invalid, fall back to formatting without timezone override.
+    return new Intl.DateTimeFormat(locale, options).format(d);
   }
 }
 

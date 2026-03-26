@@ -8,6 +8,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { useAuth } from '@/context/AuthContext';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import type { Event } from '@/types/event';
 import type { MarketplaceOrder, UnifiedMarketplaceOrder } from '@/types/marketplace';
 import type { Stand } from '@/lib/api/types';
@@ -79,6 +80,19 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 function normalizeUnifiedOrderStatus(order: UnifiedMarketplaceOrder): UnifiedMarketplaceOrder {
+  if (order.payment_method === 'cash_on_delivery' && order.status !== 'cancelled') {
+    const isFulfillmentCompleted = (order.items || []).some(
+      (item) => String(item.fulfillment_status || '').toLowerCase() === 'completed'
+    );
+    if (isFulfillmentCompleted) {
+      return {
+        ...order,
+        status: 'paid',
+        paid_at: order.paid_at || order.created_at,
+      };
+    }
+    return { ...order, status: 'pending', paid_at: null };
+  }
   const hasPaidEvidence = Boolean(order.paid_at) || (order.items || []).some((item) => String(item.status || '').toLowerCase() === 'paid');
   if (hasPaidEvidence && order.status !== 'paid') {
     return { ...order, status: 'paid' };
@@ -205,6 +219,7 @@ const statusColor: Record<string, string> = {
 };
 
 const fulfillmentColor: Record<string, string> = {
+  approved: 'bg-blue-100 text-blue-700 border-blue-200',
   requested: 'bg-slate-100 text-slate-700 border-slate-200',
   processing: 'bg-blue-100 text-blue-700 border-blue-200',
   packed: 'bg-violet-100 text-violet-700 border-violet-200',
@@ -343,7 +358,10 @@ export default function VisitorOrdersPage() {
     );
   };
 
-  const paidOrders = useMemo(() => orders.filter((o) => o.status === 'paid'), [orders]);
+  const paidOrders = useMemo(
+    () => orders.filter((o) => o.status === 'paid' && o.payment_method !== 'cash_on_delivery'),
+    [orders]
+  );
   const hasOrders = orders.length > 0;
 
   const formatAmount = (amount: number, currency = 'MAD') =>
@@ -352,6 +370,7 @@ export default function VisitorOrdersPage() {
   const handleDownloadReceipt = async (order: UnifiedMarketplaceOrder) => {
     await downloadMarketplaceUnifiedOrderReceiptPdf({
       groupId: order.group_id,
+      orderReference: buildOrderRef(order.group_id, order.created_at),
       standName: order.stand_name,
       paymentMethod: order.payment_method,
       status: order.status,
@@ -437,7 +456,7 @@ export default function VisitorOrdersPage() {
               <div>
                 <p className="text-sm font-semibold text-gray-900">{order.stand_name || 'Enterprise Stand'}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Order Ref: {buildOrderRef(order.group_id, order.created_at)} · {new Date(order.created_at).toLocaleString()}
+                  Order Ref: {buildOrderRef(order.group_id, order.created_at)} · {formatInTZ(order.created_at, getUserTimezone(), 'MMM d, yyyy, h:mm a')}
                 </p>
               </div>
               <div className="flex items-center gap-2">

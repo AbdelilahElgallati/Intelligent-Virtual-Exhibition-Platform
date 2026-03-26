@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { http } from '@/lib/http';
+import { formatInUserTZ } from '@/lib/timezone';
 import {
     Building2, Globe, MapPin, Calendar, Users, Briefcase,
     CheckCircle2, XCircle, Link as LinkIcon, Mail
@@ -208,7 +209,7 @@ export default function EnterpriseRegistrationsPage() {
 
                                         {/* Created at */}
                                         <p className="text-xs text-zinc-400 mt-1">
-                                            Registered {new Date(reg.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            Registered {formatInUserTZ(reg.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </p>
                                     </div>
 

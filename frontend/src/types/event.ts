@@ -29,6 +29,7 @@ export interface EventScheduleDay {
 
 export interface OrganizerEvent {
     id: string;
+    slug?: string;           // URL-safe slug, e.g. "tech-summit-2025-ab3f"
     title: string;
     description?: string;
     organizer_id: string;
@@ -105,6 +106,7 @@ export interface EventUpdatePayload {
     tags?: string[];
     num_enterprises?: number;
     event_timeline?: string;
+    schedule_days?: EventScheduleDay[];
     extended_details?: string;
     additional_info?: string;
     stand_price?: number;

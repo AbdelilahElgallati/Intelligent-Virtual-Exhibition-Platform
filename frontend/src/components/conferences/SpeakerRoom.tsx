@@ -17,6 +17,7 @@ import {
   AlertTriangle, Clock3, Mic, MicOff,
   MonitorUp, RefreshCw, Shield, Users, Video, VideoOff,
 } from 'lucide-react';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface SpeakerRoomProps {
   token: string;
@@ -39,12 +40,7 @@ interface SpeakerRoomProps {
 
 function formatDateTime(value?: string) {
   if (!value) return 'Not set';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not set';
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short', hour: '2-digit', minute: '2-digit',
-    month: 'short', day: '2-digit',
-  }).format(date);
+  return formatInTZ(value, getUserTimezone(), 'EEE, MMM d, h:mm a');
 }
 
 function formatDuration(ms: number) {

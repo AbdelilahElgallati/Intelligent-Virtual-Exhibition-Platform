@@ -139,8 +139,11 @@ async def get_session_by_id(session_id: str) -> Optional[dict]:
 
 async def list_sessions(event_id: str) -> list[SessionRead]:
     """Return all sessions for an event, sorted by start_time."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     db = get_database()
-    cursor = db.event_sessions.find({"event_id": event_id}).sort("start_time", 1)
+    cursor = db.event_sessions.find({"event_id": str(event_id)}).sort("start_time", 1)
     docs = await cursor.to_list(length=500)
     return [_to_read(d) for d in docs]
 

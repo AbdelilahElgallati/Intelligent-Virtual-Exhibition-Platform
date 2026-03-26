@@ -4,7 +4,7 @@ import React from 'react';
 import { Conference } from '@/types/conference';
 import { useRouter } from 'next/navigation';
 import { Users, Clock } from 'lucide-react';
-import { formatInTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import clsx from 'clsx';
 
 interface ConferenceCardProps {
@@ -25,12 +25,14 @@ const statusColors: Record<string, { bg: string; text: string; label: string }> 
 export default function ConferenceCard({ conference, eventId, eventTimeZone = 'UTC', onRegister, onUnregister }: ConferenceCardProps) {
     const router = useRouter();
     const sc = statusColors[conference.status] || statusColors.scheduled;
+    const viewerTimeZone = getUserTimezone();
+    const effectiveTimeZone = viewerTimeZone || eventTimeZone;
 
     const fmt = (iso: string) =>
-        formatInTZ(iso, eventTimeZone, 'dd MMM HH:mm');
+        formatInTZ(iso, effectiveTimeZone, 'dd MMM HH:mm');
     
     const fmtTimeOnly = (iso: string) =>
-        formatInTZ(iso, eventTimeZone, 'HH:mm');
+        formatInTZ(iso, effectiveTimeZone, 'HH:mm');
 
     return (
         <div className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 group relative overflow-hidden">

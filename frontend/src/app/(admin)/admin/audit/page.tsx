@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { ScrollText, RefreshCw, Search, Filter } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { AuditLog } from '@/types/audit';
+import { formatInUserTZ } from '@/lib/timezone';
 
 const ACTION_ICONS: Record<string, string> = {
     'event.approve': '✅',
@@ -180,7 +181,7 @@ export default function AuditPage() {
                                 {paginatedLogs.map(log => (
                                     <tr key={log.id} className="hover:bg-zinc-50 transition-colors">
                                         <td className="py-3 px-5 text-zinc-500 text-xs whitespace-nowrap">
-                                            {new Date(log.timestamp).toLocaleString()}
+                                            {formatInUserTZ(log.timestamp, { dateStyle: 'medium', timeStyle: 'short' })}
                                         </td>
                                         <td className="py-3 px-4">
                                             <span className="inline-flex items-center gap-1.5">

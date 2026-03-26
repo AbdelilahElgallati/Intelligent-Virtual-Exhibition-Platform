@@ -25,7 +25,7 @@ from app.modules.enterprise.repository import enterprise_repo
 from app.modules.leads.service import lead_service
 from app.modules.leads.schemas import LeadInteraction
 from app.modules.participants.schemas import ParticipantStatus
-from app.modules.events.service import get_event_by_id
+from app.modules.events.service import get_event_by_id, resolve_event_id
 from app.modules.stands.service import get_stand_by_org, update_stand, create_stand
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
@@ -123,6 +123,7 @@ async def get_enterprise_org(current_user: dict) -> dict:
 
 async def get_enterprise_participant(event_id: str, org_id: str) -> Optional[dict]:
     """Get participant record for an enterprise org in an event."""
+    event_id = await resolve_event_id(event_id)
     db = get_database()
     doc = await db.participants.find_one({
         "event_id": str(event_id),
@@ -153,6 +154,7 @@ def _event_token_is_valid(event: dict, token: str, kind: str) -> bool:
 
 async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> dict:
     """Guard helper — returns stand only if enterprise is APPROVED for the event."""
+    event_id = await resolve_event_id(event_id)
     participant = await get_enterprise_participant(event_id, org_id)
     if not participant or not _is_accepted_participant_status(participant.get("status")):
         raise HTTPException(
@@ -167,6 +169,7 @@ async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> 
 
 async def ensure_enterprise_stand(event_id: str, org_id: str, org_hint: Optional[dict] = None) -> dict:
     """Ensure an enterprise stand exists once participation becomes APPROVED."""
+    event_id = await resolve_event_id(event_id)
     stand = await get_stand_by_org(event_id, org_id)
     if stand:
         return stand
@@ -210,7 +213,7 @@ async def update_enterprise_profile(
 ):
     """Update enterprise organization profile."""
     org = await get_enterprise_org(current_user)
-    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    update_data: dict[str, Any] = {k: v for k, v in data.model_dump().items() if v is not None}
 
     if "category" in update_data and isinstance(update_data["category"], str):
         update_data["category"] = update_data["category"].strip() or None
@@ -408,6 +411,7 @@ async def visitor_request_product(
     data: ProductRequestCreate,
     current_user: dict = Depends(require_role(Role.VISITOR)),
 ):
+    event_id = await resolve_event_id(data.event_id)
     product = await enterprise_repo.get_product_by_id(product_id)
     if not product or not product.get("is_active"):
         raise HTTPException(status_code=404, detail="Product not found")
@@ -421,13 +425,13 @@ async def visitor_request_product(
         visitor_id=str(current_user["_id"]),
         enterprise_id=product["enterprise_id"],
         product_id=product_id,
-        event_id=data.event_id,
+        event_id=event_id,
         message=data.message,
         quantity=quantity,
     )
     try:
         # Find the correct stand ID for this organization in this event
-        stand_doc = await get_stand_by_org(data.event_id, product["organization_id"])
+        stand_doc = await get_stand_by_org(event_id, product["organization_id"])
         actual_stand_id = stand_doc["id"] if stand_doc else f"org_{product['organization_id']}"
         
         await lead_service.log_interaction(LeadInteraction(
@@ -437,7 +441,7 @@ async def visitor_request_product(
             metadata={
                 "product_id": product_id,
                 "request_id": request["id"],
-                "event_id": data.event_id,
+                "event_id": event_id,
                 "quantity": quantity,
             },
         ))
@@ -498,10 +502,11 @@ async def enterprise_join_event(
         raise HTTPException(status_code=400, detail="Event is not open for enterprise participation")
 
     # Check enterprise stand capacity
+    true_event_id = str(event.get("_id") or event.get("id") or event_id)
     num_enterprises = event.get("num_enterprises") or 0
     db = get_database()
     taken = await db.participants.count_documents({
-        "event_id": str(event_id),
+        "event_id": true_event_id,
         "role": Role.ENTERPRISE.value,
         "status": {"$nin": ["rejected"]},
     })
@@ -515,7 +520,7 @@ async def enterprise_join_event(
         raise HTTPException(status_code=409, detail=f"Already joined this event. Status: {existing['status']}")
 
     doc = {
-        "event_id": str(event_id),
+        "event_id": true_event_id,
         "organization_id": org_id,
         "user_id": str(current_user["_id"]),
         "role": Role.ENTERPRISE.value,
@@ -539,6 +544,7 @@ async def enterprise_accept_invite(
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    true_event_id = str(event.get("_id") or event.get("id") or event_id)
 
     stored_token = event.get("enterprise_invite_token")
     legacy_link = event.get("enterprise_link")
@@ -558,10 +564,10 @@ async def enterprise_accept_invite(
     db = get_database()
     now = datetime.now(timezone.utc)
 
-    existing = await get_enterprise_participant(event_id, org_id)
+    existing = await get_enterprise_participant(true_event_id, org_id)
     if existing:
         if _is_accepted_participant_status(existing.get("status")):
-            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+            await ensure_enterprise_stand(true_event_id, org_id, org_hint=org)
             return existing
 
         from pymongo import ReturnDocument
@@ -580,12 +586,12 @@ async def enterprise_accept_invite(
             return_document=ReturnDocument.AFTER,
         )
         if updated:
-            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+            await ensure_enterprise_stand(true_event_id, org_id, org_hint=org)
             return stringify_object_ids(updated)
         raise HTTPException(status_code=500, detail="Failed to accept invite")
 
     doc = {
-        "event_id": str(event_id),
+        "event_id": true_event_id,
         "organization_id": org_id,
         "user_id": str(current_user["_id"]),
         "role": Role.ENTERPRISE.value,
@@ -598,7 +604,7 @@ async def enterprise_accept_invite(
     result = await db.participants.insert_one(doc)
     doc["_id"] = result.inserted_id
 
-    await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+    await ensure_enterprise_stand(true_event_id, org_id, org_hint=org)
     return stringify_object_ids(doc)
 
 
@@ -623,6 +629,7 @@ async def enterprise_pay_stand_fee(
     event = await get_event_by_id(event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    true_event_id = str(event.get("_id") or event.get("id") or event_id)
 
     stand_fee = event.get("stand_price", 0) or 0
     if stand_fee <= 0:
@@ -631,7 +638,7 @@ async def enterprise_pay_stand_fee(
         db = get_database()
         from pymongo import ReturnDocument
         updated = await db.participants.find_one_and_update(
-            {"event_id": str(event_id), "organization_id": org_id, "role": Role.ENTERPRISE.value},
+            {"event_id": true_event_id, "organization_id": org_id, "role": Role.ENTERPRISE.value},
             {"$set": {
                 "stand_fee_paid": True,
                 "payment_reference": payment_ref,
@@ -641,7 +648,7 @@ async def enterprise_pay_stand_fee(
             return_document=ReturnDocument.AFTER,
         )
         if updated:
-            await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+            await ensure_enterprise_stand(true_event_id, org_id, org_hint=org)
         return stringify_object_ids(updated)
 
     amount_cents = _to_cents(stand_fee)
@@ -754,6 +761,7 @@ async def enterprise_verify_payment(
 @router.post("/events/{event_id}/pay-callback")
 async def enterprise_pay_callback(event_id: str, request: "Request"):
     """Stripe Webhook callback for enterprise stand fee payments."""
+    event_id = await resolve_event_id(event_id)
     from app.modules.marketplace.stripe_service import construct_event
     import logging
 

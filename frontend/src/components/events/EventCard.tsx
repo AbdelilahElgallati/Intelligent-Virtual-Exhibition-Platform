@@ -25,7 +25,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   favoriteAnimating,
   onToggleFavorite,
 }) => {
-  const eventId = (event as any)?.id || (event as any)?._id;
+  const eventId = event.slug || (event as any)?.id || (event as any)?._id;
   const lifecycle = getEventLifecycle(event);
   const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
   const lifecycleLabel = !lifecycle.hasScheduleSlots

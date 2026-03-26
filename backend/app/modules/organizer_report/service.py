@@ -28,6 +28,7 @@ from app.modules.organizer_report.schemas import (
     RevenueSummary,
     SafetyMetrics,
     TrendPoint,
+    EnterpriseSummary,
 )
 
 logger = logging.getLogger(__name__)
@@ -318,7 +319,6 @@ async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> l
     org_cursor = db["organizations"].find(query)
     orgs = await org_cursor.to_list(length=None)
     
-    from .schemas import EnterpriseSummary
     return [
         EnterpriseSummary(
             id=str(o["_id"]),
@@ -334,10 +334,13 @@ async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> l
 
 async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
     """Aggregate all engagement metrics for the specified event."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     db = get_database()
 
     # Parallel phase 1 — gather stand IDs
-    stand_ids = await _stand_ids_for_events(db, event_id)
+    stand_ids = await _stand_ids_for_events(db, str(event_id))
 
     # Parallel phase 2
     (

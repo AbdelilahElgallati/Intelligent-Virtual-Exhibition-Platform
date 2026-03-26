@@ -31,6 +31,8 @@ from app.modules.marketplace.schemas import (
     ProductUpdate,
 )
 from app.modules.marketplace.stripe_service import create_payment_session, construct_event
+from app.modules.notifications.schemas import NotificationType
+from app.modules.notifications.service import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -446,6 +448,14 @@ async def update_order_fulfillment_status(
     updated = await mkt_svc.update_order_fulfillment_status(order_id, body.fulfillment_status, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
+    try:
+        await create_notification(
+            user_id=updated["buyer_id"],
+            type=NotificationType.MARKETPLACE_ORDER_UPDATED,
+            message=f"Your order for {updated.get('product_name', 'a product')} is now {body.fulfillment_status.replace('_', ' ')}.",
+        )
+    except Exception:
+        logger.warning("Failed to create order update notification for order %s", order_id)
     return updated
 
 
@@ -469,6 +479,14 @@ async def cancel_order(
     updated = await mkt_svc.cancel_order(order_id, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
+    try:
+        await create_notification(
+            user_id=updated["buyer_id"],
+            type=NotificationType.MARKETPLACE_ORDER_CANCELLED,
+            message=f"Your order for {updated.get('product_name', 'a product')} was cancelled by the stand.",
+        )
+    except Exception:
+        logger.warning("Failed to create cancellation notification for order %s", order_id)
     return updated
 
 
@@ -513,6 +531,28 @@ async def list_unified_orders(
     user: dict = Depends(get_current_user),
 ):
     """Return visitor orders grouped as unified checkout orders (products + services together)."""
+    # Safe status sync if session_id is provided (handles potential webhook delays)
+    if session_id:
+        try:
+            orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+            has_pending = any(
+                o.get("payment_method") == "stripe" and o.get("status") == "pending"
+                for o in orders
+            )
+            if has_pending:
+                session = stripe.checkout.Session.retrieve(session_id)
+                if session and session.payment_status == "paid":
+                    payment_intent_id = session.payment_intent or ""
+                    for order in orders:
+                        if order.get("payment_method") == "stripe" and order.get("status") == "pending":
+                            updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
+                            if updated_order and changed:
+                                product = await mkt_svc.get_product(updated_order["product_id"])
+                                if product and str(product.get("type") or "product") != "service":
+                                    await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
+        except Exception as exc:
+            logger.warning("Unified session sync skipped for %s: %s", session_id, exc)
+
     return await mkt_svc.list_unified_orders_for_buyer(
         str(user["_id"]),
         session_id=session_id,
@@ -591,8 +631,6 @@ async def get_order_receipt(
         "currency": (order.get("currency") or (product.get("currency") if product else "MAD") or "MAD").upper(),
         "status": order.get("status", "unknown"),
         "payment_method": order.get("payment_method", "stripe"),
-        "stripe_session_id": order.get("stripe_session_id", ""),
-        "stripe_payment_intent_id": order.get("stripe_payment_intent_id", ""),
         "buyer_name": user.get("full_name", user.get("name", "")),
         "buyer_email": user.get("email", ""),
         "seller_name": seller_name,

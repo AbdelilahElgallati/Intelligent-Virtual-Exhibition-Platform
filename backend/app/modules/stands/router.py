@@ -1,16 +1,16 @@
-"""
-Stands module router for IVEP.
-
-Handles stand assignment for events.
-"""
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import require_roles
 from app.modules.auth.enums import Role
-from app.modules.events.service import get_event_by_id
+from app.modules.events.service import get_event_by_id, resolve_event_id
 from app.modules.stands.schemas import StandCreate, StandRead, StandUpdate
-from app.modules.stands.service import create_stand, get_stand_by_org, list_event_stands, update_stand
+from app.modules.stands.service import (
+    create_stand, 
+    get_stand_by_org, 
+    list_event_stands, 
+    update_stand,
+    resolve_stand_id
+)
 
 
 router = APIRouter(prefix="/events/{event_id}/stands", tags=["Stands"])
@@ -24,10 +24,8 @@ async def assign_stand_to_organization(
 ) -> StandRead:
     """
     Assign a stand to an enterprise organization.
-    
-    Organizer or Admin only.
-    One stand per organization per event.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -37,9 +35,7 @@ async def assign_stand_to_organization(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Check if org already has a stand
-    base_event_id = event.get("_id", str(event_id))
-
-    existing = await get_stand_by_org(base_event_id, data.organization_id)
+    existing = await get_stand_by_org(event_id, data.organization_id)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -47,7 +43,7 @@ async def assign_stand_to_organization(
         )
     
     stand = await create_stand(
-        base_event_id, data.organization_id, data.name,
+        event_id, data.organization_id, data.name,
         description=data.description,
         logo_url=data.logo_url,
         tags=data.tags,
@@ -73,23 +69,17 @@ async def get_event_stands(
 ):
     """
     List all stands for an event.
-    
-    Public endpoint. Supports optional filtering and pagination.
-    Query params: ?category=, ?search=, ?tags=, ?limit=, ?skip=
-    
-    Returns: {items: [...], total: int, limit: int, skip: int}
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    base_event_id = event.get("_id", str(event_id))
-    
     # Parse tags if provided
     tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
     
     result = await list_event_stands(
-        base_event_id,
+        event_id,
         category=category,
         search=search,
         tags=tags_list,
@@ -137,12 +127,15 @@ async def get_event_stands(
 
 
 @router.get("/{stand_id}", response_model=StandRead)
-async def get_stand(stand_id: str) -> StandRead:
+async def get_stand(event_id: str, stand_id: str) -> StandRead:
     """
-    Get stand details by ID.
+    Get stand details by ID or Slug.
+    """
+    # event_id is captured from prefix but we might not need to resolve it 
+    # if we only care about the stand_id, but it's safer to ensure the path is consistent.
+    # We resolve it mainly to satisfy the requirement of 'no raw IDs in URL'.
+    stand_id = await resolve_stand_id(stand_id)
     
-    Public endpoint.
-    """
     from app.modules.stands.service import get_stand_by_id
     
     stand = await get_stand_by_id(stand_id)
@@ -179,15 +172,15 @@ async def get_stand(stand_id: str) -> StandRead:
 
 @router.patch("/{stand_id}", response_model=StandRead)
 async def update_stand_endpoint(
+    event_id: str,
     stand_id: str,
     data: StandUpdate,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
 ) -> StandRead:
     """
     Update stand details.
-    
-    Organizer or Admin only.
     """
+    stand_id = await resolve_stand_id(stand_id)
     from app.modules.stands.service import get_stand_by_id
     
     stand = await get_stand_by_id(stand_id)

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { PartnerDashboardRead } from '@/types/admin';
+import { formatInUserTZ } from '@/lib/timezone';
 
 function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
     const badges = [];
@@ -63,7 +64,7 @@ function OrgPanel({
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <>
@@ -223,7 +224,7 @@ export default function AdminOrganizationsPage() {
         finally { setActionId(null); }
     };
 
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">

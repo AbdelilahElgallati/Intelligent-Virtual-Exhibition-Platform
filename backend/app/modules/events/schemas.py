@@ -52,6 +52,7 @@ class EventBase(BaseModel):
     """Base schema for event data."""
 
     id: str = Field(validation_alias=AliasChoices("_id", "id"))
+    slug: Optional[str] = None
     title: str
     description: Optional[str] = None
     organizer_id: str
@@ -183,6 +184,7 @@ class EventUpdate(BaseModel):
     stand_price: Optional[float] = None
     is_paid: Optional[bool] = None
     ticket_price: Optional[float] = None
+    slug: Optional[str] = None
 
     @field_validator("start_date", "end_date", mode="after")
     @classmethod

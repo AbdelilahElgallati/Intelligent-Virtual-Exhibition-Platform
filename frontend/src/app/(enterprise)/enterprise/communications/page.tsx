@@ -99,6 +99,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; 
         canceled: 'bg-zinc-50 text-zinc-500 border-zinc-100',
         completed: 'bg-indigo-50 text-indigo-700 border-indigo-100',
     };
+    const viewerTimeZone = getUserTimezone() || timeZone;
 
     return (
         <Card className="border-zinc-200 hover:border-indigo-200 transition-all overflow-hidden group">
@@ -115,7 +116,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; 
                                 </h4>
                                 <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                                     <Clock size={12} />
-                                    Submitted {formatInTZ(meeting.created_at, timeZone, 'MMM d, yyyy')}
+                                            Submitted {formatInTZ(meeting.created_at, viewerTimeZone, 'MMM d, yyyy')}
                                 </div>
                             </div>
                         </div>
@@ -124,7 +125,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; 
                             <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">
                                 <Calendar size={14} className="text-indigo-500" />
                                 <span className="font-semibold">
-                                    {formatInTZ(meeting.start_time, timeZone, 'MMM d, h:mm a')}
+                                    {formatInTZ(meeting.start_time, viewerTimeZone, 'MMM d, h:mm a')}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">

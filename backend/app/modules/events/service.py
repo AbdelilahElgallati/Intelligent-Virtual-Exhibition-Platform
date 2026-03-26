@@ -4,6 +4,7 @@ Event service for IVEP.
 Provides MongoDB-backed event storage and CRUD operations.
 """
 
+import re
 import secrets
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -19,6 +20,15 @@ from app.core.storage import delete_managed_upload_by_url
 
 # Price per enterprise per event day (configurable)
 PRICE_PER_ENTERPRISE_PER_DAY: float = 50.0
+
+
+def _slugify(text: str) -> str:
+    """Convert any string into a URL-safe kebab-case slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)   # strip non-word chars
+    text = re.sub(r"[\s_]+", "-", text)     # spaces/underscores → hyphens
+    text = re.sub(r"-+", "-", text)          # collapse multiple hyphens
+    return text[:60].strip("-")
 
 
 def _id_query(eid) -> dict:
@@ -90,16 +100,48 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
     collection = get_events_collection()
     result = await collection.insert_one(event)
     event["_id"] = result.inserted_id
+
+    # Auto-generate a URL-safe slug: title-slug + 4-char hex from the new _id
+    # The suffix guarantees uniqueness even when two events share the same title.
+    base_slug = _slugify(data.title)
+    short_suffix = str(result.inserted_id)[-4:]
+    slug = f"{base_slug}-{short_suffix}" if base_slug else short_suffix
+    await collection.update_one({"_id": result.inserted_id}, {"$set": {"slug": slug}})
+    event["slug"] = slug
+
     return stringify_object_ids(event)
 
 
 async def get_event_by_id(event_id) -> Optional[dict]:
     """
-    Get event by ID (_id).
+    Get event by ID (_id) **or slug**.
+
+    Accepts a MongoDB ObjectId string OR a human-readable slug so that
+    all existing callers automatically support slug-based resolution
+    without any further changes.
     """
     collection = get_events_collection()
-    doc = await collection.find_one(_id_query(event_id))
+    # 1. Try ObjectId lookup first (fastest path for internal callers)
+    if ObjectId.is_valid(str(event_id)):
+        doc = await collection.find_one({"_id": ObjectId(str(event_id))})
+        if doc:
+            return stringify_object_ids(doc)
+    # 2. Fall back to slug lookup (public URL path, e.g. "tech-summit-2025-ab3f")
+    doc = await collection.find_one({"slug": str(event_id)})
     return stringify_object_ids(doc) if doc else None
+
+
+async def resolve_event_id(slug_or_id: str) -> str:
+    """Helper for sub-routers: resolve an event slug to its true ObjectId string."""
+    if not slug_or_id:
+        return ""
+    if ObjectId.is_valid(str(slug_or_id)):
+        return str(slug_or_id)
+    collection = get_events_collection()
+    doc = await collection.find_one({"slug": str(slug_or_id)}, {"_id": 1})
+    if not doc:
+        return str(slug_or_id)  # let it fail downstream
+    return str(doc["_id"])
 
 
 async def list_events(
@@ -294,14 +336,18 @@ async def confirm_event_payment(event_id) -> Optional[dict]:
     enterprise_token = secrets.token_urlsafe(24)
     visitor_token = secrets.token_urlsafe(24)
 
+    # Resolve the event's slug for use in public-facing links
+    existing = await collection.find_one(_id_query(event_id))
+    public_ref = existing.get("slug") or str(event_id) if existing else str(event_id)
+
     updated = await collection.find_one_and_update(
         _id_query(event_id),
         {
             "$set": {
                 "state": EventState.PAYMENT_DONE,
-                "enterprise_link": f"/join/enterprise/{event_id}?token={enterprise_token}",
-                "visitor_link": f"/join/visitor/{event_id}?token={visitor_token}",
-                "publicity_link": f"/events/{event_id}",
+                "enterprise_link": f"/join/enterprise/{public_ref}?token={enterprise_token}",
+                "visitor_link": f"/join/visitor/{public_ref}?token={visitor_token}",
+                "publicity_link": f"/events/{public_ref}",
                 "enterprise_invite_token": enterprise_token,
                 "visitor_invite_token": visitor_token,
             }

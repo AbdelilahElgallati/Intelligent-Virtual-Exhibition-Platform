@@ -152,19 +152,24 @@ function FavoritesList({
                 try {
                     if (fav.target_type === 'event') {
                         const evt = await apiClient.get<any>(ENDPOINTS.EVENTS.GET(fav.target_id));
+                        // Use slug when available so the browser URL is human-readable
+                        const eventRef = evt.slug || fav.target_id;
                         map[safeId] = {
                             title: evt.title || "Unknown Event",
                             description: evt.description || "No description provided.",
                             img: evt.banner_url,
-                            href: `/events/${fav.target_id}`
+                            href: `/events/${eventRef}`
                         };
                     } else if (fav.target_type === 'stand') {
                         const std = await apiClient.get<any>(ENDPOINTS.STANDS.GET(fav.target_id, fav.target_id));
+                        // Use slugs for both the stand and its parent event
+                        const standRef = std.slug || fav.target_id;
+                        const eventRef = std.event_slug || std.event_id;
                         map[safeId] = {
                             title: std.name || "Unknown Stand",
                             description: std.description || "No description provided.",
                             img: std.logo_url || std.banner_url,
-                            href: std.event_id ? `/events/${std.event_id}/stands/${fav.target_id}` : undefined
+                            href: eventRef ? `/events/${eventRef}/stands/${standRef}` : undefined
                         };
                     } else if (fav.target_type === 'organization') {
                          const org = await apiClient.get<any>(ENDPOINTS.ORGANIZATIONS.GET(fav.target_id));

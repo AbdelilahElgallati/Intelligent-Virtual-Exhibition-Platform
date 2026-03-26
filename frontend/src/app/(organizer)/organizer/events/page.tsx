@@ -7,6 +7,7 @@ import { OrganizerEvent, EventStatus } from '@/types/event';
 import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -149,8 +150,8 @@ export default function OrganizerEvents() {
                                         <div className="text-xs text-gray-400 mt-0.5">{event.category}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600 whitespace-nowrap">
-                                        <div>{new Date(event.start_date).toLocaleDateString()}</div>
-                                        <div className="text-xs text-gray-400">→ {new Date(event.end_date).toLocaleDateString()}</div>
+                                        <div>{formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                                        <div className="text-xs text-gray-400">→ {formatInUserTZ(event.end_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600">
                                         {event.num_enterprises ?? '—'}
@@ -168,7 +169,7 @@ export default function OrganizerEvents() {
                                     <td className="px-4 py-4">
                                         <div className="flex items-center justify-end gap-2 flex-wrap">
                                             {/* View details — always shown */}
-                                            <Link href={`/organizer/events/${event.id}`}>
+                                            <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                 <Button variant="outline" size="sm" className="gap-1">
                                                     <Eye className="w-3.5 h-3.5" />
                                                     View
@@ -177,7 +178,7 @@ export default function OrganizerEvents() {
 
                                             {/* Pay — when waiting_for_payment */}
                                             {event.state === 'waiting_for_payment' && (
-                                                <Link href={`/organizer/events/${event.id}`}>
+                                                <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600 gap-1">
                                                         <CreditCard className="w-3.5 h-3.5" />
                                                         Pay Now
@@ -214,7 +215,7 @@ export default function OrganizerEvents() {
 
                                             {/* Analytics — live or closed */}
                                             {(effectiveState === 'live' || effectiveState === 'closed') && (
-                                                <Link href={`/organizer/events/${event.id}/analytics`}>
+                                                <Link href={`/organizer/events/${event.slug || event.id}/analytics`}>
                                                     <Button variant="outline" size="sm" className="gap-1">
                                                         <BarChart2 className="w-3.5 h-3.5" />
                                                         Analytics
