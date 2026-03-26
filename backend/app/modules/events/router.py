@@ -302,9 +302,10 @@ async def update_existing_event(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ) -> EventRead:
     """
-    Update a pending event request.
+    Update an event request.
 
-    Only allowed when state is PENDING_APPROVAL.
+    - Allowed when state is PENDING_APPROVAL, APPROVED, PAYMENT_DONE, or LIVE.
+    - Day count in schedule_days cannot be increased by organizers.
     Requires ORGANIZER role and ownership.
     """
     event_id = await resolve_event_id(event_id)
@@ -315,11 +316,26 @@ async def update_existing_event(
     if event["organizer_id"] != str(current_user["_id"]):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this event")
 
-    if event["state"] != EventState.PENDING_APPROVAL:
+    allowed_states = {
+        EventState.PENDING_APPROVAL,
+        EventState.APPROVED,
+        EventState.PAYMENT_DONE,
+        EventState.LIVE
+    }
+    if event["state"] not in allowed_states:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Event can only be edited while in PENDING_APPROVAL state.",
+            detail=f"Event cannot be edited while in {event['state']} state.",
         )
+
+    # Validation: Cannot add/remove days if they are already defined
+    if data.schedule_days is not None:
+        existing_days = event.get("schedule_days") or []
+        if existing_days and len(data.schedule_days) != len(existing_days):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organizers cannot change the number of event days. Please contact an administrator.",
+            )
 
     updated_event = await update_event(event_id, data)
     return EventRead(**updated_event)

@@ -184,6 +184,7 @@ class EventUpdate(BaseModel):
     stand_price: Optional[float] = None
     is_paid: Optional[bool] = None
     ticket_price: Optional[float] = None
+    slug: Optional[str] = None
 
     @field_validator("start_date", "end_date", mode="after")
     @classmethod

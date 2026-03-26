@@ -4,7 +4,7 @@ import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { X, Send, User, Loader2, Calendar, MessageSquare, AlertCircle, ArrowLeft } from 'lucide-react';
+import { X, Send, User, Loader2, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 const MAX_VISITOR_MESSAGES = 15;
@@ -260,32 +260,20 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                     background: `linear-gradient(180deg, rgba(${r},${g},${b},0.12) 0%, rgba(255,255,255,0.98) 75%)`,
                 }}
             >
-                <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                    {/* Back Button for mobile when embedded */}
-                    {isEmbedded && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); onClose(); }} 
-                            className="md:hidden p-2 -ml-2 rounded-full hover:bg-zinc-100 text-zinc-500 transition-all active:scale-90"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                    )}
-                    
+                <div className="flex items-center gap-4">
                     <div
-                        className="w-8 h-8 md:w-9 md:h-9 rounded-full border flex items-center justify-center shadow-sm shrink-0"
+                        className="w-9 h-9 rounded-full border flex items-center justify-center shadow-sm"
                         style={{
                             backgroundColor: `rgba(${r},${g},${b},0.14)`,
                             borderColor: `rgba(${r},${g},${b},0.24)`,
                         }}
                     >
-                        <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" style={{ color: themeColor }} />
+                        <MessageSquare className="w-4 h-4" style={{ color: themeColor }} />
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <h3 className="text-xs md:text-sm font-bold leading-none mb-1 text-zinc-900 truncate">
-                            Chat with {standName}
-                        </h3>
-                        <div className="flex items-center gap-2 text-[10px] md:text-[11px] text-zinc-600">
-                            <span className={clsx("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shadow-sm", isConnected ? "bg-emerald-500" : "bg-red-500")} />
+                    <div>
+                        <h3 className="text-sm font-bold leading-none mb-1 text-zinc-900">Chat with {standName}</h3>
+                        <div className="flex items-center gap-2 text-[11px] text-zinc-600">
+                            <span className={clsx("w-2 h-2 rounded-full shadow-sm", isConnected ? "bg-emerald-500" : "bg-red-500")} />
                             {isConnected ? 'Sync Active' : 'Connecting...'}
                             {!disableMessageLimit && !limitReached && myMessageCount > 0 && (
                                 <span className="ml-1 opacity-70">

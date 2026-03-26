@@ -1051,7 +1051,7 @@ export default function EventManagementHub() {
             </div>
 
             {activeTab === 'chats' && (
-                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm min-h-[400px] h-[calc(100vh-180px)] md:h-[calc(100vh-280px)]">
+                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm min-h-0 bg-white">
                     {/* Sidebar */}
                     <div className={clsx(
                         "w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30",
@@ -1134,17 +1134,32 @@ export default function EventManagementHub() {
                     {/* Chat Window */}
                     <div className={clsx(
                         "flex-1 bg-white relative",
-                        !selectedRoomId ? "hidden md:flex" : "flex flex-col"
+                        !selectedRoomId ? "hidden md:flex" : "flex flex-col h-full"
                     )}>
                         {selectedRoomId ? (
-                            <ChatPanel
-                                initialRoomId={selectedRoomId!}
-                                standName={activeRoom?.name || "Member"}
-                                isEmbedded={true}
-                                disableMessageLimit={true}
-                                eventTimeZone={eventData?.event_timezone}
-                                onClose={() => setSelectedRoomId(null)}
-                            />
+                            <>
+                                <div className="md:hidden border-b border-zinc-100 bg-white px-4 py-3.5 flex items-center gap-3">
+                                    <button 
+                                        onClick={() => setSelectedRoomId(null)}
+                                        className="p-1.5 rounded-xl bg-zinc-50 text-zinc-500 hover:bg-zinc-100 transition-all"
+                                    >
+                                        <ArrowLeft size={18} />
+                                    </button>
+                                    <h4 className="font-black text-sm text-zinc-900 truncate">
+                                        {activeRoom?.name || "Chat"}
+                                    </h4>
+                                </div>
+                                <div className="flex-1 min-h-0 relative">
+                                    <ChatPanel
+                                        initialRoomId={selectedRoomId!}
+                                        standName={activeRoom?.name || "Member"}
+                                        isEmbedded={true}
+                                        disableMessageLimit={true}
+                                        eventTimeZone={eventData?.event_timezone}
+                                        onClose={() => setSelectedRoomId(null)}
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center p-10 text-center">
                                 <div className={clsx(

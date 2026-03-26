@@ -233,7 +233,7 @@ async def verify_event_payment(
             event_id=str(event_id),
             metadata={
                 "payment_id": payment.get("_id"),
-                "stripe_session_id": session_id,
+                "stripe_session_id": st_session_id,
                 "amount": payment.get("amount"),
                 "currency": payment.get("currency"),
             },
@@ -288,6 +288,20 @@ async def global_payment_webhook(request: Request):
                 )
                 if updated:
                     logger.info("Enterprise stand fee paid for participant %s", participant_id)
+            return {"status": "ok"}
+            
+        if source == "marketplace":
+            order_id_str = metadata.get("order_id") or session.get("client_reference_id", "")
+            if order_id_str:
+                from app.modules.marketplace import service as mkt_svc
+                ids_to_process = [oid.strip() for oid in order_id_str.split(",") if oid.strip()]
+                for oid in ids_to_process:
+                    order, changed = await mkt_svc.mark_order_paid_if_pending(oid, transaction_id)
+                    if order and changed:
+                        product = await mkt_svc.get_product(order["product_id"])
+                        if product and str(product.get("type") or "product") != "service":
+                            await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
+                logger.info("Marketplace orders %s confirmed via global Stripe webhook", order_id_str)
             return {"status": "ok"}
             
         if order_id:

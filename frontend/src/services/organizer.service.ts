@@ -65,6 +65,10 @@ export const organizerService = {
         return http.post(`/events/${eventId}/close`, {});
     },
 
+    async updateEvent(eventId: string, data: any): Promise<OrganizerEvent> {
+        return http.patch(`/events/${eventId}`, data);
+    },
+
     /**
      * Get live event analytics snapshot for organizer-owned events.
      */
