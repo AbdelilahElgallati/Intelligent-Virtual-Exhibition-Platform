@@ -8,64 +8,6 @@ import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-// Utility to mask IDs in links
-function maskId(id?: string) {
-    if (!id) return '';
-    if (id.length <= 8) return '••••';
-    return id.slice(0, 4) + '••••' + id.slice(-4);
-}
-// Simple Modal implementation
-function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative animate-in fade-in duration-200">
-                <button onClick={onClose} className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-700 text-xl">×</button>
-                {children}
-            </div>
-        </div>
-    );
-}
-    // Edit Event Info Modal State
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editForm, setEditForm] = useState<any>({});
-    const [editLoading, setEditLoading] = useState(false);
-    const [editError, setEditError] = useState<string | null>(null);
-        // Open edit modal and prefill form
-        const openEditModal = () => {
-            if (!eventData) return;
-            setEditForm({
-                title: eventData.title,
-                description: eventData.description,
-                category: eventData.category,
-                location: eventData.location,
-                start_date: eventData.start_date?.slice(0, 16),
-                end_date: eventData.end_date?.slice(0, 16),
-                event_timezone: eventData.event_timezone,
-                tags: eventData.tags?.join(', ') || '',
-            });
-            setEditModalOpen(true);
-            setEditError(null);
-        };
-
-        // Handle edit form submit
-        const handleEditSubmit = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setEditLoading(true);
-            setEditError(null);
-            try {
-                await http.patch(`/events/${eventId}`, {
-                    ...editForm,
-                    tags: editForm.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
-                });
-                setEditModalOpen(false);
-                fetchData();
-            } catch (err: any) {
-                setEditError(err?.body?.detail || err?.message || 'Failed to update event');
-            } finally {
-                setEditLoading(false);
-            }
-        };
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import {
@@ -99,12 +41,33 @@ import {
     Phone,
     MapPin,
     Package,
+    Tag,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+
+// Utility to mask IDs in links
+function maskId(id?: string) {
+    if (!id) return '';
+    if (id.length <= 8) return '••••';
+    return id.slice(0, 4) + '••••' + id.slice(-4);
+}
+// Simple Modal implementation
+function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative animate-in fade-in duration-200">
+                <button onClick={onClose} className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-700 text-xl">×</button>
+                {children}
+            </div>
+        </div>
+    );
+}
+
 
 // ─── Meeting Timeline ────────────────────────────────────────────────────────
 
@@ -368,6 +331,12 @@ export default function EventManagementHub() {
     const { user } = useAuth();
     const eventId = params.eventId as string;
 
+    // Edit Event Info Modal State
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editForm, setEditForm] = useState<any>({});
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
+
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings' | 'conferences' | 'partners'>('chats');
     const [chatSubTab, setChatSubTab] = useState<'visitor' | 'b2b'>('visitor');
     const [stand, setStand] = useState<Stand | null>(null);
@@ -395,6 +364,42 @@ export default function EventManagementHub() {
     const [meetingError, setMeetingError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isForbidden, setIsForbidden] = useState(false);
+
+    // Open edit modal and prefill form
+    const openEditModal = () => {
+        if (!eventData) return;
+        setEditForm({
+            title: eventData.title,
+            description: eventData.description,
+            category: eventData.category,
+            location: eventData.location,
+            start_date: eventData.start_date?.slice(0, 16),
+            end_date: eventData.end_date?.slice(0, 16),
+            event_timezone: eventData.event_timezone,
+            tags: eventData.tags?.join(', ') || '',
+        });
+        setEditModalOpen(true);
+        setEditError(null);
+    };
+
+    // Handle edit form submit
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEditLoading(true);
+        setEditError(null);
+        try {
+            await http.patch(`/events/${eventId}`, {
+                ...editForm,
+                tags: editForm.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+            });
+            setEditModalOpen(false);
+            fetchData();
+        } catch (err: any) {
+            setEditError(err?.body?.detail || err?.message || 'Failed to update event');
+        } finally {
+            setEditLoading(false);
+        }
+    };
 
     // Polling interval ref for auto-refresh
     const pollRef = useRef<NodeJS.Timeout | null>(null);
