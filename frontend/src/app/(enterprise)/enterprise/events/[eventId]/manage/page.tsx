@@ -49,12 +49,6 @@ import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
-// Utility to mask IDs in links
-function maskId(id?: string) {
-    if (!id) return '';
-    if (id.length <= 8) return '••••';
-    return id.slice(0, 4) + '••••' + id.slice(-4);
-}
 // Simple Modal implementation
 function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
     if (!open) return null;
@@ -331,11 +325,6 @@ export default function EventManagementHub() {
     const { user } = useAuth();
     const eventId = params.eventId as string;
 
-    // Edit Event Info Modal State
-    const [editModalOpen, setEditModalOpen] = useState(false);
-    const [editForm, setEditForm] = useState<any>({});
-    const [editLoading, setEditLoading] = useState(false);
-    const [editError, setEditError] = useState<string | null>(null);
 
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings' | 'conferences' | 'partners'>('chats');
     const [chatSubTab, setChatSubTab] = useState<'visitor' | 'b2b'>('visitor');
@@ -365,41 +354,6 @@ export default function EventManagementHub() {
     const [error, setError] = useState<string | null>(null);
     const [isForbidden, setIsForbidden] = useState(false);
 
-    // Open edit modal and prefill form
-    const openEditModal = () => {
-        if (!eventData) return;
-        setEditForm({
-            title: eventData.title,
-            description: eventData.description,
-            category: eventData.category,
-            location: eventData.location,
-            start_date: eventData.start_date?.slice(0, 16),
-            end_date: eventData.end_date?.slice(0, 16),
-            event_timezone: eventData.event_timezone,
-            tags: eventData.tags?.join(', ') || '',
-        });
-        setEditModalOpen(true);
-        setEditError(null);
-    };
-
-    // Handle edit form submit
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setEditLoading(true);
-        setEditError(null);
-        try {
-            await http.patch(`/events/${eventId}`, {
-                ...editForm,
-                tags: editForm.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
-            });
-            setEditModalOpen(false);
-            fetchData();
-        } catch (err: any) {
-            setEditError(err?.body?.detail || err?.message || 'Failed to update event');
-        } finally {
-            setEditLoading(false);
-        }
-    };
 
     // Polling interval ref for auto-refresh
     const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -1020,9 +974,6 @@ export default function EventManagementHub() {
                             </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <Button variant="outline" size="sm" onClick={openEditModal}>
-                                Edit Info
-                            </Button>
                             <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
                                 <LayoutDashboard size={14} className="mr-2" /> Analytics
                             </Button>
@@ -1054,59 +1005,14 @@ export default function EventManagementHub() {
                         <div className="flex flex-col gap-2 w-full">
                             <div className="flex flex-wrap gap-4 items-center">
                                 <span className="font-semibold">Invite Links:</span>
-                                <span>Enterprise: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.enterprise_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
-                                <span>Visitor: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.visitor_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
-                                <span>Publicity: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.publicity_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
+                                <span>Enterprise: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.enterprise_link}</span></span>
+                                <span>Visitor: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.visitor_link}</span></span>
+                                <span>Publicity: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.publicity_link}</span></span>
                             </div>
                         </div>
                     </CardFooter>
                 </Card>
 
-                {/* Edit Event Info Modal */}
-                <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
-                    <form onSubmit={handleEditSubmit} className="space-y-4">
-                        <h3 className="text-lg font-bold mb-2">Edit Event Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">Title</label>
-                                <Input value={editForm.title || ''} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} required />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">Category</label>
-                                <Input value={editForm.category || ''} onChange={e => setEditForm((f: any) => ({ ...f, category: e.target.value }))} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">Location</label>
-                                <Input value={editForm.location || ''} onChange={e => setEditForm((f: any) => ({ ...f, location: e.target.value }))} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">Timezone</label>
-                                <Input value={editForm.event_timezone || ''} onChange={e => setEditForm((f: any) => ({ ...f, event_timezone: e.target.value }))} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">Start Date</label>
-                                <Input type="datetime-local" value={editForm.start_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, start_date: e.target.value }))} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1">End Date</label>
-                                <Input type="datetime-local" value={editForm.end_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, end_date: e.target.value }))} />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-semibold mb-1">Description</label>
-                                <Input value={editForm.description || ''} onChange={e => setEditForm((f: any) => ({ ...f, description: e.target.value }))} />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-semibold mb-1">Tags (comma separated)</label>
-                                <Input value={editForm.tags || ''} onChange={e => setEditForm((f: any) => ({ ...f, tags: e.target.value }))} />
-                            </div>
-                        </div>
-                        {editError && <div className="text-red-500 text-xs">{editError}</div>}
-                        <div className="flex gap-2 justify-end">
-                            <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={editLoading}>{editLoading ? 'Saving...' : 'Save Changes'}</Button>
-                        </div>
-                    </form>
-                </Modal>
 
                 {/* ...existing code... */}
 
@@ -1145,9 +1051,12 @@ export default function EventManagementHub() {
             </div>
 
             {activeTab === 'chats' && (
-                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm">
+                <Card className="flex-1 border-zinc-200 overflow-hidden flex flex-col md:flex-row shadow-sm min-h-[400px] h-[calc(100vh-180px)] md:h-[calc(100vh-280px)]">
                     {/* Sidebar */}
-                    <div className="w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30">
+                    <div className={clsx(
+                        "w-full md:w-80 border-r border-zinc-100 flex flex-col bg-zinc-50/30",
+                        selectedRoomId ? "hidden md:flex" : "flex"
+                    )}>
                         {/* Chat sub-tabs: Visitor / B2B */}
                         <div className="flex border-b border-zinc-100 bg-white">
                             <button
@@ -1223,7 +1132,10 @@ export default function EventManagementHub() {
                     </div>
 
                     {/* Chat Window */}
-                    <div className="flex-1 bg-white relative">
+                    <div className={clsx(
+                        "flex-1 bg-white relative",
+                        !selectedRoomId ? "hidden md:flex" : "flex flex-col"
+                    )}>
                         {selectedRoomId ? (
                             <ChatPanel
                                 initialRoomId={selectedRoomId!}

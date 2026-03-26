@@ -15,7 +15,7 @@ from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from app.modules.participants.schemas import EnterpriseRequestsResponse, ParticipantStatus
 from app.modules.participants.service import list_enterprise_requests
-from app.modules.events.service import get_event_by_id, atomic_transition
+from app.modules.events.service import get_event_by_id, atomic_transition, resolve_event_id
 from app.modules.events.schemas import EventRead, EventState
 from app.modules.audit.service import log_audit
 from app.modules.stands.service import get_stand_by_org, create_stand
@@ -102,6 +102,7 @@ async def get_enterprise_requests(
 
     Filters: status, search (org name / email), skip, limit
     """
+    event_id = await resolve_event_id(event_id)
     result = await list_enterprise_requests(
         event_id=event_id,
         status=status,
@@ -130,6 +131,7 @@ async def force_start_event(
     - Allowed only when `state == payment_done`
     - Audit log: `event.force_start`
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -178,6 +180,7 @@ async def force_close_event(
     - Allowed only when `state == live`
     - Audit log: `event.force_close`
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

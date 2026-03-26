@@ -5,6 +5,7 @@ from .schemas import ResourceCreate, ResourceSchema
 from .repository import resource_repo
 from ...core.dependencies import get_current_user
 from ...core.storage import store_upload
+from ..stands.service import resolve_stand_id
 
 router = APIRouter()
 
@@ -20,18 +21,21 @@ async def upload_resource(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
+    # Resolve stand_id if it's a slug
+    resolved_stand_id = await resolve_stand_id(stand_id)
+    
     stored = await store_upload(
         file=file,
         local_dir=UPLOAD_DIR,
         local_url_prefix="/uploads/resources",
         r2_folder="resources",
-        filename_prefix=str(stand_id),
+        filename_prefix=str(resolved_stand_id),
     )
         
     resource_data = ResourceCreate(
         title=title,
         description=description,
-        stand_id=stand_id,
+        stand_id=resolved_stand_id,
         type=type,
         file_path=stored["url"],
         file_size=stored["size"],
@@ -43,7 +47,8 @@ async def upload_resource(
 
 @router.get("/stand/{stand_id}", response_model=List[ResourceSchema])
 async def get_catalog(stand_id: str):
-    return await resource_repo.get_resources_by_stand(stand_id)
+    resolved_stand_id = await resolve_stand_id(stand_id)
+    return await resource_repo.get_resources_by_stand(resolved_stand_id)
 
 @router.get("/{resource_id}/track")
 async def track_download(resource_id: str):

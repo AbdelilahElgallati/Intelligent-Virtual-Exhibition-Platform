@@ -531,6 +531,28 @@ async def list_unified_orders(
     user: dict = Depends(get_current_user),
 ):
     """Return visitor orders grouped as unified checkout orders (products + services together)."""
+    # Safe status sync if session_id is provided (handles potential webhook delays)
+    if session_id:
+        try:
+            orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
+            has_pending = any(
+                o.get("payment_method") == "stripe" and o.get("status") == "pending"
+                for o in orders
+            )
+            if has_pending:
+                session = stripe.checkout.Session.retrieve(session_id)
+                if session and session.payment_status == "paid":
+                    payment_intent_id = session.payment_intent or ""
+                    for order in orders:
+                        if order.get("payment_method") == "stripe" and order.get("status") == "pending":
+                            updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
+                            if updated_order and changed:
+                                product = await mkt_svc.get_product(updated_order["product_id"])
+                                if product and str(product.get("type") or "product") != "service":
+                                    await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
+        except Exception as exc:
+            logger.warning("Unified session sync skipped for %s: %s", session_id, exc)
+
     return await mkt_svc.list_unified_orders_for_buyer(
         str(user["_id"]),
         session_id=session_id,

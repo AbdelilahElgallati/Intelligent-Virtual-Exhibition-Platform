@@ -260,7 +260,10 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
   doc.text(`Receipt #: ${receiptNo}`, 14, 32);
   doc.text(`Date: ${formatInTZ(createdAtIso, tz, 'MMMM d, yyyy')}`, 14, 38);
   doc.text(`Time: ${formatInTZ(createdAtIso, tz, 'hh:mm:ss a')}`, 14, 44);
-  doc.text(`Status: ${(input.status || 'paid').toUpperCase()}`, 14, 50);
+  const displayStatus = (input.status === 'pending' && (input.paymentMethod === 'cod' || input.paymentMethod === 'cash_on_delivery'))
+    ? 'CONFIRMED'
+    : (input.status || 'paid').toUpperCase();
+  doc.text(`Status: ${displayStatus}`, 14, 50);
 
   doc.setFontSize(12);
   doc.setTextColor(30);

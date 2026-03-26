@@ -25,9 +25,12 @@ async def get_my_rooms(
     room_category: str = None,
     current_user: dict = Depends(get_current_user),
 ):
+    # Resolve event_id if it's a slug
+    resolved_event_id = await resolve_event_id(event_id) if event_id else None
+    
     rooms = await chat_repo.get_user_rooms(
         str(current_user["_id"]),
-        event_id=event_id,
+        event_id=resolved_event_id,
         room_category=room_category,
     )
     
