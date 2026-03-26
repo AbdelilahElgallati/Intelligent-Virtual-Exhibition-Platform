@@ -5,8 +5,67 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Conference } from '@/types/conference';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+// Utility to mask IDs in links
+function maskId(id?: string) {
+    if (!id) return '';
+    if (id.length <= 8) return '••••';
+    return id.slice(0, 4) + '••••' + id.slice(-4);
+}
+// Simple Modal implementation
+function Modal({ open, onClose, children }: { open: boolean, onClose: () => void, children: React.ReactNode }) {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 relative animate-in fade-in duration-200">
+                <button onClick={onClose} className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-700 text-xl">×</button>
+                {children}
+            </div>
+        </div>
+    );
+}
+    // Edit Event Info Modal State
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editForm, setEditForm] = useState<any>({});
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
+        // Open edit modal and prefill form
+        const openEditModal = () => {
+            if (!eventData) return;
+            setEditForm({
+                title: eventData.title,
+                description: eventData.description,
+                category: eventData.category,
+                location: eventData.location,
+                start_date: eventData.start_date?.slice(0, 16),
+                end_date: eventData.end_date?.slice(0, 16),
+                event_timezone: eventData.event_timezone,
+                tags: eventData.tags?.join(', ') || '',
+            });
+            setEditModalOpen(true);
+            setEditError(null);
+        };
+
+        // Handle edit form submit
+        const handleEditSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
+            setEditLoading(true);
+            setEditError(null);
+            try {
+                await http.patch(`/events/${eventId}`, {
+                    ...editForm,
+                    tags: editForm.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+                });
+                setEditModalOpen(false);
+                fetchData();
+            } catch (err: any) {
+                setEditError(err?.body?.detail || err?.message || 'Failed to update event');
+            } finally {
+                setEditLoading(false);
+            }
+        };
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import {
@@ -939,37 +998,112 @@ export default function EventManagementHub() {
         );
     }
 
-    return (
-        <div className="h-[calc(100vh-140px)] flex flex-col gap-6 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 rounded-xl transition-colors text-zinc-500"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
-                            {stand?.name || "Manage Event"}
-                        </h2>
-                        <p className="text-sm text-zinc-500">Live interaction hub for this event.</p>
-                    </div>
-                </div>
 
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
-                        <LayoutDashboard size={14} className="mr-2" /> Analytics
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
-                        <Package size={14} className="mr-2" /> Requests
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
-                        <Calendar size={14} className="mr-2" /> Config
-                    </Button>
-                </div>
-            </div>
+        return (
+            <div className="h-[calc(100vh-140px)] flex flex-col gap-6 animate-in fade-in duration-500">
+                {/* Event Info Section */}
+                <Card className="mb-2">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || 'Event'}</h2>
+                            <div className="text-sm text-zinc-500 mb-1">{eventData?.description}</div>
+                            <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                                <span><Calendar size={12} className="inline mr-1" />{eventData?.start_date?.slice(0, 10)} to {eventData?.end_date?.slice(0, 10)}</span>
+                                <span><Globe size={12} className="inline mr-1" />{eventData?.event_timezone}</span>
+                                {eventData?.location && <span><MapPin size={12} className="inline mr-1" />{eventData.location}</span>}
+                                {eventData?.category && <span><Tag size={12} className="inline mr-1" />{eventData.category}</span>}
+                            </div>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <Button variant="outline" size="sm" onClick={openEditModal}>
+                                Edit Info
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
+                                <LayoutDashboard size={14} className="mr-2" /> Analytics
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
+                                <Package size={14} className="mr-2" /> Requests
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
+                                <Calendar size={14} className="mr-2" /> Config
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-4 items-center">
+                            <div>
+                                <span className="font-semibold">Enterprises:</span> {eventData?.num_enterprises}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Tags:</span> {eventData?.tags?.join(', ')}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Stand Price:</span> {eventData?.stand_price} MAD
+                            </div>
+                            <div>
+                                <span className="font-semibold">Ticket:</span> {eventData?.is_paid ? `${eventData.ticket_price} MAD` : 'Free'}
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <div className="flex flex-col gap-2 w-full">
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <span className="font-semibold">Invite Links:</span>
+                                <span>Enterprise: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.enterprise_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
+                                <span>Visitor: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.visitor_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
+                                <span>Publicity: <span className="bg-zinc-100 px-2 py-1 rounded text-xs">{eventData?.publicity_link?.replace(eventData?.id || '', maskId(eventData?.id))}</span></span>
+                            </div>
+                        </div>
+                    </CardFooter>
+                </Card>
+
+                {/* Edit Event Info Modal */}
+                <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <h3 className="text-lg font-bold mb-2">Edit Event Information</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">Title</label>
+                                <Input value={editForm.title || ''} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} required />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">Category</label>
+                                <Input value={editForm.category || ''} onChange={e => setEditForm((f: any) => ({ ...f, category: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">Location</label>
+                                <Input value={editForm.location || ''} onChange={e => setEditForm((f: any) => ({ ...f, location: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">Timezone</label>
+                                <Input value={editForm.event_timezone || ''} onChange={e => setEditForm((f: any) => ({ ...f, event_timezone: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">Start Date</label>
+                                <Input type="datetime-local" value={editForm.start_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, start_date: e.target.value }))} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1">End Date</label>
+                                <Input type="datetime-local" value={editForm.end_date || ''} onChange={e => setEditForm((f: any) => ({ ...f, end_date: e.target.value }))} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-semibold mb-1">Description</label>
+                                <Input value={editForm.description || ''} onChange={e => setEditForm((f: any) => ({ ...f, description: e.target.value }))} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-semibold mb-1">Tags (comma separated)</label>
+                                <Input value={editForm.tags || ''} onChange={e => setEditForm((f: any) => ({ ...f, tags: e.target.value }))} />
+                            </div>
+                        </div>
+                        {editError && <div className="text-red-500 text-xs">{editError}</div>}
+                        <div className="flex gap-2 justify-end">
+                            <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={editLoading}>{editLoading ? 'Saving...' : 'Save Changes'}</Button>
+                        </div>
+                    </form>
+                </Modal>
+
+                {/* ...existing code... */}
 
             {/* Tabs */}
             <div className="flex gap-1 bg-zinc-100 p-1 rounded-2xl w-fit">
