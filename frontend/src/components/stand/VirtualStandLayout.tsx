@@ -127,7 +127,7 @@ export function VirtualStandLayout({
     };
 
     return (
-        <div className="relative w-full h-screen overflow-hidden select-none bg-gray-900">
+        <div className="relative w-full min-h-[100dvh] overflow-hidden select-none bg-gray-900">
 
             {/* ================ SCENE BACKGROUND ================ */}
 
@@ -172,7 +172,7 @@ export function VirtualStandLayout({
             {/* ================ BRANDING OVERLAYS ================ */}
 
             {/* Wall banner — positioned on the back wall */}
-            <div className="absolute top-[8%] sm:top-[8%] left-1/2 -translate-x-1/2 z-10 w-[240px] sm:w-[300px] lg:w-[380px]">
+            <div className="absolute top-[8%] left-1/2 -translate-x-1/2 z-10 w-[clamp(220px,40vw,380px)] sm:w-[300px] lg:w-[380px] max-[639px]:top-[8vh]">
                 <div
                     className="relative w-full rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] ring-2"
                     style={{ borderColor: `${themeColor}88`, ['--tw-ring-color' as string]: `${themeColor}44` }}
@@ -213,7 +213,7 @@ export function VirtualStandLayout({
             </div>
 
             {/* Left wall panel — Logo & Company Info */}
-            <div className="absolute top-[22%] sm:top-[20%] left-3 sm:left-5 lg:left-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block">
+            <div className="absolute top-[22%] sm:top-[20%] left-3 sm:left-5 lg:left-12 z-10 md:w-48 lg:w-56 hidden md:block">
                 <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_24px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/50">
                     {/* Logo */}
                     <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-2xl bg-white/50 flex items-center justify-center overflow-hidden border border-white/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
@@ -287,22 +287,46 @@ export function VirtualStandLayout({
             </div>
 
             {/* Mobile-only welcome card (below banner) */}
-            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden">
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-white/50">
-                    <h4 className="text-xs font-semibold text-gray-900 line-clamp-1 mb-1 tracking-tight">{stand.name}</h4>
+            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 z-10 w-[85%] max-w-xs md:hidden max-[639px]:w-fit max-[639px]:min-w-[14rem] max-[639px]:max-w-[78vw] max-[640px]:top-[22.3vh]">
+                <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-white/50 max-[640px]:p-3 max-[640px]:max-h-[140px] max-[640px]:overflow-y-auto max-[380px]:scale-[0.92] max-[380px]:origin-top">
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-white/60 flex items-center justify-center overflow-hidden border border-white/60">
+                        {stand.logo_url ? (
+                            <img
+                                src={resolveMediaUrl(stand.logo_url) || STAND_BANNER_FALLBACK}
+                                alt={stand.name}
+                                className="w-full h-full object-cover"
+                                draggable={false}
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = STAND_BANNER_FALLBACK;
+                                }}
+                            />
+                        ) : (
+                            <Building2 className="w-4 h-4 text-gray-400" />
+                        )}
+                    </div>
+                    <h4 className="text-xs font-semibold text-gray-900 text-center line-clamp-1 mb-1 tracking-tight">{stand.name}</h4>
                     {stand.category && (
-                        <p className="text-[10px] font-medium text-gray-400 mb-2">{stand.category}</p>
+                        <p className="text-[10px] font-medium text-gray-400 text-center mb-2">{stand.category}</p>
                     )}
-                    <p className="text-[11px] text-gray-600 font-normal leading-relaxed line-clamp-3 mb-3">
-                        {stand.description ||
-                            'Welcome to our virtual stand.'}
-                    </p>
+                    {stand.tags && stand.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 justify-center mb-2">
+                            {stand.tags.slice(0, 4).map((tag, i) => (
+                                <span
+                                    key={i}
+                                    className="px-2 py-0.5 text-[9px] font-medium rounded-lg bg-black/5 text-gray-500 border border-black/5"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                     {stand.website_url && (
                         <a
                             href={stand.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[10px] font-semibold"
+                            className="text-[10px] font-semibold block text-center"
                             style={{ color: themeColor }}
                         >
                             Website →
@@ -312,14 +336,14 @@ export function VirtualStandLayout({
             </div>
 
             {/* ================ PRESENTER ================ */}
-            <div className="absolute bottom-[2%] right-[6%] sm:right-[12%] lg:right-[18%] z-10 flex flex-col items-center">
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center pointer-events-none sm:right-[10%] sm:-translate-x-15 lg:right-[10%]">
                 {/* Name badge ABOVE the presenter */}
                 {stand.presenter_name && (
                     <div
-                        className="mb-[-4rem] sm:mb-[-0.5rem] px-5 py-2 rounded-full shadow-2xl text-center backdrop-blur-xl border border-white/20"
-                        style={{ backgroundColor: `${themeColor}cc` }}
+                        className="-mb-3 px-4 py-1.5 rounded-full shadow-xl text-center backdrop-blur-md border border-white/20"
+                        style={{ backgroundColor: `${themeColor}dd` }}
                     >
-                        <p className="text-[10px] sm:text-xs font-semibold text-white whitespace-nowrap tracking-wide">
+                        <p className="text-[10px] sm:text-xs font-bold text-white whitespace-nowrap tracking-wide uppercase">
                             {stand.presenter_name}
                         </p>
                     </div>
@@ -327,7 +351,7 @@ export function VirtualStandLayout({
                 <img
                     src={presenterImg}
                     alt={stand.presenter_name ?? `${presenterLabel} presenter`}
-                    className="h-[38rem] sm:h-80 lg:h-[28rem] w-auto object-contain drop-shadow-[0_8px_40px_rgba(0,0,0,0.25)]"
+                    className="h-[55dvh] sm:h-[60vh] md:h-[65vh] lg:h-[70vh] w-auto max-w-none max-[640px]:scale-x-[1] drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)] min-h-[300px]"
                     draggable={false}
                     onError={(e) => {
                         e.currentTarget.onerror = null;
@@ -389,15 +413,15 @@ export function VirtualStandLayout({
                         </button>
                     </div>
                     {/* Drawer body */}
-                    <div ref={panelBodyRef} className="p-8 max-h-[45vh] overflow-y-auto custom-scrollbar text-sm text-gray-700">
+                    <div ref={panelBodyRef} className="p-8 max-h-[min(45vh,400px)] overflow-y-auto custom-scrollbar text-sm text-gray-700">
                         {children}
                     </div>
                 </div>
             </div>
 
             {/* ---------- Bottom action bar ---------- */}
-            <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 w-full max-w-fit px-4">
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 p-2 rounded-[2rem] bg-white/75 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.14)] border border-white/50 group/dock">
+            <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 w-full flex justify-center px-4 overflow-x-auto">
+                <div className="flex w-fit max-w-fit min-w-max items-center justify-center gap-1.5 sm:gap-2.5 p-2 rounded-[2rem] bg-white/75 backdrop-blur-2xl shadow-[0_14px_36px_rgba(0,0,0,0.14)] border border-white/50 group/dock">
                     {/* Resources */}
                     <ActionBarBtn
                         active={activeTab === 'resources' && showPanel}
