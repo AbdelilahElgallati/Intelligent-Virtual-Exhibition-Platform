@@ -403,7 +403,7 @@ export default function EventManagementHub() {
             sData = standData; // Shared with meetings catch-guard
         } catch (err: any) {
             console.error('Failed to fetch core event data', err);
-            if (err.status === 403) setIsForbidden(true);
+            if (err.status === 403 || err.status === 404) setIsForbidden(true);
             else setError(err.message || 'An error occurred while loading dashboard data.');
             setIsLoading(false);
             return; // Stop here if core data fails
