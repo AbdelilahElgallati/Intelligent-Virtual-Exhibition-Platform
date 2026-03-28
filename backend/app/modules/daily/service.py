@@ -109,7 +109,6 @@ async def create_room(
     except Exception as exc:
         logger.error("Daily create_room(%s) exception: %s", room_name, exc)
         return False
-    return False
 
 
 async def delete_room(room_name: str) -> bool:
@@ -144,7 +143,6 @@ async def delete_room(room_name: str) -> bool:
     except Exception as exc:
         logger.error("Daily delete_room(%s) exception: %s", room_name, exc)
         return False
-    return False
 
 
 # ── Token Generation ──────────────────────────────────────────────────────────

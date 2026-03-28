@@ -752,7 +752,6 @@ export default function EventManagementHub() {
         } else {
             res = { gate: 'not-ready' as const, title: eventData.title, state };
         }
-        console.log('eventTimeline gate', res);
         return res;
     }, [eventData, timelineNow]);
 
