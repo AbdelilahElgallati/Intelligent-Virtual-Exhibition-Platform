@@ -25,7 +25,9 @@ export const EventCard: React.FC<EventCardProps> = ({
   favoriteAnimating,
   onToggleFavorite,
 }) => {
-  const eventId = event.slug || (event as any)?.id || (event as any)?._id;
+  const evAny = event as any;
+  const idForFavorites = String(evAny?.id || evAny?._id || event.slug || '');
+  const routeEventKey = event.slug || evAny?.id || evAny?._id;
   const lifecycle = getEventLifecycle(event);
   const isBetweenSlots = lifecycle.betweenSlots;
   const lifecycleLabel = !lifecycle.hasScheduleSlots
@@ -48,7 +50,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         ? 'bg-cyan-100 text-cyan-700 border-cyan-200'
         : 'bg-slate-100 text-slate-600 border-slate-200';
 
-  const actionHref = lifecycle.status === 'live' ? `/events/${eventId}/live` : `/events/${eventId}`;
+  const actionHref = lifecycle.status === 'live' ? `/events/${routeEventKey}/live` : `/events/${routeEventKey}`;
   const actionLabel = lifecycle.status === 'live' ? 'Enter Live Event' : lifecycle.status === 'upcoming' ? 'View Details' : 'View Summary';
 
   return (
@@ -72,10 +74,10 @@ export const EventCard: React.FC<EventCardProps> = ({
             {event.title}
           </CardTitle>
           <div className="flex flex-col items-end gap-1">
-            {eventId && onToggleFavorite && (
+            {idForFavorites && onToggleFavorite && (
               <button
                 type="button"
-                onClick={() => onToggleFavorite(String(eventId))}
+                onClick={() => onToggleFavorite(idForFavorites)}
                 className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold transition-all ${
                   favoriteId
                     ? 'border-rose-300 bg-rose-50 text-rose-700'

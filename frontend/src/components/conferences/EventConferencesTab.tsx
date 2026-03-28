@@ -207,10 +207,6 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
             if (eventRes.status === 'fulfilled') {
                 setEvent(eventRes.value);
             }
-
-            if (conferencesRes.status === 'rejected') {
-                throw conferencesRes.reason;
-            }
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : 'Failed to load timeline';
             setError(message);

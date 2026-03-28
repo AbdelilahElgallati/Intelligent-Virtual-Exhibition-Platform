@@ -331,6 +331,9 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
+            const tz = ev.event_timezone || getUserTimezone();
+            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -341,6 +344,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                 paidAt: participation?.updated_at,
                 paymentReference: participation?.payment_reference || 'N/A',
                 paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+                eventLocation: ev.location,
+                eventTimezone: ev.event_timezone,
+                category: ev.category,
+                startDateLabel,
+                endDateLabel,
             });
         } catch (error) {
             console.error('Error generating receipt:', error);
@@ -609,6 +617,9 @@ function EnterpriseEventCard({
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
+            const tz = ev.event_timezone || getUserTimezone();
+            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -619,6 +630,11 @@ function EnterpriseEventCard({
                 paidAt: participation?.updated_at,
                 paymentReference: participation?.payment_reference || 'N/A',
                 paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+                eventLocation: ev.location,
+                eventTimezone: ev.event_timezone,
+                category: ev.category,
+                startDateLabel,
+                endDateLabel,
             });
         } catch (error) {
             console.error('Error generating receipt:', error);

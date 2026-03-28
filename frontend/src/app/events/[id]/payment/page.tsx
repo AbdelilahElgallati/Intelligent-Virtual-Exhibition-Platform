@@ -9,6 +9,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { Container } from '@/components/common/Container';
 import { useAuth } from '@/context/AuthContext';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 
 interface PaymentPageProps {
     params: Promise<{ id?: string }> | { id?: string };
@@ -207,6 +208,20 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                                         currency: receiptData.currency || 'MAD',
                                         paidAt: receiptData.paid_at,
                                         reference: receiptData.stripe_payment_intent_id || receiptData.receipt_id || 'N/A',
+                                        organizerName: (event as any)?.organizer_name,
+                                        eventLocation: event?.location,
+                                        eventTimezone: event?.event_timezone,
+                                        category: (event as any)?.category,
+                                        startDateLabel: event?.start_date
+                                            ? formatInTZ(event.start_date, event.event_timezone || getUserTimezone(), 'MMM d, yyyy h:mm a')
+                                            : undefined,
+                                        endDateLabel: event?.end_date
+                                            ? formatInTZ(event.end_date, event.event_timezone || getUserTimezone(), 'MMM d, yyyy h:mm a')
+                                            : undefined,
+                                        paymentMethodLabel:
+                                            String(receiptData.payment_method || '').toLowerCase() === 'cash_on_delivery'
+                                                ? 'Pay on Reception (COD)'
+                                                : 'Stripe (Online Card Payment)',
                                     });
                                 }}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white border border-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"

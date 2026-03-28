@@ -7,6 +7,15 @@ type EventTicketReceiptInput = {
   currency?: string;
   paidAt?: string;
   reference?: string;
+  /** Display-only context (no card or Stripe secrets). */
+  organizerName?: string;
+  eventLocation?: string;
+  eventTimezone?: string;
+  category?: string;
+  startDateLabel?: string;
+  endDateLabel?: string;
+  /** e.g. "Stripe (online card)" or "Pay on Reception (COD)" — never raw Stripe IDs. */
+  paymentMethodLabel?: string;
 };
 
 type EnterpriseStandReceiptInput = {
@@ -15,10 +24,16 @@ type EnterpriseStandReceiptInput = {
   organizerName?: string;
   buyerName?: string;
   buyerEmail?: string;
+  buyerPhone?: string;
   amount: number;
   paidAt?: string;
   paymentReference?: string;
   paymentMethodLabel?: string;
+  eventLocation?: string;
+  eventTimezone?: string;
+  category?: string;
+  startDateLabel?: string;
+  endDateLabel?: string;
 };
 
 type MarketplaceUnifiedOrderReceiptItem = {
@@ -44,6 +59,14 @@ type MarketplaceUnifiedOrderReceiptInput = {
   createdAt?: string;
   paidAt?: string;
   items: MarketplaceUnifiedOrderReceiptItem[];
+  /** Event / seller context (no Stripe secrets). */
+  eventId?: string;
+  eventTitle?: string;
+  standId?: string;
+  sellerEnterpriseName?: string;
+  sellerContactEmail?: string;
+  eventLocation?: string;
+  eventTimezone?: string;
 };
 
 export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInput) {
@@ -101,8 +124,31 @@ export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInp
   doc.setFont('helvetica', 'normal');
   doc.text(input.eventTitle || 'Event Ticket', 122, 82);
 
+  let ctxY = 94;
+  const ctxLines: string[] = [];
+  if (input.organizerName) ctxLines.push(`Organizer: ${input.organizerName}`);
+  if (input.category) ctxLines.push(`Category: ${input.category}`);
+  if (input.startDateLabel && input.endDateLabel) {
+    ctxLines.push(`Event dates: ${input.startDateLabel} – ${input.endDateLabel}`);
+  } else if (input.startDateLabel) ctxLines.push(`Event start: ${input.startDateLabel}`);
+  if (input.eventLocation) ctxLines.push(`Venue / location: ${input.eventLocation}`);
+  if (input.eventTimezone) ctxLines.push(`Timezone: ${input.eventTimezone}`);
+  if (ctxLines.length) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Event information', 14, ctxY);
+    ctxY += 6;
+    doc.setFont('helvetica', 'normal');
+    ctxLines.forEach((ln) => {
+      const t = ln.length > 100 ? `${ln.slice(0, 97)}…` : ln;
+      doc.text(t, 14, ctxY);
+      ctxY += 5;
+    });
+  }
+
+  const ticketTableStartY = Math.max(98, ctxY + 6);
+
   autoTable(doc, {
-    startY: 98,
+    startY: ticketTableStartY,
     head: [['#', 'Description', 'Qty', 'Amount', 'Currency']],
     body: [[
       '1',
@@ -197,8 +243,30 @@ export async function downloadEnterpriseStandFeeReceiptPdf(input: EnterpriseStan
   doc.text('Intelligent Virtual Exhibition Platform', 122, 82);
   if (input.organizerName) doc.text(`Organizer: ${input.organizerName}`, 122, 88);
 
+  let standCtxY = input.buyerPhone ? 104 : 96;
+  const standLines: string[] = [];
+  if (input.category) standLines.push(`Category: ${input.category}`);
+  if (input.startDateLabel && input.endDateLabel) {
+    standLines.push(`Event dates: ${input.startDateLabel} – ${input.endDateLabel}`);
+  } else if (input.startDateLabel) standLines.push(`Event start: ${input.startDateLabel}`);
+  if (input.eventLocation) standLines.push(`Venue / location: ${input.eventLocation}`);
+  if (input.eventTimezone) standLines.push(`Timezone: ${input.eventTimezone}`);
+  if (standLines.length) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Event information', 14, standCtxY);
+    standCtxY += 6;
+    doc.setFont('helvetica', 'normal');
+    standLines.forEach((ln) => {
+      const t = ln.length > 100 ? `${ln.slice(0, 97)}…` : ln;
+      doc.text(t, 14, standCtxY);
+      standCtxY += 5;
+    });
+  }
+
+  const standTableStartY = Math.max(98, standCtxY + 6);
+
   autoTable(doc, {
-    startY: 98,
+    startY: standTableStartY,
     head: [['#', 'Description', 'Qty', 'Amount', 'Currency']],
     body: [[
       '1',
@@ -278,7 +346,7 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
   doc.setFontSize(10);
   doc.setTextColor(60);
   doc.text(`Order Ref: ${receiptNo}`, 14, 64);
-  doc.text(`Paid At: ${formatInTZ(paidAtIso, tz, 'MMMM d, yyyy hh:mm a')}`, 14, 70);
+  if (input.paymentMethod !== 'cash_on_delivery' && input.paymentMethod !== 'cod') doc.text(`Paid At: ${formatInTZ(paidAtIso, tz, 'MMMM d, yyyy hh:mm a')}`, 14, 70);
 
   doc.setFont('helvetica', 'bold');
   doc.text('Buyer:', 14, 80);
@@ -293,6 +361,41 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
   doc.text(input.shippingAddress || 'Not provided', 112, 86);
   if (input.deliveryNotes) doc.text(`Notes: ${input.deliveryNotes}`, 112, 92);
 
+  let sellerY = 98;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Exhibitor (seller):', 112, sellerY);
+  sellerY += 6;
+  doc.setFont('helvetica', 'normal');
+  const exhibitorLabel = input.sellerEnterpriseName || input.standName || 'Enterprise stand';
+  doc.text(exhibitorLabel.length > 46 ? `${exhibitorLabel.slice(0, 43)}…` : exhibitorLabel, 112, sellerY);
+  sellerY += 5;
+  if (input.sellerContactEmail) {
+    doc.text(input.sellerContactEmail, 112, sellerY);
+    sellerY += 5;
+  }
+  if (input.eventTitle) {
+    doc.text(`Event: ${input.eventTitle.length > 40 ? `${input.eventTitle.slice(0, 37)}…` : input.eventTitle}`, 112, sellerY);
+    sellerY += 5;
+  }
+  /*if (input.eventId) {
+    doc.text(`Event reference: ${input.eventId}`, 112, sellerY);
+    sellerY += 5;
+  }
+  if (input.standId) {
+    doc.text(`Stand reference: ${input.standId}`, 112, sellerY);
+    sellerY += 5;
+  }*/
+  if (input.eventLocation) {
+    doc.text(`Venue: ${input.eventLocation.length > 42 ? `${input.eventLocation.slice(0, 39)}…` : input.eventLocation}`, 112, sellerY);
+    sellerY += 5;
+  }
+  if (input.eventTimezone) {
+    doc.text(`Timezone: ${input.eventTimezone}`, 112, sellerY);
+    sellerY += 5;
+  }
+
+  const marketplaceTableStartY = Math.max(106, sellerY + 10, input.buyerPhone ? 112 : 106);
+
   const rows = input.items.map((item, index) => {
     const isService = String(item.product_type || 'product') === 'service';
     return [
@@ -306,7 +409,7 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
   });
 
   autoTable(doc, {
-    startY: 106,
+    startY: marketplaceTableStartY,
     head: [['#', 'Item', 'Type', 'Qty', 'Unit Price', 'Subtotal']],
     body: rows,
     theme: 'striped',
@@ -330,7 +433,12 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(120);
-  doc.text(`Payment Method: ${input.paymentMethod === 'cash_on_delivery' ? 'Pay on Reception (COD)' : 'Stripe'}`, 14, finalY + 14);
+  const pm = String(input.paymentMethod || '').toLowerCase();
+  const pmLabel =
+    pm === 'cash_on_delivery' || pm === 'cod'
+      ? 'Pay on Reception (COD)'
+      : 'Stripe (online card payment)';
+  doc.text(`Payment Method: ${pmLabel}`, 14, finalY + 14);
 
   doc.setFontSize(8);
   doc.setTextColor(160);

@@ -3,6 +3,7 @@ import { Event } from '@/types/event';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { useAuth } from '@/hooks/useAuth';
+import { resolveMediaUrl } from '@/lib/media';
 import { Briefcase, Building2, ExternalLink, Globe, Mail, MapPin, Search, Target, Users, X } from 'lucide-react';
 
 /* ── Types ── */
@@ -216,13 +217,66 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
 
 /* ── Attendee Card ── */
 
-function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut: () => void }) {
-    const initials = (attendee.full_name || attendee.email)
+function attendeeInitials(attendee: Attendee): string {
+    return (attendee.full_name || attendee.email)
         .split(/[\s@]+/)
         .slice(0, 2)
         .map((w) => w[0]?.toUpperCase() || '')
         .join('');
+}
 
+function NetworkingAvatar({
+    attendee,
+    size,
+    className,
+}: {
+    attendee: Attendee;
+    size: 'sm' | 'lg';
+    className?: string;
+}) {
+    const [broken, setBroken] = useState(false);
+    const raw = attendee.avatar_url?.trim();
+    const src = raw && !broken ? resolveMediaUrl(raw) : '';
+    const initials = attendeeInitials(attendee);
+    if (size === 'sm') {
+        if (!src) {
+            return (
+                <div
+                    className={`w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0 border border-gray-100 shadow-sm ${className || ''}`}
+                >
+                    {initials}
+                </div>
+            );
+        }
+        return (
+            <img
+                src={src}
+                alt=""
+                onError={() => setBroken(true)}
+                className={`w-14 h-14 rounded-xl object-cover shadow-sm border border-gray-100 flex-shrink-0 ${className || ''}`}
+            />
+        );
+    }
+    if (!src) {
+        return (
+            <div
+                className={`w-[72px] h-[72px] rounded-2xl bg-slate-100 border border-gray-200 shadow-sm flex items-center justify-center text-slate-500 font-bold text-2xl ${className || ''}`}
+            >
+                {initials || '?'}
+            </div>
+        );
+    }
+    return (
+        <img
+            src={src}
+            alt={attendee.full_name || ''}
+            onError={() => setBroken(true)}
+            className={`w-[72px] h-[72px] rounded-2xl object-cover border border-gray-200 shadow-sm ${className || ''}`}
+        />
+    );
+}
+
+function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut: () => void }) {
     const roleBadge: Record<string, { label: string; cls: string }> = {
         visitor: { label: 'Visitor', cls: 'bg-blue-50 text-blue-600 border-blue-100' },
         enterprise: { label: 'Enterprise', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
@@ -254,17 +308,7 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
             </div>
 
             <div className="flex items-start gap-5">
-                {attendee.avatar_url ? (
-                    <img
-                        src={attendee.avatar_url}
-                        alt={attendee.full_name || ''}
-                        className="w-14 h-14 rounded-xl object-cover shadow-sm border border-gray-100 flex-shrink-0"
-                    />
-                ) : (
-                    <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg flex-shrink-0">
-                        {initials}
-                    </div>
-                )}
+                <NetworkingAvatar attendee={attendee} size="sm" />
                 
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -380,13 +424,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
 
                 <div className="px-8 pt-6 pb-8 relative overflow-y-auto">
                     <div className="flex items-start gap-5 mb-6">
-                        {attendee.avatar_url ? (
-                            <img src={attendee.avatar_url} alt={identity} className="w-[72px] h-[72px] rounded-2xl object-cover border border-gray-200 shadow-sm" />
-                        ) : (
-                            <div className="w-[72px] h-[72px] rounded-2xl bg-slate-100 border border-gray-200 shadow-sm flex items-center justify-center text-slate-400 font-bold text-3xl">
-                                {(identity || 'A').slice(0, 1).toUpperCase()}
-                            </div>
-                        )}
+                        <NetworkingAvatar attendee={attendee} size="lg" />
                         <div className="pt-1 min-w-0">
                             <h4 className="text-2xl font-bold text-slate-900 tracking-tight">{identity}</h4>
                             <p className="text-indigo-600 font-semibold text-xs">

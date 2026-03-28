@@ -43,15 +43,29 @@ export const EventsGrid: React.FC<EventsGridProps> = ({
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {events.map((event, index) => {
                 const key = event.id || (event as any)._id || `${event.title}-${index}`;
-                const eventId = String(event.id || (event as any)._id || '');
-                const isRegistered = !!eventId && !!registeredEventIds?.has(eventId);
+                const evAny = event as any;
+                const favoriteLookupKey = String(evAny?.id || evAny?._id || event.slug || '');
+                const favoriteId =
+                    (favoriteLookupKey && favoriteMap?.get(favoriteLookupKey)) ||
+                    (evAny?.id && favoriteMap?.get(String(evAny.id))) ||
+                    (evAny?._id && favoriteMap?.get(String(evAny._id))) ||
+                    (event.slug && favoriteMap?.get(String(event.slug))) ||
+                    null;
+                const regId = String(evAny?.id || evAny?._id || '');
+                const isRegistered = !!regId && !!registeredEventIds?.has(regId);
                 return (
                     <EventCard
                         key={key}
                         event={event}
                         isRegistered={isRegistered}
-                        favoriteId={eventId ? (favoriteMap?.get(eventId) ?? null) : null}
-                        favoriteAnimating={favoriteAnimatingEventId === eventId}
+                        favoriteId={favoriteId}
+                        favoriteAnimating={
+                            !!favoriteAnimatingEventId &&
+                            (favoriteAnimatingEventId === favoriteLookupKey ||
+                                favoriteAnimatingEventId === String(evAny?.id || '') ||
+                                favoriteAnimatingEventId === String(evAny?._id || '') ||
+                                favoriteAnimatingEventId === String(event.slug || ''))
+                        }
                         onToggleFavorite={onToggleFavorite}
                     />
                 );
