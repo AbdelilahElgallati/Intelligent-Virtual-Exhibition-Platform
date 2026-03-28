@@ -1,5 +1,6 @@
 """Analytics module router for IVEP."""
 
+import csv
 import io
 from datetime import datetime, timedelta, timezone
 from typing import Any, List
@@ -14,7 +15,7 @@ from app.modules.auth.enums import Role
 from app.db.mongo import get_database
 from app.db.utils import _oid_or_value
 
-from .latex_service import latex_service
+from .pdf_service import latex_service
 from .repository import analytics_repo
 from .schemas import AnalyticsEventCreate, AnalyticsEventRead, DashboardData
 from .service import (
@@ -119,7 +120,7 @@ async def get_event_metrics(
 
 @router.get("/report/export")
 async def export_platform_report(
-    format: str = Query("pdf", enum=["pdf", "tex"]),
+    format: str = Query("pdf", enum=["pdf", "tex", "csv"]),
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ):
     """Export platform-wide analysis report (Admin only)."""
@@ -141,7 +142,13 @@ async def get_platform_metrics(
 
 
 def _report_to_latex_data(report: dict[str, Any], title: str, description: str) -> dict[str, Any]:
-    return {
+    if description == "Auto-generated IVEP report.":
+        description = (
+            "This dossier summarizes platform scale, monetization, and trust \\& safety signals "
+            "for executive review. Figures reflect live aggregates at generation time; use the "
+            "admin console for interactive drill-down."
+        )
+    data = {
         "report_title": title,
         "overview_description": description,
         "kpis": [
@@ -161,7 +168,50 @@ def _report_to_latex_data(report: dict[str, Any], title: str, description: str) 
             {"total_flags": 0, "resolved_flags": 0, "resolution_rate": 0.0},
         ),
         "generated_at": report.get("generated_at"),
+        # Default currency label for display; templates may use this
+        "currency_label": "MAD",
     }
+    # Pass-through optional fields when available for richer templates
+    for key in (
+        "event_id",
+        "event_title",
+        "enterprises",
+        "trend_visitors",
+        "key_insights",
+        "distribution",
+        "recent_activity",
+    ):
+        if key in report:
+            data[key] = report.get(key)
+    return data
+
+
+def _report_to_csv_bytes(report: dict[str, Any]) -> bytes:
+    """Tabular export of report KPIs and scalar sections (UTF-8 CSV)."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["section", "field", "value"])
+    writer.writerow(["meta", "generated_at", report.get("generated_at", "")])
+    for item in report.get("kpis", []) or []:
+        writer.writerow(
+            [
+                "kpi",
+                item.get("label", ""),
+                item.get("value", ""),
+            ]
+        )
+    rev = report.get("revenue") or {}
+    if isinstance(rev, dict):
+        for key, val in rev.items():
+            writer.writerow(["revenue", key, val])
+    safety = report.get("safety") or {}
+    if isinstance(safety, dict):
+        for key, val in safety.items():
+            writer.writerow(["safety", key, val])
+    for key in ("event_id", "event_title"):
+        if report.get(key) is not None:
+            writer.writerow(["context", key, report.get(key)])
+    return buffer.getvalue().encode("utf-8-sig")
 
 
 def _render_report_export(
@@ -175,6 +225,15 @@ def _render_report_export(
         title=filename_base.replace("_", " ").title(),
         description="Auto-generated IVEP report.",
     )
+    if format == "csv":
+        raw = _report_to_csv_bytes(report)
+        return Response(
+            content=raw,
+            media_type="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename_base}.csv"',
+            },
+        )
     if format == "tex":
         tex_content = latex_service.generate_tex(latex_data, template_name=template_name)
         return Response(
@@ -184,8 +243,14 @@ def _render_report_export(
         )
 
     pdf_bytes = latex_service.generate_report_pdf(latex_data, template_name=template_name)
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
+    if pdf_bytes is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="PDF generation failed. Please consult server logs."
+        )
+
+    return Response(
+        content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename_base}.pdf"'},
     )
@@ -193,7 +258,7 @@ def _render_report_export(
 
 @router.get("/reports/admin/platform")
 async def get_admin_platform_report(
-    format: str = Query("json", enum=["json", "pdf", "tex"]),
+    format: str = Query("json", enum=["json", "pdf", "tex", "csv"]),
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ):
     """Unified admin platform report endpoint."""

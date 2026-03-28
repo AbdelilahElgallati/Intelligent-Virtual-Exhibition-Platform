@@ -1,4 +1,4 @@
-import { getApiUrl } from './config';
+import { getApiUrl, getDirectApiUrl } from './config';
 
 type RequestOptions = {
     method?: string;
@@ -98,7 +98,132 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     return response.json();
 }
 
+/** Coalesce concurrent blob downloads (same URL + auth) to a single fetch. */
+const inflightBlobs = new Map<string, Promise<Blob>>();
+
+async function readResponseAsBlob(response: Response): Promise<Blob> {
+    const ct = response.headers.get('content-type') || 'application/octet-stream';
+    const buf = await response.arrayBuffer();
+    return new Blob([buf], { type: ct });
+}
+
+function binaryGetInit(headers: Record<string, string>, cache: RequestCache): RequestInit {
+    return {
+        method: 'GET',
+        headers: {
+            ...headers,
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+        },
+        cache,
+    };
+}
+
+/**
+ * Authenticated GET that returns a Blob (e.g. PDF export).
+ * Intentionally omits `credentials: 'include'` so behavior matches `request()` and
+ * avoids credentialed CORS edge cases that surfaces as `TypeError: Failed to fetch`.
+ *
+ * Uses the backend origin directly (not the Next.js /api/v1 rewrite) so PDF bytes are not
+ * dropped by the dev proxy. arrayBuffer() + one retry still applies for 304 / empty edge cases.
+ */
+async function getBlob(
+    endpoint: string,
+    options: { accept?: string; token?: string | null } = {},
+): Promise<Blob> {
+    const { accept = 'application/pdf', token } = options;
+    const directUrl = typeof window !== 'undefined' ? getDirectApiUrl(endpoint) : getApiUrl(endpoint);
+    const proxyUrl = getApiUrl(endpoint);
+
+    let activeToken = token;
+    if (!activeToken && typeof window !== 'undefined') {
+        try {
+            const storedTokens = localStorage.getItem('auth_tokens');
+            if (storedTokens) {
+                const parsed = JSON.parse(storedTokens);
+                activeToken = parsed.access_token;
+            }
+        } catch {
+            /* ignore */
+        }
+    }
+
+    const headers: Record<string, string> = { Accept: accept };
+    if (activeToken) {
+        headers.Authorization = `Bearer ${activeToken}`;
+    }
+
+    const key = `${proxyUrl}\0${accept}\0${activeToken ?? ''}`;
+    const existing = inflightBlobs.get(key);
+    if (existing) return existing;
+
+    const promise = (async (): Promise<Blob> => {
+        try {
+            const handleFailure = async (response: Response): Promise<never> => {
+                if (response.status === 401) {
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/auth/login';
+                    }
+                    throw new Error('Unauthorized');
+                }
+                const text = await response.text();
+                let message = `Export failed (${response.status})`;
+                try {
+                    const errJson = JSON.parse(text) as {
+                        detail?: unknown;
+                        message?: string;
+                    };
+                    const detail = errJson?.detail;
+                    if (typeof detail === 'string') {
+                        message = detail;
+                    } else if (Array.isArray(detail)) {
+                        const parts = detail
+                            .map((item: { msg?: string }) => item?.msg)
+                            .filter((item: unknown): item is string => typeof item === 'string');
+                        if (parts.length) message = parts.join('; ');
+                    }
+                } catch {
+                    if (text && text.length < 400) message = text;
+                }
+                throw new Error(message);
+            };
+
+            let response: Response;
+            try {
+                response = await fetch(proxyUrl, binaryGetInit(headers, 'no-store'));
+            } catch (err: any) {
+                const msg = String((err as Error)?.message || '');
+                const isFailedFetch = err instanceof TypeError && (msg === 'Failed to fetch' || msg.toLowerCase().includes('failed to fetch'));
+                if (!isFailedFetch) throw err;
+                response = await fetch(directUrl, binaryGetInit(headers, 'no-store'));
+            }
+
+            if (!response.ok) {
+                await handleFailure(response);
+            }
+
+            let blob = await readResponseAsBlob(response);
+
+
+
+            if (blob.size === 0) {
+                throw new Error(
+                    'PDF export returned an empty file. Confirm the backend report route is running and try again.',
+                );
+            }
+
+            return blob;
+        } finally {
+            inflightBlobs.delete(key);
+        }
+    })();
+
+    inflightBlobs.set(key, promise);
+    return promise;
+}
+
 export const http = {
+    getBlob,
     get: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>
         request<T>(endpoint, { ...options, method: 'GET' }),
     post: <T>(endpoint: string, body: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>

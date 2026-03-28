@@ -12,7 +12,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 
 from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.enums import Role
@@ -25,6 +25,86 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["organizer-report"])
 _admin = Depends(require_role(Role.ADMIN))
 
+
+def _event_report_latex_context(summary: OrganizerSummaryResponse, resolved_event_id: str) -> dict:
+    """Build LaTeX/Jinja context with escaped copy, MAD revenue, trends, and enterprises."""
+    from app.modules.analytics.latex_service import _money_mad, tex_escape
+
+    ov = summary.overview
+    rev = ov.revenue_summary
+    label = summary.event_title or summary.event_slug or str(resolved_event_id)
+    event_display = tex_escape(label)
+
+    insights: list[str] = []
+    if ov.total_visitors > 0:
+        insights.append(f"Distinct visitors observed in analytics telemetry: {ov.total_visitors}.")
+    else:
+        insights.append("No visitor traffic is recorded yet for this event in analytics telemetry.")
+
+    if ov.leads_generated:
+        insights.append(f"Lead capture attributed to stands: {ov.leads_generated}.")
+    if ov.meetings_booked:
+        insights.append(f"Meetings approved or completed: {ov.meetings_booked}.")
+
+    insights.append(
+        f"Enterprise participation rate (approved versus total stand requests): {ov.enterprise_participation_rate:.1f}%."
+    )
+    insights.append(
+        f"Composite stand engagement score (visits, downloads, chat, meetings): {ov.stand_engagement_score:.1f} / 100."
+    )
+
+    trend_visitors = [
+        {"date": tp.date, "value": tp.value}
+        for tp in summary.performance_trends.visitors_over_time[-14:]
+    ]
+
+    enterprises_rows = [
+        {
+            "name": tex_escape(ent.name or "—"),
+            "industry": tex_escape(ent.industry or "—"),
+        }
+        for ent in (summary.enterprises or [])[:40]
+    ]
+
+    gen_at = summary.generated_at.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    return {
+        "report_title": f"Event Performance: {event_display}",
+        "event_id": tex_escape(str(resolved_event_id)),
+        "event_slug": tex_escape(summary.event_slug or ""),
+        "event_title": event_display,
+        "generated_at": gen_at,
+        "currency_label": "MAD",
+        "overview_description": tex_escape(
+            f"Structured intelligence dossier for {label}. "
+            "Metrics combine ticketing and stand monetization (MAD), visitor telemetry, enterprise participation, "
+            "lead and meeting funnels, and moderation signals."
+        ),
+        "kpis": [
+            {"label": tex_escape("Total visitors"), "value": str(ov.total_visitors), "unit": ""},
+            {"label": tex_escape("Enterprise participation rate"), "value": f"{ov.enterprise_participation_rate:.1f}", "unit": r"\%"},
+            {"label": tex_escape("Stand engagement score"), "value": f"{ov.stand_engagement_score:.1f}", "unit": "/ 100"},
+            {"label": tex_escape("Leads generated"), "value": str(ov.leads_generated), "unit": ""},
+            {"label": tex_escape("Meetings booked"), "value": str(ov.meetings_booked), "unit": ""},
+            {"label": tex_escape("Chat messages"), "value": str(ov.chat_interactions), "unit": ""},
+        ],
+        "revenue": {
+            "ticket_revenue": rev.ticket_revenue,
+            "stand_revenue": rev.stand_revenue,
+            "total_revenue": rev.total_revenue,
+            "ticket_display": _money_mad(rev.ticket_revenue),
+            "stand_display": _money_mad(rev.stand_revenue),
+            "total_display": _money_mad(rev.total_revenue),
+        },
+        "safety": {
+            "total_flags": summary.safety.total_flags,
+            "resolved_flags": summary.safety.resolved_flags,
+            "resolution_rate": summary.safety.resolution_rate,
+        },
+        "trend_visitors": trend_visitors,
+        "enterprises": enterprises_rows,
+        "key_insights": [tex_escape(line) for line in insights],
+    }
 
 
 # ─── JSON summary ─────────────────────────────────────────────────────────────
@@ -179,95 +259,72 @@ async def organizer_event_report(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
 ):
     """Event-specific LaTeX report for organizers."""
-    event_id = await resolve_event_id(event_id)
+    resolved = await resolve_event_id(event_id)
     summary = await get_organizer_summary(event_id)
-    
-    # Prepare data for LaTeX
-    event_slug = summary.event_slug or event_id
-    data = {
-        "report_title": f"Event Performance: {event_slug}",
-        "overview_description": f"Detailed performance metrics for event {event_slug}, including visitor engagement and revenue analysis.",
-        "kpis": [
-            {"label": "Total Visitors", "value": summary.overview.total_visitors},
-            {"label": "Enterprise Rate", "value": summary.overview.enterprise_participation_rate, "unit": "%"},
-            {"label": "Engagement Score", "value": summary.overview.stand_engagement_score, "unit": "/ 100"},
-            {"label": "Leads", "value": summary.overview.leads_generated},
-            {"label": "Meetings", "value": summary.overview.meetings_booked},
-            {"label": "Chat Messages", "value": summary.overview.chat_interactions},
-        ],
-        "revenue": {
-            "ticket_revenue": summary.overview.revenue_summary.ticket_revenue,
-            "stand_revenue": summary.overview.revenue_summary.stand_revenue,
-            "total_revenue": summary.overview.revenue_summary.total_revenue,
-        },
-        "safety": {
-            "total_flags": summary.safety.total_flags,
-            "resolved_flags": summary.safety.resolved_flags,
-            "resolution_rate": summary.safety.resolution_rate,
-        }
-    }
+    event_slug = summary.event_slug or str(resolved)
+
+    data = _event_report_latex_context(summary, str(resolved))
 
     from app.modules.analytics.latex_service import latex_service
-    from fastapi.responses import Response, StreamingResponse
-    import io
 
     if format == "tex":
         tex_content = latex_service.generate_tex(data, template_name="organizer_event_report")
         return Response(
             content=tex_content,
             media_type="application/x-tex",
-            headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.tex"'}
+            headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.tex"'},
         )
-    
-    pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.pdf"'}
-    )
+
+    try:
+        pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
+        if not pdf_bytes:
+            raise ValueError("PDF generation returned empty content")
+
+        filename = f"event_{event_slug}_report_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
+        # Buffered Response (not StreamingResponse) so reverse proxies / Next rewrites receive a full body.
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-store",
+            },
+        )
+    except Exception as exc:
+        logger.exception("organizer_event_report PDF failed for event %s: %s", resolved, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not generate the PDF report. Verify LaTeX/ReportLab on the server or try again shortly.",
+        ) from exc
 
 
 @router.get(
     "/admin/events/{event_id}/organizer-summary/pdf",
     summary="Download organizer report as PDF",
-    response_class=StreamingResponse,
+    response_class=Response,
 )
 async def organizer_summary_pdf(
     event_id: str,
     _admin=Depends(require_role(Role.ADMIN)),
 ):
-    event_id = await resolve_event_id(event_id)
+    resolved = await resolve_event_id(event_id)
     try:
         summary = await get_organizer_summary(event_id)
-        event_slug = summary.event_slug or event_id
-        
-        # Prepare data for LaTeX
-        data = {
-            "report_title": f"Organizer Summary: Event {event_slug}",
-            "overview_description": f"Summary report generated for administration review regarding event {event_slug}.",
-            "kpis": [
-                {"label": "Total Visitors", "value": summary.overview.total_visitors},
-                {"label": "Leads", "value": summary.overview.leads_generated},
-                {"label": "Meetings", "value": summary.overview.meetings_booked},
-            ],
-            "revenue": {
-                "ticket_revenue": summary.overview.revenue_summary.ticket_revenue,
-                "stand_revenue": summary.overview.revenue_summary.stand_revenue,
-                "total_revenue": summary.overview.revenue_summary.total_revenue,
-            },
-            "safety": {
-                "total_flags": summary.safety.total_flags,
-                "resolved_flags": summary.safety.resolved_flags,
-                "resolution_rate": summary.safety.resolution_rate,
-            }
-        }
+        event_slug = summary.event_slug or str(resolved)
+        from app.modules.analytics.latex_service import latex_service, tex_escape
 
-        from app.modules.analytics.latex_service import latex_service
+        admin_label = summary.event_title or event_slug or str(resolved)
+        data = _event_report_latex_context(summary, str(resolved))
+        data["report_title"] = tex_escape(f"Admin organizer summary — {admin_label}")
+        data["overview_description"] = tex_escape(
+            f"Administrative export for {admin_label}. Metrics align with the organizer-facing dossier; "
+            "use for governance, finance checks, and audit trails."
+        )
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_event_report")
-        
+
         filename = f"organizer_report_{event_slug}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
-        return StreamingResponse(
-            io.BytesIO(pdf_bytes),
+        return Response(
+            content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
@@ -335,8 +392,8 @@ async def organizer_overall_summary_pdf(
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_overall_report")
         
         filename = f"overall_performance_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
-        return StreamingResponse(
-            io.BytesIO(pdf_bytes),
+        return Response(
+            content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )

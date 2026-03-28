@@ -46,9 +46,9 @@ function parseDate(value: unknown, boundary: 'start' | 'end' = 'start'): Date | 
 
     if (!hasExplicitTime(raw)) {
         if (boundary === 'end') {
-            d.setHours(23, 59, 59, 999);
+            d.setUTCHours(23, 59, 59, 999);
         } else {
-            d.setHours(0, 0, 0, 0);
+            d.setUTCHours(0, 0, 0, 0);
         }
     }
 

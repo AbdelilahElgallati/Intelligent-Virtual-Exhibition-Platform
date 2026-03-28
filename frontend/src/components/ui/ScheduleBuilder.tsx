@@ -52,6 +52,7 @@ function SlotRow({
 }) {
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
     const startMin = minStartTime;
+    const isCrossDay = slot.start_time && slot.end_time && slot.end_time < slot.start_time;
 
     return (
         <div className="flex items-center gap-2 p-3 rounded-xl border border-zinc-200 bg-zinc-50 group hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
@@ -78,7 +79,7 @@ function SlotRow({
                     />
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">→</span>
-                <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5">
+                <div className={`flex items-center gap-1 bg-white border ${isCrossDay ? 'border-indigo-300' : 'border-zinc-200'} rounded-lg px-2 py-1.5`}>
                     <Clock className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
                     <input
                         type="time"
@@ -92,6 +93,11 @@ function SlotRow({
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
+                {isCrossDay && (
+                    <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                        +1 day
+                    </span>
+                )}
             </div>
 
             {/* Activity label */}

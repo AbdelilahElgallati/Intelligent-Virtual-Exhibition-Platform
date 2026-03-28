@@ -1,145 +1,243 @@
-\documentclass[a4paper,12pt]{article}
+\documentclass[a4paper,11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
-\geometry{a4paper, margin=1in, headheight=14.5pt}
+\geometry{a4paper, left=22mm, right=22mm, top=20mm, bottom=24mm, headheight=16pt}
 \usepackage{helvet}
 \renewcommand{\familydefault}{\sfdefault}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{graphicx}
 \usepackage{titlesec}
 \usepackage{booktabs}
 \usepackage{fancyhdr}
-\usepackage{tcolorbox}
+\usepackage[most]{tcolorbox}
 \usepackage{tabularx}
 \usepackage{lastpage}
-\usepackage{colortbl}
+\usepackage{enumitem}
 
-% Color Palette
-\definecolor{primary}{HTML}{1E293B}   % Slate 800
-\definecolor{secondary}{HTML}{0F172A} % Slate 900
-\definecolor{accent}{HTML}{6366F1}    % Indigo
-\definecolor{success}{HTML}{10B981}   % Emerald
-\definecolor{graybg}{HTML}{F8FAFC}
-\definecolor{bordergray}{HTML}{E2E8F0}
+% ── Brand palette (indigo / slate — matches admin UI) ────────────────
+\definecolor{brand}{HTML}{4F46E5}
+\definecolor{branddark}{HTML}{3730A3}
+\definecolor{slate}{HTML}{0F172A}
+\definecolor{slatemuted}{HTML}{475569}
+\definecolor{surface}{HTML}{F1F5F9}
+\definecolor{surfaceborder}{HTML}{CBD5E1}
+\definecolor{ok}{HTML}{059669}
+\definecolor{warn}{HTML}{D97706}
+\definecolor{muted}{HTML}{64748B}
+\definecolor{footline}{HTML}{94A3B8}
+\definecolor{oksoft}{HTML}{ECFDF5}
+\definecolor{tabhead}{HTML}{312E81}
 
-% TColorBox Styles
+% ── Section titles ───────────────────────────────────────────────────
+\titleformat{\section}
+  {\color{slate}\normalfont\fontsize{16}{20}\selectfont\bfseries}
+  {\thesection}
+  {0.75em}
+  {}
+  [\vspace{-0.25em}{\color{brand}\rule{\linewidth}{2pt}}]
+
+\titleformat{\subsection}
+  {\color{slatemuted}\normalfont\fontsize{12}{15}\selectfont\bfseries}
+  {\thesubsection}
+  {0.6em}
+  {}
+
+\titlespacing*{\section}{0pt}{2.2ex plus .4ex}{1.4ex}
+\titlespacing*{\subsection}{0pt}{1.6ex plus .2ex}{0.9ex}
+
+\setlist[itemize]{leftmargin=1.2em, nosep, itemsep=0.45em, label=\textcolor{brand}{\small\textbullet}}
+
+% ── KPI cards ────────────────────────────────────────────────────────
 \tcbset{
-    kpicard/.style={
-        colback=graybg,
-        colframe=bordergray,
-        boxrule=0.5pt,
-        sharp corners,
-        fontupper=\small,
-        width=0.3\textwidth,
-        nobeforeafter,
-        boxsep=2pt,
-        left=4pt,
-        right=4pt,
-        top=4pt,
-        bottom=4pt,
-        equal height group=kpis
-    }
+  kpienh/.style={
+    enhanced,
+    colback=white,
+    colframe=surfaceborder,
+    boxrule=0.6pt,
+    arc=3pt,
+    sharp corners=south,
+    fontupper=\sffamily,
+    left=10pt, right=10pt, top=12pt, bottom=12pt,
+    width=0.29\textwidth,
+    nobeforeafter,
+    borderline north={3.5pt}{0pt}{brand},
+    drop shadow={0.6pt}{-1.5pt}{1.5pt}{fill=black!20!white, opacity=0.18},
+  }
 }
 
-% Page Header/Footer
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{\color{gray}\small IVEP - Executive Platform Report}
-\rhead{\color{gray}\small \today}
-\lfoot{\color{gray}\small Confidential Administration Document - Generated: {{ generated_at }}}
-\rfoot{\color{gray}\small Page \thepage\ of \pageref{LastPage}}
-\renewcommand{\headrulewidth}{0.4pt}
+\lhead{\small\textcolor{muted}{IVEP \textbullet{} Executive platform report}}
+\rhead{\small\textcolor{muted}{\today}}
+\lfoot{\footnotesize\textcolor{footline}{Confidential — generated {{ generated_at }}}}
+\rfoot{\footnotesize\textcolor{footline}{Page \thepage\ of \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.4pt}
-
-% Section Styles
-\titleformat{\section}{\color{secondary}\normalfont\Large\bfseries}{\thesection}{1em}{}[\titlerule]
-\titleformat{\subsection}{\color{accent}\normalfont\large\bfseries}{\thesubsection}{1em}{}
 
 \begin{document}
 
-% --- Cover Page ---
+% ═══════════════════════════════════════════════════════════════════
+% COVER
+% ═══════════════════════════════════════════════════════════════════
 \begin{titlepage}
-    \centering
-    \vspace*{2cm}
-    {\Huge \color{secondary} \bfseries IVEP Executive Analytics \par}
-    \vspace{1cm}
-    {\Large \color{accent} Platform-Wide Performance Review \par}
-    \vspace{2cm}
-    \begin{tcolorbox}[colback=secondary, colhead=secondary, colframe=secondary, fontupper=\color{white}, center, width=0.8\textwidth, arc=5pt]
-        \centering
-        \vspace{0.5cm}
-        \textbf{\large Administration Control Panel} \\
-        Ecosystem Health, Growth \& Moderation Metrics
-        \vspace{0.5cm}
-    \end{tcolorbox}
-    \vfill
-    {\large \textbf{Report Period:} \\ {{ generated_at }} \par}
-    \vspace{1cm}
-    {\small \color{gray} This document is intended for authorized administrative personnel only. \par}
+\thispagestyle{empty}
+\vspace*{-8mm}
+\noindent{\color{brand}\rule{\linewidth}{5pt}}
+
+\vspace{1.4cm}
+{\fontsize{11}{13}\selectfont\textcolor{brand}{\bfseries INTELLIGENT VIRTUAL EXHIBITION PLATFORM}}
+
+\vspace{0.35cm}
+{\fontsize{32}{38}\selectfont\textcolor{slate}{\bfseries Platform intelligence}}
+
+\vspace{0.25cm}
+{\fontsize{15}{20}\selectfont\textcolor{slatemuted}{Executive overview — scale, revenue, governance}}
+
+\vspace{1.6cm}
+\begin{tcolorbox}[
+  enhanced, colback=slate, colframe=slate, arc=4pt, boxrule=0pt,
+  left=16pt, right=16pt, top=14pt, bottom=14pt, width=0.92\textwidth
+]
+\color{white}\small
+\textbf{Scope.} Aggregated metrics across all organizers, enterprises, and events currently
+indexed in production. Designed for leadership review and audit trail alignment.
+\end{tcolorbox}
+
+\vfill
+\begin{tabularx}{0.92\textwidth}{@{}l X@{}}
+\footnotesize\textcolor{muted}{Report title} &
+\footnotesize\textbf{\textcolor{slate}{ {{ report_title }} }} \\[0.6em]
+\footnotesize\textcolor{muted}{Generated (UTC)} &
+\footnotesize\textbf{\textcolor{slate}{ {{ generated_at }} }} \\[0.6em]
+\footnotesize\textcolor{muted}{Primary currency} &
+\footnotesize\textbf{\textcolor{slate}{ {{ currency_label }} }} \\
+\end{tabularx}
+
+\vspace{1.2cm}
+{\footnotesize\textcolor{muted}{Authorized administrators only — do not distribute externally.}}
 \end{titlepage}
 
-% --- Table of Contents ---
+% ═══════════════════════════════════════════════════════════════════
 \newpage
 \tableofcontents
 \newpage
 
-% --- Ecosystem Overview ---
-\section{Ecosystem Overview}
-{{ overview_description }}
-
-\vspace{1cm}
-
-\subsection{System-Wide KPIs}
-\begin{center}
-    {% for kpi in kpis %}
-    \begin{tcolorbox}[kpicard]
-        \textbf{ {{ kpi.label }} } \\
-        \LARGE \color{accent} {{ kpi.value }} \small {{ kpi.unit if kpi.unit else "" }}
-    \end{tcolorbox}
-    {% if loop.index % 3 == 0 %}\\[0.5cm]{% else %}\hspace{0.2cm}{% endif %}
-    {% endfor %}
-\end{center}
-
-% --- Financial Performance ---
-\section{Financial Performance}
-Aggregation of revenue streams across the entire platform.
-
-\subsection{Global Revenue Summary}
-\begin{table}[h]
-    \centering
-    \renewcommand{\arraystretch}{1.5}
-    \begin{tabularx}{\textwidth}{X r}
-        \rowcolor{secondary!10}
-        \textbf{Revenue Stream} & \textbf{Amount (USD)} \\
-        \midrule
-        Visitor Ticketing & \${{ revenue.ticket_revenue }} \\
-        Enterprise Stand Allotment & \${{ revenue.stand_revenue }} \\
-        \midrule
-        \rowcolor{success!10}
-        \textbf{Total Platform Revenue} & \textbf{\${{ revenue.total_revenue }} } \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-% --- Safety & Compliance ---
-\section{Safety, Compliance \& Moderation}
-Overview of platform health and automated/manual moderation efficacy.
-
-\begin{tcolorbox}[colback=graybg, colframe=bordergray, title=Moderation Efficacy Report]
-    \begin{itemize}
-        \item \textbf{Total Reported Incidents}: {{ safety.total_flags }}
-        \item \textbf{Successfully Resolved}: {{ safety.resolved_flags }}
-        \item \textbf{System Resolution Rate}: \color{success} \bfseries {{ safety.resolution_rate }}\%
-    \end{itemize}
+% ═══════════════════════════════════════════════════════════════════
+\section{Executive summary}
+\begin{tcolorbox}[
+  enhanced, colback=surface, colframe=surfaceborder,
+  arc=4pt, boxrule=0.5pt, left=14pt, right=14pt, top=12pt, bottom=12pt
+]
+{\sffamily\small\bfseries\textcolor{slate}{At a glance}}\par\vspace{0.45em}
+\small\textcolor{slatemuted}{ {{ overview_description }} }
 \end{tcolorbox}
 
-\section{Administrative Action Items}
-Based on the current metrics, administration should focus on ecosystem scaling and enterprise relations.
+\vspace{1.2cm}
 
-\vspace{2cm}
+\subsection{Key performance indicators}
 \begin{center}
-    \small \color{gray} --- End of Administrative Report ---
+\small\textcolor{muted}{\textit{Live counters from the platform metrics service}}
+\vspace{0.6cm}
+
+{% for kpi in kpis %}
+\begin{tcolorbox}[kpienh]
+\noindent{\color{brand}\rule{\linewidth}{2.5pt}}\par\vspace{0.35em}
+{\footnotesize\bfseries\textcolor{slatemuted}{ {{ kpi.label }} }}\\[4pt]
+{\LARGE\bfseries\textcolor{brand}{ {{ kpi.value }} }}%
+{\footnotesize\normalfont\textcolor{muted}{~{{ kpi.unit if kpi.unit else "" }}}}
+\end{tcolorbox}
+{% if loop.index % 3 == 0 %}\\[3.5mm]{% else %}\hspace{2mm}{% endif %}
+{% endfor %}
+\end{center}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Financial performance}
+\small\textcolor{slatemuted}{Consolidated paid ticketing and stand-related revenue recorded in \textbf{ {{ currency_label }} }.}
+
+\vspace{0.6cm}
+\begin{table}[h]
+  \centering
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabularx}{0.96\textwidth}{@{}>{\bfseries}X r@{}}
+    \rowcolor{tabhead}
+    \textcolor{white}{Revenue stream} & \textcolor{white}{Amount ({{ currency_label }})} \\
+    \midrule\rowcolors{2}{surface}{white}
+    Visitor ticketing & {{ revenue.ticket_revenue }} \\
+    Enterprise stand allotment & {{ revenue.stand_revenue }} \\
+    \midrule
+    \rowcolor{oksoft}
+    \textbf{Total platform revenue} & \textbf{ {{ revenue.total_revenue }} } \\
+    {% if revenue.paid_transactions is defined %}
+    \rowcolor{white}
+    \textcolor{slatemuted}{\small Paid transactions (count)} &
+      \textcolor{slatemuted}{\small {{ revenue.paid_transactions }}} \\
+    {% endif %}
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Trust, safety \& moderation}
+\begin{center}
+\begin{minipage}[t]{0.31\textwidth}
+\begin{tcolorbox}[enhanced, colback=white, colframe=surfaceborder, arc=3pt, title=\textbf{\small Open flags},
+  coltitle=slate, fonttitle=\bfseries\small]
+\centering{\Huge\bfseries\textcolor{warn}{ {{ safety.total_flags }} }}\par
+\footnotesize\textcolor{muted}{total reported}
+\end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.31\textwidth}
+\begin{tcolorbox}[enhanced, colback=white, colframe=surfaceborder, arc=3pt, title=\textbf{\small Resolved},
+  coltitle=slate, fonttitle=\bfseries\small]
+\centering{\Huge\bfseries\textcolor{ok}{ {{ safety.resolved_flags }} }}\par
+\footnotesize\textcolor{muted}{closed / addressed}
+\end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.31\textwidth}
+\begin{tcolorbox}[enhanced, colback=white, colframe=surfaceborder, arc=3pt, title=\textbf{\small Resolution rate},
+  coltitle=slate, fonttitle=\bfseries\small]
+\centering{\Huge\bfseries\textcolor{brand}{ {{ safety.resolution_rate }} }}\par
+\footnotesize\textcolor{muted}{percent}
+\end{tcolorbox}
+\end{minipage}
+\end{center}
+
+{% if distribution and distribution|length > 0 %}
+% ═══════════════════════════════════════════════════════════════════
+\section{Event portfolio by state}
+\small\textcolor{slatemuted}{Distribution of indexed events across lifecycle states (counts).}
+\vspace{0.5cm}
+\begin{center}
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{0.92\textwidth}{@{}l r@{}}
+    \rowcolor{tabhead}
+    \textcolor{white}{\textbf{State}} & \textcolor{white}{\textbf{Events}} \\
+    \midrule
+    {% for state_name, state_count in distribution.items() %}
+    \rowcolors{2}{surface}{white}
+    \textsf{ {{ state_name|replace('_', '\\_') }} } & {{ state_count }} \\
+    {% endfor %}
+    \bottomrule
+  \end{tabularx}
+\end{center}
+{% endif %}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Recommended focus}
+\small\textcolor{slatemuted}{Directional priorities from the current snapshot (not automated prescriptions).}
+\begin{itemize}
+  \item \textbf{Growth:} reconcile pending approvals and payment bottlenecks against \emph{Organizations} and \emph{Pending} KPIs.
+  \item \textbf{Monetization:} validate ticketing vs.\ stand revenue mix in {{ currency_label }}; investigate outliers in transaction count.
+  \item \textbf{Governance:} maintain resolution rate above team targets; escalate if open flags trend upward week over week.
+\end{itemize}
+
+\vspace{1.8cm}
+\begin{center}
+\begin{tcolorbox}[colback=surface, colframe=surfaceborder, arc=2pt, boxrule=0.5pt, width=0.55\textwidth]
+\centering\footnotesize\textcolor{muted}{--- End of report ---}\\[2pt]
+{\scriptsize IVEP analytics export \textbullet{} \today}
+\end{tcolorbox}
 \end{center}
 
 \end{document}

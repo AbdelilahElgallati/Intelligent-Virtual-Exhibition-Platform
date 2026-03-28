@@ -98,6 +98,8 @@ export default function SpeakerRoom({
     token,
     startVideoOff: false,
     startAudioOff: false,
+    startsAtIso: startTime,
+    endsAtIso: endTime,
     onLeft: () => {
       if (!endingSession) {
         disconnectTimerRef.current = setTimeout(() => setShowDisconnectOverlay(true), 2500);

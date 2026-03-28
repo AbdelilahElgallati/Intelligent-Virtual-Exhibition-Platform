@@ -746,8 +746,8 @@ function EnterpriseEventCard({
                 {/* Tags */}
                 {ev.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
-                        {ev.tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">
+                        {ev.tags.slice(0, 3).map((tag: string, index: number) => (
+                            <span key={`${index}-${tag}`} className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">
                                 {tag}
                             </span>
                         ))}

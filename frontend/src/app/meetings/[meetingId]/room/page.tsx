@@ -81,7 +81,9 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
                     {error || 'Cannot join this meeting'}
                 </h2>
                 <p style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', maxWidth: 380 }}>
-                    The meeting must be approved and you must be a participant to join.
+                    {error && /not started yet/i.test(error)
+                        ? 'You can join only during the scheduled meeting time. Please wait until the start time shown in your calendar or invitation.'
+                        : 'The meeting must be approved, fall within its scheduled time, and you must be a participant to join.'}
                 </p>
                 <button
                     onClick={() => router.back()}
@@ -101,6 +103,7 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
         <MeetingRoom
             token={tokenData.token}
             roomUrl={tokenData.room_url}
+            startsAt={tokenData.starts_at}
             endsAt={tokenData.ends_at}
             onSessionEnd={handleEnd}
         />

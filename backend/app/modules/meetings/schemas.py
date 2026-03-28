@@ -69,6 +69,7 @@ class MeetingJoinResponse(BaseModel):
     token: str
     room_url: str         # Full Daily room URL (https://<domain>/<room_name>)
     room_name: str
+    starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
 
 class AvailabilitySlot(BaseModel):

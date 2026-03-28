@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from datetime import datetime, timedelta, timezone
 import json
+import time
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 from .schemas import MeetingCreate, MeetingUpdate, MeetingSchema, MeetingJoinResponse, BusySlot
@@ -33,6 +34,21 @@ def _to_utc_datetime(value) -> Optional[datetime]:
         return parsed.astimezone(timezone.utc)
     except Exception:
         return None
+
+
+def _ensure_meeting_within_scheduled_window(meeting: dict):
+    """
+    Block Daily.co token issuance before the meeting's scheduled start (UTC).
+    End-of-slot cleanup and 410 responses are handled by _ensure_meeting_not_expired.
+    """
+    start_time = _to_utc_datetime(meeting.get("start_time"))
+    now_utc = datetime.now(timezone.utc)
+
+    if start_time and now_utc < start_time:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This meeting has not started yet. You can join during the scheduled time window.",
+        )
 
 
 async def _ensure_meeting_not_expired(meeting_id: str, meeting: dict):
@@ -417,6 +433,7 @@ async def get_meeting_token(
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
+    _ensure_meeting_within_scheduled_window(meeting)
     await _ensure_meeting_not_expired(meeting_id, meeting)
 
     uid = str(current_user["_id"])
@@ -455,7 +472,15 @@ async def get_meeting_token(
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
     # is_owner = True for the stand owner (enterprise side)
-    token = await daily_svc.generate_meeting_token(room_name, uid, user_name, is_owner=is_owner)
+    start_time = _to_utc_datetime(meeting.get("start_time"))
+    nbf = None
+    if start_time:
+        st_ts = int(start_time.timestamp())
+        now_ts = int(time.time())
+        # Use 60s grace period if in the future, otherwise use exact start_time
+        nbf = st_ts - 60 if st_ts > now_ts else st_ts
+
+    token = await daily_svc.generate_meeting_token(room_name, uid, user_name, is_owner=is_owner, nbf=nbf)
 
     return MeetingJoinResponse(
         token=token,
@@ -475,6 +500,7 @@ async def start_meeting_session(
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
+    _ensure_meeting_within_scheduled_window(meeting)
     await _ensure_meeting_not_expired(meeting_id, meeting)
 
     uid = str(current_user["_id"])

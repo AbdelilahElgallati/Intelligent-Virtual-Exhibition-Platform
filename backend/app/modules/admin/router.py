@@ -363,14 +363,84 @@ async def get_detailed_organizations(current_user: dict = Depends(require_role(R
         event_ids_cursor = db.events.find({"organizer_id": user_id}, {"_id": 1})
         event_ids_docs = await event_ids_cursor.to_list(length=None)
         event_ids = [str(e["_id"]) for e in event_ids_docs]
+        from bson import ObjectId
+        event_ids_str: list[str] = [str(eid) for eid in event_ids]
+        event_ids_oid: list[ObjectId] = [ObjectId(e) for e in event_ids if ObjectId.is_valid(e)]
         
         visitors_count = await db.participants.count_documents({"event_id": {"$in": event_ids}})
         
-        revenue = await db.payments.aggregate([
-            {"$match": {"event_id": {"$in": event_ids}, "status": "APPROVED"}},
-            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-        ]).to_list(length=1)
-        total_revenue = revenue[0]["total"] if revenue else 0.0
+        # Aggregate ticket revenue from event_payments (status = paid), per currency
+        revenue_by_currency: dict[str, float] = {}
+        try:
+            cursor = db.event_payments.aggregate([
+                {"$match": {
+                    "status": "paid",
+                    "$or": [
+                        {"event_id": {"$in": event_ids_str}},
+                        {"event_id": {"$in": event_ids_oid}},
+                    ],
+                }},
+                {"$group": {
+                    "_id": {"currency": {"$toUpper": {"$ifNull": ["$currency", "MAD"]}}},
+                    "total": {"$sum": "$amount"}
+                }},
+            ])
+            rows = await cursor.to_list(length=None)
+            for row in rows:
+                cur = (row.get("_id") or {}).get("currency") or "MAD"
+                revenue_by_currency[cur] = float(row.get("total", 0.0))
+        except Exception:
+            # Fallback: older docs without aggregation support or field casing
+            payments = await db.event_payments.find({
+                "status": "paid",
+                "$or": [
+                    {"event_id": {"$in": event_ids_str}},
+                    {"event_id": {"$in": event_ids_oid}},
+                ],
+            }).to_list(length=None)
+            for p in payments:
+                cur = str(p.get("currency") or "MAD").upper()
+                revenue_by_currency[cur] = revenue_by_currency.get(cur, 0.0) + float(p.get("amount", 0.0))
+        
+        # Add stand revenue (assumed MAD) for approved/guest_approved enterprises with payment proof
+        try:
+            # Map event_id -> stand_price
+            ev_prices: dict[str, float] = {}
+            cursor_ev = db.events.find({"_id": {"$in": event_ids_oid}}, {"stand_price": 1})
+            async for ev in cursor_ev:
+                ev_prices[str(ev["_id"])] = float(ev.get("stand_price") or 0.0)
+            # Count eligible enterprise participations per event
+            cursor_parts = db.participants.aggregate([
+                {"$match": {
+                    "$or": [
+                        {"event_id": {"$in": event_ids_str}},
+                        {"event_id": {"$in": event_ids_oid}},
+                    ],
+                    "role": Role.ENTERPRISE.value,
+                    "$or": [
+                        {"stand_fee_paid": True},
+                        {"payment_reference": {"$nin": ["", None, "invite_guest_access"]}},
+                    ],
+                }},
+                {"$group": {"_id": "$event_id", "cnt": {"$sum": 1}}},
+            ])
+            stand_mad_total = 0.0
+            async for row in cursor_parts:
+                ev_id = str(row.get("_id") or "")
+                cnt = int(row.get("cnt") or 0)
+                stand_price = ev_prices.get(ev_id, 0.0)
+                stand_mad_total += stand_price * cnt
+            if stand_mad_total > 0:
+                revenue_by_currency["MAD"] = revenue_by_currency.get("MAD", 0.0) + round(stand_mad_total, 2)
+        except Exception:
+            pass
+
+        # Choose primary currency by highest total; expose its total as total_revenue for backward compatibility
+        primary_currency = "MAD"
+        total_revenue = 0.0
+        if revenue_by_currency:
+            primary_currency = sorted(revenue_by_currency.items(), key=lambda kv: kv[1], reverse=True)[0][0]
+            total_revenue = revenue_by_currency.get(primary_currency, 0.0)
 
         org_data = {
             "_id": str(org["_id"]) if org else user_id,
@@ -390,7 +460,9 @@ async def get_detailed_organizations(current_user: dict = Depends(require_role(R
             "stats": PartnerStats(
                 total_events=events_count,
                 total_visitors=visitors_count,
-                total_revenue=total_revenue
+                total_revenue=total_revenue,
+                primary_currency=primary_currency,
+                revenue_by_currency=revenue_by_currency or None,
             ),
             "created_at": org.get("created_at") if org else user.get("created_at")
         }

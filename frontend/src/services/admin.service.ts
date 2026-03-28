@@ -19,7 +19,7 @@ import {
     SourceType,
     UpdatePayoutPayload,
 } from '@/types/finance';
-import { getApiUrl } from '@/lib/config';
+import { getDirectApiUrl } from '@/lib/config';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 
 type AdminAccountPayload = {
@@ -287,9 +287,10 @@ export const adminService = {
      * Opens the PDF URL in a new tab — the browser will prompt for download.
      */
     async exportOrganizerSummaryPDF(eventId: string): Promise<void> {
-        await this._downloadPDF(
+        await this._downloadBinary(
             `/admin/events/${eventId}/organizer-summary/pdf`,
-            `organizer_report_${eventId}.pdf`
+            `organizer_report_${eventId}.pdf`,
+            { accept: 'application/pdf', minBytes: 100 },
         );
     },
 
@@ -297,53 +298,56 @@ export const adminService = {
      * Trigger a PDF download of the platform-wide report.
      */
     async exportPlatformReportPDF(): Promise<void> {
-        await this._downloadPDF(
+        await this._downloadBinary(
             '/metrics/report/export?format=pdf',
-            `platform_report_${new Date().toISOString().split('T')[0]}.pdf`
+            `platform_report_${new Date().toISOString().split('T')[0]}.pdf`,
+            { accept: 'application/pdf', minBytes: 100 },
         );
     },
 
     /**
-     * Internal helper to handle PDF downloads with authentication consistently.
+     * Trigger a CSV download of the platform-wide report (tabular KPIs and revenue).
      */
-    async _downloadPDF(endpoint: string, filename: string): Promise<void> {
-        let token = null;
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem('auth_tokens');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    token = parsed.access_token;
-                }
-            } catch (e) {
-                console.error('Failed to extract token for PDF export', e);
-            }
-        }
+    async exportPlatformReportCSV(): Promise<void> {
+        await this._downloadBinary(
+            '/metrics/report/export?format=csv',
+            `platform_report_${new Date().toISOString().split('T')[0]}.csv`,
+            { accept: 'text/csv', minBytes: 8 },
+        );
+    },
 
-        const url = getApiUrl(endpoint);
-
+    /**
+     * Binary exports (PDF/CSV) via http.getBlob → same-origin proxy bypass as organizer exports.
+     */
+    async _downloadBinary(
+        endpoint: string,
+        filename: string,
+        opts: { accept: string; minBytes?: number },
+    ): Promise<void> {
+        const minBytes = opts.minBytes ?? 100;
         try {
-            const res = await fetch(url, {
-                method: 'GET',
-                credentials: 'omit',
-                headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    'Accept': 'application/pdf',
-                },
-            });
+            const blob = await http.getBlob(endpoint, { accept: opts.accept });
 
-            if (!res.ok) {
-                let errorMsg = `Export failed (${res.status})`;
-                try {
-                    const errorData = await res.json();
-                    errorMsg = errorData.detail || errorData.message || errorMsg;
-                } catch { /* not json */ }
-                throw new Error(errorMsg);
+            if (blob.size < minBytes) {
+                throw new Error('Received an empty or invalid export file.');
             }
 
-            const blob = await res.blob();
-            if (blob.size < 100) {
-                throw new Error('Received an empty or invalid document.');
+            const ctype = (blob.type || '').toLowerCase();
+            if (opts.accept.includes('pdf') && ctype && !ctype.includes('pdf') && !ctype.includes('octet-stream')) {
+                let preview = '';
+                try {
+                    preview = (await blob.slice(0, 120).text()).trim();
+                } catch {
+                    /* ignore */
+                }
+                if (preview.toLowerCase().startsWith('<!doctype') || preview.toLowerCase().includes('<html')) {
+                    throw new Error('Server returned HTML instead of a PDF. Check the API URL and that the report endpoint is available.');
+                }
+                if (preview.toLowerCase().includes('error') || preview.toLowerCase().includes('traceback')) {
+                    throw new Error(
+                        preview.length < 300 ? preview : 'Server returned a non-PDF response. See backend logs for details.',
+                    );
+                }
             }
 
             const href = URL.createObjectURL(blob);
@@ -352,14 +356,23 @@ export const adminService = {
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(href), 1000);
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(href), 15_000);
         } catch (error: unknown) {
-            console.error('PDF Export Error:', error);
-            const message = error instanceof Error ? error.message : '';
-            throw new Error(message === 'Failed to fetch'
-                ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
-                : (message || 'PDF export failed'));
+            console.error('Export failed:', error);
+            const message = String((error as Error)?.message || 'Export failed');
+            const isFailedFetch =
+                error instanceof TypeError &&
+                (message === 'Failed to fetch' || message.toLowerCase().includes('failed to fetch'));
+            const isAbort = error instanceof DOMException && error.name === 'AbortError';
+
+            if (isFailedFetch || isAbort) {
+                throw new Error(
+                    `Unable to download the export from the API (${getDirectApiUrl(endpoint)}). Confirm the backend is reachable and CORS allows this origin. Details: ${message}`,
+                );
+            }
+
+            throw error instanceof Error ? error : new Error(message);
         }
     },
     /**

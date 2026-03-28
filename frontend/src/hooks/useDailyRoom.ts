@@ -50,6 +50,10 @@ export interface UseDailyRoomOptions {
   startVideoOff?: boolean;
   /** Start with mic disabled (used for audience viewers) */
   startAudioOff?: boolean;
+  /** Scheduled start (ISO). When set, blocks join before this instant (client-side guard). */
+  startsAtIso?: string;
+  /** Scheduled end (ISO). When set, blocks join at or after this instant (client-side guard). */
+  endsAtIso?: string;
   /** Fire when the local participant successfully joins */
   onJoined?: () => void;
   /** Fire when local participant leaves or is kicked */
@@ -81,19 +85,45 @@ export interface UseDailyRoomResult {
 
 // ── Helper: convert a Daily participant object to our type ─────────────────
 
+function pickTrack(state: any): MediaStreamTrack | null {
+  if (!state) return null;
+  const t = state.persistentTrack ?? state.track;
+  return t instanceof MediaStreamTrack ? t : null;
+}
+
 function toParticipant(p: any): DailyParticipant {
   const tracks = p.tracks || {};
+  const v = tracks.video;
+  const a = tracks.audio;
+  const sv = tracks.screenVideo;
+  const videoTrack = pickTrack(v);
+  const audioTrack = pickTrack(a);
+  const screenVideoTrack = pickTrack(sv);
+  const vState = v?.state;
+  const aState = a?.state;
+  const videoOn =
+    vState === 'playable' ||
+    (!!videoTrack && vState !== 'off' && vState !== 'blocked');
+  const audioOn =
+    aState === 'playable' ||
+    (!!audioTrack && aState !== 'off' && aState !== 'blocked');
   return {
     sessionId: p.session_id,
     userId: p.user_id || p.session_id,
     userName: p.user_name || 'Guest',
     local: !!p.local,
-    videoTrack: tracks.video?.persistentTrack ?? null,
-    audioTrack: tracks.audio?.persistentTrack ?? null,
-    videoOn: tracks.video?.state === 'playable',
-    audioOn: tracks.audio?.state === 'playable',
-    screenVideoTrack: tracks.screenVideo?.persistentTrack ?? null,
+    videoTrack,
+    audioTrack,
+    videoOn,
+    audioOn,
+    screenVideoTrack,
   };
+}
+
+function parseTimeGateIso(iso?: string): number | undefined {
+  if (!iso) return undefined;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? ms : undefined;
 }
 
 // ── Main hook ──────────────────────────────────────────────────────────────
@@ -103,6 +133,8 @@ export function useDailyRoom({
   token,
   startVideoOff = false,
   startAudioOff = false,
+  startsAtIso,
+  endsAtIso,
   onJoined,
   onLeft,
   onError,
@@ -149,6 +181,23 @@ export function useDailyRoom({
 
     const init = async () => {
       try {
+        const startMs = parseTimeGateIso(startsAtIso);
+        const endMs = parseTimeGateIso(endsAtIso);
+        const now = Date.now();
+        if (startMs !== undefined && now < startMs) {
+          const msg =
+            'This session has not started yet. Please join during the scheduled time window.';
+          setError(msg);
+          onError?.(msg);
+          return;
+        }
+        if (endMs !== undefined && now >= endMs) {
+          const msg = 'This session has ended.';
+          setError(msg);
+          onError?.(msg);
+          return;
+        }
+
         // Dynamically import so Next.js SSR doesn't try to run Daily in Node
         const DailyIframe = (await import('@daily-co/daily-js')).default;
         co = DailyIframe.createCallObject();
@@ -196,11 +245,47 @@ export function useDailyRoom({
           });
         });
 
-        co.on('participant-joined', refreshParticipants);
+        co.on('participant-joined', (evt: any) => {
+          console.info('[Daily] participant-joined', {
+            sessionId: evt?.participant?.session_id,
+            local: evt?.participant?.local,
+          });
+          refreshParticipants();
+        });
         co.on('participant-updated', refreshParticipants);
-        co.on('participant-left', refreshParticipants);
-        co.on('track-started', refreshParticipants);
-        co.on('track-stopped', refreshParticipants);
+        co.on('participant-left', (evt: any) => {
+          console.info('[Daily] participant-left', {
+            sessionId: evt?.participant?.session_id,
+          });
+          refreshParticipants();
+        });
+        co.on('track-started', (evt: any) => {
+          console.info('[Daily] track-started', {
+            type: evt?.type,
+            trackId: evt?.track?.id,
+            sessionId: evt?.participant?.session_id,
+          });
+          refreshParticipants();
+        });
+        co.on('track-stopped', (evt: any) => {
+          console.info('[Daily] track-stopped', {
+            type: evt?.type,
+            trackId: evt?.track?.id,
+            sessionId: evt?.participant?.session_id,
+          });
+          refreshParticipants();
+        });
+
+        co.on('nonfatal-error', (evt: any) => {
+          if (evt?.type === 'screen-share-error') {
+            const msg =
+              evt?.errorMsg ||
+              'Screen sharing failed. Check browser permissions or try another window.';
+            console.warn('[Daily] screen-share-error', evt);
+            setError(msg);
+            onError?.(msg);
+          }
+        });
 
         co.on('network-connection', (evt: any) => {
           const state = evt?.event || evt?.status || evt?.state;
@@ -235,6 +320,7 @@ export function useDailyRoom({
         });
       } catch (err: any) {
         const msg = err?.message || 'Failed to join video room';
+        console.error('[Daily] join failed', err);
         setError(msg);
         onError?.(msg);
       }
@@ -251,7 +337,7 @@ export function useDailyRoom({
     // Only re-run when joining credentials change. Controls (mute/unmute) do
     // NOT need a new call object — they operate on the existing co instance.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomUrl, token]);
+  }, [roomUrl, token, startsAtIso, endsAtIso]);
 
   // ── Controls ───────────────────────────────────────────────────────────
 
@@ -275,14 +361,28 @@ export function useDailyRoom({
     const co = callRef.current;
     if (!co) return;
     const localP = co.participants()?.local;
-    const isSharing = localP?.screen;
-    if (isSharing) {
-      await co.stopScreenShare();
-    } else {
-      await co.startScreenShare();
+    const sv = localP?.tracks?.screenVideo;
+    const isSharing =
+      sv?.state === 'playable' ||
+      !!(sv?.persistentTrack || sv?.track) ||
+      localP?.screen === true;
+    try {
+      if (isSharing) {
+        await co.stopScreenShare();
+      } else {
+        await co.startScreenShare();
+      }
+    } catch (err: any) {
+      const raw = err?.message || String(err);
+      const msg = /denied|permission|NotAllowed|not allowed/i.test(raw)
+        ? 'Screen sharing was blocked. Allow capture for this site in your browser settings.'
+        : raw || 'Screen share failed.';
+      console.error('[Daily] screen share toggle failed', err);
+      setError(msg);
+      onError?.(msg);
     }
     refreshParticipants();
-  }, [refreshParticipants]);
+  }, [refreshParticipants, onError]);
 
   const sendRoomMessage = useCallback(async (text: string) => {
     const co = callRef.current;
@@ -348,7 +448,13 @@ export function useDailyRoom({
     if (!co) return;
     try {
       await co.leave().catch(() => {});
-      await co.join({ url: roomUrl, token, startVideoOff, startAudioOff });
+      await co.join({
+        url: roomUrl,
+        token,
+        startVideoOff,
+        startAudioOff,
+        subscribeToTracksAutomatically: true,
+      });
     } catch (err: any) {
       setError(err?.message || 'Reconnection failed');
     } finally {

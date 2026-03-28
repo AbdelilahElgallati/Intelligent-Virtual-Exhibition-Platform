@@ -203,6 +203,8 @@ export default function AdminAnalyticsPage() {
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [exportLoading, setExportLoading] = useState(false);
+    const [exportCsvLoading, setExportCsvLoading] = useState(false);
+    const [exportError, setExportError] = useState('');
     const [error, setError] = useState('');
 
     const load = async () => {
@@ -223,13 +225,28 @@ export default function AdminAnalyticsPage() {
     };
 
     const handleExportReport = async () => {
+        setExportError('');
         setExportLoading(true);
         try {
             await adminService.exportPlatformReportPDF();
         } catch (e: unknown) {
             console.error('Platform export failed', e);
+            setExportError(e instanceof Error ? e.message : 'Platform report export failed.');
         } finally {
             setExportLoading(false);
+        }
+    };
+
+    const handleExportCsv = async () => {
+        setExportError('');
+        setExportCsvLoading(true);
+        try {
+            await adminService.exportPlatformReportCSV();
+        } catch (e: unknown) {
+            console.error('Platform CSV export failed', e);
+            setExportError(e instanceof Error ? e.message : 'CSV export failed.');
+        } finally {
+            setExportCsvLoading(false);
         }
     };
 
@@ -267,14 +284,23 @@ export default function AdminAnalyticsPage() {
                         <p className="text-zinc-500 text-sm mt-0.5">Platform-level metrics and engagement trends.</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={handleExportReport}
-                        disabled={exportLoading}
+                        disabled={exportLoading || exportCsvLoading}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-zinc-900 border border-zinc-900 text-white hover:bg-black transition-colors disabled:opacity-50"
                     >
                         <Download className="w-3.5 h-3.5" />
-                        {exportLoading ? 'Generating...' : 'Platform Report'}
+                        {exportLoading ? 'Generating…' : 'Export PDF'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleExportCsv}
+                        disabled={exportLoading || exportCsvLoading}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-800 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        {exportCsvLoading ? 'Exporting…' : 'Export CSV'}
                     </button>
                     <button
                         onClick={load}
@@ -287,6 +313,11 @@ export default function AdminAnalyticsPage() {
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
+            )}
+            {exportError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+                    {exportError}
+                </div>
             )}
 
             {/* KPI Cards */}

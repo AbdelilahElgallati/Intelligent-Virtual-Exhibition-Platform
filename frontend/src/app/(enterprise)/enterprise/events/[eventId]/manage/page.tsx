@@ -391,35 +391,60 @@ export default function EventManagementHub() {
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
+        let sData: Stand | null = null;
+
+        // 1. Core Data (Required)
         try {
-            // 0. Fetch event details FIRST — needed for timeline gating
             const evtData = await http.get<OrganizerEvent>(`/events/${eventId}`);
             setEventData(evtData);
 
-            // 1. Fetch stand for this event
             const standData = await http.get<Stand>(`/enterprise/events/${eventId}/stand`);
             setStand(standData);
+            sData = standData; // Shared with meetings catch-guard
+        } catch (err: any) {
+            console.error('Failed to fetch core event data', err);
+            if (err.status === 403) setIsForbidden(true);
+            else setError(err.message || 'An error occurred while loading dashboard data.');
+            setIsLoading(false);
+            return; // Stop here if core data fails
+        }
 
-            // 2. Fetch Chat Rooms (scoped to this event)
-            await fetchRooms();
+        // 2. Rooms & Meetings
+        try {
+            await Promise.all([
+                fetchRooms(),
+                sData ? fetchMeetings(sData.id) : Promise.resolve()
+            ]);
+        } catch (err) {
+            console.error('Failed to fetch rooms/meetings', err);
+        }
 
-            // 3. Fetch Meetings (Inbound + Outbound)
-            await fetchMeetings(standData.id);
-
-            // 4. Fetch Sessions (Legacy or Other)
+        // 3. Sessions
+        try {
             const sessionData = await http.get<Session[]>(`/events/${eventId}/sessions`);
             setSessions(sessionData);
+        } catch (err) {
+            console.error('Failed to fetch sessions', err);
+        }
 
-            // 4.5 Fetch Conferences (All + My Assigned)
-            const [myConfs, allConfs] = await Promise.all([
-                http.get<Conference[]>(`/conferences/my-assigned?event_id=${eventId}`),
-                http.get<Conference[]>(`/conferences/?event_id=${eventId}`)
-            ]);
+        // 4. Conferences (Handle 403 Forbidden gracefully for enterprise users)
+        try {
+            const myConfs = await http.get<Conference[]>(`/conferences/my-assigned?event_id=${eventId}`);
             setMyConferences(myConfs);
-            setAllConferences(allConfs);
+        } catch (err) { console.error('Failed to fetch my-assigned conferences', err); }
 
-            // 5. Fetch Participants for B2B — backend already excludes self and
-            //    only returns approved enterprises, no extra filtering needed.
+        try {
+            const allConfs = await http.get<Conference[]>(`/conferences/?event_id=${eventId}`);
+            setAllConferences(allConfs);
+        } catch (err: any) {
+            // Ignore 403 Forbidden or "Not authenticated" noise for global conferences list
+            const msg = String(err.message || '');
+            const isIgnorable = msg.includes('403') || msg.includes('Forbidden') || msg.includes('Not authenticated');
+            if (!isIgnorable) console.error('Failed to fetch all conferences', err);
+        }
+
+        // 5. Partners
+        try {
             const participantsData = await http.get<Participant[]>(
                 `/participants/event/${eventId}/enterprises`
             );
@@ -432,16 +457,11 @@ export default function EventManagementHub() {
                 ).values()
             );
             setParticipants(uniqueParticipants);
-        } catch (err: any) {
-            console.error('Failed to fetch event hub data', err);
-            if (err.status === 403) {
-                setIsForbidden(true);
-            } else {
-                setError(err.message || 'An error occurred while loading dashboard data.');
-            }
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error('Failed to fetch partners', err);
         }
+
+        setIsLoading(false);
     }, [eventId, fetchRooms, fetchMeetings]);
 
     useEffect(() => {
@@ -704,45 +724,36 @@ export default function EventManagementHub() {
     const eventTimeline = useMemo(() => {
         if (!eventData) return null;
         const state = eventData.state;
-        const lifecycle = getEventLifecycle(eventData, new Date(timelineNow));
+        const lifecycle = getEventLifecycle(eventData);
 
+        let res: any = null;
         if (state === 'closed') {
-            return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
-        }
-        if (state === 'rejected') {
-            return { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
-        }
-        if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
-            return { gate: 'not-ready' as const, title: eventData.title, state };
-        }
-        if (state === 'approved' || state === 'payment_done' || state === 'live') {
+            res = { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
+        } else if (state === 'rejected') {
+            res = { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
+        } else if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
+            res = { gate: 'not-ready' as const, title: eventData.title, state };
+        } else if (state === 'approved' || state === 'payment_done' || state === 'live') {
             if (!lifecycle.hasScheduleSlots) {
-                return { gate: 'timeline-missing' as const, title: eventData.title };
-            }
-            if (lifecycle.status === 'live') {
-                return { gate: 'active' as const, title: eventData.title };
-            }
-            if (lifecycle.status === 'ended') {
-                return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
-            }
-            if (lifecycle.withinScheduleWindow) {
-                return {
-                    gate: 'between-slots' as const,
+                res = { gate: 'timeline-missing' as const, title: eventData.title };
+            } else if (lifecycle.status === 'live' || lifecycle.withinScheduleWindow) {
+                res = { gate: 'active' as const, title: eventData.title };
+            } else if (lifecycle.status === 'ended') {
+                res = { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
+            } else {
+                res = {
+                    gate: 'not-started' as const,
                     title: eventData.title,
                     nextSlotStart: lifecycle.nextSlotStart?.toISOString() || null,
                     startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
                     endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
                 };
             }
-            return {
-                gate: 'not-started' as const,
-                title: eventData.title,
-                nextSlotStart: lifecycle.nextSlotStart?.toISOString() || null,
-                startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
-                endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
-            };
+        } else {
+            res = { gate: 'not-ready' as const, title: eventData.title, state };
         }
-        return { gate: 'not-ready' as const, title: eventData.title, state };
+        console.log('eventTimeline gate', res);
+        return res;
     }, [eventData, timelineNow]);
 
     // Allow users to view data for ended events.

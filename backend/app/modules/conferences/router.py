@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import json
+import time
 from zoneinfo import ZoneInfo
 from bson import ObjectId
 
@@ -460,8 +461,15 @@ async def enterprise_speaker_token(
     )
     uid = str(current_user["_id"])
     user_name = current_user.get("full_name") or current_user.get("email", uid)
+    
+    start_time = _parse_utc_datetime(conf.get("start_time"))
+    nbf = None
+    if start_time:
+        st_ts = int(start_time.timestamp())
+        now_ts = int(time.time())
+        nbf = st_ts - 60 if st_ts > now_ts else st_ts
 
-    token = await daily_svc.generate_speaker_token(room_name, uid, user_name)
+    token = await daily_svc.generate_speaker_token(room_name, uid, user_name, nbf=nbf)
     return ConferenceTokenResponse(
         token=token,
         room_url=daily_svc.get_room_url(room_name),
@@ -568,6 +576,12 @@ async def get_audience_token(
     conf = await _get_conf_or_404(resolved_id)
     await _ensure_conference_event_live(conf)
 
+    if not _is_conference_live_window(conf, datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=403,
+            detail="Conference viewing is available only during the scheduled session time.",
+        )
+
     if conf["status"] != "live":
         raise HTTPException(status_code=400, detail="Conference is not live yet")
 
@@ -590,7 +604,14 @@ async def get_audience_token(
 
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
-    token = await daily_svc.generate_audience_token(room_name, uid, user_name)
+    start_time = _parse_utc_datetime(conf.get("start_time"))
+    nbf = None
+    if start_time:
+        st_ts = int(start_time.timestamp())
+        now_ts = int(time.time())
+        nbf = st_ts - 60 if st_ts > now_ts else st_ts
+
+    token = await daily_svc.generate_audience_token(room_name, uid, user_name, nbf=nbf)
 
     # Best-effort analytics instrumentation.
     try:

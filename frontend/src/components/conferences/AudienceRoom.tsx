@@ -89,6 +89,8 @@ export default function AudienceRoom({
     token,
     startVideoOff: true,
     startAudioOff: true,  // audience viewers don't publish audio
+    startsAtIso: startTime,
+    endsAtIso: endTime,
     onJoined: () => setIsDisconnected(false),
     onLeft: () => setIsDisconnected(true),
   });

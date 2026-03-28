@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { 
   Edit2, ExternalLink, Globe, Layout, Link2, MapPin, Mail, MessageSquare, Phone, Plus, Save, Settings, Tag, Users, Video, Clock, DollarSign, ChevronRight, CheckCircle2, AlertCircle, Calendar, 
-  Trash2, Copy, Check, ChevronDown, Download, Eye, FileText, Info, Search, X, Pencil, Upload, User, ArrowLeft, CreditCard, CalendarDays, BarChart2, AlertTriangle, XCircle
+  Trash2, Copy, Check, ChevronDown, Download, Eye, FileText, Info, Search, X, Pencil, Upload, User, ArrowLeft, ArrowRight, CreditCard, CalendarDays, BarChart2, AlertTriangle, XCircle, Lock
 } from "lucide-react";
 import { eventsApi } from "@/lib/api/events";
 import { organizerService } from "@/services/organizer.service";
@@ -44,25 +44,15 @@ const STATE_COLORS: Record<EventStatus, string> = {
 
 // ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
 function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
+  const now = new Date();
   const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
     const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
     const tz = event.event_timezone || getUserTimezone();
     const start = new Date(event.start_date || new Date().toISOString());
     if (Number.isNaN(start.getTime())) return 'Invalid date';
 
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).formatToParts(start);
-
-    const year = Number(parts.find((p) => p.type === 'year')?.value);
-    const month = Number(parts.find((p) => p.type === 'month')?.value);
-    const day = Number(parts.find((p) => p.type === 'day')?.value);
-    if (!year || !month || !day) return 'Invalid date';
-
-    const anchorUtcNoon = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0));
+    const [year, month, day] = [start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()];
+    const anchorUtcNoon = new Date(Date.UTC(year, month, day + dayOffset, 12, 0, 0));
     return new Intl.DateTimeFormat('en-GB', {
       weekday: 'short',
       day: '2-digit',
@@ -71,66 +61,166 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
     }).format(anchorUtcNoon);
   };
 
-  let days: EventScheduleDay[] | null = event.schedule_days ?? null;
+  const getAbsTime = (dayNumber: number, timeStr: string) => {
+    if (!event.start_date) return null;
+    const eventStart = new Date(event.start_date);
+    const baseDate = new Date(eventStart);
+    baseDate.setHours(0, 0, 0, 0); 
+    const dayDate = new Date(baseDate.getTime() + (dayNumber - 1) * 24 * 60 * 60 * 1000);
+    const [h, m] = timeStr.split(':').map(Number);
+    const abs = new Date(dayDate);
+    abs.setHours(h, m, 0, 0);
+    return abs;
+  };
 
-  if (!days && event.event_timeline) {
+  const blockedRanges: Record<number, { start: string, end: string, label: string }[]> = {};
+  const allDays = event.schedule_days || [];
+  allDays.forEach(day => {
+    day.slots.forEach(slot => {
+      if (slot.end_time < slot.start_time) {
+        const nextDayNum = day.day_number + 1;
+        if (!blockedRanges[nextDayNum]) blockedRanges[nextDayNum] = [];
+        blockedRanges[nextDayNum].push({
+          start: "00:00",
+          end: slot.end_time,
+          label: `Continuing from Day ${day.day_number}: ${slot.label || 'Untitled'}`
+        });
+      }
+    });
+  });
+
+  const getSlotViolation = (dayNumber: number, slot: { start_time: string, end_time: string }) => {
+    if (!event.start_date) return null;
+    const absStart = getAbsTime(dayNumber, slot.start_time);
+    const eventStart = new Date(event.start_date);
+    if (absStart && absStart < eventStart) {
+        return `Before Start (${eventStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`;
+    }
+    const dayBlocked = blockedRanges[dayNumber] || [];
+    for (const b of dayBlocked) {
+        if (slot.start_time < b.end) return `Overlap spill-over from Day ${dayNumber - 1}`;
+    }
+    return null;
+  };
+
+  const isSlotPassed = (dayNumber: number, endTime: string) => {
+    const absEnd = getAbsTime(dayNumber, endTime);
+    if (!absEnd) return false;
+    if (endTime < "06:00") absEnd.setDate(absEnd.getDate() + 1); 
+    return absEnd < now;
+  };
+
+  let days = event.schedule_days || [];
+  if (!days.length && event.event_timeline) {
     try {
       const parsed = JSON.parse(event.event_timeline);
       if (Array.isArray(parsed)) days = parsed as EventScheduleDay[];
-    } catch {/* legacy text */ }
+    } catch {/* legacy */}
   }
 
-  if (days && days.length > 0) {
+  if (days.length > 0) {
     return (
-      <div className="space-y-3 font-outfit">
-        {days.map((day, dayIndex) => (
-          <div key={day.day_number} className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-50 border-b border-zinc-200">
-              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                {day.day_number}
-              </span>
-              <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
-              <span className="text-xs text-zinc-500 ml-1">— {formatDayLabel(day.day_number, dayIndex)}</span>
-            </div>
-            <div className="p-3 space-y-2">
-              {day.slots.map((slot, si) => (
-                <div key={si} className={`flex items-start gap-4 p-3 rounded-xl border ${slot.is_conference ? 'border-violet-200 bg-violet-50/50' : 'border-indigo-100 bg-indigo-50/50'}`}>
-                  <span className={`shrink-0 text-[11px] font-black rounded-lg px-2 py-1 whitespace-nowrap tabular-nums shadow-sm ${slot.is_conference ? 'text-violet-700 bg-white border border-violet-200' : 'text-indigo-700 bg-white border border-indigo-200'}`}>
-                    {formatSlotRangeLabel(slot.start_time, slot.end_time)}
+      <div className="space-y-6 font-outfit">
+        {days.map((day, dayIndex) => {
+          const dayBlocked = blockedRanges[day.day_number] || [];
+          return (
+            <div key={day.day_number} className="border border-zinc-200 rounded-3xl overflow-hidden bg-white shadow-sm transition-all hover:shadow-md">
+              <div className="flex items-center justify-between px-6 py-4 bg-zinc-50/50 border-b border-zinc-200">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-indigo-100/50">
+                    {day.day_number}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-zinc-800 leading-snug">
-                      {slot.label || <em className="text-zinc-400 font-normal">No description</em>}
-                    </p>
-                    {slot.is_conference && (
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase text-violet-700 bg-violet-100 border border-violet-200 rounded-md px-2 py-0.5 tracking-tighter flex items-center gap-1">
-                          <Video className="w-2.5 h-2.5" /> Conference Room
-                        </span>
-                        {slot.assigned_enterprise_name && (
-                          <span className="text-[10px] font-bold text-violet-500 flex items-center gap-1">
-                            <User className="w-3 h-3" /> Speaker: {slot.speaker_name || slot.assigned_enterprise_name}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  <div>
+                    <h3 className="text-sm font-bold text-zinc-900 leading-tight">Day {day.day_number}</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{formatDayLabel(day.day_number, dayIndex)}</p>
                   </div>
                 </div>
-              ))}
-              {day.slots.length === 0 && (
-                <p className="text-xs text-zinc-400 italic px-1">No slots defined for this day.</p>
+                <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-xl border border-zinc-100 shadow-sm">
+                  <Calendar className="w-3 h-3 text-zinc-400" />
+                  <span className="text-[10px] font-bold text-zinc-500 tabular-nums lowercase">{day.slots.length + dayBlocked.length} session{day.slots.length + dayBlocked.length !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                {dayBlocked.map((block, bi) => {
+                  const passed = isSlotPassed(day.day_number, block.end);
+                  return (
+                    <div key={`block-${bi}`} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 ${passed ? 'opacity-30' : 'opacity-60'}`}>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-[11px] font-black rounded-lg px-2.5 py-1.5 whitespace-nowrap tabular-nums shadow-sm border text-zinc-400 bg-zinc-100 border-zinc-200 flex items-center gap-1.5">
+                          <Lock className="w-3 h-3" /> {block.start} → {block.end}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-zinc-400 leading-snug truncate italic">
+                          {block.label} {passed && <span className="text-[8px] bg-zinc-200 text-zinc-500 px-1 rounded ml-2 not-italic">Past</span>}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {day.slots.map((slot, si) => {
+                  const isCrossDay = slot.end_time < slot.start_time;
+                  const violation = getSlotViolation(day.day_number, slot);
+                  const passed = isSlotPassed(day.day_number, slot.end_time);
+
+                  return (
+                    <div key={si} className={`group relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border transition-all duration-300 ${passed ? 'opacity-40 grayscale-[0.5]' : ''} ${violation ? 'border-red-200 bg-red-50/20' : slot.is_conference ? 'border-violet-100 bg-violet-50/30 hover:bg-violet-50/50' : 'border-zinc-100 bg-zinc-50/30 hover:bg-violet-50/50'}`}>
+                      {violation && (
+                        <div className="absolute -top-2 left-6 px-1.5 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-tighter rounded shadow-sm z-10 flex items-center gap-1">
+                          <AlertCircle className="w-2.5 h-2.5" /> {violation}
+                        </div>
+                      )}
+                      {passed && !violation && (
+                        <div className="absolute -top-2 left-6 px-1.5 py-0.5 bg-zinc-500 text-white text-[8px] font-black uppercase tracking-tighter rounded shadow-sm z-10 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" /> Past
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className={`text-[11px] font-black rounded-lg px-2.5 py-1.5 whitespace-nowrap tabular-nums shadow-sm border ${violation ? 'text-red-700 bg-white border-red-200' : slot.is_conference ? 'text-violet-700 bg-white border-violet-100' : 'text-indigo-700 bg-white border-indigo-100'}`}>
+                          {slot.start_time} <span className="opacity-30 mx-0.5">→</span> {slot.end_time}
+                          {isCrossDay && <span className="ml-1.5 text-[8px] text-amber-600 uppercase tracking-tighter font-black">+1d</span>}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-zinc-800 leading-snug group-hover:text-indigo-600 transition-colors">
+                            {slot.label || <em className="text-zinc-400 font-normal">No description</em>}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            {slot.is_conference && (
+                                <span className="text-[9px] font-black uppercase text-violet-700 bg-violet-100/50 border border-violet-200/50 rounded-md px-2 py-0.5 tracking-tight flex items-center gap-1">
+                                <Video className="w-2.5 h-2.5" /> Conference Room
+                                </span>
+                            )}
+                            {isCrossDay && <span className="text-[9px] font-black uppercase text-amber-700 bg-amber-100/50 border border-amber-200/50 rounded-md px-2 py-0.5 tracking-tight flex items-center gap-1 shadow-sm">
+                                <ArrowRight className="w-2.5 h-2.5" /> Cross-day
+                            </span>}
+                            {slot.assigned_enterprise_name && (
+                                <span className="text-[9px] font-bold text-zinc-400 flex items-center gap-1 ml-1">
+                                <User className="w-3 h-3 text-zinc-300" /> {slot.speaker_name || slot.assigned_enterprise_name}
+                                </span>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {!day.slots.length && !dayBlocked.length && (
+                <div className="py-8 text-center bg-zinc-50/30 border-2 border-dashed border-zinc-100 rounded-2xl m-4">
+                   <Clock className="w-6 h-6 text-zinc-200 mx-auto mb-2" />
+                   <p className="text-xs text-zinc-400 italic">No slots defined for this day.</p>
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
-
-  // Legacy plain-text fallback
-  if (event.event_timeline) {
-    return <p className="text-sm text-gray-700 whitespace-pre-wrap">{event.event_timeline}</p>;
-  }
+  if (event.event_timeline) return <p className="text-sm text-gray-700 whitespace-pre-wrap">{event.event_timeline}</p>;
   return <p className="text-xs text-zinc-400 italic">No schedule provided</p>;
 }
 
@@ -411,6 +501,7 @@ export default function EventDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+  const reportDownloadLockRef = useRef(false);
 
   const fetchEvent = async () => {
     try {
@@ -456,6 +547,8 @@ const handleConfirmPayment = async () => {
     }
   };
   const handleDownloadReport = async () => {
+    if (reportDownloadLockRef.current) return;
+    reportDownloadLockRef.current = true;
     setReportLoading(true);
     setError(null);
     try {
@@ -463,6 +556,7 @@ const handleConfirmPayment = async () => {
     } catch (err: any) {
       setError(err.message || "Failed to download report.");
     } finally {
+      reportDownloadLockRef.current = false;
       setReportLoading(false);
     }
   };
@@ -563,39 +657,41 @@ const handleConfirmPayment = async () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       {/* Header / Actions Area */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-zinc-100 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Link href="/organizer/events">
-            <Button variant="outline" size="sm" className="w-10 h-10 p-0 rounded-xl hover:bg-zinc-50 border-zinc-200">
-              <ArrowLeft className="w-4 h-4" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm transition-all hover:shadow-md">
+        <div className="flex items-center gap-5 flex-1 min-w-0">
+          <Link href="/organizer/events" className="shrink-0">
+            <Button variant="outline" size="sm" className="w-12 h-12 p-0 rounded-2xl hover:bg-zinc-50 border-zinc-200 transition-all active:scale-95 shadow-sm group">
+              <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-indigo-600 transition-colors" />
             </Button>
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900 truncate max-w-[300px] md:max-w-md">{event.title}</h1>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${STATE_COLORS[effectiveState]}`}>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+              <h1 className="text-xl font-black text-zinc-900 tracking-tight leading-none truncate">{event.title}</h1>
+              <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm shrink-0 ${STATE_COLORS[effectiveState]}`}>
                 {STATE_LABELS[effectiveState]}
               </span>
             </div>
-            {event.description && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{event.description}</p>}
+            {event.description && (
+              <p className="text-[11px] font-bold text-zinc-400 line-clamp-1 uppercase tracking-widest">{event.description}</p>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+        <div className="flex items-center gap-2.5 flex-wrap lg:flex-nowrap shrink-0">
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 rounded-xl text-zinc-600 border-zinc-200"
+            className="h-11 px-4 gap-2 rounded-2xl text-[13px] font-bold text-zinc-600 border-zinc-100 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all active:scale-95"
             onClick={() => setIsEditModalOpen(true)}
           >
             <Pencil className="w-3.5 h-3.5" /> Edit Info
           </Button>
           
-          <div className="h-6 w-px bg-zinc-200 mx-1 hidden md:block" />
+          <div className="h-8 w-px bg-zinc-100 mx-1.5 hidden lg:block" />
 
           {effectiveState !== "payment_done" && (
             <Link href={`/organizer/events/${event.id}/analytics`}>
-              <Button variant="outline" size="sm" className="gap-2 rounded-xl text-zinc-600 border-zinc-200">
+              <Button variant="outline" size="sm" className="h-11 px-4 gap-2 rounded-2xl text-[13px] font-bold text-zinc-600 border-zinc-100 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all active:scale-95">
                 <BarChart2 className="w-3.5 h-3.5" /> Analytics
               </Button>
             </Link>
@@ -604,7 +700,7 @@ const handleConfirmPayment = async () => {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 rounded-xl text-zinc-600 border-zinc-200"
+            className="h-11 px-4 gap-2 rounded-2xl text-[13px] font-bold text-zinc-600 border-zinc-100 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all active:scale-95"
             onClick={handleDownloadReport}
             isLoading={reportLoading}
           >
@@ -615,10 +711,10 @@ const handleConfirmPayment = async () => {
             <Button
               variant="primary"
               size="sm"
-              className="gap-2 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100 border-none"
+              className="h-11 px-6 gap-2 rounded-2xl text-[13px] font-black bg-green-600 hover:bg-green-700 shadow-xl shadow-green-100 border-none transition-all active:scale-95 whitespace-nowrap"
               onClick={handleStartEvent}
             >
-              <Check className="w-3.5 h-3.5" /> Start Event
+              <Check className="w-4 h-4" /> Start Event
             </Button>
           )}
 
@@ -626,10 +722,11 @@ const handleConfirmPayment = async () => {
             <Button
               variant="danger"
               size="sm"
-              className="gap-2 rounded-xl shadow-lg shadow-red-100 hover:bg-red-600"
+              className="h-11 px-6 gap-2 rounded-2xl text-[13px] font-black shadow-xl shadow-red-100 border-none hover:bg-red-600 transition-all active:scale-95 flex items-center whitespace-nowrap"
               onClick={handleCloseEvent}
+              isLoading={loading}
             >
-              <XCircle className="w-3.5 h-3.5" /> Close Event
+              <XCircle className="w-4 h-4" /> Close Event
             </Button>
           )}
         </div>
@@ -665,6 +762,8 @@ const handleConfirmPayment = async () => {
             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
           </div>
         )}
+
+
 
         {activeTab === "overview" && (
           <div className="space-y-6">
@@ -924,6 +1023,9 @@ const handleConfirmPayment = async () => {
                 <ScheduleEditor 
                   eventId={eventId} 
                   initialDays={event.schedule_days || []} 
+                  startDate={event.start_date}
+                  endDate={event.end_date}
+                  timezone={event.event_timezone}
                   onSave={(newDays) => {
                     setEvent({ ...event, schedule_days: newDays });
                     setIsEditingSchedule(false);

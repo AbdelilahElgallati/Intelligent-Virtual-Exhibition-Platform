@@ -15,6 +15,7 @@ import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff, WifiOff, Loader2, 
 interface MeetingRoomProps {
   token: string;
   roomUrl: string;
+  startsAt?: string;
   endsAt?: string;
   onSessionEnd?: () => void;
 }
@@ -92,7 +93,7 @@ function Controls({
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export default function MeetingRoom({ token, roomUrl, endsAt, onSessionEnd }: Readonly<MeetingRoomProps>) {
+export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessionEnd }: Readonly<MeetingRoomProps>) {
   const {
     joined,
     error,
@@ -108,6 +109,8 @@ export default function MeetingRoom({ token, roomUrl, endsAt, onSessionEnd }: Re
   } = useDailyRoom({
     roomUrl,
     token,
+    startsAtIso: startsAt,
+    endsAtIso: endsAt,
   });
 
   const [rejoinAttempts, setRejoinAttempts] = useState(0);
