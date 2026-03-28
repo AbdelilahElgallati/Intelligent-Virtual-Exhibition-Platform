@@ -13,6 +13,8 @@ export interface EventLifecycleSnapshot {
     hasScheduleSlots: boolean;
     scheduleSlotCount: number;
     withinScheduleWindow: boolean;
+    /** True only in gaps between scheduled slots (after a slot has started); not before the first slot. */
+    betweenSlots: boolean;
 }
 
 interface SlotWindow {
@@ -242,6 +244,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             hasScheduleSlots: windows.length > 0,
             scheduleSlotCount: windows.length,
             withinScheduleWindow: false,
+            betweenSlots: false,
         };
     }
 
@@ -255,7 +258,8 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
         const effectiveEnd = (endDate && endDate > last.end) ? endDate : last.end;
 
         if (now < first.start) {
-            // Check if we are still technically after the startDate but before the first slot
+            // Before first slot: always "upcoming" (not "in progress"). Do not set withinScheduleWindow
+            // for gaps before the first session — that is reserved for true between-slot gaps.
             if (startDate && now >= startDate) {
                 return {
                     status: 'upcoming',
@@ -266,7 +270,8 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
                     source: 'schedule',
                     hasScheduleSlots: true,
                     scheduleSlotCount: windows.length,
-                    withinScheduleWindow: true,
+                    withinScheduleWindow: false,
+                    betweenSlots: false,
                 };
             }
             return {
@@ -279,6 +284,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
                 hasScheduleSlots: true,
                 scheduleSlotCount: windows.length,
                 withinScheduleWindow: false,
+                betweenSlots: false,
             };
         }
 
@@ -293,6 +299,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
                 hasScheduleSlots: true,
                 scheduleSlotCount: windows.length,
                 withinScheduleWindow: false,
+                betweenSlots: false,
             };
         }
 
@@ -307,10 +314,11 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
                 hasScheduleSlots: true,
                 scheduleSlotCount: windows.length,
                 withinScheduleWindow: true,
+                betweenSlots: false,
             };
         }
 
-        // We are between slots but not yet past effectiveEnd
+        // Gap between two slots (first slot has started; not before first slot).
         const next = windows.find((w) => w.start > now) || null;
         return {
             status: 'upcoming',
@@ -322,6 +330,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             hasScheduleSlots: true,
             scheduleSlotCount: windows.length,
             withinScheduleWindow: true,
+            betweenSlots: true,
         };
     }
 
@@ -337,6 +346,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             hasScheduleSlots: false,
             scheduleSlotCount: 0,
             withinScheduleWindow: false,
+            betweenSlots: false,
         };
     }
 
@@ -351,6 +361,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
             hasScheduleSlots: false,
             scheduleSlotCount: 0,
             withinScheduleWindow: false,
+            betweenSlots: false,
         };
     }
 
@@ -364,6 +375,7 @@ export function getEventLifecycle(event: Event, now: Date = new Date()): EventLi
         hasScheduleSlots: false,
         scheduleSlotCount: 0,
         withinScheduleWindow: false,
+        betweenSlots: false,
     };
 }
 

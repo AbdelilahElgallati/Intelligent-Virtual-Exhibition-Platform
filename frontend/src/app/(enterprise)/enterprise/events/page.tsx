@@ -119,14 +119,19 @@ function resolveEnterpriseEventTimeline(ev: any) {
     const explicitClosed = explicitState === 'closed';
     const explicitLive = explicitState === 'live';
 
-    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+    const isBetweenSlots = lifecycle.betweenSlots;
     const timelineLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
 
-    // If schedule slots exist, trust timeline windows first.
-    // Keep explicit "live" as fallback when timeline data is absent OR unexpectedly evaluates to ended.
-    const explicitLiveFallback = explicitLive && (!lifecycle.hasScheduleSlots || lifecycle.status === 'ended');
-    const isLive = !explicitClosed && (timelineLive || explicitLiveFallback);
-    const isEnded = explicitClosed || (!isLive && lifecycle.status === 'ended');
+    // Date-only "live" window when there are no parsed schedule slots (backend may still be `live`).
+    const explicitLiveFallback =
+        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+
+    const chronologyEnded = lifecycle.status === 'ended';
+    const isEnded = explicitClosed || chronologyEnded;
+    const isLive =
+        !explicitClosed &&
+        !chronologyEnded &&
+        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.status === 'live'));
     const isUpcoming = !isLive && !isEnded && !isBetweenSlots;
 
     return {

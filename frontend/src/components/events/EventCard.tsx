@@ -27,7 +27,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const eventId = event.slug || (event as any)?.id || (event as any)?._id;
   const lifecycle = getEventLifecycle(event);
-  const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+  const isBetweenSlots = lifecycle.betweenSlots;
   const lifecycleLabel = !lifecycle.hasScheduleSlots
     ? 'TIMELINE TBD'
     : isBetweenSlots

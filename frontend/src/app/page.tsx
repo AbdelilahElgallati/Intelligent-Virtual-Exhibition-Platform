@@ -136,6 +136,7 @@ export default function Home() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [activeExp, setActiveExp] = useState(experienceBlocks[0].id);
+  const [visitorOrganizerMsg, setVisitorOrganizerMsg] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -174,13 +175,31 @@ export default function Home() {
                 IVEP gives organizers, enterprises, and attendees one premium digital venue for events, stands, networking, and marketplace outcomes.
               </p>
 
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link href="/events">
-                  <Button size="lg">Explore Events</Button>
-                </Link>
-                <Link href="/auth/register">
-                  <Button size="lg" variant="outline">Create Event</Button>
-                </Link>
+              <div className="mt-10 flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <Link href="/events">
+                    <Button size="lg">Explore Events</Button>
+                  </Link>
+                  {isAuthenticated && user?.role === "visitor" ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setVisitorOrganizerMsg(true)}
+                    >
+                      Create Event
+                    </Button>
+                  ) : (
+                    <Link href="/auth/register">
+                      <Button size="lg" variant="outline">Create Event</Button>
+                    </Link>
+                  )}
+                </div>
+                {visitorOrganizerMsg && (
+                  <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-xl">
+                    Creating events requires an <strong>organizer</strong> account. Please contact an administrator to upgrade your account, or sign out and register as an organizer if your organisation is not yet on the platform.
+                  </p>
+                )}
               </div>
 
               <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -6,8 +6,8 @@ import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent, EventStatus } from '@/types/event';
 import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { formatInUserTZ } from '@/lib/timezone';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -33,13 +33,27 @@ const STATE_COLORS: Record<EventStatus, string> = {
     closed: 'bg-gray-100 text-gray-600',
 };
 
-const getEffectiveState = (event: OrganizerEvent): EventStatus => {
-    if (event.state === 'live') {
-        const lifecycle = getEventLifecycle(event as any);
-        if (lifecycle.status === 'ended') return 'closed';
+/** When backend state is `live`, badge reflects real-world timing (upcoming / in-session / live), not only the workflow flag. */
+function getOrganizerListStatusBadge(event: OrganizerEvent): { label: string; className: string } {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state !== 'live') {
+        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
     }
-    return event.state;
-};
+    const live = getLiveWorkflowLabel(event);
+    if (!live) {
+        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
+    }
+    if (live.kind === 'closed') {
+        return { label: STATE_LABELS.closed, className: STATE_COLORS.closed };
+    }
+    if (live.kind === 'session_live') {
+        return { label: 'Live', className: STATE_COLORS.live };
+    }
+    if (live.kind === 'between_slots') {
+        return { label: 'In progress', className: 'bg-sky-100 text-sky-700' };
+    }
+    return { label: 'Upcoming', className: 'bg-indigo-100 text-indigo-700' };
+}
 
 export default function OrganizerEvents() {
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
@@ -75,11 +89,11 @@ export default function OrganizerEvents() {
         finally { setActionLoading(null); }
     };
 
-    const filtered = events.filter(
-        (e) =>
-            e.title.toLowerCase().includes(search.toLowerCase()) ||
-            STATE_LABELS[getEffectiveState(e)].toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = events.filter((e) => {
+        const q = search.toLowerCase();
+        const badge = getOrganizerListStatusBadge(e);
+        return e.title.toLowerCase().includes(q) || badge.label.toLowerCase().includes(q);
+    });
 
     if (loading) {
         return (
@@ -142,7 +156,8 @@ export default function OrganizerEvents() {
                         <tbody className="divide-y divide-gray-100">
                             {filtered.map((event) => (
                                 (() => {
-                                    const effectiveState = getEffectiveState(event);
+                                    const effectiveState = getEffectiveWorkflowState(event);
+                                    const listBadge = getOrganizerListStatusBadge(event);
                                     return (
                                 <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4">
@@ -162,8 +177,8 @@ export default function OrganizerEvents() {
                                             : <span className="text-gray-400">—</span>}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATE_COLORS[effectiveState]}`}>
-                                            {STATE_LABELS[effectiveState]}
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${listBadge.className}`}>
+                                            {listBadge.label}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4">

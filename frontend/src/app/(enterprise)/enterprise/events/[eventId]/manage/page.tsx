@@ -725,7 +725,7 @@ export default function EventManagementHub() {
             if (lifecycle.status === 'ended') {
                 return { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
             }
-            if (lifecycle.withinScheduleWindow) {
+            if (lifecycle.betweenSlots) {
                 return {
                     gate: 'between-slots' as const,
                     title: eventData.title,

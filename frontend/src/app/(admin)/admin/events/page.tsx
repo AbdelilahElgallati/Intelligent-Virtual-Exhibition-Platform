@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatSlotRangeLabel } from '@/lib/schedule';
 import {
@@ -127,21 +128,38 @@ const STATE_META: Record<string, { label: string; cls: string }> = {
     closed: { label: 'Closed', cls: 'bg-zinc-100  text-zinc-600   border border-zinc-200' },
 };
 
-function StateBadge({ state }: { state: string }) {
-    const meta = STATE_META[state] ?? { label: state, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
-    return (
-        <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${meta.cls}`}>
-            {meta.label}
-        </span>
-    );
+
+/** Aligns with organizer / enterprise lists: when workflow is `live`, badge reflects real timing (Upcoming / In progress / Live). */
+function getAdminListStatusBadge(event: OrganizerEvent): { label: string; cls: string } {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state !== 'live') {
+        const meta = STATE_META[effective] ?? { label: effective, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+        return { label: meta.label, cls: meta.cls };
+    }
+    const live = getLiveWorkflowLabel(event);
+    if (!live) {
+        const meta = STATE_META[effective] ?? { label: effective, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+        return { label: meta.label, cls: meta.cls };
+    }
+    if (live.kind === 'closed') {
+        return { label: STATE_META.closed.label, cls: STATE_META.closed.cls };
+    }
+    if (live.kind === 'session_live') {
+        return { label: STATE_META.live.label, cls: STATE_META.live.cls };
+    }
+    if (live.kind === 'between_slots') {
+        return { label: 'In progress', cls: 'bg-sky-50 text-sky-700 border border-sky-200' };
+    }
+    return { label: 'Upcoming', cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
 }
 
-function getEffectiveState(event: OrganizerEvent): string {
-    if (event.state === 'live') {
-        const lifecycle = getEventLifecycle(event as any);
-        if (lifecycle.status === 'ended') return 'closed';
-    }
-    return event.state;
+function EventListStatusBadge({ event }: { event: OrganizerEvent }) {
+    const { label, cls } = getAdminListStatusBadge(event);
+    return (
+        <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>
+            {label}
+        </span>
+    );
 }
 
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
@@ -181,7 +199,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
     const [rejectReason, setRejectReason] = useState('');
     const [confirming, setConfirming] = useState<'approve' | 'reject' | 'confirm_payment' | 'start_event' | 'close_event' | null>(null);
 
-    const effectiveState = getEffectiveState(event);
+    const effectiveState = getEffectiveWorkflowState(event);
     const canAct = effectiveState === 'pending_approval';
     const fmt = (d?: string) => d ? formatInTimeZone(new Date(d), timeZone, {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
@@ -199,7 +217,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     <div className="space-y-2 pr-4">
                         <h2 className="text-lg font-bold text-zinc-900 leading-tight">{event.title}</h2>
                         <div className="flex items-center flex-wrap gap-2">
-                            <StateBadge state={effectiveState} />
+                            <EventListStatusBadge event={event} />
                             {event.organizer_name && (
                                 <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
                                     <Building2 className="w-3 h-3" /> {event.organizer_name}
@@ -518,11 +536,13 @@ export default function AdminEventsPage() {
     }, [filter, searchQuery]);
 
     const filteredEvents = events.filter(ev => {
-        if (filter && getEffectiveState(ev) !== filter) return false;
+        if (filter && getEffectiveWorkflowState(ev) !== filter) return false;
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
+        const statusLabel = getAdminListStatusBadge(ev).label.toLowerCase();
         return ev.title.toLowerCase().includes(q) ||
-            (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q));
+            (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q)) ||
+            statusLabel.includes(q);
     });
 
     const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
@@ -683,7 +703,7 @@ export default function AdminEventsPage() {
                                         ) : '—'}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <StateBadge state={getEffectiveState(ev)} />
+                                        <EventListStatusBadge event={ev} />
                                     </td>
                                     <td className="px-4 py-4 hidden sm:table-cell">
                                         <div className="flex items-center gap-2">

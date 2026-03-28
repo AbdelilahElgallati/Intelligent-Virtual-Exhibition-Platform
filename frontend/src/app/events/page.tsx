@@ -155,7 +155,7 @@ export default function EventsPage() {
         const lifecycle = getEventLifecycle(event);
         const timelineStatus: TimelineFilter = !lifecycle.hasScheduleSlots
             ? 'timeline_tbd'
-            : lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
+            : lifecycle.betweenSlots
               ? 'in_progress'
               : lifecycle.status;
 
