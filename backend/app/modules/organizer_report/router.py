@@ -28,7 +28,9 @@ _admin = Depends(require_role(Role.ADMIN))
 
 def _event_report_latex_context(summary: OrganizerSummaryResponse, resolved_event_id: str) -> dict:
     """Build LaTeX/Jinja context with escaped copy, MAD revenue, trends, and enterprises."""
-    from app.modules.analytics.latex_service import _money_mad, tex_escape
+    from app.modules.analytics.pdf_service import _money_mad
+    def tex_escape(text: str) -> str:
+        return str(text) if text is not None else ""
 
     ov = summary.overview
     rev = ov.revenue_summary
@@ -265,14 +267,14 @@ async def organizer_event_report(
 
     data = _event_report_latex_context(summary, str(resolved))
 
-    from app.modules.analytics.latex_service import latex_service
+    from app.modules.analytics.pdf_service import latex_service
 
     if format == "tex":
-        tex_content = latex_service.generate_tex(data, template_name="organizer_event_report")
+        html_content = latex_service.generate_html(data, template_name="organizer_event_report")
         return Response(
-            content=tex_content,
-            media_type="application/x-tex",
-            headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.tex"'},
+            content=html_content,
+            media_type="text/html",
+            headers={"Content-Disposition": f'attachment; filename="event_{event_slug}_report.html"'},
         )
 
     try:
@@ -311,7 +313,9 @@ async def organizer_summary_pdf(
     try:
         summary = await get_organizer_summary(event_id)
         event_slug = summary.event_slug or str(resolved)
-        from app.modules.analytics.latex_service import latex_service, tex_escape
+        from app.modules.analytics.pdf_service import latex_service
+        def tex_escape(text: str) -> str:
+            return str(text) if text is not None else ""
 
         admin_label = summary.event_title or event_slug or str(resolved)
         data = _event_report_latex_context(summary, str(resolved))
@@ -359,6 +363,7 @@ async def organizer_overall_summary(
 @router.get(
     "/organizer/overall-summary/pdf",
     summary="Download overall performance report as PDF",
+    response_class=Response,
 )
 async def organizer_overall_summary_pdf(
     current_user: dict = Depends(require_role(Role.ORGANIZER)),
@@ -388,14 +393,19 @@ async def organizer_overall_summary_pdf(
             }
         }
 
-        from app.modules.analytics.latex_service import latex_service
+        from app.modules.analytics.pdf_service import latex_service
         pdf_bytes = latex_service.generate_report_pdf(data, template_name="organizer_overall_report")
+        if not pdf_bytes:
+            raise ValueError("PDF generation returned empty content or failed to compile.")
         
         filename = f"overall_performance_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Cache-Control": "no-store",
+            },
         )
     except Exception as exc:
         logger.exception("Overall PDF export error: %s", exc)

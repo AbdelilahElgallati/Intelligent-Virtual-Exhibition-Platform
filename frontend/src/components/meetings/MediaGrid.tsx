@@ -90,7 +90,7 @@ function MediaTile({
       className={`relative bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 group shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none border-none' : ''} ${isPip ? 'ring-1 ring-white/20' : ''}`}
       style={{ width: '100%', height: '100%' }}
     >
-      // remote: render <video> whenever we have a camera/screen track to show or audio-only stream
+      {/* remote: render <video> whenever we have a camera/screen track to show or audio-only stream */}
       {showVideoEl ? (
         <video
           ref={videoRef}

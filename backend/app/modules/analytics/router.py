@@ -235,11 +235,11 @@ def _render_report_export(
             },
         )
     if format == "tex":
-        tex_content = latex_service.generate_tex(latex_data, template_name=template_name)
+        html_content = latex_service.generate_html(latex_data, template_name=template_name)
         return Response(
-            content=tex_content,
-            media_type="application/x-tex",
-            headers={"Content-Disposition": f'attachment; filename="{filename_base}.tex"'},
+            content=html_content,
+            media_type="text/html",
+            headers={"Content-Disposition": f'attachment; filename="{filename_base}.html"'},
         )
 
     pdf_bytes = latex_service.generate_report_pdf(latex_data, template_name=template_name)

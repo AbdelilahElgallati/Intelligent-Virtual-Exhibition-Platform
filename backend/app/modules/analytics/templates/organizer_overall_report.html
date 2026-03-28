@@ -5,216 +5,131 @@
     <style>
         @page {
             size: a4 portrait;
-            @frame header_frame {
-                -pdf-frame-content: header_content;
-                left: 40pt; width: 512pt; top: 30pt; height: 60pt;
-            }
-            @frame content_frame {
-                left: 40pt; width: 512pt; top: 90pt; height: 650pt;
-            }
-            @frame footer_frame {
+            margin: 1.5cm;
+            @frame footer {
                 -pdf-frame-content: footer_content;
-                left: 40pt; width: 512pt; top: 770pt; height: 40pt;
+                bottom: 1cm;
+                height: 1cm;
+                text-align: right;
+                font-size: 8pt;
+                color: #94A3B8;
             }
         }
-
         body {
-            font-family: Helvetica, Arial, sans-serif;
+            font-family: Helvetica, sans-serif;
             color: #1E293B;
-            line-height: 1.5;
             font-size: 10pt;
+            line-height: 1.4;
         }
-
-        .brand-stripe {
-            background-color: #3730A3; /* Indigo 800 - Organizer Portfolio */
-            height: 4pt;
+        h1 {
+            color: #312E81;
+            font-size: 24pt;
+            margin-bottom: 5pt;
         }
-
-        .header-title {
-            color: #3730A3;
-            font-size: 8pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1pt;
-            margin-bottom: 4pt;
-        }
-
-        .main-title {
-            font-size: 22pt;
-            font-weight: bold;
-            color: #0F172A;
-            margin: 0;
-        }
-
         .subtitle {
+            color: #64748B;
             font-size: 11pt;
-            color: #475569;
+            margin-bottom: 25pt;
+            border-bottom: 2px solid #E0E7FF;
+            padding-bottom: 10pt;
         }
-
-        .section-header {
-            border-bottom: 2pt solid #3730A3;
-            color: #0F172A;
-            font-size: 14pt;
-            font-weight: bold;
+        h2 {
+            color: #3730A3;
+            font-size: 16pt;
+            border-bottom: 1px solid #C7D2FE;
             padding-bottom: 4pt;
-            margin-top: 20pt;
-            margin-bottom: 12pt;
+            margin-top: 25pt;
+            margin-bottom: 15pt;
         }
-
-        .kpi-container {
+        table.kpi-table {
             width: 100%;
             margin-bottom: 20pt;
         }
-
-        .kpi-card {
+        table.kpi-table td {
             background-color: #F8FAFC;
-            border-top: 3pt solid #3730A3;
-            border-left: 0.5pt solid #E2E8F0;
-            border-right: 0.5pt solid #E2E8F0;
-            border-bottom: 0.5pt solid #E2E8F0;
-            padding: 10pt;
+            border: 1px solid #E2E8F0;
+            padding: 15pt;
             text-align: center;
         }
-
         .kpi-label {
-            font-size: 8pt;
-            font-weight: bold;
             color: #64748B;
+            font-size: 9pt;
             text-transform: uppercase;
-            margin-bottom: 5pt;
-        }
-
-        .kpi-value {
-            font-size: 20pt;
             font-weight: bold;
-            color: #312E81;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10pt;
-        }
-
-        .data-table th {
-            background-color: #1E1B4B;
-            color: #FFFFFF;
-            font-size: 9pt;
-            font-weight: bold;
-            text-align: left;
-            padding: 8pt;
-        }
-
-        .data-table td {
-            padding: 8pt;
-            border-bottom: 0.5pt solid #E2E8F0;
-            font-size: 9pt;
-        }
-
-        .data-table tr:nth-child(even) {
-            background-color: #F1F5F9;
-        }
-
-        .footer {
-            color: #94A3B8;
-            font-size: 8pt;
-            text-align: center;
-        }
-
-        .revenue-box {
-            background-color: #F0F9FF; /* Sky 50 */
-            border: 0.5pt solid #BAE6FD;
-            padding: 12pt;
-            border-radius: 4pt;
-            margin-top: 15pt;
-        }
-
-        .revenue-title {
-            color: #0369A1;
-            font-weight: bold;
-            font-size: 11pt;
             margin-bottom: 8pt;
         }
-
+        .kpi-value {
+            color: #4F46E5;
+            font-size: 22pt;
+            font-weight: bold;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.data-table th {
+            background-color: #EEF2FF;
+            color: #3730A3;
+            text-align: left;
+            padding: 10pt;
+            border-bottom: 2px solid #C7D2FE;
+        }
+        table.data-table td {
+            padding: 10pt;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .total-row td {
+            background-color: #F8FAFC;
+            font-weight: bold;
+            color: #312E81;
+            border-top: 2px solid #C7D2FE;
+        }
+        .safety-box {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 15pt;
+            margin-top: 10pt;
+        }
     </style>
 </head>
 <body>
+    <h1>Overall Organizer Performance</h1>
+    <div class="subtitle">Aggregate performance report for all your events on IVEP</div>
 
-    <div id="header_content">
-        <div class="brand-stripe"></div>
-        <div style="padding-top: 10pt;">
-            <div class="header-title">IVEP &bull; Organizer Portfolio Summary</div>
-            <div class="main-title">Overall Organizer Report</div>
-            <div class="subtitle">Aggregated performance across your managed events</div>
-        </div>
-    </div>
+    <h2>Global Engagement KPIs</h2>
+    <table class="kpi-table">
+        <tr>
+            {% for kpi in kpis %}
+            <td width="25%">
+                <div class="kpi-label">{{ kpi.label }}</div>
+                <div class="kpi-value">{{ kpi.value }}</div>
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
 
-    <div id="content_frame">
-        <div class="section-header">Portfolio Snapshot</div>
-        <table class="kpi-container">
-            <tr>
-                {% for kpi in kpis %}
-                <td width="33%">
-                    <div class="kpi-card">
-                        <div class="kpi-label">{{ kpi.label }}</div>
-                        <div class="kpi-value">{{ kpi.value }}</div>
-                    </div>
-                </td>
-                {% if loop.index % 3 == 0 and not loop.last %}
-            </tr><tr>
-                {% endif %}
-                {% endfor %}
-            </tr>
-        </table>
-
-        <div class="section-header">Financial Summary</div>
-        <div class="revenue-box">
-            <div class="revenue-title">Consolidated Performance (MAD)</div>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 4pt 0; color: #64748B;">Total Ticket Revenue</td>
-                    <td style="padding: 4pt 0; text-align: right; font-weight: bold;">{{ revenue.ticket_revenue }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 4pt 0; color: #64748B;">Total Stand Revenue</td>
-                    <td style="padding: 4pt 0; text-align: right; font-weight: bold;">{{ revenue.stand_revenue }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8pt 0 4pt 0; border-top: 1pt solid #BAE6FD; font-size: 12pt; color: #0369A1; font-weight: bold;">Total Earnings</td>
-                    <td style="padding: 8pt 0 4pt 0; border-top: 1pt solid #BAE6FD; text-align: right; font-size: 12pt; color: #0369A1; font-weight: bold;">{{ revenue.total_revenue }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="section-header">Safety &amp; Compliance</div>
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td width="50%" style="padding-right: 10pt;">
-                    <div style="background-color: #FEF2F2; border: 0.5pt solid #FECACA; padding: 10pt; text-align: center;">
-                        <div class="kpi-label" style="color: #991B1B;">Total Safety Flags</div>
-                        <div style="font-size: 18pt; font-weight: bold; color: #B91C1C;">{{ safety.total_flags }}</div>
-                    </div>
-                </td>
-                <td width="50%" style="padding-left: 10pt;">
-                    <div style="background-color: #F0FDF4; border: 0.5pt solid #BBF7D0; padding: 10pt; text-align: center;">
-                        <div class="kpi-label" style="color: #166534;">Resolution Rate</div>
-                        <div style="font-size: 18pt; font-weight: bold; color: #15803D;">{{ safety.resolution_rate }}%</div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <div style="margin-top: 40pt; font-size: 8pt; color: #94A3B8; text-align: right;">
-            <strong>Generated:</strong> {{ generated_at }} <br/>
-            <strong>Event Count:</strong> {{ event_count }} active event(s)
-        </div>
-    </div>
+    <h2>Financial Summary (MAD)</h2>
+    <table class="data-table">
+        <tr>
+            <th width="70%">Revenue Source</th>
+            <th width="30%" style="text-align: right;">Amount generated</th>
+        </tr>
+        <tr>
+            <td>Ticket Sales Revenue</td>
+            <td style="text-align: right; color: #475569;">{{ revenue.ticket_revenue | money_mad }}</td>
+        </tr>
+        <tr>
+            <td>Enterprise Stand Sales</td>
+            <td style="text-align: right; color: #475569;">{{ revenue.stand_revenue | money_mad }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total Platform Earnings</td>
+            <td style="text-align: right; font-size: 12pt;">{{ revenue.total_revenue | money_mad }}</td>
+        </tr>
+    </table>
 
     <div id="footer_content">
-        <div class="footer">
-            IVEP Portfolio Report &bull; {{ generated_at }} &bull; Page <pdf:pagenumber> of <pdf:pagecount>
-        </div>
+        Report generated autonomously on {{ generated_at }} &nbsp; | &nbsp; Page <pdf:pagenumber> of <pdf:pagecount>
     </div>
-
 </body>
 </html>
