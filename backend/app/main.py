@@ -156,6 +156,7 @@ def create_application() -> FastAPI:
         debug=settings.DEBUG,
         openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json" if settings.ENV == "dev" else None,
         lifespan=lifespan,
+        redirect_slashes=False,
     )
 
     # Add rate limiting middleware

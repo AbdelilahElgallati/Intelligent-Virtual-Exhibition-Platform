@@ -1,18 +1,18 @@
-'use client';
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Plus, Trash2, Clock, GripVertical, CalendarDays } from 'lucide-react';
 import { formatSlotRangeLabel } from '@/lib/schedule';
+import { useAuth } from '@/context/AuthContext';
+import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 
 // ── Default slot ─────────────────────────────────────────────────────────────
 const emptySlot = (): EventScheduleSlot => ({ start_time: '09:00', end_time: '17:00', label: '' });
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 /** "2026-02-24" → "Mon 24 Feb" */
-function formatDateLabel(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00'); // force local time, no UTC shift
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+function formatDateLabel(dateStr: string, timeZone: string): string {
+    const d = new Date(dateStr + 'T12:00:00Z'); // force midday UTC to avoid shift
+    return formatInUserTZ(d, { weekday: 'short', day: 'numeric', month: 'short' }, 'en-GB', timeZone);
 }
 
 /** Build array of YYYY-MM-DD strings between start and end (inclusive) */
@@ -228,6 +228,11 @@ interface ScheduleBuilderProps {
 }
 
 export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTimeForDay1 }: ScheduleBuilderProps) {
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
     // Auto-regenerate day cards whenever the date range changes
     useEffect(() => {
         if (!startDate || !endDate || startDate > endDate) return;
@@ -239,14 +244,14 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTi
             const existing = days[i];
             return {
                 day_number: i + 1,
-                date_label: formatDateLabel(dateStr),
+                date_label: formatDateLabel(dateStr, userTimezone),
                 slots: existing?.slots?.length ? existing.slots : [emptySlot()],
             };
         });
 
         onChange(newDays);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [startDate, endDate]);
+    }, [startDate, endDate, userTimezone]);
 
     const updateDay = (idx: number, updated: EventScheduleDay) => {
         const next = [...days];

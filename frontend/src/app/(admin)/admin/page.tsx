@@ -167,6 +167,8 @@ import {
 import { adminService } from '@/services/admin.service';
 import { DashboardData, RecentActivity } from '@/types/analytics';
 import { OrganizerEvent } from '@/types/event';
+import { useAuth } from '@/context/AuthContext';
+import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
@@ -199,6 +201,11 @@ const STATE_BADGE: Record<string, string> = {
 };
 
 export default function AdminAnalyticsPage() {
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
     const [data, setData] = useState<DashboardData | null>(null);
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -381,7 +388,9 @@ export default function AdminAnalyticsPage() {
                         >
                             <div>
                                 <p className="text-sm font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors">{ev.title}</p>
-                                <p className="text-xs text-zinc-400 mt-0.5">{ev.category} · {ev.start_date?.slice(0, 10)}</p>
+                                <p className="text-xs text-zinc-400 mt-0.5">
+                                    {ev.category} · {formatInUserTZ(ev.start_date, { month: 'short', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}
+                                </p>
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATE_BADGE[ev.state] ?? 'bg-zinc-100 text-zinc-500'}`}>

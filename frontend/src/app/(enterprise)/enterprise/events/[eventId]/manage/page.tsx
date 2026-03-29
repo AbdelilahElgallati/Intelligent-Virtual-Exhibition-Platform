@@ -46,7 +46,7 @@ import {
 import { ChatPanel } from '@/components/stand/ChatPanel';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // Simple Modal implementation
@@ -323,6 +323,9 @@ export default function EventManagementHub() {
     const params = useParams();
     const router = useRouter();
     const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
     const eventId = params.eventId as string;
 
 
@@ -524,7 +527,7 @@ export default function EventManagementHub() {
         // Prefer schedule_days if available
         if (eventData.schedule_days && eventData.schedule_days.length > 0) {
             return eventData.schedule_days.map(sd => {
-                const tz = eventData.event_timezone || getUserTimezone();
+                const tz = userTimezone;
                 const baseTimestamp = new Date(eventData.start_date || new Date().toISOString()).getTime();
                 const dayOffset = Math.max(0, sd.day_number - 1);
                 // Move safely forward by 'dayOffset' days (86400000 ms) in UTC.
@@ -894,9 +897,9 @@ export default function EventManagementHub() {
                 {/* Event period */}
                 <div className="flex items-center gap-3 text-sm text-zinc-400 mb-8">
                     <Calendar size={14} />
-                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{formatInUserTZ((eventTimeline as any).startDate, { month: 'long', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}</span>
                     <ArrowRight size={14} />
-                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{formatInUserTZ((eventTimeline as any).endDate, { month: 'long', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}</span>
                 </div>
 
                 <div className="flex gap-4">
@@ -977,8 +980,8 @@ export default function EventManagementHub() {
                             <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || 'Event'}</h2>
                             <div className="text-sm text-zinc-500 mb-1">{eventData?.description}</div>
                             <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
-                                <span><Calendar size={12} className="inline mr-1" />{eventData?.start_date?.slice(0, 10)} to {eventData?.end_date?.slice(0, 10)}</span>
-                                <span><Globe size={12} className="inline mr-1" />{eventData?.event_timezone}</span>
+                                <span><Calendar size={12} className="inline mr-1" />{formatInUserTZ(eventData?.start_date || '', { year: 'numeric', month: '2-digit', day: '2-digit' }, 'en-CA', userTimezone)} to {formatInUserTZ(eventData?.end_date || '', { year: 'numeric', month: '2-digit', day: '2-digit' }, 'en-CA', userTimezone)}</span>
+                                <span><Globe size={12} className="inline mr-1" />{userTimezone}</span>
                                 {eventData?.location && <span><MapPin size={12} className="inline mr-1" />{eventData.location}</span>}
                                 {eventData?.category && <span><Tag size={12} className="inline mr-1" />{eventData.category}</span>}
                             </div>
@@ -1088,7 +1091,7 @@ export default function EventManagementHub() {
                                     <ChatItem
                                         key={room.id || room._id}
                                         room={room}
-                                        tz={eventData?.event_timezone || 'UTC'}
+                                        tz={userTimezone}
                                         active={selectedRoomId === (room.id || room._id)}
                                         unreadCount={unreadByRoomId[room.id || room._id]}
                                         onClick={() => {
@@ -1139,7 +1142,7 @@ export default function EventManagementHub() {
                                         standName={activeRoom?.name || "Member"}
                                         isEmbedded={true}
                                         disableMessageLimit={true}
-                                        eventTimeZone={eventData?.event_timezone}
+                                        eventTimeZone={userTimezone}
                                         onClose={() => setSelectedRoomId(null)}
                                     />
                                 </div>
@@ -1285,13 +1288,13 @@ export default function EventManagementHub() {
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar size={11} />
-                                                        {formatInTimeZone(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'MMM d, yyyy')}
+                                                        {formatInUserTZ(m.start_time, { month: 'short', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Clock size={11} />
-                                                        {formatInTimeZone(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
+                                                        {formatInUserTZ(m.start_time, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
                                                         <ArrowRight size={10} />
-                                                        {formatInTimeZone(new Date(m.end_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
+                                                        {formatInUserTZ(m.end_time, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Building2 size={11} />
@@ -1510,7 +1513,7 @@ export default function EventManagementHub() {
                                             </div>
                                             <div className="space-y-2 mb-6 text-xs text-zinc-500">
                                                 <div className="flex items-center gap-2">
-                                                    <Clock size={14} /> {formatInTZ(c.start_time, eventData?.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')}
+                                                    <Clock size={14} /> {formatInUserTZ(c.start_time, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users size={14} /> {c.attendee_count} attendees

@@ -1,9 +1,24 @@
+from fastapi import Depends
+# Optional get_current_user for routes that allow unauthenticated access
+from typing import Optional
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+async def optional_get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+) -> Optional[dict]:
+    if not credentials:
+        return None
+    try:
+        return await verify_jwt_token(credentials.credentials)
+    except Exception:
+        return None
 """
 Dependency injection module for IVEP backend.
 Provides authentication and authorization dependencies for FastAPI routes.
 """
 
 from typing import Callable
+from fastapi import Depends
 
 from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer

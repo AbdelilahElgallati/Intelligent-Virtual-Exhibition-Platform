@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Event } from '@/lib/api/types';
 import { Badge } from '@/components/ui/Badge';
-import { formatDate } from '@/lib/utils';
 import { Container } from '@/components/common/Container';
 import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { useAuth } from '@/context/AuthContext';
+import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 
 interface EventDetailsHeaderProps {
   event: Event;
 }
 
 export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event }) => {
+  const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  };
+
   const lifecycle = getEventLifecycle(event);
   const statusClass =
     lifecycle.status === 'live'
@@ -70,7 +83,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
                   />
                 </svg>
                 <span>
-                  {formatDate(event.start_date)} - {formatDate(event.end_date)}
+                  {formatInUserTZ(event.start_date, dateOptions, undefined, userTimezone)} - {formatInUserTZ(event.end_date, dateOptions, undefined, userTimezone)}
                 </span>
               </div>
               <div className="flex items-center gap-2">

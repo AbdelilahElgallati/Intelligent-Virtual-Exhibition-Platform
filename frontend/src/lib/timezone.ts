@@ -101,8 +101,9 @@ export function formatInUserTZ(
   date: string | number | Date,
   options: Intl.DateTimeFormatOptions,
   locale?: string,
+  tz?: string,
 ): string {
-  const timeZone = getUserTimezone();
+  const timeZone = tz || getUserTimezone();
   const d = toUTCDate(date);
   if (isNaN(d.getTime())) return '';
   try {

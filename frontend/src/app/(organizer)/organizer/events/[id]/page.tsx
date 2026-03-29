@@ -14,9 +14,12 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OrganizerEvent, EventStatus, EventScheduleDay } from "@/types/event";
 import { getEventLifecycle } from '@/lib/eventLifecycle';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
-import { formatSlotRangeLabel } from '@/lib/schedule';
+import { 
+  formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc 
+} from '@/lib/timezone';
+import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import ScheduleEditor from "@/components/events/ScheduleEditor";
+import { useAuth } from "@/context/AuthContext";
 import { resolveMediaUrl } from '@/lib/media';
 
 
@@ -43,34 +46,35 @@ const STATE_COLORS: Record<EventStatus, string> = {
 };
 
 // ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
-function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
+function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userTimezone: string }) {
   const now = new Date();
+  const eventTimezone = event.event_timezone || 'UTC';
+
   const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
     const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-    const tz = event.event_timezone || getUserTimezone();
-    const start = new Date(event.start_date || new Date().toISOString());
-    if (Number.isNaN(start.getTime())) return 'Invalid date';
-
-    const [year, month, day] = [start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()];
-    const anchorUtcNoon = new Date(Date.UTC(year, month, day + dayOffset, 12, 0, 0));
-    return new Intl.DateTimeFormat('en-GB', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-      timeZone: tz,
-    }).format(anchorUtcNoon);
+    const startStr = event.start_date || new Date().toISOString();
+    const eventStartDate = new Date(startStr);
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'short', day: '2-digit', month: 'short' 
+    };
+    const baseDate = new Date(eventStartDate);
+    baseDate.setUTCDate(baseDate.getUTCDate() + dayOffset);
+    return formatInUserTZ(baseDate, options, undefined, userTimezone);
   };
 
-  const getAbsTime = (dayNumber: number, timeStr: string) => {
-    if (!event.start_date) return null;
+  const getAbsTimeUTC = (dayNumber: number, timeStr: string) => {
+    if (!event.start_date || !timeStr) return null;
     const eventStart = new Date(event.start_date);
-    const baseDate = new Date(eventStart);
-    baseDate.setHours(0, 0, 0, 0); 
-    const dayDate = new Date(baseDate.getTime() + (dayNumber - 1) * 24 * 60 * 60 * 1000);
-    const [h, m] = timeStr.split(':').map(Number);
-    const abs = new Date(dayDate);
-    abs.setHours(h, m, 0, 0);
-    return abs;
+    const dayDate = new Date(eventStart);
+    dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1));
+    const ymd = dayDate.toISOString().split('T')[0];
+    return zonedToUtc(`${ymd}T${timeStr}:00`, eventTimezone);
+  };
+
+  const formatSlotTime = (dayNumber: number, timeStr: string) => {
+    const utcDate = getAbsTimeUTC(dayNumber, timeStr);
+    if (!utcDate) return '--:--';
+    return formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone);
   };
 
   const blockedRanges: Record<number, { start: string, end: string, label: string }[]> = {};
@@ -91,10 +95,10 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
 
   const getSlotViolation = (dayNumber: number, slot: { start_time: string, end_time: string }) => {
     if (!event.start_date) return null;
-    const absStart = getAbsTime(dayNumber, slot.start_time);
+    const absStart = getAbsTimeUTC(dayNumber, slot.start_time);
     const eventStart = new Date(event.start_date);
     if (absStart && absStart < eventStart) {
-        return `Before Start (${eventStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`;
+        return `Before Start (${formatInUserTZ(eventStart, {hour:'2-digit', minute:'2-digit', hour12: false}, undefined, userTimezone)})`;
     }
     const dayBlocked = blockedRanges[dayNumber] || [];
     for (const b of dayBlocked) {
@@ -104,9 +108,9 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
   };
 
   const isSlotPassed = (dayNumber: number, endTime: string) => {
-    const absEnd = getAbsTime(dayNumber, endTime);
+    const absEnd = getAbsTimeUTC(dayNumber, endTime);
     if (!absEnd) return false;
-    if (endTime < "06:00") absEnd.setDate(absEnd.getDate() + 1); 
+    if (endTime < "06:00") absEnd.setUTCDate(absEnd.getUTCDate() + 1); 
     return absEnd < now;
   };
 
@@ -147,7 +151,7 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
                     <div key={`block-${bi}`} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 ${passed ? 'opacity-30' : 'opacity-60'}`}>
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="text-[11px] font-black rounded-lg px-2.5 py-1.5 whitespace-nowrap tabular-nums shadow-sm border text-zinc-400 bg-zinc-100 border-zinc-200 flex items-center gap-1.5">
-                          <Lock className="w-3 h-3" /> {block.start} → {block.end}
+                          <Lock className="w-3 h-3" /> {formatSlotTime(day.day_number, block.start)} → {formatSlotTime(day.day_number, block.end)}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -179,7 +183,7 @@ function ScheduleDisplay({ event }: { event: OrganizerEvent }) {
 
                       <div className="flex items-center gap-3 shrink-0">
                         <div className={`text-[11px] font-black rounded-lg px-2.5 py-1.5 whitespace-nowrap tabular-nums shadow-sm border ${violation ? 'text-red-700 bg-white border-red-200' : slot.is_conference ? 'text-violet-700 bg-white border-violet-100' : 'text-indigo-700 bg-white border-indigo-100'}`}>
-                          {slot.start_time} <span className="opacity-30 mx-0.5">→</span> {slot.end_time}
+                          {formatSlotTime(day.day_number, slot.start_time)} <span className="opacity-30 mx-0.5">→</span> {formatSlotTime(day.day_number, slot.end_time)}
                           {isCrossDay && <span className="ml-1.5 text-[8px] text-amber-600 uppercase tracking-tighter font-black">+1d</span>}
                         </div>
                       </div>
@@ -490,6 +494,10 @@ const STEP_ORDER: EventStatus[] = [
 export default function EventDetailPage() {
   const params = useParams();
   const eventId = params?.id as string;
+  const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
 
   const [event, setEvent] = useState<OrganizerEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1033,7 +1041,7 @@ const handleConfirmPayment = async () => {
                   onCancel={() => setIsEditingSchedule(false)}
                 />
               ) : (
-                <ScheduleDisplay event={event} />
+                <ScheduleDisplay event={event} userTimezone={userTimezone} />
               )}
             </Card>
           </div>
