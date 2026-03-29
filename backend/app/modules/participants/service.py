@@ -47,10 +47,14 @@ async def request_to_join(event_id, user_id) -> dict:
     Request to join an event.
     """
     now = datetime.now(timezone.utc)
+    db = get_database()
+    member_doc = await db.organization_members.find_one({"user_id": str(user_id)})
+    org_id = str(member_doc["organization_id"]) if member_doc and member_doc.get("organization_id") else None
 
     participant = {
         "event_id": str(event_id),
         "user_id": str(user_id),
+        "organization_id": org_id,
         "status": ParticipantStatus.REQUESTED.value,
         "created_at": now,
     }
