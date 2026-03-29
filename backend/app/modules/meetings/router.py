@@ -261,7 +261,7 @@ async def get_busy_slots(
     return all_slots
 
 
-@router.post("/", response_model=MeetingSchema, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MeetingSchema, status_code=status.HTTP_201_CREATED)
 async def request_meeting(
     meeting: MeetingCreate,
     current_user: dict = Depends(get_current_user)

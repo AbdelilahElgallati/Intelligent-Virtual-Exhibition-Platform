@@ -181,7 +181,7 @@ async def reject_event_participant(
     return ParticipantRead(**updated)
 
 
-@router.get("/", response_model=list[ParticipantRead])
+@router.get("", response_model=list[ParticipantRead])
 async def get_event_participants(
     event_id: str,
     current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
