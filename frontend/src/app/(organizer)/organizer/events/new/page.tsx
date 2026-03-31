@@ -188,7 +188,7 @@ export default function NewEventRequestPage() {
             const startUtc = zonedToUtc(`${form.start_date}T00:00:00`, timeZone);
             const endUtc = zonedToUtc(`${form.end_date}T23:59:59`, timeZone);
 
-            await eventsApi.createEvent({
+            const payload = {
                 title: form.title.trim(),
                 description: form.description.trim() || undefined,
                 category: form.category || undefined,
@@ -207,7 +207,9 @@ export default function NewEventRequestPage() {
                 stand_price: parseFloat(form.stand_price),
                 is_paid: form.is_paid,
                 ticket_price: form.is_paid && form.ticket_price ? parseFloat(form.ticket_price) : undefined,
-            });
+            };
+            console.log("EVENT PAYLOAD SENT:", JSON.stringify(payload, null, 2));
+            await eventsApi.createEvent(payload);
             router.push('/organizer/events');
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to submit event request. Please try again.';

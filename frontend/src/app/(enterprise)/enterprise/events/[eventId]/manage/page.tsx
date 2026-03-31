@@ -44,9 +44,10 @@ import {
     Tag,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
+import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
 import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
-import { formatInTZ, getUserTimezone, formatInUserTZ } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 // Simple Modal implementation
@@ -323,9 +324,6 @@ export default function EventManagementHub() {
     const params = useParams();
     const router = useRouter();
     const { user } = useAuth();
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => { setMounted(true); }, []);
-    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
     const eventId = params.eventId as string;
 
 
@@ -350,16 +348,44 @@ export default function EventManagementHub() {
     const [isSubmittingMeeting, setIsSubmittingMeeting] = useState(false);
     const [meetingFilter, setMeetingFilter] = useState<'all' | 'upcoming' | 'live' | 'past'>('all');
     const [eventData, setEventData] = useState<OrganizerEvent | null>(null);
-    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
-    const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
+    const [meetingModalTab, setMeetingModalTab] = useState<'my-meetings' | 'request-new'>('my-meetings');
+    const [partnerMeetings, setPartnerMeetings] = useState<Meeting[] | null>(null);
+    const [loadingPartnerMeetings, setLoadingPartnerMeetings] = useState(false);
+    const [busySlots, setBusySlots] = useState<any[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [meetingError, setMeetingError] = useState<string | null>(null);
+    const [timelineNow, setTimelineNow] = useState<number>(Date.now());
     const [error, setError] = useState<string | null>(null);
     const [isForbidden, setIsForbidden] = useState(false);
 
 
     // Polling interval ref for auto-refresh
     const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Fetch meetings between my org and selected partner org for this event
+    const fetchPartnerMeetings = useCallback(async (partnerOrgId: string) => {
+        const myOrgId = (stand as any)?.organization_id || (stand as any)?.org_id || (stand as any)?.id || (stand as any)?._id || '';
+        if (!myOrgId || !partnerOrgId) return;
+        setLoadingPartnerMeetings(true);
+        try {
+            const url = `/meetings/between-orgs?event_id=${eventId}&org_id_1=${encodeURIComponent(myOrgId)}&org_id_2=${encodeURIComponent(partnerOrgId)}&all_statuses=true`;
+            const res = await http.get<Meeting[]>(url);
+            // Deduplicate by meeting id
+            const deduped: Record<string, Meeting> = {};
+            res.forEach((m) => {
+                const id = m.id || m._id;
+                if (!id) return;
+                deduped[id] = m;
+            });
+            const dedupedArr = Object.values(deduped);
+            setPartnerMeetings(dedupedArr);
+        } catch (err) {
+            console.error('Error fetching partner meetings:', err);
+            setPartnerMeetings([]);
+        } finally {
+            setLoadingPartnerMeetings(false);
+        }
+    }, [eventId, stand]);
 
     const fetchRooms = useCallback(async () => {
         try {
@@ -377,20 +403,34 @@ export default function EventManagementHub() {
     const fetchMeetings = useCallback(async (standId: string) => {
         try {
             const [inboundMeetings, outboundMeetings] = await Promise.all([
-                http.get<Meeting[]>(`/meetings/stand/${standId}`),
-                http.get<Meeting[]>('/meetings/my-meetings'),
+                http.get<Meeting[]>(`/meetings/stand/${standId}?event_id=${eventId}`),
+                http.get<Meeting[]>(`/meetings/my-meetings?event_id=${eventId}`),
             ]);
 
-            const allMeetings = [
-                ...inboundMeetings.map(m => ({ ...m, type: 'inbound' as const })),
-                ...outboundMeetings.map(m => ({ ...m, type: 'outbound' as const })),
-            ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            // Deduplicate meetings by ID
+            const deduped: Record<string, Meeting> = {};
+
+            // Add outbound meetings first (preferred as 'sent')
+            outboundMeetings.forEach(m => {
+                const id = m.id || m._id;
+                if (id) deduped[id] = { ...m, type: 'outbound' };
+            });
+
+            // Add inbound meetings only if they don't exist in deduped
+            inboundMeetings.forEach(m => {
+                const id = m.id || m._id;
+                if (id && !deduped[id]) {
+                    deduped[id] = { ...m, type: 'inbound' };
+                }
+            });
+
+            const allMeetings = Object.values(deduped).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
             setMeetings(allMeetings);
         } catch (err) {
             console.error('Failed to fetch meetings', err);
         }
-    }, []);
+    }, [eventId]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -486,6 +526,9 @@ export default function EventManagementHub() {
         try {
             await http.patch(`/meetings/${id}`, { status });
             if (stand) fetchMeetings(stand.id);
+            if (selectedPartner) {
+                fetchPartnerMeetings(selectedPartner.organization_id || selectedPartner.id || selectedPartner._id || '');
+            }
         } catch (err) { console.error(err); }
     };
 
@@ -527,7 +570,7 @@ export default function EventManagementHub() {
         // Prefer schedule_days if available
         if (eventData.schedule_days && eventData.schedule_days.length > 0) {
             return eventData.schedule_days.map(sd => {
-                const tz = userTimezone;
+                const tz = eventData.event_timezone || getUserTimezone();
                 const baseTimestamp = new Date(eventData.start_date || new Date().toISOString()).getTime();
                 const dayOffset = Math.max(0, sd.day_number - 1);
                 // Move safely forward by 'dayOffset' days (86400000 ms) in UTC.
@@ -897,9 +940,9 @@ export default function EventManagementHub() {
                 {/* Event period */}
                 <div className="flex items-center gap-3 text-sm text-zinc-400 mb-8">
                     <Calendar size={14} />
-                    <span>{formatInUserTZ((eventTimeline as any).startDate, { month: 'long', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}</span>
+                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     <ArrowRight size={14} />
-                    <span>{formatInUserTZ((eventTimeline as any).endDate, { month: 'long', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}</span>
+                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
 
                 <div className="flex gap-4">
@@ -980,8 +1023,8 @@ export default function EventManagementHub() {
                             <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || 'Event'}</h2>
                             <div className="text-sm text-zinc-500 mb-1">{eventData?.description}</div>
                             <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
-                                <span><Calendar size={12} className="inline mr-1" />{formatInUserTZ(eventData?.start_date || '', { year: 'numeric', month: '2-digit', day: '2-digit' }, 'en-CA', userTimezone)} to {formatInUserTZ(eventData?.end_date || '', { year: 'numeric', month: '2-digit', day: '2-digit' }, 'en-CA', userTimezone)}</span>
-                                <span><Globe size={12} className="inline mr-1" />{userTimezone}</span>
+                                <span><Calendar size={12} className="inline mr-1" />{eventData?.start_date?.slice(0, 10)} to {eventData?.end_date?.slice(0, 10)}</span>
+                                <span><Globe size={12} className="inline mr-1" />{eventData?.event_timezone}</span>
                                 {eventData?.location && <span><MapPin size={12} className="inline mr-1" />{eventData.location}</span>}
                                 {eventData?.category && <span><Tag size={12} className="inline mr-1" />{eventData.category}</span>}
                             </div>
@@ -1091,7 +1134,7 @@ export default function EventManagementHub() {
                                     <ChatItem
                                         key={room.id || room._id}
                                         room={room}
-                                        tz={userTimezone}
+                                        tz={eventData?.event_timezone || 'UTC'}
                                         active={selectedRoomId === (room.id || room._id)}
                                         unreadCount={unreadByRoomId[room.id || room._id]}
                                         onClick={() => {
@@ -1142,7 +1185,7 @@ export default function EventManagementHub() {
                                         standName={activeRoom?.name || "Member"}
                                         isEmbedded={true}
                                         disableMessageLimit={true}
-                                        eventTimeZone={userTimezone}
+                                        eventTimeZone={eventData?.event_timezone}
                                         onClose={() => setSelectedRoomId(null)}
                                     />
                                 </div>
@@ -1222,7 +1265,7 @@ export default function EventManagementHub() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                        {filtered.map((m) => {
+                        {filtered.map((m, index) => {
                             const tl = m._tl;
                             const TlIcon = tl.icon;
                             const canJoin = (m.status === 'approved' || m.session_status === 'live') && (tl.status === 'live' || tl.status === 'starting-soon');
@@ -1230,7 +1273,7 @@ export default function EventManagementHub() {
                             const isPast = tl.status === 'ended' || isExpired;
 
                             return (
-                            <Card key={m.id || m._id} className={clsx(
+                            <Card key={`meeting-${m.id || m._id}-${index}`} className={clsx(
                                 "transition-all border",
                                 tl.status === 'live' ? "border-emerald-200 shadow-emerald-100/50 shadow-md" :
                                 tl.status === 'starting-soon' ? "border-orange-200 shadow-orange-100/50 shadow-sm" :
@@ -1288,13 +1331,13 @@ export default function EventManagementHub() {
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar size={11} />
-                                                        {formatInUserTZ(m.start_time, { month: 'short', day: 'numeric', year: 'numeric' }, undefined, userTimezone)}
+                                                        {formatInTZ(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'MMM d, yyyy')}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Clock size={11} />
-                                                        {formatInUserTZ(m.start_time, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
+                                                        {formatInTZ(new Date(m.start_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
                                                         <ArrowRight size={10} />
-                                                        {formatInUserTZ(m.end_time, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
+                                                        {formatInTZ(new Date(m.end_time), eventData?.event_timezone || 'UTC', 'h:mm a')}
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Building2 size={11} />
@@ -1433,6 +1476,7 @@ export default function EventManagementHub() {
                                                     onClick={() => {
                                                         setSelectedPartner(p);
                                                         setIsPartnerModalOpen(true);
+                                                        fetchPartnerMeetings(p.organization_id || p.id || p._id || '');
                                                     }}
                                                 >
                                                     Details
@@ -1443,11 +1487,16 @@ export default function EventManagementHub() {
                                                         size="sm"
                                                         className="flex-1 text-xs h-8 bg-indigo-600"
                                                         onClick={() => {
+                                                            setPartnerMeetings(null);
+                                                            setLoadingPartnerMeetings(true);
                                                             setSelectedPartner(p);
                                                             setIsMeetingModalOpen(true);
+                                                            setMeetingModalTab('my-meetings');
                                                             setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
                                                             setMeetingError(null);
+                                                            fetchPartnerMeetings(p.organization_id || p.id || p._id || '');
                                                             if (p.stand_id) fetchBusySlots(p.stand_id);
+                                                            else { setBusySlots([]); setLoadingSlots(false); }
                                                         }}
                                                     >
                                                         <Calendar size={12} className="mr-1.5" /> Meeting
@@ -1513,7 +1562,7 @@ export default function EventManagementHub() {
                                             </div>
                                             <div className="space-y-2 mb-6 text-xs text-zinc-500">
                                                 <div className="flex items-center gap-2">
-                                                    <Clock size={14} /> {formatInUserTZ(c.start_time, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone)}
+                                                    <Clock size={14} /> {formatInTZ(c.start_time, eventData?.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')}
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users size={14} /> {c.attendee_count} attendees
@@ -1574,294 +1623,204 @@ export default function EventManagementHub() {
             {
                 isPartnerModalOpen && selectedPartner && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                        <Card className="w-full max-w-lg shadow-2xl border-none">
-                            <CardHeader className="border-b border-zinc-100">
+                        <Card className="w-full max-w-lg max-h-[90vh] shadow-2xl border-none overflow-hidden flex flex-col">
+                            <CardHeader className="border-b border-zinc-100 bg-white/80 backdrop-blur-md z-10 shrink-0">
                                 <div className="flex justify-between items-center">
-                                    <CardTitle className="text-xl font-black flex items-center gap-2">
-                                        <Building2 className="text-indigo-600" />
-                                        Partner Details
-                                    </CardTitle>
-                                    <Button variant="ghost" size="sm" onClick={() => setIsPartnerModalOpen(false)}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-indigo-50 rounded-lg">
+                                            <Building2 className="text-indigo-600" size={18} />
+                                        </div>
+                                        <CardTitle className="text-lg font-black">Partner Details</CardTitle>
+                                    </div>
+                                    <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0" onClick={() => setIsPartnerModalOpen(false)}>
                                         <XCircle size={20} />
                                     </Button>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 overflow-hidden border border-indigo-100">
+                            <CardContent className="p-0 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent">
+                                <div className="p-6 space-y-6">
+                                    {/* Header Section */}
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+                                        <div className="w-24 h-24 rounded-3xl bg-white shadow-sm flex items-center justify-center text-indigo-600 overflow-hidden border border-zinc-100 shrink-0">
                                             {selectedPartner.logo_url ? (
                                                 <img src={resolveMediaUrl(selectedPartner.logo_url)} alt={selectedPartner.organization_name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <Building2 size={32} />
+                                                <Building2 size={48} className="opacity-20" />
                                             )}
                                         </div>
-                                        <div>
-                                            <h3 className="text-2xl font-bold text-zinc-900">{selectedPartner.organization_name}</h3>
-                                            <p className="text-zinc-500 text-sm">Approved Event Partner</p>
-                                            {selectedPartner.industry && (
-                                                <p className="text-xs font-semibold text-indigo-600 mt-1">{selectedPartner.industry}</p>
-                                            )}
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                                                <h3 className="text-2xl font-black text-zinc-900">{selectedPartner.organization_name}</h3>
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">Approved</span>
+                                            </div>
+                                            <p className="text-zinc-500 text-sm font-medium mb-2">B2B Event Partner</p>
+                                            <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                                                {selectedPartner.industry && (
+                                                    <span className="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-[11px] font-bold">
+                                                        {selectedPartner.industry}
+                                                    </span>
+                                                )}
+                                                {selectedPartner.location_country && (
+                                                    <span className="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-[11px] font-bold flex items-center gap-1">
+                                                        <MapPin size={10} /> {selectedPartner.location_country}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-600 text-sm leading-relaxed">
-                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400 mb-2">
+                                    {/* Meeting Stats Quick View */}
+                                    <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                                                <Calendar size={13} /> Meeting Status
+                                            </div>
+                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">Current Event</span>
+                                        </div>
+                                        
+                                        {loadingPartnerMeetings ? (
+                                            <div className="flex items-center justify-center py-4 gap-2 text-zinc-400 text-xs">
+                                                <Loader2 className="animate-spin" size={16} /> Analyzing meetings...
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 text-center transition-all hover:scale-[1.02]">
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Approved</p>
+                                                    <p className="text-2xl font-black text-emerald-700">{partnerMeetings?.filter(m => m.status === 'approved').length || 0}</p>
+                                                </div>
+                                                <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-100/50 text-center transition-all hover:scale-[1.02]">
+                                                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Pending</p>
+                                                    <p className="text-2xl font-black text-amber-700">{partnerMeetings?.filter(m => m.status === 'pending').length || 0}</p>
+                                                </div>
+                                                <div className="p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 text-center transition-all hover:scale-[1.02]">
+                                                    <p className="text-[10px] font-bold text-indigo-600 uppercase mb-1">Total</p>
+                                                    <p className="text-2xl font-black text-indigo-700">{partnerMeetings?.length || 0}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Company Overview */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                                             <FileText size={13} /> Company Overview
                                         </div>
-                                        {selectedPartner.description || 'This enterprise is participating in the event and is available for direct partnership discussions.'}
+                                        <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-600 text-sm leading-relaxed">
+                                            {selectedPartner.description || 'This enterprise is participating in the event and is available for direct partnership discussions and meeting requests.'}
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4">
-                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-2">
-                                                <Building2 size={13} /> Company
-                                            </div>
-                                            <p className="text-sm font-semibold text-zinc-900">{selectedPartner.organization_name}</p>
-                                            <p className="text-xs text-zinc-500 mt-1">{selectedPartner.industry || 'Industry not specified'}</p>
-                                        </div>
-                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4">
-                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-2">
-                                                <MapPin size={13} /> Location
-                                            </div>
-                                            <p className="text-sm font-semibold text-zinc-900">
-                                                {[selectedPartner.location_city, selectedPartner.location_country].filter(Boolean).join(', ') || 'Location not shared'}
-                                            </p>
-                                        </div>
-                                        <div className="rounded-2xl border border-zinc-100 bg-white p-4 sm:col-span-2">
-                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 mb-3">
+                                    {/* Details Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-3">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
                                                 <Globe size={13} /> Contact & Links
                                             </div>
-                                            <div className="space-y-2 text-sm text-zinc-600">
-                                                <div className="flex items-center gap-2">
-                                                    <Mail size={14} className="text-zinc-400" />
-                                                    <span>{selectedPartner.contact_email || 'Email not shared'}</span>
+                                            <div className="space-y-3 text-sm text-zinc-600">
+                                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
+                                                    <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors shadow-sm">
+                                                        <Mail size={14} />
+                                                    </div>
+                                                    <span className="font-medium truncate">{selectedPartner.contact_email || 'Email not shared'}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Phone size={14} className="text-zinc-400" />
-                                                    <span>{selectedPartner.contact_phone || 'Phone not shared'}</span>
+                                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
+                                                    <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors shadow-sm">
+                                                        <Phone size={14} />
+                                                    </div>
+                                                    <span className="font-medium">{selectedPartner.contact_phone || 'Phone not shared'}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <Globe size={14} className="text-zinc-400 shrink-0" />
-                                                    {selectedPartner.website ? (
-                                                        <a href={selectedPartner.website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 truncate">
-                                                            {selectedPartner.website}
-                                                        </a>
-                                                    ) : (
-                                                        <span>Website not shared</span>
-                                                    )}
+                                                {selectedPartner.website && (
+                                                    <a href={selectedPartner.website} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
+                                                        <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors shadow-sm">
+                                                            <Globe size={14} />
+                                                        </div>
+                                                        <span className="font-medium text-indigo-600 truncate">{selectedPartner.website.replace(/^https?:\/\//, '')}</span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-3">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                                                <MapPin size={13} /> Location Info
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Primary Office</p>
+                                                    <p className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                                                        <span className="text-lg">📍</span>
+                                                        {[selectedPartner.location_city, selectedPartner.location_country].filter(Boolean).join(', ') || 'Global Headquarters'}
+                                                    </p>
+                                                </div>
+                                                <div className="pt-3 border-t border-zinc-50">
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Event Availability</p>
+                                                    <p className="text-xs font-medium text-zinc-600">Available for B2B networking during all event days.</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        <Button className="w-full bg-indigo-600 py-6" onClick={() => {
-                                            setIsPartnerModalOpen(false);
-                                            handleStartB2B(selectedPartner.organization_id!);
-                                        }}>
-                                            <MessageSquare className="mr-2" size={18} /> Send Message
-                                        </Button>
-                                        {selectedPartner.stand_id && (
-                                            <Button variant="outline" className="w-full py-6" onClick={() => {
-                                                setIsPartnerModalOpen(false);
-                                                setIsMeetingModalOpen(true);
-                                                setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
-                                                setMeetingError(null);
-                                                if (selectedPartner?.stand_id) fetchBusySlots(selectedPartner.stand_id);
-                                            }}>
-                                                <Calendar className="mr-2" size={18} /> Request Meeting
-                                            </Button>
-                                        )}
                                     </div>
                                 </div>
                             </CardContent>
+                            <CardFooter className="p-6 border-t border-zinc-100 bg-zinc-50/50 flex flex-col sm:flex-row gap-3 shrink-0">
+                                <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 py-6 font-bold shadow-lg shadow-indigo-100" onClick={() => {
+                                    setIsPartnerModalOpen(false);
+                                    handleStartB2B(selectedPartner.organization_id!);
+                                }}>
+                                    <MessageSquare className="mr-2" size={18} /> Send Message
+                                </Button>
+                                {selectedPartner.stand_id && (
+                                    <Button variant="outline" className="flex-1 py-6 font-bold border-zinc-200 hover:border-indigo-600 hover:text-indigo-600 transition-all" onClick={() => {
+                                        setIsPartnerModalOpen(false);
+                                        setIsMeetingModalOpen(true);
+                                        setMeetingModalTab('my-meetings');
+                                        setMeetingForm({ date: '', startTime: '', endTime: '', purpose: '' });
+                                        setMeetingError(null);
+                                        fetchPartnerMeetings(selectedPartner.organization_id || selectedPartner.id || selectedPartner._id || '');
+                                        if (selectedPartner?.stand_id) fetchBusySlots(selectedPartner.stand_id);
+                                    }}>
+                                        <Calendar className="mr-2" size={18} /> Request Meeting
+                                    </Button>
+                                )}
+                            </CardFooter>
                         </Card>
                     </div>
                 )
             }
 
             {/* Meeting Request Modal */}
-            {
-                isMeetingModalOpen && selectedPartner && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                        <Card className="w-full max-w-lg shadow-2xl border-none">
-                            <CardHeader className="border-b border-zinc-100">
-                                <div className="flex justify-between items-center">
-                                    <CardTitle className="text-xl font-black flex items-center gap-2">
-                                        <Calendar className="text-indigo-600" />
-                                        Schedule Meeting
-                                    </CardTitle>
-                                    <Button variant="ghost" size="sm" onClick={() => { setIsMeetingModalOpen(false); setMeetingError(null); }}>
-                                        <XCircle size={20} />
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="space-y-5">
-                                    <p className="text-sm text-zinc-500">
-                                        Choose an available slot to meet with <strong>{selectedPartner.organization_name}</strong>.
-                                    </p>
-
-                                    {/* Error banner */}
-                                    {meetingError && (
-                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-                                            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-                                            <span>{meetingError}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Day picker */}
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-zinc-400">Event Day</label>
-                                        {dayAvailability.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2">
-                                                {dayAvailability.map(day => (
-                                                    <button
-                                                        key={day.dateStr}
-                                                        disabled={day.disabled}
-                                                        onClick={() => {
-                                                            setMeetingForm(f => ({ ...f, date: day.dateStr, startTime: '', endTime: '' }));
-                                                            setMeetingError(null);
-                                                        }}
-                                                        className={clsx(
-                                                            "px-4 py-2 rounded-xl text-sm font-semibold border transition-all",
-                                                            meetingForm.date === day.dateStr
-                                                                ? "bg-indigo-600 text-white border-indigo-600"
-                                                                : day.disabled
-                                                                    ? "bg-zinc-50 text-zinc-300 border-zinc-100 cursor-not-allowed"
-                                                                    : "bg-white text-zinc-700 border-zinc-200 hover:border-indigo-300"
-                                                        )}
-                                                    >
-                                                        {day.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs text-zinc-400 italic">Loading event schedule…</p>
-                                        )}
-                                    </div>
-
-                                    {/* Start Time picker */}
-                                    {meetingForm.date && (
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-zinc-400">Start Time</label>
-                                            {loadingSlots ? (
-                                                <div className="flex items-center gap-2 text-xs text-zinc-400">
-                                                    <Loader2 size={14} className="animate-spin" /> Checking availability…
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto pr-1">
-                                                    {startTimeOptions.map(({ time, disabled }) => {
-                                                        const conflict = disabled ? null : isSlotBusy(time);
-                                                        const isDisabled = disabled || !!conflict;
-                                                        return (
-                                                            <button
-                                                                key={time}
-                                                                disabled={isDisabled}
-                                                                title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
-                                                                onClick={() => {
-                                                                    setMeetingForm(f => ({ ...f, startTime: time, endTime: '' }));
-                                                                    setMeetingError(null);
-                                                                }}
-                                                                className={clsx(
-                                                                    "px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all",
-                                                                    isDisabled
-                                                                        ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
-                                                                        : meetingForm.startTime === time
-                                                                            ? "bg-indigo-600 text-white"
-                                                                            : "bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-indigo-300 hover:bg-indigo-50"
-                                                                )}
-                                                            >
-                                                                {time}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                    {startTimeOptions.length === 0 && (
-                                                        <p className="col-span-full text-xs text-zinc-400 italic">No time slots available for this day.</p>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* End Time picker */}
-                                    {meetingForm.startTime && (
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase text-zinc-400">End Time</label>
-                                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                                                {endTimeOptions.map(({ time, disabled }) => {
-                                                    const conflict = disabled ? null : isSlotBusy(time, true);
-                                                    const isDisabled = disabled || !!conflict;
-                                                    return (
-                                                        <button
-                                                            key={time}
-                                                            disabled={isDisabled}
-                                                            title={conflict ? `${conflict.type}: ${conflict.label}` : undefined}
-                                                            onClick={() => {
-                                                                setMeetingForm(f => ({ ...f, endTime: time }));
-                                                                setMeetingError(null);
-                                                            }}
-                                                            className={clsx(
-                                                                "px-2 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all",
-                                                                isDisabled
-                                                                    ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
-                                                                    : meetingForm.endTime === time
-                                                                        ? "bg-emerald-600 text-white"
-                                                                        : "bg-zinc-50 text-zinc-700 border border-zinc-200 hover:border-emerald-300 hover:bg-emerald-50"
-                                                            )}
-                                                        >
-                                                            {time}
-                                                        </button>
-                                                    );
-                                                })}
-                                                {endTimeOptions.length === 0 && (
-                                                    <p className="col-span-full text-xs text-zinc-400 italic">No valid end times for this start slot.</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Selected time summary */}
-                                    {meetingForm.startTime && meetingForm.endTime && (
-                                        <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl text-sm text-indigo-700 font-medium">
-                                            <Clock size={16} />
-                                            {meetingForm.startTime} — {meetingForm.endTime}
-                                            <span className="text-indigo-400 text-xs ml-auto">
-                                                {(() => {
-                                                    const [sh, sm] = meetingForm.startTime.split(':').map(Number);
-                                                    const [eh, em] = meetingForm.endTime.split(':').map(Number);
-                                                    const mins = (eh * 60 + em) - (sh * 60 + sm);
-                                                    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? mins % 60 + 'min' : ''}` : `${mins} min`;
-                                                })()}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* Purpose */}
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase text-zinc-400">Purpose / Agenda</label>
-                                        <textarea
-                                            placeholder="What would you like to discuss?"
-                                            className="w-full p-3 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-indigo-500/20 outline-none h-20 resize-none text-sm"
-                                            value={meetingForm.purpose}
-                                            onChange={e => setMeetingForm({ ...meetingForm, purpose: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <Button
-                                        className="w-full bg-indigo-600 py-6 mt-2"
-                                        disabled={!meetingForm.date || !meetingForm.startTime || !meetingForm.endTime || isSubmittingMeeting}
-                                        onClick={handleCreateB2BMeeting}
-                                    >
-                                        {isSubmittingMeeting ? <Loader2 className="animate-spin" size={20} /> : "Submit Meeting Request"}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )
-            }
+            {isMeetingModalOpen && selectedPartner && (
+                <MeetingRequestModal
+                    isOpen={isMeetingModalOpen}
+                    onClose={() => {
+                        setIsMeetingModalOpen(false);
+                        setMeetingError(null);
+                    }}
+                    standId={selectedPartner.stand_id || selectedPartner.organization_id || selectedPartner.id || ''}
+                    standAliasIds={[
+                        String(selectedPartner.stand_id || ''),
+                        String(selectedPartner.organization_id || ''),
+                        String(selectedPartner.id || ''),
+                        String(selectedPartner._id || '')
+                    ]}
+                    standName={selectedPartner.organization_name}
+                    eventId={String(eventId)}
+                    eventAliasIds={[String(eventId)]}
+                    eventStartDate={eventData?.start_date}
+                    eventEndDate={eventData?.end_date}
+                    scheduleDays={selectedPartner.stand_id ? eventData?.schedule_days : []}
+                    eventTimeZone={eventData?.event_timezone}
+                    themeColor="#4f46e5"
+                    myStandId={stand?.id || ''}
+                    meetings={partnerMeetings as any[]}
+                    initialView={meetingModalTab === 'my-meetings' ? 'list' : 'request'}
+                    onUpdateStatus={handleUpdateMeetingStatus}
+                    onSuccess={async () => {
+                        if (selectedPartner) {
+                            await fetchPartnerMeetings(selectedPartner.organization_id || selectedPartner.id || selectedPartner._id || '');
+                        }
+                    }}
+                />
+            )}
         </div >
     );
 }

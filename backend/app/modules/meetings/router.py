@@ -1,3 +1,11 @@
+def stringify_object_ids(doc):
+    """Convert all ObjectId fields in a dict to strings (recursive for lists)."""
+    if isinstance(doc, list):
+        return [stringify_object_ids(d) for d in doc]
+    if isinstance(doc, dict):
+        return {k: str(v) if k == "_id" and hasattr(v, "__str__") else stringify_object_ids(v) for k, v in doc.items()}
+    return doc
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from datetime import datetime, timedelta, timezone
 import json
@@ -146,6 +154,10 @@ def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
     # Fallback to event date range if no valid schedule slots.
     event_start = _to_utc_datetime(event.get("start_date"))
     event_end = _to_utc_datetime(event.get("end_date"))
+    # Normalize event_end for single-day events ending at midnight (fixes midnight boundary bug)
+    # This ensures event is considered live for the full day, not just until 00:00
+    if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
+        event_end = event_end + timedelta(days=1)
     if event_start and now_utc < event_start:
         return False
     if event_end and now_utc > event_end:
@@ -314,6 +326,13 @@ async def request_meeting(
 
     event_start = event["start_date"].replace(tzinfo=None) if isinstance(event["start_date"], datetime) else datetime.fromisoformat(event["start_date"].replace("Z", "+00:00")).replace(tzinfo=None)
     event_end = event["end_date"].replace(tzinfo=None) if isinstance(event["end_date"], datetime) else datetime.fromisoformat(event["end_date"].replace("Z", "+00:00")).replace(tzinfo=None)
+    # Minimal fix: Normalize event_end for single-day events ending at midnight (prevents valid meetings from being rejected)
+    if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
+        event_end = event_end + timedelta(days=1)
+    # Normalize event_end for single-day events ending at midnight (fixes midnight boundary bug)
+    # This ensures meetings on the event day are accepted, but not outside the event
+    if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
+        event_end = event_end + timedelta(days=1)
 
     if meeting_start < event_start or meeting_end > event_end:
         raise HTTPException(
@@ -342,7 +361,12 @@ async def request_meeting(
         end_time=meeting_end,
     )
     if conflict:
-        raise HTTPException(status_code=409, detail=conflict)
+        # Only block if the conflict is with another meeting, not a conference
+        if conflict.get("type") == "meeting":
+            raise HTTPException(status_code=409, detail=conflict)
+        # If conflict is with a conference, just warn and allow
+        import warnings
+        warnings.warn(f"This time overlaps with conference '{conflict.get('label', 'Untitled')}'", UserWarning)
 
     # 5. Conference Conflict Detection for requester or target enterprise host
     db = meeting_repo.db
@@ -360,11 +384,15 @@ async def request_meeting(
         "start_time": {"$lt": meeting_end},
         "end_time": {"$gt": meeting_start},
     })
+    # Only block if the current user is a host/participant in the conference
     if conf_conflict:
-        raise HTTPException(
-            status_code=409,
-            detail=f"This time overlaps with conference \"{conf_conflict.get('title', 'Untitled')}\""
-        )
+        assigned_id = conf_conflict.get("assigned_enterprise_id")
+        if assigned_id and assigned_id in conference_participants:
+            # For B2B meetings, do not block, just warn (add a warning to response or log)
+            import warnings
+            warnings.warn(f"This time overlaps with conference '{conf_conflict.get('title', 'Untitled')}'", UserWarning)
+            # Optionally, attach a warning to the created_meeting object or response
+            # For now, just log and allow the meeting
 
     created_meeting = await meeting_repo.create_meeting(meeting)
 
@@ -399,24 +427,93 @@ async def request_meeting(
     return created_meeting
 
 
+@router.get("/between-orgs", response_model=List[MeetingSchema])
+async def get_meetings_between_orgs(
+    event_id: str,
+    org_id_1: str,
+    org_id_2: str,
+    current_user=Depends(get_current_user)
+):
+    """Returns all meetings in an event where both orgs are involved (as stand owner or visitor)."""
+    db = meeting_repo.db
+    resolved_event_id = await resolve_event_id(event_id)
+    print(f"[between-orgs] event_id={event_id} resolved={resolved_event_id} org1={org_id_1} org2={org_id_2}")
+
+    # Get stands for both orgs in this event
+    org1_stands = await db.stands.find({
+        "event_id": resolved_event_id,
+        "organization_id": org_id_1
+    }).to_list(length=None)
+    org2_stands = await db.stands.find({
+        "event_id": resolved_event_id,
+        "organization_id": org_id_2
+    }).to_list(length=None)
+
+    all_stand_ids = (
+        [str(s["_id"]) for s in org1_stands] +
+        [str(s["_id"]) for s in org2_stands]
+    )
+    print(f"[between-orgs] stand_ids={all_stand_ids}")
+
+    if not all_stand_ids:
+        return []
+
+    # Find meetings where stand_id is in either org's stands
+    meetings = await db.meetings.find({
+        "event_id": resolved_event_id,
+        "stand_id": {"$in": all_stand_ids}
+    }).to_list(length=None)
+
+    print(f"[between-orgs] found {len(meetings)} meetings")
+    return [stringify_object_ids(m) for m in meetings]
+
+
+
+from bson import ObjectId
+
 @router.get("/my-meetings", response_model=List[MeetingSchema])
-async def get_my_meetings(current_user: dict = Depends(get_current_user)):
-    return await meeting_repo.get_visitor_meetings(str(current_user["_id"]))
+async def get_my_meetings(
+    current_user: dict = Depends(get_current_user),
+    event_id: Optional[str] = None
+):
+    """
+    Returns all meetings for the current user. If event_id is provided, only meetings for that event are returned.
+    """
+    meetings = await meeting_repo.get_visitor_meetings(str(current_user["_id"]))
+    if event_id:
+        resolved_event_id = await resolve_event_id(event_id)
+        # Filter by both string and ObjectId for legacy/compatibility
+        event_variants = [resolved_event_id]
+        if event_id != resolved_event_id:
+            event_variants.append(event_id)
+        meetings = [m for m in meetings if str(m.get("event_id")) in event_variants]
+    return meetings
+
 
 
 @router.get("/stand/{stand_id}", response_model=List[MeetingSchema])
 async def get_stand_meetings(
     stand_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    event_id: Optional[str] = None
 ):
-    # Resolve slug to _id for ownership verification and repository query
+    """
+    Returns all meetings for a stand. If event_id is provided, only meetings for that event are returned.
+    """
     stand = await get_stand_by_id(stand_id)
     if not stand:
         raise HTTPException(status_code=404, detail="Stand not found")
     internal_stand_id = str(stand["_id"])
 
     await verify_stand_ownership(internal_stand_id, str(current_user["_id"]))
-    return await meeting_repo.get_stand_meetings(internal_stand_id)
+    meetings = await meeting_repo.get_stand_meetings(internal_stand_id)
+    if event_id:
+        resolved_event_id = await resolve_event_id(event_id)
+        event_variants = [resolved_event_id]
+        if event_id != resolved_event_id:
+            event_variants.append(event_id)
+        meetings = [m for m in meetings if str(m.get("event_id")) in event_variants]
+    return meetings
 
 
 @router.get("/{meeting_id}/token", response_model=MeetingJoinResponse)

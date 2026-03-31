@@ -47,8 +47,9 @@ const STATE_COLORS: Record<EventStatus, string> = {
 
 // ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
 function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userTimezone: string }) {
-  const now = new Date();
-  const eventTimezone = event.event_timezone || 'UTC';
+      // ...existing code...
+    const now = new Date();
+    const eventTimezone = event.event_timezone || 'UTC';
 
   const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
     const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
@@ -62,12 +63,21 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
     return formatInUserTZ(baseDate, options, undefined, userTimezone);
   };
 
-  const getAbsTimeUTC = (dayNumber: number, timeStr: string) => {
+  const getAbsTimeUTC = (dayNumber: number, timeStr: string, nextDay = false) => {
     if (!event.start_date || !timeStr) return null;
+    // Get event start date parts in the event's timezone
     const eventStart = new Date(event.start_date);
-    const dayDate = new Date(eventStart);
-    dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1));
-    const ymd = dayDate.toISOString().split('T')[0];
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: eventTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const localDateStr = formatter.format(eventStart); // 'YYYY-MM-DD'
+    // Build anchor at local noon to safely add days
+    const anchorUtc = new Date(`${localDateStr}T12:00:00Z`);
+    anchorUtc.setUTCDate(anchorUtc.getUTCDate() + (dayNumber - 1) + (nextDay ? 1 : 0));
+    const ymd = anchorUtc.toISOString().split('T')[0];
     return zonedToUtc(`${ymd}T${timeStr}:00`, eventTimezone);
   };
 
@@ -107,10 +117,10 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
     return null;
   };
 
-  const isSlotPassed = (dayNumber: number, endTime: string) => {
-    const absEnd = getAbsTimeUTC(dayNumber, endTime);
+  const isSlotPassed = (dayNumber: number, endTime: string, startTime?: string) => {
+    const crossDay = startTime ? isOvernightSlot(startTime, endTime) : false;
+    const absEnd = getAbsTimeUTC(dayNumber, endTime, crossDay);
     if (!absEnd) return false;
-    if (endTime < "06:00") absEnd.setUTCDate(absEnd.getUTCDate() + 1); 
     return absEnd < now;
   };
 
@@ -146,7 +156,8 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
               </div>
               <div className="p-4 space-y-3">
                 {dayBlocked.map((block, bi) => {
-                  const passed = isSlotPassed(day.day_number, block.end);
+                  // Blocked ranges are always next-day spillovers
+                  const passed = isSlotPassed(day.day_number, block.end, "23:59");
                   return (
                     <div key={`block-${bi}`} className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 ${passed ? 'opacity-30' : 'opacity-60'}`}>
                       <div className="flex items-center gap-3 shrink-0">
@@ -166,7 +177,7 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
                 {day.slots.map((slot, si) => {
                   const isCrossDay = slot.end_time < slot.start_time;
                   const violation = getSlotViolation(day.day_number, slot);
-                  const passed = isSlotPassed(day.day_number, slot.end_time);
+                  const passed = isSlotPassed(day.day_number, slot.end_time, slot.start_time);
 
                   return (
                     <div key={si} className={`group relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border transition-all duration-300 ${passed ? 'opacity-40 grayscale-[0.5]' : ''} ${violation ? 'border-red-200 bg-red-50/20' : slot.is_conference ? 'border-violet-100 bg-violet-50/30 hover:bg-violet-50/50' : 'border-zinc-100 bg-zinc-50/30 hover:bg-violet-50/50'}`}>

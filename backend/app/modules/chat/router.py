@@ -44,6 +44,11 @@ async def get_my_rooms(
         if other_member_id:
             if room.room_category == "b2b":
                 org_doc = await db.organizations.find_one({"owner_id": other_member_id})
+                if not org_doc:
+                    # Debug: log available orgs for this owner
+                    print(f"No org found for owner_id={other_member_id}")
+                    orgs = await db.organizations.find({"owner_id": {"$exists": True}}).to_list(5)
+                    print(f"Sample orgs: {[{k: o.get(k) for k in ('_id','owner_id','name')} for o in orgs]}")
                 if org_doc:
                     room.name = org_doc.get("name") or "Enterprise"
                 else:
@@ -162,13 +167,31 @@ async def initiate_b2b_chat(
     if not event_id:
         raise HTTPException(status_code=400, detail="event_id is required for B2B chats")
 
+    from bson import ObjectId as BSONObjectId
     db = get_database()
-    member_doc = await db.organization_members.find_one({"user_id": str(current_user["_id"])})
-    if not member_doc or not member_doc.get("organization_id"):
-        raise HTTPException(status_code=403, detail="Your enterprise organization could not be resolved")
+    # --- Fix 2: Resolve event_id to MongoDB _id if needed ---
+    # Accepts event_id as slug, alias, or ObjectId
+    event_doc = None
+    try:
+        event_doc = await db.events.find_one({"_id": BSONObjectId(event_id)})
+    except Exception:
+        pass
+    if not event_doc:
+        event_doc = await db.events.find_one({"slug": event_id})
+    if not event_doc:
+        event_doc = await db.events.find_one({"alias": event_id})
+    if event_doc:
+        event_id = str(event_doc["_id"])
 
-    current_org_id = str(member_doc["organization_id"])
+    # --- Fix 1: owner_id is a string, not ObjectId ---
+    org = await db.organizations.find_one({"owner_id": str(current_user["_id"])})
+    if not org:
+        raise HTTPException(status_code=403, detail="No organization found for your account")
+    current_org_id = str(org["_id"])
+    # Always pass resolved event_id (MongoDB _id) to get_user_participation
     current_participation = await get_user_participation(event_id, organization_id=current_org_id)
+    import sys
+    print(f"DEBUG B2B CHAT: event_id={event_id}, current_org_id={current_org_id}, participation={current_participation}", file=sys.stderr, flush=True)
     if not current_participation or current_participation.get("status") != "approved":
         raise HTTPException(status_code=403, detail="Your enterprise is not approved for this event")
     

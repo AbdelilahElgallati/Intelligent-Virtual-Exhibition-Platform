@@ -22,6 +22,7 @@ def validate_schedule_consistency(
     schedule_days: Optional[list["ScheduleDay"]],
     event_start: Optional[datetime] = None,
     event_end: Optional[datetime] = None,
+    event_timezone: Optional[str] = None,
 ) -> Optional[list["ScheduleDay"]]:
     """
     Ensure no slots overlap, including cross-day spills, and fit within event boundaries.
@@ -36,11 +37,18 @@ def validate_schedule_consistency(
     overflow_minutes = 0
     previous_day = -1
     
-    # Base date for Day 1 (midnight of event_start)
+    # Base date for Day 1 (midnight of event_start in event_timezone)
     base_date: Optional[datetime] = None
-    if event_start:
+    if event_start and event_timezone:
+        import pytz
+        tz = pytz.timezone(event_timezone)
+        if event_start.tzinfo is not None:
+            event_start = event_start.astimezone(tz).replace(tzinfo=None)
+        base_date = event_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif event_start:
         base_date = event_start.replace(hour=0, minute=0, second=0, microsecond=0)
 
+    import pytz
     for day in sorted_days:
         if previous_day != -1 and day.day_number > previous_day + 1:
             # Gaps between days reset overflow
@@ -64,11 +72,22 @@ def validate_schedule_consistency(
                 the_day: datetime = cast(datetime, day_date)
                 abs_start: datetime = the_day + timedelta(minutes=start)
                 abs_end: datetime = the_day + timedelta(minutes=actual_end)
-                
+
+                # Ensure all datetimes are timezone-aware before comparison
+                if event_timezone:
+                    tz = pytz.timezone(event_timezone)
+                    if abs_start.tzinfo is None:
+                        abs_start = tz.localize(abs_start)
+                    if abs_end.tzinfo is None:
+                        abs_end = tz.localize(abs_end)
+
                 # IMPORTANT: If a slot starts before the event, it belongs to the previous day 
                 # or is simply invalid.
                 if event_start is not None:
                     ev_start: datetime = cast(datetime, event_start)
+                    if event_timezone and ev_start.tzinfo is None:
+                        tz = pytz.timezone(event_timezone)
+                        ev_start = tz.localize(ev_start)
                     if abs_start < ev_start:
                         raise ValueError(
                             f"Slot '{slot.label}' on Day {day.day_number} starts at {slot.start_time}, "
@@ -77,6 +96,9 @@ def validate_schedule_consistency(
                         )
                 if event_end is not None:
                     ev_end: datetime = cast(datetime, event_end)
+                    if event_timezone and ev_end.tzinfo is None:
+                        tz = pytz.timezone(event_timezone)
+                        ev_end = tz.localize(ev_end)
                     if abs_end > ev_end:
                         raise ValueError(
                             f"Slot '{slot.label}' on Day {day.day_number} ends at "
@@ -287,6 +309,7 @@ class EventCreate(BaseModel):
             self.schedule_days,
             event_start=self.start_date,
             event_end=self.end_date,
+            event_timezone=self.event_timezone,
         )
         return self
 
@@ -340,6 +363,7 @@ class EventUpdate(BaseModel):
             self.schedule_days,
             event_start=self.start_date,
             event_end=self.end_date,
+            event_timezone=self.event_timezone,
         )
         return self
 
