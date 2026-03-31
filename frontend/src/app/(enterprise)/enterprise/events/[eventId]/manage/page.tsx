@@ -246,6 +246,8 @@ interface Meeting {
     requester_org_name?: string;
     type?: 'inbound' | 'outbound';
     receiver_org_name?: string;
+    sender_enterprise_id?: string;
+    receiver_enterprise_id?: string;
     session_status?: 'scheduled' | 'live' | 'ended';
 }
 

@@ -173,7 +173,7 @@ export function MeetingRequestModal({
     onSuccess,
     onUpdateStatus,
     initialView = 'list',
-}: MeetingRequestModalProps): JSX.Element {
+}: MeetingRequestModalProps) {
     const router = useRouter();
     const [activeView, setActiveView] = useState<'list' | 'request'>(initialView);
     const viewerTimeZone = getUserTimezone();

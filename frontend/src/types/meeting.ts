@@ -22,6 +22,8 @@ export interface Meeting {
     requester_role?: string;
     requester_org_name?: string;
     receiver_org_name?: string;
+    sender_enterprise_id?: string;
+    receiver_enterprise_id?: string;
 
     // Video session (new)
     meeting_type: MeetingType;

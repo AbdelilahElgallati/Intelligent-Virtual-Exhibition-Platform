@@ -54,6 +54,8 @@ class MeetingSchema(MeetingBase):
     requester_role: Optional[str] = None
     requester_org_name: Optional[str] = None
     receiver_org_name: Optional[str] = None
+    sender_enterprise_id: Optional[str] = None
+    receiver_enterprise_id: Optional[str] = None
 
     # Video session fields — provider-agnostic
     meeting_type: MeetingType = MeetingType.ONE_TO_ONE
