@@ -6,9 +6,22 @@
     "dev": "concurrently -k -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
     "dev:web": "cd frontend && npm run dev",
-    "dev:web-only": "cd frontend && npm run dev"
+    "dev:web-only": "cd frontend && npm run dev",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:report": "npx playwright show-report",
+    "test:admin": "npx playwright test tests/admin/",
+    "test:organizer": "npx playwright test tests/organisateur/",
+    "test:exhibitor": "npx playwright test tests/exposant/",
+    "test:visitor": "npx playwright test tests/visiteur/",
+    "test:flows": "npx playwright test tests/flows/",
+    "test:specialized": "npx playwright test tests/specialized/"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@playwright/test": "^1.49.1",
+    "axios": "^1.7.9",
+    "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7"
   }
 }
