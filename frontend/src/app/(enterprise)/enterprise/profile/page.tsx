@@ -455,19 +455,6 @@ export default function EnterpriseProfilePage() {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                        <Globe size={14} className="text-indigo-500" /> Logo URL (optional)
-                                    </label>
-                                    <Input
-                                        name="logo_url"
-                                        value={profile.logo_url}
-                                        onChange={handleChange}
-                                        placeholder="https://cdn.example.com/logo.png"
-                                    />
-                                    <p className="text-xs text-zinc-500">Paste a hosted image URL or use the upload button on the logo card.</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
                                         <Globe size={14} className="text-indigo-500" /> Account Timezone
                                     </label>
                                     <select

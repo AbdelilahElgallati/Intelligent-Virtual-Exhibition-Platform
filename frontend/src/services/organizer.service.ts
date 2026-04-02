@@ -3,7 +3,7 @@ import { OrganizerEvent } from '@/types/event';
 import { OrganizerSummary } from '@/types/organizer';
 import { DashboardData } from '@/types/analytics';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { getApiUrl } from '@/lib/config';
+import { getDirectApiUrl } from '@/lib/config';
 
 export const organizerService = {
     /**
@@ -17,7 +17,7 @@ export const organizerService = {
      * Download the individual event report as PDF.
      */
     async exportEventReportPDF(eventId: string): Promise<void> {
-        await this._downloadPDF(`/organizer/events/${eventId}/report?format=pdf`, `event_report_${eventId}.pdf`);
+        await this._downloadPDF(`/metrics/reports/organizer/events/${eventId}?format=pdf`, `event_report_${eventId}.pdf`);
     },
 
     /**
@@ -89,48 +89,26 @@ export const organizerService = {
      */
     async _downloadPDF(endpoint: string, filename: string): Promise<void> {
         try {
-            let token: string | null = null;
-            if (globalThis.window !== undefined) {
-                try {
-                    const stored = localStorage.getItem('auth_tokens');
-                    if (stored) {
-                        const parsed = JSON.parse(stored);
-                        token = parsed?.access_token || null;
-                    }
-                } catch {
-                    token = null;
-                }
+            const blob = await http.getBlob(endpoint, { accept: 'application/pdf' });
+
+            const ctype = (blob.type || '').toLowerCase();
+            if (blob.size < 100) {
+                console.error('PDF Blob validation failed: size too small', blob.size);
+                throw new Error('Received an empty or invalid document (file size too small).');
             }
-
-            const baseUrl = getApiUrl(endpoint);
-            const runtimeUrl = globalThis.window === undefined
-                ? baseUrl
-                : baseUrl.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?/i, globalThis.window.location.origin);
-
-            const response = await fetch(runtimeUrl, {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    Accept: 'application/pdf',
-                },
-            });
-
-            if (!response.ok) {
-                let errorMessage = `Export failed (${response.status})`;
+            if (ctype && !ctype.includes('pdf') && !ctype.includes('octet-stream')) {
+                let preview = '';
                 try {
-                    const errJson = await response.json();
-                    errorMessage = errJson?.detail || errJson?.message || errorMessage;
+                    preview = (await blob.slice(0, 120).text()).trim();
                 } catch {
-                    // Keep fallback message.
+                    /* ignore */
                 }
-                throw new Error(errorMessage);
-            }
-
-            const blob = await response.blob();
-
-            if (!blob || blob.size < 100) {
-                throw new Error('Received an empty or invalid document.');
+                if (preview.toLowerCase().startsWith('<!doctype') || preview.toLowerCase().includes('<html')) {
+                    throw new Error('Server returned HTML instead of a PDF. Check the API URL and that the report endpoint is available.');
+                }
+                if (preview.toLowerCase().includes('error') || preview.toLowerCase().includes('traceback')) {
+                    throw new Error(preview.length < 300 ? preview : 'Server returned a non-PDF response. See backend logs for details.');
+                }
             }
 
             const href = URL.createObjectURL(blob);
@@ -140,13 +118,22 @@ export const organizerService = {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            setTimeout(() => URL.revokeObjectURL(href), 1000);
-        } catch (error: any) {
-            console.error('PDF Export Error:', error);
-            const message = String(error?.message || 'Export failed');
-            throw new Error(message.includes('fetch') || message.includes('reach')
-                ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
-                : message);
+            setTimeout(() => URL.revokeObjectURL(href), 15_000);
+        } catch (error: unknown) {
+            console.error('PDF Export Critical Error:', error);
+            const message = String((error as Error)?.message || 'Export failed');
+            const isFailedFetch =
+                error instanceof TypeError &&
+                (message === 'Failed to fetch' || message.toLowerCase().includes('failed to fetch'));
+            const isAbort = error instanceof DOMException && error.name === 'AbortError';
+
+            if (isFailedFetch || isAbort) {
+                throw new Error(
+                    `Unable to download the report from the API (${getDirectApiUrl(endpoint)}). Confirm the backend is reachable and CORS allows this origin. Details: ${message}`,
+                );
+            }
+
+            throw error instanceof Error ? error : new Error(message);
         }
     },
 

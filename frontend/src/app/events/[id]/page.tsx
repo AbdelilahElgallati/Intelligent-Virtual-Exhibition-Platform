@@ -17,7 +17,11 @@ import { Download, Heart } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { StandsListResponse } from '@/types/stand';
+import { 
+  formatInUserTZ, zonedToUtc 
+} from '@/lib/timezone';
 import { isOvernightSlot } from '@/lib/schedule';
+
 
 const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
@@ -55,7 +59,11 @@ export default function EventDetailsPage({ params }: EventPageProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
 
   const [event, setEvent] = useState<Event | null>(null);
   const [status, setStatus] = useState<ParticipantStatus>('NOT_JOINED');
@@ -245,31 +253,32 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
   const parseScheduleHighlights = (ev: Event): ScheduleSlotPreview[] => {
     const eventTimezone = ((ev as any).event_timezone as string) || 'UTC';
-    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
-      const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).formatToParts(value);
-      const read = (type: Intl.DateTimeFormatPartTypes): number => {
-        const raw = parts.find((p) => p.type === type)?.value;
-        return Number(raw || 0);
-      };
-      return { year: read('year'), month: read('month'), day: read('day') };
-    };
 
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
       const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-      const seed = new Date((ev as any).start_date || new Date().toISOString());
-      const ymd = getDatePartsInTimezone(seed, eventTimezone);
-      const base = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day + dayOffset, 12, 0, 0, 0));
-      return new Intl.DateTimeFormat('en-GB', {
+      const seedStr = (ev as any).start_date || new Date().toISOString();
+      const seed = new Date(seedStr);
+      const base = new Date(seed);
+      base.setUTCDate(base.getUTCDate() + dayOffset);
+      return formatInUserTZ(base, {
         weekday: 'short',
         day: '2-digit',
         month: 'short',
-        timeZone: eventTimezone,
-      }).format(base);
+      }, 'en-GB', userTimezone);
+    };
+
+    const formatSlotTime = (dayNumber: number, timeStr: string, nextDay = false) => {
+      if (!(ev as any).start_date || !timeStr) return '--:--';
+      const eventStart = new Date((ev as any).start_date);
+      const dayDate = new Date(eventStart);
+      dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1) + (nextDay ? 1 : 0));
+      const ymd = dayDate.toISOString().split('T')[0];
+      const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTimezone);
+      return formatInUserTZ(utcDate, { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+      }, undefined, userTimezone);
     };
 
     const days = Array.isArray((ev as any).schedule_days)
@@ -290,13 +299,23 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       const dateLabel = formatDayLabel(dayNumber, dayIndex);
       const slots = Array.isArray(day?.slots) ? day.slots : [];
       slots.forEach((slot: any) => {
+        const crossesMidnight = isOvernightSlot(slot?.start_time, slot?.end_time);
+        console.log('SLOT DEBUG:', {
+          label: slot?.label,
+          raw_start: slot?.start_time,
+          raw_end: slot?.end_time,
+          crossesMidnight,
+          userTimezone,
+          converted_start: formatSlotTime(dayNumber, slot?.start_time),
+          converted_end: formatSlotTime(dayNumber, slot?.end_time, crossesMidnight),
+        });
         flat.push({
           dayNumber,
           dateLabel,
-          startTime: slot?.start_time,
-          endTime: slot?.end_time,
+          startTime: formatSlotTime(dayNumber, slot?.start_time),
+          endTime: formatSlotTime(dayNumber, slot?.end_time, crossesMidnight),
           label: slot?.label || 'Session',
-          crossesMidnight: isOvernightSlot(slot?.start_time, slot?.end_time),
+          crossesMidnight,
         });
       });
     });

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+            @frame footer {
+                -pdf-frame-content: footer_content;
+                bottom: 1cm;
+                height: 1cm;
+                text-align: right;
+                font-size: 8pt;
+                color: #94A3B8;
+            }
+        }
+        body {
+            font-family: Helvetica, sans-serif;
+            color: #1E293B;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        h1 {
+            color: #312E81;
+            font-size: 24pt;
+            margin-bottom: 5pt;
+        }
+        .subtitle {
+            color: #64748B;
+            font-size: 11pt;
+            margin-bottom: 25pt;
+            border-bottom: 2px solid #E0E7FF;
+            padding-bottom: 10pt;
+        }
+        h2 {
+            color: #3730A3;
+            font-size: 16pt;
+            border-bottom: 1px solid #C7D2FE;
+            padding-bottom: 4pt;
+            margin-top: 25pt;
+            margin-bottom: 15pt;
+        }
+        table.kpi-table {
+            width: 100%;
+            margin-bottom: 20pt;
+        }
+        table.kpi-table td {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            padding: 15pt;
+            text-align: center;
+        }
+        .kpi-label {
+            color: #64748B;
+            font-size: 9pt;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 8pt;
+        }
+        .kpi-value {
+            color: #4F46E5;
+            font-size: 22pt;
+            font-weight: bold;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.data-table th {
+            background-color: #EEF2FF;
+            color: #3730A3;
+            text-align: left;
+            padding: 10pt;
+            border-bottom: 2px solid #C7D2FE;
+        }
+        table.data-table td {
+            padding: 10pt;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .total-row td {
+            background-color: #F8FAFC;
+            font-weight: bold;
+            color: #312E81;
+            border-top: 2px solid #C7D2FE;
+        }
+        .safety-box {
+            background-color: #FEF2F2;
+            border-left: 4px solid #EF4444;
+            padding: 15pt;
+            margin-top: 10pt;
+        }
+    </style>
+</head>
+<body>
+    <h1>Overall Organizer Performance</h1>
+    <div class="subtitle">Aggregate performance report for all your events on IVEP</div>
+
+    <h2>Global Engagement KPIs</h2>
+    <table class="kpi-table">
+        <tr>
+            {% for kpi in kpis %}
+            <td width="25%">
+                <div class="kpi-label">{{ kpi.label }}</div>
+                <div class="kpi-value">{{ kpi.value }}</div>
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+
+    <h2>Financial Summary (MAD)</h2>
+    <table class="data-table">
+        <tr>
+            <th width="70%">Revenue Source</th>
+            <th width="30%" style="text-align: right;">Amount generated</th>
+        </tr>
+        <tr>
+            <td>Ticket Sales Revenue</td>
+            <td style="text-align: right; color: #475569;">{{ revenue.ticket_revenue | money_mad }}</td>
+        </tr>
+        <tr>
+            <td>Enterprise Stand Sales</td>
+            <td style="text-align: right; color: #475569;">{{ revenue.stand_revenue | money_mad }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total Platform Earnings</td>
+            <td style="text-align: right; font-size: 12pt;">{{ revenue.total_revenue | money_mad }}</td>
+        </tr>
+    </table>
+
+    <div id="footer_content">
+        Report generated autonomously on {{ generated_at }} &nbsp; | &nbsp; Page <pdf:pagenumber> of <pdf:pagecount>
+    </div>
+</body>
+</html>

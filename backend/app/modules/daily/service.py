@@ -109,7 +109,6 @@ async def create_room(
     except Exception as exc:
         logger.error("Daily create_room(%s) exception: %s", room_name, exc)
         return False
-    return False
 
 
 async def delete_room(room_name: str) -> bool:
@@ -144,7 +143,6 @@ async def delete_room(room_name: str) -> bool:
     except Exception as exc:
         logger.error("Daily delete_room(%s) exception: %s", room_name, exc)
         return False
-    return False
 
 
 # ── Token Generation ──────────────────────────────────────────────────────────
@@ -159,6 +157,7 @@ async def _create_meeting_token(
     start_video_off: bool = False,
     start_audio_off: bool = False,
     ttl_seconds: int = 3600,
+    nbf: Optional[int] = None,
 ) -> str:
     """
     Request a signed meeting token from the Daily.co API.
@@ -185,11 +184,15 @@ async def _create_meeting_token(
             "start_audio_off": start_audio_off,
             # Token expiry — absolute UNIX timestamp
             "exp": int(time.time()) + ttl_seconds,
+            # Prevent token being used before this time (abs UNIX timestamp)
+            "nbf": nbf,
             # Prevent token from being used in a different room
             "close_tab_on_exit": False,
             "enable_recording": False,
         }
     }
+    if nbf is None:
+        payload["properties"].pop("nbf")
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -229,6 +232,7 @@ async def generate_meeting_token(
     user_id: str,
     user_name: str,
     is_owner: bool = False,
+    nbf: Optional[int] = None,
 ) -> str:
     """
     1:1 or group meeting token — both participants can publish audio/video.
@@ -245,6 +249,7 @@ async def generate_meeting_token(
         start_video_off=False,
         start_audio_off=False,
         ttl_seconds=3600,
+        nbf=nbf,
     )
 
 
@@ -252,6 +257,7 @@ async def generate_speaker_token(
     room_name: str,
     user_id: str,
     user_name: str,
+    nbf: Optional[int] = None,
 ) -> str:
     """
     Conference speaker token — is_owner=True, can publish video/audio/screen.
@@ -265,6 +271,7 @@ async def generate_speaker_token(
         start_video_off=False,
         start_audio_off=False,
         ttl_seconds=14400,  # 4 hours for conference sessions
+        nbf=nbf,
     )
 
 
@@ -272,6 +279,7 @@ async def generate_audience_token(
     room_name: str,
     user_id: str,
     user_name: str,
+    nbf: Optional[int] = None,
 ) -> str:
     """
     Conference audience token — view-only (no publish), camera/mic start off.
@@ -285,6 +293,7 @@ async def generate_audience_token(
         start_video_off=True,
         start_audio_off=True,
         ttl_seconds=14400,
+        nbf=nbf,
     )
 
 

@@ -6,8 +6,9 @@ import { OrganizerEvent, EventScheduleDay, EventScheduleSlot } from '@/types/eve
 import { Card } from '@/components/ui/Card';
 import { Video, Mic, UserCheck, X } from 'lucide-react';
 import { http } from '@/lib/http';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
-import { formatSlotRangeLabel } from '@/lib/schedule';
+import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc } from '@/lib/timezone';
+import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
+import { useAuth } from '@/context/AuthContext';
 
 interface Props {
     eventId: string;
@@ -24,6 +25,11 @@ interface EnterpriseOption {
 }
 
 export default function OrganizerEventConferences({ eventId, event, onEventUpdated }: Props) {
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const viewerTimeZone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [enterprises, setEnterprises] = useState<EnterpriseOption[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,7 +37,6 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
     const [assignForm, setAssignForm] = useState({ assigned_enterprise_id: '', speaker_name: '', title: '' });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const viewerTimeZone = getUserTimezone();
 
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
         const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
@@ -59,6 +64,17 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
             month: 'short',
             timeZone: tz,
         }).format(anchorUtcNoon);
+    };
+
+    const formatSlotTime = (dayNumber: number, timeStr: string, nextDay = false) => {
+        const eventTimezone = event.event_timezone || 'UTC';
+        if (!event.start_date || !timeStr) return '--:--';
+        const start = new Date(event.start_date);
+        const dayDate = new Date(start);
+        dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1) + (nextDay ? 1 : 0));
+        const ymd = dayDate.toISOString().split('T')[0];
+        const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTimezone);
+        return formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, viewerTimeZone);
     };
 
     const loadConferences = useCallback(async () => {
@@ -193,7 +209,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-0.5 whitespace-nowrap tabular-nums">
-                                                            {formatSlotRangeLabel(slot.start_time, slot.end_time)}
+                                                            {formatSlotTime(day.day_number, slot.start_time)} – {formatSlotTime(day.day_number, slot.end_time, isOvernightSlot(slot.start_time, slot.end_time))}
                                                         </span>
                                                         {slot.is_conference && (
                                                             <span className="text-xs font-bold text-violet-700 bg-violet-100 border border-violet-200 rounded-full px-2 py-0.5 flex items-center gap-1">

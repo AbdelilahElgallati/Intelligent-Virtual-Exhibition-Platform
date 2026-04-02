@@ -71,6 +71,8 @@ async def get_user_payment_by_status(
     event_id: str, user_id: str, status: PaymentStatus
 ) -> Optional[dict]:
     """Get a payment record with a specific status for a user/event pair."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     collection = get_payments_collection()
     doc = await collection.find_one(
         {"event_id": str(event_id), "user_id": str(user_id), "status": status}

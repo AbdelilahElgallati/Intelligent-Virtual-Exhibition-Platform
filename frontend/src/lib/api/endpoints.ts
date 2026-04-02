@@ -90,7 +90,7 @@ export const ENDPOINTS = {
     HISTORY: (roomId: string) => `/chat/rooms/${roomId}/messages`,
   },
   MEETINGS: {
-    REQUEST: '/meetings/',
+    REQUEST: '/meetings',
   },
   TRANSCRIPTS: {
     UPLOAD: '/transcripts/transcribe-file',

@@ -1,3 +1,9 @@
+/**
+ * Formats a date as YYYY-MM-DD in a specific timezone.
+ */
+export function toYmdInEventTz(date: string | number | Date, timeZone: string): string {
+  return formatInTimeZone(date, timeZone, 'yyyy-MM-dd');
+}
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 /**
@@ -101,8 +107,9 @@ export function formatInUserTZ(
   date: string | number | Date,
   options: Intl.DateTimeFormatOptions,
   locale?: string,
+  tz?: string,
 ): string {
-  const timeZone = getUserTimezone();
+  const timeZone = tz || getUserTimezone();
   const d = toUTCDate(date);
   if (isNaN(d.getTime())) return '';
   try {

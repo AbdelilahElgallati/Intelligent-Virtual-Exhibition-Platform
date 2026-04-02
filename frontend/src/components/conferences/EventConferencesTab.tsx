@@ -221,12 +221,20 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
 
             if (meetingsRes.status === 'fulfilled') {
                 const allMeetings = Array.isArray(meetingsRes.value) ? meetingsRes.value : [];
-                setMeetings(
-                    allMeetings.filter((m) => {
-                        const meetingEventId = normalizeComparableId(m.event_id);
-                        return meetingEventId.length > 0 && eventAliasIds.has(meetingEventId);
-                    })
-                );
+                // Deduplicate by meeting id, prefer 'sent' if current enterprise is sender
+                const deduped: Record<string, Meeting> = {};
+                const currentEnterpriseId = (typeof window !== 'undefined' && localStorage.getItem('enterprise_id')) || '';
+                allMeetings.forEach((m) => {
+                    const meetingEventId = normalizeComparableId(m.event_id);
+                    if (!(meetingEventId.length > 0 && eventAliasIds.has(meetingEventId))) return;
+                    const id = m.id || m._id;
+                    if (!id) return;
+                    // If current enterprise is sender, prefer this as 'sent'
+                    if (!deduped[id] || (m.sender_enterprise_id === currentEnterpriseId)) {
+                        deduped[id] = m;
+                    }
+                });
+                setMeetings(Object.values(deduped));
             } else {
                 setMeetings([]);
             }

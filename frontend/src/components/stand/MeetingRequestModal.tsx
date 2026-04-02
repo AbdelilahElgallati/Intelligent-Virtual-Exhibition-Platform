@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Button } from '@/components/ui/Button';
@@ -23,7 +23,7 @@ import {
 import { EventScheduleDay } from '@/types/event';
 import { Meeting } from '@/types/meeting';
 import { fromZonedTime } from 'date-fns-tz';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, toYmdInEventTz } from '@/lib/timezone';
 
 interface MeetingRequestModalProps {
     isOpen: boolean;
@@ -39,6 +39,11 @@ interface MeetingRequestModalProps {
     scheduleDays?: EventScheduleDay[];
     eventTimeZone?: string;
     themeColor?: string;
+    myStandId?: string;
+    meetings?: Meeting[];
+    onSuccess?: () => void;
+    onUpdateStatus?: (meetingId: string, status: string) => Promise<void>;
+    initialView?: 'list' | 'request';
 }
 
 interface BusySlot {
@@ -163,12 +168,23 @@ export function MeetingRequestModal({
     scheduleDays,
     eventTimeZone = 'UTC',
     themeColor = '#4f46e5',
+    myStandId,
+    meetings: meetingsProp,
+    onSuccess,
+    onUpdateStatus,
+    initialView = 'list',
 }: MeetingRequestModalProps) {
     const router = useRouter();
-    const [activeView, setActiveView] = useState<'list' | 'request'>('list');
+    const [activeView, setActiveView] = useState<'list' | 'request'>(initialView);
     const viewerTimeZone = getUserTimezone();
 
     const [meetings, setMeetings] = useState<Meeting[]>([]);
+    const meetingsLengthRef = useRef(0);
+    const wasOpenRef = useRef(false);
+    const standAliasIdsRef = useRef(standAliasIds);
+    const eventAliasIdsRef = useRef(eventAliasIds);
+    standAliasIdsRef.current = standAliasIds;
+    eventAliasIdsRef.current = eventAliasIds;
     const [loadingMeetings, setLoadingMeetings] = useState(false);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [busySlots, setBusySlots] = useState<BusySlot[]>([]);
@@ -183,36 +199,55 @@ export function MeetingRequestModal({
         durationMinutes: 0,
         purpose: '',
     });
+    const activeViewRef = useRef<'list' | 'request'>('list');
+    useEffect(() => { activeViewRef.current = activeView; }, [activeView]);
     const { r, g, b } = hexToRgb(themeColor);
 
     const fetchMeetings = useCallback(async (silent = false) => {
-        if (!silent || meetings.length === 0) {
+        if (meetingsProp) {
+            setMeetings(meetingsProp as Meeting[]);
+            setLoadingMeetings(false);
+            return;
+        }
+        if (!standId) {
+            setMeetings([]);
+            setLoadingMeetings(false);
+            setActiveView('request'); // Always allow request view for B2B
+            return;
+        }
+        if (!silent || meetingsLengthRef.current === 0) {
             setLoadingMeetings(true);
         }
         try {
             const all = await apiClient.get<Meeting[]>('/meetings/my-meetings');
 
             const standIds = new Set(
-                [standId, ...(standAliasIds || [])]
+                [standId, ...(standAliasIdsRef.current || [])]
                     .map((value) => String(value || '').trim())
                     .filter((value) => value.length > 0)
             );
             const eventIds = new Set(
-                [eventId, ...(eventAliasIds || [])]
+                [eventId, ...(eventAliasIdsRef.current || [])]
                     .map((value) => String(value || '').trim())
                     .filter((value) => value.length > 0)
             );
 
             const filtered = (all || [])
-                .filter((m) => standIds.has(String(m.stand_id || '')) && eventIds.has(String(m.event_id || '')))
+                .filter((m) => {
+                    const matchesStand = standIds.has(String(m.stand_id || '')) || 
+                        (myStandId ? String(m.stand_id || '') === myStandId : false);
+                    const matchesEvent = eventIds.has(String(m.event_id || ''));
+                    return matchesStand && matchesEvent;
+                })
                 .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
             setMeetings(filtered);
+            meetingsLengthRef.current = filtered.length;
         } catch (error) {
             console.error('Failed to fetch visitor meetings', error);
         } finally {
             setLoadingMeetings(false);
         }
-    }, [standId, standAliasIds, eventId, eventAliasIds, meetings.length]);
+    }, [standId, eventId, meetingsProp]);
 
     const fetchBusySlots = useCallback(async (silent = false) => {
         if (!silent) {
@@ -230,105 +265,85 @@ export function MeetingRequestModal({
     }, [eventId, standId]);
 
     useEffect(() => {
-        if (!isOpen) return;
-        setActiveView('list');
-        setMeetingError(null);
-        setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
-        fetchMeetings();
-        fetchBusySlots();
-
-        const interval = setInterval(() => {
-            fetchMeetings(true);
-            fetchBusySlots(true);
-        }, 5000);
-        
-        return () => clearInterval(interval);
-    }, [isOpen, fetchMeetings, fetchBusySlots]);
-
-    const eventDays = useMemo(() => {
-        if (!eventStartDate || !eventEndDate) return [];
-
-        // Build request-day keys and slot times in the viewer timezone so "today" and
-        // past/future availability are evaluated consistently with what the user sees.
-        const toYmdInEventTz = (value: Date): string => formatInTZ(value, eventTimeZone, 'yyyy-MM-dd');
-        const addDaysToYmdInEventTz = (ymd: string, offsetDays: number): string => {
-            // Use UTC noon anchor to avoid DST edge cases while shifting by whole days.
-            const base = new Date(`${ymd}T12:00:00Z`);
-            base.setUTCDate(base.getUTCDate() + offsetDays);
-            return formatInTZ(base, eventTimeZone, 'yyyy-MM-dd');
-        };
-
-        if (scheduleDays && scheduleDays.length > 0) {
-            const startYmd = toYmdInEventTz(new Date(eventStartDate));
-            return scheduleDays.map((sd, index) => {
-                // Some payloads send day_number as calendar day (25, 26, 27...), not 1..N.
-                const dayOffset = index;
-                const eventDayYmd = addDaysToYmdInEventTz(startYmd, dayOffset);
-                const dayAnchorUtc = fromZonedTime(`${eventDayYmd}T12:00:00`, eventTimeZone);
-                const viewerDayYmd = formatInTZ(dayAnchorUtc, viewerTimeZone, 'yyyy-MM-dd');
-                const convertedSlots = (sd.slots || [])
-                    .map((slot) => {
-                        const startMinutes = timeToMinutes(slot.start_time || '');
-                        const endMinutes = timeToMinutes(slot.end_time || '');
-                        if (startMinutes === null || endMinutes === null) return null;
-                        const endEventYmd = endMinutes <= startMinutes
-                            ? addDaysToYmdInEventTz(eventDayYmd, 1)
-                            : eventDayYmd;
-                        const startUtc = fromZonedTime(`${eventDayYmd}T${slot.start_time}:00`, eventTimeZone);
-                        const endUtc = fromZonedTime(`${endEventYmd}T${slot.end_time}:00`, eventTimeZone);
-                        return {
-                            start_time: formatInTZ(startUtc, viewerTimeZone, 'HH:mm'),
-                            end_time: formatInTZ(endUtc, viewerTimeZone, 'HH:mm'),
-                        };
-                    })
-                    .filter((slot): slot is { start_time: string; end_time: string } => slot !== null);
-                return {
-                    dateStr: viewerDayYmd,
-                    label: sd.date_label || `Day ${sd.day_number}`,
-                    slots: convertedSlots,
-                };
-            });
+        if (!isOpen || !standId || !eventId) {
+            wasOpenRef.current = false;
+            if (!meetingsProp) setMeetings([]);
+            meetingsLengthRef.current = 0;
+            setLoadingMeetings(false);
+            setLoadingSlots(false);
+            return;
         }
-
-        const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
-        const startYmd = toYmdInEventTz(new Date(eventStartDate));
-        const endYmd = toYmdInEventTz(new Date(eventEndDate));
-
-        const startAnchor = new Date(`${startYmd}T12:00:00Z`);
-        const endAnchor = new Date(`${endYmd}T12:00:00Z`);
-
-        const eventDateLabel = (d: Date, index: number) =>
-            `Day ${index} — ${new Intl.DateTimeFormat('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                timeZone: eventTimeZone,
-            }).format(d)}`;
-
-        let d = new Date(startAnchor);
-        let index = 1;
-        while (d <= endAnchor) {
-            days.push({
-                dateStr: formatInTZ(d, eventTimeZone, 'yyyy-MM-dd'),
-                label: eventDateLabel(d, index),
-                slots: [{ start_time: '09:00', end_time: '18:00' }],
-            });
-            d = new Date(d.getTime());
-            d.setUTCDate(d.getUTCDate() + 1);
-            index += 1;
+        // One-time initialization — only when the modal first opens, not on
+        // every callback recreation caused by parent re-renders.
+        if (!wasOpenRef.current) {
+            wasOpenRef.current = true;
+            setMeetingError(null);
+            setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
+            setActiveView(initialView);
+            activeViewRef.current = initialView;
         }
+        if (!meetingsProp) {
+            fetchMeetings();
+            fetchBusySlots();
 
-        return days;
-    }, [eventStartDate, eventEndDate, scheduleDays, eventTimeZone, viewerTimeZone]);
+            const interval = setInterval(() => {
+                fetchMeetings(true);
+                fetchBusySlots(true);
+            }, 8000);
+            return () => clearInterval(interval);
+        }
+    }, [isOpen, standId, eventId, fetchMeetings, fetchBusySlots, meetingsProp]);
+
+        const eventDays = useMemo(() => {
+            const days: { dateStr: string; label: string; slots: { start_time: string; end_time: string }[] }[] = [];
+            const startYmd = eventStartDate ? toYmdInEventTz(eventStartDate, eventTimeZone) : '';
+            const endYmd = eventEndDate ? toYmdInEventTz(eventEndDate, eventTimeZone) : '';
+
+            if (!startYmd || !endYmd) return days;
+
+            const startAnchor = new Date(`${startYmd}T12:00:00Z`);
+            const endAnchor = new Date(`${endYmd}T12:00:00Z`);
+
+            const eventDateLabel = (d: Date, index: number) =>
+                `Day ${index} — ${new Intl.DateTimeFormat('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    timeZone: eventTimeZone,
+                }).format(d)}`;
+
+            let d = new Date(startAnchor);
+            let index = 1;
+            while (d <= endAnchor) {
+                const dateStr = formatInTZ(d, eventTimeZone, 'yyyy-MM-dd');
+                
+                // Try to find schedule for this specific day number
+                const scheduleForDay = scheduleDays?.find(sd => sd.day_number === index);
+                const slots = (scheduleForDay && scheduleForDay.slots.length > 0)
+                    ? scheduleForDay.slots.map(s => ({ start_time: s.start_time, end_time: s.end_time }))
+                    : [{ start_time: '08:00', end_time: '20:00' }]; // Default wider range if no schedule
+
+                days.push({
+                    dateStr,
+                    label: eventDateLabel(d, index),
+                    slots,
+                });
+                d = new Date(d.getTime());
+                d.setUTCDate(d.getUTCDate() + 1);
+                index += 1;
+            }
+
+            return days;
+        }, [eventStartDate, eventEndDate, scheduleDays, eventTimeZone]);
 
     const getDateTimeValue = useCallback((dateStr: string, time: string) => {
-        return fromZonedTime(`${dateStr}T${time}:00`, viewerTimeZone).getTime();
-    }, [viewerTimeZone]);
+        return fromZonedTime(`${dateStr}T${time}:00`, eventTimeZone).getTime();
+    }, [eventTimeZone]);
 
     const isPastDate = useCallback((dateStr: string) => {
-        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, viewerTimeZone).getTime();
+        const targetEndOfDay = fromZonedTime(`${dateStr}T23:59:59`, eventTimeZone).getTime();
         return targetEndOfDay < Date.now();
-    }, [viewerTimeZone]);
+    }, [eventTimeZone]);
 
     const isPastDateTime = useCallback((dateStr: string, time: string) => {
         return getDateTimeValue(dateStr, time) <= Date.now() + 30000;
@@ -426,10 +441,15 @@ export function MeetingRequestModal({
         }
     }, [meetingForm.startTime, meetingForm.durationMinutes, meetingForm.endTime, durationOptions]);
 
-    const handleUpdateMeetingStatus = async (meetingId: string, status: 'canceled') => {
+    const handleUpdateMeetingStatus = async (meetingId: string, status: string) => {
         try {
-            await apiClient.patch(`/meetings/${meetingId}`, { status });
-            await Promise.all([fetchMeetings(), fetchBusySlots()]);
+            if (onUpdateStatus) {
+                await onUpdateStatus(meetingId, status);
+            } else {
+                await apiClient.patch(`/meetings/${meetingId}`, { status });
+            }
+            await Promise.all([fetchMeetings(true), fetchBusySlots(true)]);
+            if (onSuccess) onSuccess();
         } catch (error) {
             console.error('Failed to update meeting status', error);
             setMeetingError((error as Error)?.message || 'Failed to update meeting');
@@ -485,7 +505,14 @@ export function MeetingRequestModal({
             });
 
             setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
+            // Reset length ref so fetchMeetings treats this as a fresh load
+            meetingsLengthRef.current = 0;
             await Promise.all([fetchMeetings(), fetchBusySlots()]);
+            // Give the backend a moment to index the new meeting before refreshing again
+            await new Promise(res => setTimeout(res, 500));
+            // Reset length ref so the next fetch treats it as a fresh load
+            meetingsLengthRef.current = 0;
+            await fetchMeetings();
             setActiveView('list');
         } catch (error) {
             console.error('Failed to request meeting', error);
@@ -495,7 +522,9 @@ export function MeetingRequestModal({
         }
     };
 
-    const categorizedMeetings = meetings.map((m) => ({ ...m, timeline: getMeetingTimeline(m) }));
+    // Only show meetings between the two enterprises for this event
+    const filteredMeetings = meetingsProp || meetings;
+    const categorizedMeetings = filteredMeetings.map((m) => ({ ...m, timeline: getMeetingTimeline(m) }));
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -530,7 +559,11 @@ export function MeetingRequestModal({
                         style={{ backgroundColor: `rgba(${r},${g},${b},0.10)` }}
                     >
                         <button
-                            onClick={() => setActiveView('list')}
+                            onClick={() => {
+                                setActiveView('list');
+                                fetchMeetings();
+                                fetchBusySlots();
+                            }}
                             className={clsx(
                                 'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
                                 activeView === 'list' ? 'bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
@@ -540,7 +573,10 @@ export function MeetingRequestModal({
                             <MessageSquare size={14} className="inline mr-1.5 -mt-0.5" /> My Meetings
                         </button>
                         <button
-                            onClick={() => setActiveView('request')}
+                            onClick={() => {
+                                setActiveView('request');
+                                setLoadingMeetings(false); // Kill spinner instantly
+                            }}
                             className={clsx(
                                 'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
                                 activeView === 'request' ? 'bg-white shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
@@ -560,7 +596,7 @@ export function MeetingRequestModal({
 
                     {activeView === 'list' ? (
                         <div className="space-y-3">
-                            {loadingMeetings ? (
+                            {loadingMeetings && activeView === 'list' ? (
                                 <div className="h-40 flex items-center justify-center text-zinc-400 text-sm">
                                     <Loader2 size={18} className="mr-2 animate-spin" /> Loading your meetings...
                                 </div>
@@ -610,7 +646,27 @@ export function MeetingRequestModal({
                                                         {formatInTZ(m.end_time, viewerTimeZone, 'h:mm a')}
                                                     </p>
                                                 </div>
-                                                <div className="flex gap-2 w-full md:w-auto">
+                                                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                                                    {m.status === 'pending' && (
+                                                        <>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}
+                                                            >
+                                                                <CheckCircle2 size={13} className="mr-1.5" /> Approve
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}
+                                                            >
+                                                                <X size={13} className="mr-1.5" /> Reject
+                                                            </Button>
+                                                        </>
+                                                    )}
                                                     {canJoin && (
                                                         <Button
                                                             size="sm"
@@ -620,7 +676,7 @@ export function MeetingRequestModal({
                                                             <Video size={13} className="mr-1.5" /> Join
                                                         </Button>
                                                     )}
-                                                    {canCancel && (
+                                                    {canCancel && m.status !== 'pending' && (
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
@@ -630,7 +686,7 @@ export function MeetingRequestModal({
                                                             <Ban size={13} className="mr-1.5" /> Cancel
                                                         </Button>
                                                     )}
-                                                    {!canJoin && !canCancel && (
+                                                    {!canJoin && !canCancel && m.status !== 'pending' && (
                                                         <span className="text-xs text-zinc-400 flex items-center">
                                                             <CheckCircle2 size={13} className="mr-1.5" /> No actions available
                                                         </span>

@@ -132,15 +132,15 @@ export default function EnterpriseDashboardPage() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-500 px-2 sm:px-4 md:px-8 max-w-5xl mx-auto">
 
             {/* ── Hero Banner ─────────────────────────────────────────── */}
-            <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f172a_0%,#312e81_55%,#4f46e5_100%)] p-8 text-white shadow-2xl shadow-indigo-900/20">
+            <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f172a_0%,#312e81_55%,#4f46e5_100%)] p-4 sm:p-6 md:p-8 text-white shadow-2xl shadow-indigo-900/20">
                 {/* Decorative blobs */}
                 <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-12 right-48 h-48 w-48 rounded-full bg-purple-500/20 blur-2xl" />
 
-                <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative flex flex-col gap-6 md:gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300">Enterprise Workspace</p>
                         <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
@@ -202,7 +202,7 @@ export default function EnterpriseDashboardPage() {
             </div>
 
             {/* ── Middle Row: Events + Quick Actions ──────────────────── */}
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-[1.4fr_0.9fr]">
 
                 {/* Recent Event Participations */}
                 <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm overflow-hidden">
@@ -325,7 +325,7 @@ export default function EnterpriseDashboardPage() {
                         Manage <ChevronRight size={13} />
                     </Link>
                 </div>
-                <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
                         <Package size={20} className="mx-auto text-indigo-500 mb-2" />
                         <p className="text-2xl font-black text-indigo-900">{productCount}</p>

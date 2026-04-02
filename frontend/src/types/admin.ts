@@ -51,6 +51,8 @@ export interface PartnerStats {
     total_events?: number;
     total_visitors?: number;
     total_revenue?: number;
+    primary_currency?: string;
+    revenue_by_currency?: Record<string, number>;
     total_stands?: number;
     total_leads?: number;
     total_meetings?: number;

@@ -105,8 +105,20 @@ function OrgPanel({
                             </div>
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <DollarSign className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
-                                <div className="text-lg font-bold text-zinc-900">${(org.stats?.total_revenue || 0).toLocaleString()}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Revenue</div>
+                                <div className="text-lg font-bold text-zinc-900">
+                                    {(org.stats?.primary_currency || 'MAD')}&nbsp;
+                                    {(org.stats?.total_revenue || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
+                                    Revenue
+                                </div>
+                                {org.stats && (org.stats as any).revenue_by_currency && Object.keys((org.stats as any).revenue_by_currency || {}).length > 1 && (
+                                    <div className="mt-1 text-[10px] text-zinc-400">
+                                        {Object.entries((org.stats as any).revenue_by_currency as Record<string, number>)
+                                            .map(([cur, amt]) => `${cur} ${Number(amt || 0).toLocaleString()}`)
+                                            .join(' · ')}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Section>

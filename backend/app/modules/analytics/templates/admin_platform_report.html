@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 40pt; width: 512pt; top: 30pt; height: 60pt;
+            }
+            @frame content_frame {
+                left: 40pt; width: 512pt; top: 90pt; height: 650pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 40pt; width: 512pt; top: 770pt; height: 40pt;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #0F172A; /* Slate 900 */
+            line-height: 1.5;
+            font-size: 10pt;
+        }
+
+        .brand-stripe {
+            background-color: #4F46E5; /* Indigo 600 */
+            height: 4pt;
+        }
+
+        .header-title {
+            color: #4F46E5;
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1pt;
+            margin-bottom: 4pt;
+        }
+
+        .main-title {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #0F172A;
+            margin: 0;
+            padding: 0;
+        }
+
+        .subtitle {
+            font-size: 12pt;
+            color: #475569; /* Slate 600 */
+            margin-top: 2pt;
+        }
+
+        .section-header {
+            border-bottom: 2pt solid #4F46E5;
+            color: #0F172A;
+            font-size: 14pt;
+            font-weight: bold;
+            padding-bottom: 4pt;
+            margin-top: 20pt;
+            margin-bottom: 15pt;
+        }
+
+        .summary-box {
+            background-color: #F8FAFC;
+            border: 0.5pt solid #CBD5E1;
+            padding: 10pt;
+            border-radius: 4pt;
+            margin-bottom: 15pt;
+        }
+
+        .kpi-container {
+            width: 100%;
+            margin-bottom: 20pt;
+        }
+
+        .kpi-card {
+            background-color: #FFFFFF;
+            border-top: 3pt solid #4F46E5;
+            border-left: 0.5pt solid #E2E8F0;
+            border-right: 0.5pt solid #E2E8F0;
+            border-bottom: 0.5pt solid #E2E8F0;
+            padding: 8pt;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #64748B;
+            text-transform: uppercase;
+            margin-bottom: 4pt;
+        }
+
+        .kpi-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #4F46E5;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10pt;
+        }
+
+        .data-table th {
+            background-color: #312E81; /* Indigo 900 */
+            color: #FFFFFF;
+            font-size: 9pt;
+            font-weight: bold;
+            text-align: left;
+            padding: 8pt;
+        }
+
+        .data-table td {
+            padding: 8pt;
+            border-bottom: 0.5pt solid #E2E8F0;
+            font-size: 9pt;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #F8FAFC;
+        }
+
+        .total-row {
+            background-color: #ECFDF5 !important; /* Emerald 50 */
+            font-weight: bold;
+        }
+
+        .footer {
+            color: #94A3B8;
+            font-size: 8pt;
+            text-align: center;
+        }
+
+        .safety-grid {
+            width: 100%;
+            margin-top: 10pt;
+        }
+
+        .safety-card {
+            border: 0.5pt solid #E2E8F0;
+            padding: 10pt;
+            text-align: center;
+        }
+
+        .warn { color: #D97706; }
+        .success { color: #059669; }
+        .info { color: #4F46E5; }
+
+        .report-meta {
+            margin-top: 30pt;
+            font-size: 8pt;
+            color: #64748B;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="header_content">
+        <div class="brand-stripe"></div>
+        <div style="padding-top: 10pt;">
+            <div class="header-title">IVEP &bull; Intelligent Virtual Exhibition Platform</div>
+            <div class="main-title">Platform Intelligence</div>
+            <div class="subtitle">Executive overview &mdash; scale, revenue, governance</div>
+        </div>
+    </div>
+
+    <div id="content_frame">
+        <div class="summary-box">
+            <strong>At a glance:</strong><br/>
+            {{ overview_description }}
+        </div>
+
+        <div class="section-header">Key Performance Indicators</div>
+        <table class="kpi-container">
+            <tr>
+                {% for kpi in kpis %}
+                <td width="33%">
+                    <div class="kpi-card">
+                        <div class="kpi-label">{{ kpi.label }}</div>
+                        <div class="kpi-value">{{ kpi.value }}{% if kpi.unit %} <span style="font-size: 10pt;">{{ kpi.unit }}</span>{% endif %}</div>
+                    </div>
+                </td>
+                {% if loop.index % 3 == 0 and not loop.last %}
+            </tr><tr>
+                {% endif %}
+                {% endfor %}
+            </tr>
+        </table>
+
+        <div class="section-header">Financial Performance</div>
+        <p style="font-size: 9pt; color: #475569;">Consolidated platform revenue in <strong>{{ currency_label }}</strong>.</p>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Revenue Stream</th>
+                    <th style="text-align: right;">Amount ({{ currency_label }})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Visitor Ticketing</td>
+                    <td style="text-align: right;">{{ revenue.ticket_revenue }}</td>
+                </tr>
+                <tr>
+                    <td>Enterprise Stand Allotment</td>
+                    <td style="text-align: right;">{{ revenue.stand_revenue }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total Platform Revenue</td>
+                    <td style="text-align: right;">{{ revenue.total_revenue }}</td>
+                </tr>
+                {% if revenue.paid_transactions %}
+                <tr>
+                    <td style="color: #64748B; font-size: 8pt;">Paid Transactions (count)</td>
+                    <td style="text-align: right; color: #64748B; font-size: 8pt;">{{ revenue.paid_transactions }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="section-header">Trust, Safety &amp; Moderation</div>
+        <table class="safety-grid">
+            <tr>
+                <td width="33%">
+                    <div class="safety-card">
+                        <div class="kpi-label">Open Flags</div>
+                        <div class="kpi-value warn">{{ safety.total_flags }}</div>
+                        <div style="font-size: 7pt; color: #94A3B8;">total reported</div>
+                    </div>
+                </td>
+                <td width="33%">
+                    <div class="safety-card">
+                        <div class="kpi-label">Resolved</div>
+                        <div class="kpi-value success">{{ safety.resolved_flags }}</div>
+                        <div style="font-size: 7pt; color: #94A3B8;">closed / addressed</div>
+                    </div>
+                </td>
+                <td width="33%">
+                    <div class="safety-card">
+                        <div class="kpi-label">Resolution Rate</div>
+                        <div class="kpi-value info">{{ safety.resolution_rate }}%</div>
+                        <div style="font-size: 7pt; color: #94A3B8;">percent</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        {% if distribution and distribution|length > 0 %}
+        <div class="section-header">Event Portfolio by State</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>State</th>
+                    <th style="text-align: right;">Events</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for state_name, state_count in distribution.items() %}
+                <tr>
+                    <td>{{ state_name|replace('_', ' ')|title }}</td>
+                    <td style="text-align: right;">{{ state_count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <div class="report-meta">
+            <strong>Scope:</strong> Aggregated metrics across all organizers, enterprises, and events. <br/>
+            <strong>Generated (UTC):</strong> {{ generated_at }}
+        </div>
+    </div>
+
+    <div id="footer_content">
+        <div class="footer">
+            IVEP Analysis Export &bull; {{ generated_at }} &bull; Page <pdf:pagenumber> of <pdf:pagecount>
+        </div>
+    </div>
+
+</body>
+</html>

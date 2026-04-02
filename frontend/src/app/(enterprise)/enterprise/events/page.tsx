@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc } from '@/lib/timezone';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/context/AuthContext';
 import {
     Calendar, MapPin, Clock, CheckCircle2, CreditCard,
     Loader, Settings, AlertCircle, Globe, Users, DollarSign,
@@ -160,42 +161,35 @@ function resolveEnterpriseEventTimeline(ev: any) {
 // ─── Day-by-Day Schedule Panel ───────────────────────────────────────────────
 
 function ScheduleSection({ ev }: { ev: any }) {
-    const scheduleDays: any[] = ev.schedule_days || [];
-    const getDatePartsInTimezone = (value: Date, timeZone: string) => {
-        const parts = new Intl.DateTimeFormat('en-CA', {
-            timeZone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-        }).formatToParts(value);
-        const read = (type: Intl.DateTimeFormatPartTypes): number => {
-            const raw = parts.find((p) => p.type === type)?.value;
-            return Number(raw || 0);
-        };
-        return { year: read('year'), month: read('month'), day: read('day') };
-    };
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
 
+    const scheduleDays: any[] = ev.schedule_days || [];
+    
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
-        const tz = ev.event_timezone || 'UTC';
         const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-        const startRaw = ev.start_date || ev.schedule?.start_date;
-        let year: number, month: number, day: number;
-        if (startRaw && /^\d{4}-\d{2}-\d{2}$/.test(String(startRaw).trim())) {
-            // Date-only string: read directly to avoid UTC midnight day shift
-            [year, month, day] = String(startRaw).trim().split('-').map(Number);
-        } else {
-            const seed = new Date(startRaw || new Date().toISOString());
-            const parts = getDatePartsInTimezone(seed, tz);
-            year = parts.year; month = parts.month; day = parts.day;
-        }
-        // Build anchor date in UTC using the correct local date parts
-        const base = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0, 0));
-        return new Intl.DateTimeFormat('en-GB', {
-            weekday: 'short',
-            day: '2-digit',
-            month: 'short',
-            timeZone: tz,
-        }).format(base);
+        const startStr = ev.start_date || ev.schedule?.start_date || new Date().toISOString();
+        const eventStartDate = new Date(startStr);
+        const options: Intl.DateTimeFormatOptions = { 
+            weekday: 'short', day: '2-digit', month: 'short' 
+        };
+        const baseDate = new Date(eventStartDate);
+        baseDate.setUTCDate(baseDate.getUTCDate() + dayOffset);
+        return formatInUserTZ(baseDate, options, undefined, userTimezone);
+    };
+    const formatSlotTime = (dayNumber: number, timeStr: string) => {
+        const eventTZ = ev.event_timezone || 'UTC';
+        const startStr = ev.start_date || ev.schedule?.start_date;
+        if (!startStr || !timeStr) return '--:--';
+        
+        const dayDate = new Date(startStr);
+        dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1));
+        const ymd = dayDate.toISOString().split('T')[0];
+        const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTZ);
+        
+        return formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone);
     };
 
     // Fallback: if no structured days, show key dates
@@ -254,7 +248,7 @@ function ScheduleSection({ ev }: { ev: any }) {
                                 {day.slots.map((slot: any, si: number) => (
                                     <div key={si} className="flex items-start gap-3 px-4 py-3">
                                         <div className="flex-shrink-0 text-xs font-mono font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg whitespace-nowrap mt-0.5">
-                                            {formatSlotRangeLabel(slot.start_time, slot.end_time, '–')}
+                                            {formatSlotTime(day.day_number, slot.start_time)} – {formatSlotTime(day.day_number, slot.end_time)}
                                         </div>
                                         <span className="text-sm text-zinc-700 leading-snug">
                                             {slot.label || 'Activity'}
@@ -841,8 +835,8 @@ function EnterpriseEventCard({
                 {/* Tags */}
                 {ev.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
-                        {ev.tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">
+                        {ev.tags.slice(0, 3).map((tag: string, index: number) => (
+                            <span key={`${index}-${tag}`} className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">
                                 {tag}
                             </span>
                         ))}

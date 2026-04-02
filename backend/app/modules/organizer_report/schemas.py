@@ -50,6 +50,9 @@ class EnterpriseSummary(BaseModel):
 
 
 class OrganizerSummaryResponse(BaseModel):
+    event_id: Optional[str] = None
+    event_slug: Optional[str] = None
+    event_title: Optional[str] = None
     overview: OverviewMetrics = Field(default_factory=OverviewMetrics)
     safety: SafetyMetrics = Field(default_factory=SafetyMetrics)
     performance_trends: PerformanceTrends = Field(default_factory=PerformanceTrends)

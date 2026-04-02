@@ -1,3 +1,4 @@
+# ─── Admin Repair Endpoint ─────────────────────────────────────────────
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from typing import Any, List, Optional
 from datetime import datetime, timezone
@@ -32,6 +33,7 @@ from app.db.utils import stringify_object_ids
 from bson import ObjectId
 from app.core.storage import store_upload
 from app.core.storage import delete_managed_upload_by_url
+from pymongo.errors import DuplicateKeyError
 
 router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
@@ -44,6 +46,33 @@ PRODUCT_IMAGE_DIR = "uploads/product_images"
 PROFILE_IMAGE_DIR = "uploads/enterprise_profile"
 os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 os.makedirs(PROFILE_IMAGE_DIR, exist_ok=True)
+
+
+@router.post("/admin/events/{event_id}/repair-stands")
+async def repair_missing_stands(event_id: str, current_user=Depends(require_role(Role.ADMIN))):
+    """Re-create stands for all approved participations that are missing one."""
+    db = get_database()
+    true_event_id = await resolve_event_id(event_id)
+    # Find all approved participations for this event
+    participations = await db.participants.find({
+        "event_id": true_event_id,
+        "status": "approved"
+    }).to_list(length=None)
+    results = []
+    for p in participations:
+        org_id = str(p.get("organization_id") or p.get("org_id"))
+        # Check if stand already exists
+        existing = await get_stand_by_org(true_event_id, org_id)
+        if existing:
+            results.append({"org_id": org_id, "status": "already_exists"})
+            continue
+        # Create the missing stand
+        try:
+            stand = await ensure_enterprise_stand(true_event_id, org_id)
+            results.append({"org_id": org_id, "status": "created", "stand_id": str(stand.get("_id") or stand.get("id"))})
+        except Exception as e:
+            results.append({"org_id": org_id, "status": "error", "error": str(e)})
+    return {"event_id": true_event_id, "results": results}
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -167,6 +196,8 @@ async def get_approved_stand(event_id: str, org_id: str, current_user: dict) -> 
     return stand
 
 
+from pymongo.errors import DuplicateKeyError
+
 async def ensure_enterprise_stand(event_id: str, org_id: str, org_hint: Optional[dict] = None) -> dict:
     """Ensure an enterprise stand exists once participation becomes APPROVED."""
     event_id = await resolve_event_id(event_id)
@@ -185,16 +216,23 @@ async def ensure_enterprise_stand(event_id: str, org_id: str, org_hint: Optional
 
     stand_name = (org_doc or {}).get("name") or "Enterprise Stand"
     stand_description = (org_doc or {}).get("description")
-    return await create_stand(
-        event_id=event_id,
-        organization_id=org_id,
-        name=stand_name,
-        description=stand_description,
-        logo_url=(org_doc or {}).get("logo_url"),
-        tags=(org_doc or {}).get("tags") or [],
-        category=(org_doc or {}).get("category"),
-        theme_color=(org_doc or {}).get("theme_color") or "#1e293b",
-    )
+    try:
+        return await create_stand(
+            event_id=event_id,
+            organization_id=org_id,
+            name=stand_name,
+            description=stand_description,
+            logo_url=(org_doc or {}).get("logo_url"),
+            tags=(org_doc or {}).get("tags") or [],
+            category=(org_doc or {}).get("category"),
+            theme_color=(org_doc or {}).get("theme_color") or "#1e293b",
+        )
+    except DuplicateKeyError:
+        # Stand was created between our check and insert (race condition or duplicate call)
+        stand = await get_stand_by_org(event_id, org_id)
+        if stand:
+            return stand
+        raise
 
 
 # ─── Week 1: Profile, Products, Product Requests ─────────────────────────────
@@ -724,7 +762,9 @@ async def enterprise_verify_payment(
 
     # Already approved — idempotent
     if _is_accepted_participant_status(participant.get("status")):
-        await ensure_enterprise_stand(event_id, org_id, org_hint=org)
+        event = await get_event_by_id(event_id)
+        true_event_id = str(event.get("_id") or event.get("id") or event_id)
+        await ensure_enterprise_stand(true_event_id, org_id, org_hint=org)
         return {"status": "approved"}
 
     try:

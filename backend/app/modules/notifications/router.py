@@ -19,7 +19,7 @@ from app.modules.notifications.service import (
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
-@router.get("/", response_model=list[NotificationRead])
+@router.get("", response_model=list[NotificationRead])
 async def get_my_notifications(
     current_user: dict = Depends(get_current_user),
 ) -> list[NotificationRead]:

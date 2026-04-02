@@ -117,7 +117,7 @@ class ChatRepository:
             "last_message": {"$ne": None},
         }
         if event_id:
-            query["event_id"] = event_id
+            query["event_id"] = {"$in": self._member_variants(str(event_id))}
         if room_category:
             query["room_category"] = room_category
         cursor = self.rooms.find(query).sort("updated_at", -1)

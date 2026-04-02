@@ -37,6 +37,8 @@ from app.modules.events.service import (
     update_event,
     update_event_state,
 )
+
+import traceback, sys
 from app.modules.participants.service import get_user_participation, request_to_join
 from app.modules.participants.schemas import ParticipantRead, ParticipantStatus
 from app.modules.notifications.service import create_notification
@@ -234,6 +236,7 @@ async def get_my_events_as_organizer(
     return EventsResponse(events=[EventRead(**e) for e in events], total=len(events))
 
 
+
 @router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
 async def submit_event_request(
     data: EventCreate,
@@ -245,11 +248,15 @@ async def submit_event_request(
     The event is created directly in PENDING_APPROVAL state — no DRAFT step.
     Requires ORGANIZER role.
     """
-    # Auto-populate organizer_name from the user's profile
-    if not data.organizer_name:
-        data.organizer_name = current_user.get("full_name")
-    event = await create_event(data, current_user["_id"])
-    return EventRead(**event)
+    try:
+        # Auto-populate organizer_name from the user's profile
+        if not data.organizer_name:
+            data.organizer_name = current_user.get("full_name")
+        event = await create_event(data, current_user["_id"])
+        return EventRead(**event)
+    except Exception as e:
+        traceback.print_exc(file=sys.stderr)
+        raise
 
 
 @router.get("/admin/all", response_model=EventsResponse)

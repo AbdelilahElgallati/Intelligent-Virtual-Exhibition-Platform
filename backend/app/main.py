@@ -156,9 +156,13 @@ def create_application() -> FastAPI:
         debug=settings.DEBUG,
         openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json" if settings.ENV == "dev" else None,
         lifespan=lifespan,
+        redirect_slashes=False,
     )
 
-    # Configure CORS from environment
+    # Add rate limiting middleware
+    app.add_middleware(RateLimitMiddleware)
+
+    # Configure CORS from environment - CORSMiddleware should be LAST added to be OUTERMOST
     cors_origins = settings.CORS_ORIGINS
     if settings.ENV == "dev":
         # Include localhost variants in development
@@ -176,9 +180,6 @@ def create_application() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
         allow_headers=["*"],
     )
-    
-    # Add rate limiting middleware (must be after CORS)
-    app.add_middleware(RateLimitMiddleware)
 
     # Register routers
     register_routers(app)

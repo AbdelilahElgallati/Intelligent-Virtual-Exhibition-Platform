@@ -1,25 +1,12 @@
-"""
-Conference router for IVEP.
-
-Three role groups:
-  - Organizer: create/assign/edit/cancel conferences within their events
-  - Enterprise (assigned): go live, end session, get speaker token
-  - All authenticated: browse, register, get audience token, Q&A
-"""
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from typing import List, Optional
-from datetime import datetime, timedelta, timezone
-import json
-from zoneinfo import ZoneInfo
+from app.core.dependencies import get_current_user, require_role, optional_get_current_user, get_optional_user
+from fastapi import status
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import Depends
 from bson import ObjectId
-
-from app.core.dependencies import get_current_user, get_optional_user, require_role
 from app.core.config import settings
 from app.modules.auth.enums import Role
-from app.modules.conferences.schemas import (
-    ConferenceCreate, ConferenceUpdate, ConferenceRead,
-    ConferenceTokenResponse, QACreate, QAAnswer, QARead,
-)
+from app.modules.conferences.schemas import ConferenceRead, ConferenceTokenResponse, ConferenceCreate, ConferenceUpdate, QARead, QACreate, QAAnswer
 from app.modules.conferences.repository import conf_repo
 from app.modules.notifications.service import create_notification
 from app.modules.notifications.schemas import NotificationType
@@ -28,40 +15,13 @@ from app.modules.daily import service as daily_svc
 from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
 from app.modules.events.service import get_event_by_id, resolve_event_id
+import json
+import time
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
+from fastapi import APIRouter, Request
 router = APIRouter(tags=["conferences"])
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-async def _get_conf_or_404(conf_id: str) -> dict:
-    resolved_id = await conf_repo.resolve_conf_id(conf_id)
-    conf = await conf_repo.get_by_id(resolved_id)
-    if not conf:
-        raise HTTPException(status_code=404, detail="Conference not found")
-    return conf
-
-
-async def _assert_assigned_enterprise(conf: dict, current_user: dict):
-    """Raises 403 if current user is not the assigned enterprise host."""
-    if str(current_user["_id"]) != conf.get("assigned_enterprise_id"):
-        raise HTTPException(
-            status_code=403,
-            detail="Only the assigned enterprise can perform this action"
-        )
-
-
-def _parse_hhmm_to_minutes(value: Optional[str]) -> Optional[int]:
-    if not value or ":" not in value:
-        return None
-    try:
-        h_str, m_str = str(value).split(":", 1)
-        h = int(h_str)
-        m = int(m_str)
-        if h < 0 or h > 23 or m < 0 or m > 59:
-            return None
-        return h * 60 + m
-    except Exception:
-        return None
 
 
 def _parse_utc_datetime(value) -> Optional[datetime]:
@@ -460,8 +420,15 @@ async def enterprise_speaker_token(
     )
     uid = str(current_user["_id"])
     user_name = current_user.get("full_name") or current_user.get("email", uid)
+    
+    start_time = _parse_utc_datetime(conf.get("start_time"))
+    nbf = None
+    if start_time:
+        st_ts = int(start_time.timestamp())
+        now_ts = int(time.time())
+        nbf = st_ts - 60 if st_ts > now_ts else st_ts
 
-    token = await daily_svc.generate_speaker_token(room_name, uid, user_name)
+    token = await daily_svc.generate_speaker_token(room_name, uid, user_name, nbf=nbf)
     return ConferenceTokenResponse(
         token=token,
         room_url=daily_svc.get_room_url(room_name),
@@ -473,7 +440,7 @@ async def enterprise_speaker_token(
 # ── Public / Audience Routes ──────────────────────────────────────────────────
 
 @router.get(
-    "/conferences/",
+    "/conferences",
     response_model=List[ConferenceRead],
     summary="Browse scheduled/live conferences",
 )
@@ -579,6 +546,12 @@ async def get_audience_token(
     conf = await _get_conf_or_404(resolved_id)
     await _ensure_conference_event_live(conf)
 
+    if not _is_conference_live_window(conf, datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=403,
+            detail="Conference viewing is available only during the scheduled session time.",
+        )
+
     if conf["status"] != "live":
         raise HTTPException(status_code=400, detail="Conference is not live yet")
 
@@ -601,7 +574,14 @@ async def get_audience_token(
 
     user_name = current_user.get("full_name") or current_user.get("email", uid)
 
-    token = await daily_svc.generate_audience_token(room_name, uid, user_name)
+    start_time = _parse_utc_datetime(conf.get("start_time"))
+    nbf = None
+    if start_time:
+        st_ts = int(start_time.timestamp())
+        now_ts = int(time.time())
+        nbf = st_ts - 60 if st_ts > now_ts else st_ts
+
+    token = await daily_svc.generate_audience_token(room_name, uid, user_name, nbf=nbf)
 
     # Best-effort analytics instrumentation.
     try:

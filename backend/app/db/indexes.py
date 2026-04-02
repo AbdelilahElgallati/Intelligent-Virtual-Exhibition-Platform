@@ -19,6 +19,14 @@ async def ensure_indexes() -> None:
     try:
         await db.organizations.create_index("owner_id")
         await db.organizations.create_index("created_at")
+        try:
+            await db.organizations.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -28,6 +36,14 @@ async def ensure_indexes() -> None:
         await db.events.create_index("state")
         await db.events.create_index("created_at")
         await db.events.create_index([("title", "text")])
+        try:
+            await db.events.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -42,6 +58,14 @@ async def ensure_indexes() -> None:
     try:
         await db.stands.create_index([("event_id", 1), ("organization_id", 1)], unique=True)
         await db.stands.create_index("name")
+        try:
+            await db.stands.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 

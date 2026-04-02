@@ -25,7 +25,34 @@ def _as_str(value: Any) -> Optional[str]:
     return str(value)
 
 
+async def _calculate_platform_stand_revenue(event_ids: Optional[list[str]] = None) -> float:
+    """
+    Calculate revenue from enterprise stand fees (Organizer income).
+    Sum of event.stand_price for every participant with stand_fee_paid=True.
+    """
+    db = get_database()
+    match_query: dict[str, Any] = {"role": "enterprise", "stand_fee_paid": True}
+    if event_ids:
+        match_query["event_id"] = {"$in": [str(eid) for eid in event_ids]}
 
+    pipeline = [
+        {"$match": match_query},
+        {
+            "$lookup": {
+                "from": "events",
+                "let": {"eid": "$event_id"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$eq": ["$_id", {"$toObjectId": "$$eid"}]}}}
+                ],
+                "as": "evt"
+            }
+        },
+        {"$unwind": "$evt"},
+        {"$group": {"_id": None, "total": {"$sum": "$evt.stand_price"}}}
+    ]
+    cursor = db["participants"].aggregate(pipeline)
+    rows = await cursor.to_list(length=1)
+    return float(rows[0]["total"]) if rows else 0.0
 
 
 def log_event(
@@ -117,6 +144,8 @@ async def build_admin_platform_report() -> dict:
     ticket_revenue = float(paid_rows[0]["total"]) if paid_rows else 0.0
     payment_count = int(paid_rows[0]["count"]) if paid_rows else 0
 
+    stand_revenue = await _calculate_platform_stand_revenue()
+
     total_flags = await db["content_flags"].count_documents({})
     resolved_flags = await db["content_flags"].count_documents(
         {"$or": [{"status": "resolved"}, {"resolved": True}]}
@@ -132,8 +161,8 @@ async def build_admin_platform_report() -> dict:
         "recent_activity": metrics.get("recent_activity", []),
         "revenue": {
             "ticket_revenue": round(ticket_revenue, 2),
-            "stand_revenue": 0.0,
-            "total_revenue": round(ticket_revenue, 2),
+            "stand_revenue": round(stand_revenue, 2),
+            "total_revenue": round(ticket_revenue + stand_revenue, 2),
             "paid_transactions": payment_count,
         },
         "safety": {
@@ -162,6 +191,8 @@ async def build_organizer_event_report(event_id: str, organizer_user_id: Optiona
     ticket_revenue = float(paid_rows[0]["total"]) if paid_rows else 0.0
     paid_count = int(paid_rows[0]["count"]) if paid_rows else 0
 
+    stand_revenue = await _calculate_platform_stand_revenue([event_id])
+
     total_flags = await db["content_flags"].count_documents({"event_id": str(event_id)})
     resolved_flags = await db["content_flags"].count_documents(
         {"event_id": str(event_id), "$or": [{"status": "resolved"}, {"resolved": True}]}
@@ -173,6 +204,10 @@ async def build_organizer_event_report(event_id: str, organizer_user_id: Optiona
         "event_id": str(event_id),
         "event_title": event.get("title") if event else f"Event {event_id}",
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "event_start_date": event.get("start_date") if event else None,
+        "event_end_date": event.get("end_date") if event else None,
+        "category": event.get("category") if event else None,
+        "location": event.get("location") if event else None,
         "kpis": dashboard.get("kpis", []),
         "main_chart": dashboard.get("main_chart", []),
         "distribution": dashboard.get("distribution", {}),
@@ -180,8 +215,8 @@ async def build_organizer_event_report(event_id: str, organizer_user_id: Optiona
         "enterprises": dashboard.get("enterprises", []),
         "revenue": {
             "ticket_revenue": round(ticket_revenue, 2),
-            "stand_revenue": 0.0,
-            "total_revenue": round(ticket_revenue, 2),
+            "stand_revenue": round(stand_revenue, 2),
+            "total_revenue": round(ticket_revenue + stand_revenue, 2),
             "paid_transactions": paid_count,
         },
         "safety": {
@@ -220,6 +255,8 @@ async def build_organizer_overall_report(organizer_user_id: str) -> dict:
     ticket_revenue = float(paid_rows[0]["total"]) if paid_rows else 0.0
     paid_count = int(paid_rows[0]["count"]) if paid_rows else 0
 
+    stand_revenue = await _calculate_platform_stand_revenue(event_ids)
+
     total_flags = await db["content_flags"].count_documents({"event_id": {"$in": event_ids}})
     resolved_flags = await db["content_flags"].count_documents(
         {"event_id": {"$in": event_ids}, "$or": [{"status": "resolved"}, {"resolved": True}]}
@@ -256,8 +293,8 @@ async def build_organizer_overall_report(organizer_user_id: str) -> dict:
         "recent_activity": [],
         "revenue": {
             "ticket_revenue": round(ticket_revenue, 2),
-            "stand_revenue": 0.0,
-            "total_revenue": round(ticket_revenue, 2),
+            "stand_revenue": round(stand_revenue, 2),
+            "total_revenue": round(ticket_revenue + stand_revenue, 2),
             "paid_transactions": paid_count,
         },
         "safety": {
@@ -281,7 +318,7 @@ async def build_enterprise_event_report(event_id: str, enterprise_user_id: str) 
             "kpis": [],
             "distribution": {},
             "recent_activity": [],
-            "revenue": {"ticket_revenue": 0.0, "stand_revenue": 0.0, "total_revenue": 0.0},
+            "revenue": {"marketplace_revenue": 0.0, "total_revenue": 0.0},
             "safety": {"total_flags": 0, "resolved_flags": 0, "resolution_rate": 0.0},
             "note": "No organization membership found for this enterprise user.",
         }
@@ -308,6 +345,16 @@ async def build_enterprise_event_report(event_id: str, enterprise_user_id: str) 
     )
     chat_messages = await db["chat_messages"].count_documents({"room_id": {"$in": [str(r) for r in room_ids]}}) if room_ids else 0
 
+    # Calculate marketplace sales revenue for this enterprise
+    marketplace_revenue = 0.0
+    if stand_id:
+        order_pipeline = [
+            {"$match": {"stand_id": stand_id, "status": "paid"}},
+            {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}}
+        ]
+        order_rows = await db["stand_orders"].aggregate(order_pipeline).to_list(length=1)
+        marketplace_revenue = float(order_rows[0]["total"]) if order_rows else 0.0
+
     return {
         "scope": "enterprise_event",
         "event_id": str(event_id),
@@ -327,7 +374,10 @@ async def build_enterprise_event_report(event_id: str, enterprise_user_id: str) 
             "chat_messages": float(chat_messages),
         },
         "recent_activity": [],
-        "revenue": {"ticket_revenue": 0.0, "stand_revenue": 0.0, "total_revenue": 0.0},
+        "revenue": {
+            "marketplace_revenue": round(marketplace_revenue, 2),
+            "total_revenue": round(marketplace_revenue, 2)
+        },
         "safety": {"total_flags": 0, "resolved_flags": 0, "resolution_rate": 0.0},
     }
 

@@ -19,6 +19,8 @@ interface MediaGridProps {
 
 interface MediaTileProps {
   track: MediaStreamTrack | null;
+  /** Remote microphone track: merged into the same MediaStream as camera so audio plays (Daily sends A/V separately). */
+  audioTrack?: MediaStreamTrack | null;
   userName: string;
   isLocal: boolean;
   isAudioOn: boolean;
@@ -30,18 +32,33 @@ interface MediaTileProps {
   isPip?: boolean;
 }
 
-function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, objectFit, isPip }: Readonly<MediaTileProps>) {
+function MediaTile({
+  track,
+  audioTrack,
+  userName,
+  isLocal,
+  isAudioOn,
+  isVideoOn,
+  isScreen,
+  objectFit,
+  isPip,
+}: Readonly<MediaTileProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current && track) {
-      videoRef.current.srcObject = new MediaStream([track]);
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
+    const el = videoRef.current;
+    if (!el) return;
+    if (isLocal) {
+      el.srcObject = track ? new MediaStream([track]) : null;
+      return;
     }
-  }, [track]);
+    const parts: MediaStreamTrack[] = [];
+    if (audioTrack) parts.push(audioTrack);
+    if (track) parts.push(track);
+    el.srcObject = parts.length ? new MediaStream(parts) : null;
+  }, [track, audioTrack, isLocal]);
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -62,6 +79,10 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
   }, []);
 
   const fit = objectFit || (isScreen ? 'contain' : 'cover');
+  const playRemoteAudioOnly = !isLocal && !isScreen && !!audioTrack && !track;
+  const showVideoEl =
+    (track && (isScreen || isVideoOn || !isLocal)) ||
+    playRemoteAudioOnly;
 
   return (
     <div
@@ -69,13 +90,14 @@ function MediaTile({ track, userName, isLocal, isAudioOn, isVideoOn, isScreen, o
       className={`relative bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 group shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none border-none' : ''} ${isPip ? 'ring-1 ring-white/20' : ''}`}
       style={{ width: '100%', height: '100%' }}
     >
-      {track && isVideoOn ? (
+      {/* remote: render <video> whenever we have a camera/screen track to show or audio-only stream */}
+      {showVideoEl ? (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted={isLocal}
-          className={`w-full h-full ${fit} ${isScreen ? 'bg-black' : ''}`}
+          className={`w-full h-full ${fit} ${isScreen ? 'bg-black' : ''} ${playRemoteAudioOnly ? 'opacity-0 absolute w-px h-px' : ''}`}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-[#0a0a0f]">
@@ -134,6 +156,7 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
       list.push({
         id: `${p.sessionId}-cam`,
         track: p.videoTrack,
+        audioTrack: p.local ? null : p.audioTrack,
         userName: p.userName,
         isLocal: p.local,
         isAudioOn: p.audioOn,
@@ -144,6 +167,7 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
         list.push({
           id: `${p.sessionId}-screen`,
           track: p.screenVideoTrack,
+          audioTrack: null,
           userName: p.userName,
           isLocal: p.local,
           isAudioOn: p.audioOn,

@@ -14,6 +14,8 @@ class PartnerStats(BaseModel):
     total_events: Optional[int] = 0
     total_visitors: Optional[int] = 0
     total_revenue: Optional[float] = 0.0
+    primary_currency: Optional[str] = "MAD"
+    revenue_by_currency: Optional[dict[str, float]] = None
     
     # Enterprise stats
     total_stands: Optional[int] = 0

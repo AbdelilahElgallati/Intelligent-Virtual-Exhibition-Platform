@@ -187,9 +187,18 @@ async def _safety_metrics(db, event_id_ref: str | list[str]) -> SafetyMetrics:
 async def _revenue(db, event_id_ref: str | list[str], approved_visitors: int, approved_enterprises: int) -> RevenueSummary:
     ids_to_check = [event_id_ref] if isinstance(event_id_ref, str) else list(event_id_ref)
     
-    # 1. Ticket Revenue (Actual paid event_payments)
+    # 1. Ticket Revenue (Actual paid event_payments), handle mixed event_id types
+    from bson import ObjectId
+    ids_str = [str(e) for e in ids_to_check]
+    ids_oid = [ObjectId(e) for e in ids_to_check if ObjectId.is_valid(e)]
     paid_cursor = db["event_payments"].aggregate([
-        {"$match": {"event_id": {"$in": ids_to_check}, "status": "paid"}},
+        {"$match": {
+            "status": "paid",
+            "$or": [
+                {"event_id": {"$in": ids_str}},
+                {"event_id": {"$in": ids_oid}},
+            ],
+        }},
         {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
     ])
     paid_rows = await paid_cursor.to_list(length=1)
@@ -203,9 +212,15 @@ async def _revenue(db, event_id_ref: str | list[str], approved_visitors: int, ap
     event_prices = {str(e["_id"]): float(e.get("stand_price") or 0) async for e in ev_cursor}
 
     part_cursor = db["participants"].find({
-        "event_id": {"$in": ids_to_check},
+        "$or": [
+            {"event_id": {"$in": ids_str}},
+            {"event_id": {"$in": ids_oid}},
+        ],
         "role": "enterprise",
-        "$or": [{"stand_fee_paid": True}, {"payment_reference": {"$exists": True, "$ne": ""}}]
+        "$or": [
+            {"stand_fee_paid": True},
+            {"payment_reference": {"$nin": ["", None, "invite_guest_access"]}}
+        ]
     }, {"event_id": 1})
     
     async for p in part_cursor:
@@ -335,12 +350,18 @@ async def _get_participating_enterprises(db, event_id_ref: str | list[str]) -> l
 async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
     """Aggregate all engagement metrics for the specified event."""
     from app.modules.events.service import resolve_event_id
-    event_id = await resolve_event_id(event_id)
+    resolved_id = await resolve_event_id(event_id)
     
     db = get_database()
+    
+    # Fetch event details for metadata
+    from app.db.utils import _oid_or_value
+    event_doc = await db["events"].find_one({"_id": _oid_or_value(resolved_id)}, {"slug": 1, "title": 1})
+    event_slug = event_doc.get("slug") if event_doc else None
+    event_title = event_doc.get("title") if event_doc else None
 
     # Parallel phase 1 — gather stand IDs
-    stand_ids = await _stand_ids_for_events(db, str(event_id))
+    stand_ids = await _stand_ids_for_events(db, str(resolved_id))
 
     # Parallel phase 2
     (
@@ -355,22 +376,25 @@ async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
         trend_leads,
         enterprises,
     ) = await asyncio.gather(
-        _visitor_counts(db, event_id),
-        _enterprise_rate(db, event_id),
+        _visitor_counts(db, str(resolved_id)),
+        _enterprise_rate(db, str(resolved_id)),
         _leads_count(db, stand_ids),
         _meetings_count(db, stand_ids),
-        _chat_count(db, event_id),
-        _safety_metrics(db, event_id),
-        _trend_participants(db, event_id),
-        _trend_engagement(event_id),
+        _chat_count(db, str(resolved_id)),
+        _safety_metrics(db, str(resolved_id)),
+        _trend_participants(db, str(resolved_id)),
+        _trend_engagement(str(resolved_id)),
         _trend_leads(db, stand_ids),
-        _get_participating_enterprises(db, event_id),
+        _get_participating_enterprises(db, str(resolved_id)),
     )
 
-    engagement_score = await _stand_engagement_score(db, event_id, stand_ids, meetings)
-    revenue = await _revenue(db, event_id, approved_visitors, approved_enterprises)
+    engagement_score = await _stand_engagement_score(db, str(resolved_id), stand_ids, meetings)
+    revenue = await _revenue(db, str(resolved_id), approved_visitors, approved_enterprises)
 
     return OrganizerSummaryResponse(
+        event_id=str(resolved_id),
+        event_slug=event_slug,
+        event_title=event_title,
         overview=OverviewMetrics(
             total_visitors=approved_visitors,
             enterprise_participation_rate=ent_rate,
@@ -386,6 +410,7 @@ async def get_organizer_summary(event_id: str) -> OrganizerSummaryResponse:
             engagement_over_time=trend_engagement,
             lead_generation_over_time=trend_leads,
         ),
+        enterprises=enterprises,
         generated_at=datetime.now(timezone.utc),
     )
 

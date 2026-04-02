@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 40pt; width: 512pt; top: 30pt; height: 60pt;
+            }
+            @frame content_frame {
+                left: 40pt; width: 512pt; top: 90pt; height: 650pt;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 40pt; width: 512pt; top: 770pt; height: 40pt;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #0F172A;
+            line-height: 1.5;
+            font-size: 10pt;
+        }
+
+        .brand-stripe {
+            background-color: #059669; /* Emerald 600 - Event Branding */
+            height: 4pt;
+        }
+
+        .header-title {
+            color: #059669;
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1pt;
+            margin-bottom: 4pt;
+        }
+
+        .main-title {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #0F172A;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 11pt;
+            color: #475569;
+        }
+
+        .section-header {
+            border-bottom: 1.5pt solid #059669;
+            color: #0F172A;
+            font-size: 13pt;
+            font-weight: bold;
+            padding-bottom: 3pt;
+            margin-top: 15pt;
+            margin-bottom: 10pt;
+        }
+
+        .kpi-container {
+            width: 100%;
+            margin-bottom: 15pt;
+        }
+
+        .kpi-card {
+            background-color: #FFFFFF;
+            border-top: 2.5pt solid #059669;
+            border-left: 0.5pt solid #E2E8F0;
+            border-right: 0.5pt solid #E2E8F0;
+            border-bottom: 0.5pt solid #E2E8F0;
+            padding: 8pt;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #64748B;
+            text-transform: uppercase;
+            margin-bottom: 3pt;
+        }
+
+        .kpi-value {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #059669;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8pt;
+        }
+
+        .data-table th {
+            background-color: #064E3B; /* Emerald 900 */
+            color: #FFFFFF;
+            font-size: 8.5pt;
+            font-weight: bold;
+            text-align: left;
+            padding: 6pt;
+        }
+
+        .data-table td {
+            padding: 6pt;
+            border-bottom: 0.5pt solid #E2E8F0;
+            font-size: 8.5pt;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #F8FAFC;
+        }
+
+        .footer {
+            color: #94A3B8;
+            font-size: 7.5pt;
+            text-align: center;
+        }
+
+        .meta-table {
+            width: 100%;
+            margin-bottom: 15pt;
+            font-size: 9pt;
+        }
+
+        .meta-label {
+            color: #64748B;
+            font-weight: bold;
+            width: 100pt;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="header_content">
+        <div class="brand-stripe"></div>
+        <div style="padding-top: 8pt;">
+            <div class="header-title">IVEP &bull; Organizer Event Insight</div>
+            <div class="main-title">{{ event_title }}</div>
+            <div class="subtitle">Performance analysis and engagement report</div>
+        </div>
+    </div>
+
+    <div id="content_frame">
+        <table class="meta-table">
+            <tr>
+                <td class="meta-label">Event ID:</td>
+                <td>{{ event_id }}</td>
+                <td class="meta-label">Generated:</td>
+                <td>{{ generated_at }}</td>
+            </tr>
+            <tr>
+                <td class="meta-label">Category:</td>
+                <td>{{ category or 'N/A' }}</td>
+                <td class="meta-label">Location:</td>
+                <td>{{ location or 'Virtual' }}</td>
+            </tr>
+        </table>
+
+        <div class="section-header">Event Performance KPIs</div>
+        <table class="kpi-container">
+            <tr>
+                {% for kpi in kpis %}
+                <td width="25%">
+                    <div class="kpi-card">
+                        <div class="kpi-label">{{ kpi.label }}</div>
+                        <div class="kpi-value">{{ kpi.value }}</div>
+                    </div>
+                </td>
+                {% if loop.index % 4 == 0 and not loop.last %}
+            </tr><tr>
+                {% endif %}
+                {% endfor %}
+            </tr>
+        </table>
+
+        {% if enterprises %}
+        <div class="section-header">Top Participating Enterprises</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Organization Name</th>
+                    <th>Industry / Sector</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ent in enterprises[:15] %}
+                <tr>
+                    <td>{{ ent.name }}</td>
+                    <td>{{ ent.industry or 'General' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if safety %}
+        <div class="section-header">Moderation Overview</div>
+        <table style="width: 100%;">
+            <tr>
+                <td width="33%">
+                    <div style="text-align: center; border: 0.5pt solid #E2E8F0; padding: 10pt;">
+                        <div class="kpi-label">Total Flags</div>
+                        <div style="font-size: 16pt; font-weight: bold; color: #D97706;">{{ safety.total_flags }}</div>
+                    </div>
+                </td>
+                <td width="33%">
+                    <div style="text-align: center; border: 0.5pt solid #E2E8F0; padding: 10pt;">
+                        <div class="kpi-label">Resolved</div>
+                        <div style="font-size: 16pt; font-weight: bold; color: #059669;">{{ safety.resolved_flags }}</div>
+                    </div>
+                </td>
+                <td width="33%">
+                    <div style="text-align: center; border: 0.5pt solid #E2E8F0; padding: 10pt;">
+                        <div class="kpi-label">Resolution Rate</div>
+                        <div style="font-size: 16pt; font-weight: bold; color: #4F46E5;">{{ safety.resolution_rate }}%</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+
+        <div style="margin-top: 30pt; font-size: 8pt; color: #94A3B8; text-align: center; border-top: 0.5pt solid #E2E8F0; padding-top: 10pt;">
+            IVEP Organizer Dashboard &bull; Proprietary and Confidential Data &bull; {{ generated_at }}
+        </div>
+    </div>
+
+    <div id="footer_content">
+        <div class="footer">
+            IVEP Event Report &bull; {{ generated_at }} &bull; Page <pdf:pagenumber> of <pdf:pagecount>
+        </div>
+    </div>
+
+</body>
+</html>

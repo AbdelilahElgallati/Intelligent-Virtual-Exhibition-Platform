@@ -1,18 +1,18 @@
-'use client';
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Plus, Trash2, Clock, GripVertical, CalendarDays } from 'lucide-react';
 import { formatSlotRangeLabel } from '@/lib/schedule';
+import { useAuth } from '@/context/AuthContext';
+import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 
 // ── Default slot ─────────────────────────────────────────────────────────────
 const emptySlot = (): EventScheduleSlot => ({ start_time: '09:00', end_time: '17:00', label: '' });
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 /** "2026-02-24" → "Mon 24 Feb" */
-function formatDateLabel(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00'); // force local time, no UTC shift
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+function formatDateLabel(dateStr: string, timeZone: string): string {
+    const d = new Date(dateStr + 'T12:00:00Z'); // force midday UTC to avoid shift
+    return formatInUserTZ(d, { weekday: 'short', day: 'numeric', month: 'short' }, 'en-GB', timeZone);
 }
 
 /** Build array of YYYY-MM-DD strings between start and end (inclusive) */
@@ -52,6 +52,7 @@ function SlotRow({
 }) {
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
     const startMin = minStartTime;
+    const isCrossDay = slot.start_time && slot.end_time && slot.end_time < slot.start_time;
 
     return (
         <div className="flex items-center gap-2 p-3 rounded-xl border border-zinc-200 bg-zinc-50 group hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
@@ -78,7 +79,7 @@ function SlotRow({
                     />
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">→</span>
-                <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5">
+                <div className={`flex items-center gap-1 bg-white border ${isCrossDay ? 'border-indigo-300' : 'border-zinc-200'} rounded-lg px-2 py-1.5`}>
                     <Clock className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
                     <input
                         type="time"
@@ -92,6 +93,11 @@ function SlotRow({
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
+                {isCrossDay && (
+                    <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                        +1 day
+                    </span>
+                )}
             </div>
 
             {/* Activity label */}
@@ -222,6 +228,11 @@ interface ScheduleBuilderProps {
 }
 
 export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTimeForDay1 }: ScheduleBuilderProps) {
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
     // Auto-regenerate day cards whenever the date range changes
     useEffect(() => {
         if (!startDate || !endDate || startDate > endDate) return;
@@ -233,14 +244,14 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTi
             const existing = days[i];
             return {
                 day_number: i + 1,
-                date_label: formatDateLabel(dateStr),
+                date_label: formatDateLabel(dateStr, userTimezone),
                 slots: existing?.slots?.length ? existing.slots : [emptySlot()],
             };
         });
 
         onChange(newDays);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [startDate, endDate]);
+    }, [startDate, endDate, userTimezone]);
 
     const updateDay = (idx: number, updated: EventScheduleDay) => {
         const next = [...days];

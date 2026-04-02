@@ -98,10 +98,29 @@ class MeetingRepository:
         cursor = self.collection.find({"visitor_id": {"$in": visitor_variants}})
         meetings = await cursor.to_list(length=100)
 
-        enriched = []
-        for m in meetings:
-            m["_id"] = str(m["_id"])
+        # Also fetch meetings where the user's org owns the stand (recipient)
+        user = await self.db.users.find_one({"_id": ObjectId(visitor_id) if ObjectId.is_valid(visitor_id) else visitor_id})
+        org_stand_meetings = []
+        if user and user.get("role") == "enterprise":
+            member = await self.db.organization_members.find_one({"user_id": str(visitor_id)})
+            if member:
+                org_id = member["organization_id"]
+                stands = await self.db.stands.find({"organization_id": org_id}).to_list(length=100)
+                stand_ids = [str(s["_id"]) for s in stands]
+                if stand_ids:
+                    cursor2 = self.collection.find({"stand_id": {"$in": stand_ids}})
+                    org_stand_meetings = await cursor2.to_list(length=100)
 
+        all_meetings = meetings + org_stand_meetings
+        # De-duplicate by _id
+        seen = set()
+        enriched = []
+        for m in all_meetings:
+            mid = str(m["_id"])
+            if mid in seen:
+                continue
+            seen.add(mid)
+            m["_id"] = mid
             stand_id = m.get("stand_id")
             if stand_id:
                 stand = await self.db.stands.find_one({"_id": ObjectId(stand_id) if ObjectId.is_valid(stand_id) else stand_id})
@@ -109,6 +128,19 @@ class MeetingRepository:
                     org = await self.db.organizations.find_one({"_id": ObjectId(stand["organization_id"]) if ObjectId.is_valid(stand["organization_id"]) else stand["organization_id"]})
                     if org:
                         m["receiver_org_name"] = org.get("name")
+                        m["receiver_enterprise_id"] = str(org.get("_id"))
+            
+            # Also find requester org info for B2B meetings
+            visitor_user_id = m.get("visitor_id")
+            if visitor_user_id:
+                user_doc = await self.db.users.find_one({"_id": ObjectId(visitor_user_id) if ObjectId.is_valid(visitor_user_id) else visitor_user_id})
+                if user_doc and user_doc.get("role") == "enterprise":
+                    member_doc = await self.db.organization_members.find_one({"user_id": str(visitor_user_id)})
+                    if member_doc:
+                        req_org = await self.db.organizations.find_one({"_id": ObjectId(member_doc["organization_id"]) if ObjectId.is_valid(member_doc["organization_id"]) else member_doc["organization_id"]})
+                        if req_org:
+                            m["requester_org_name"] = req_org.get("name")
+                            m["sender_enterprise_id"] = str(req_org.get("_id"))
 
             enriched.append(m)
         return enriched
@@ -141,6 +173,7 @@ class MeetingRepository:
                             org = await self.db.organizations.find_one({"_id": ObjectId(member["organization_id"]) if ObjectId.is_valid(member["organization_id"]) else member["organization_id"]})
                             if org:
                                 m["requester_org_name"] = org.get("name")
+                                m["sender_enterprise_id"] = str(org.get("_id"))
 
             enriched.append(m)
         return enriched

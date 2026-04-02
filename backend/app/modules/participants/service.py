@@ -47,10 +47,33 @@ async def request_to_join(event_id, user_id) -> dict:
     Request to join an event.
     """
     now = datetime.now(timezone.utc)
+    db = get_database()
+    member_doc = await db.organization_members.find_one({"user_id": str(user_id)})
+    if member_doc and member_doc.get("organization_id"):
+        org_id = str(member_doc["organization_id"])
+    else:
+        # Fallback: check users collection for enterprise, then organizations by owner_id
+        from bson import ObjectId
+        user_doc = None
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+        except Exception:
+            pass
+        if not user_doc:
+            user_doc = await db.users.find_one({"_id": str(user_id)})
+        if user_doc and user_doc.get("role") == "enterprise":
+            org_doc = await db.organizations.find_one({"owner_id": str(user_doc["_id"])})
+            if org_doc:
+                org_id = str(org_doc["_id"])
+            else:
+                org_id = None
+        else:
+            org_id = None
 
     participant = {
         "event_id": str(event_id),
         "user_id": str(user_id),
+        "organization_id": org_id,
         "status": ParticipantStatus.REQUESTED.value,
         "created_at": now,
     }
@@ -68,13 +91,20 @@ async def get_participant_by_id(participant_id) -> Optional[dict]:
 
 async def get_user_participation(event_id: str, user_id: Optional[str] = None, organization_id: Optional[str] = None) -> Optional[dict]:
     """Get participant record for a specific user OR organization and event."""
+    from bson import ObjectId
     collection = get_participants_collection()
     query = {"event_id": str(event_id)}
     if user_id:
         query["user_id"] = str(user_id)
     if organization_id:
-        query["organization_id"] = str(organization_id)
-        
+        # Try string match first, then ObjectId
+        doc = await collection.find_one({**query, "organization_id": str(organization_id)})
+        if not doc:
+            try:
+                doc = await collection.find_one({**query, "organization_id": ObjectId(organization_id)})
+            except Exception:
+                pass
+        return stringify_object_ids(doc) if doc else None
     doc = await collection.find_one(query)
     return stringify_object_ids(doc) if doc else None
 
