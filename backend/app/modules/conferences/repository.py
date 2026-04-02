@@ -72,10 +72,28 @@ class ConferenceRepository:
         docs = await cursor.to_list(length=100)
         return stringify_object_ids(docs)
 
-    async def list_public(self, event_id: Optional[str] = None, status: Optional[str] = None) -> List[dict]:
+    async def list_public(
+        self,
+        event_id: Optional[str] = None,
+        status: Optional[str] = None,
+        event_id_aliases: Optional[List[str]] = None,
+    ) -> List[dict]:
         query: dict = {}
-        if event_id:
-            query["event_id"] = event_id
+        if event_id or event_id_aliases:
+            candidates = [str(x) for x in (event_id_aliases or []) if x]
+            if event_id:
+                candidates.append(str(event_id))
+            # De-dupe while preserving order
+            seen: set[str] = set()
+            uniq: List[str] = []
+            for c in candidates:
+                if c and c not in seen:
+                    seen.add(c)
+                    uniq.append(c)
+            if len(uniq) == 1:
+                query["event_id"] = uniq[0]
+            elif len(uniq) > 1:
+                query["event_id"] = {"$in": uniq}
         if status:
             query["status"] = status
         # No default status filter — return all (scheduled, live, ended)

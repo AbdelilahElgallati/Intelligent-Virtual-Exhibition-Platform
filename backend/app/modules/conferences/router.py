@@ -482,8 +482,19 @@ async def list_public_conferences(
     conf_status: Optional[str] = Query(None, alias="status"),
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    event_id = await resolve_event_id(event_id) if event_id else None
-    confs = await conf_repo.list_public(event_id=event_id, status=conf_status)
+    raw_event_param = (event_id or "").strip()
+    resolved_event_id: Optional[str] = None
+    aliases: list[str] = []
+    if raw_event_param:
+        resolved_event_id = await resolve_event_id(raw_event_param)
+        aliases.append(raw_event_param)
+        if resolved_event_id and resolved_event_id != raw_event_param:
+            aliases.append(resolved_event_id)
+    confs = await conf_repo.list_public(
+        event_id=resolved_event_id,
+        status=conf_status,
+        event_id_aliases=aliases if aliases else None,
+    )
     uid = str(current_user["_id"]) if current_user else None
     return [await _enrich(c, uid) for c in confs]
 

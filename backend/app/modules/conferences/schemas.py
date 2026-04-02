@@ -49,7 +49,7 @@ class ConferenceUpdate(BaseModel):
 class ConferenceRead(BaseModel):
     id: str = Field(alias="_id")
     title: str
-    slug: str
+    slug: str = ""
     description: Optional[str] = None
     speaker_name: Optional[str] = None
     assigned_enterprise_id: str

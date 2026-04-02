@@ -19,6 +19,7 @@ interface Attendee {
     full_name?: string;
     email: string;
     avatar_url?: string;
+    org_logo_url?: string;
     role?: string;
     bio?: string;
     job_title?: string;
@@ -235,7 +236,7 @@ function NetworkingAvatar({
     className?: string;
 }) {
     const [broken, setBroken] = useState(false);
-    const raw = attendee.avatar_url?.trim();
+    const raw = (attendee.avatar_url || attendee.org_logo_url)?.trim();
     const src = raw && !broken ? resolveMediaUrl(raw) : '';
     const initials = attendeeInitials(attendee);
     if (size === 'sm') {
@@ -252,6 +253,9 @@ function NetworkingAvatar({
             <img
                 src={src}
                 alt=""
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 onError={() => setBroken(true)}
                 className={`w-14 h-14 rounded-xl object-cover shadow-sm border border-gray-100 flex-shrink-0 ${className || ''}`}
             />
@@ -270,6 +274,9 @@ function NetworkingAvatar({
         <img
             src={src}
             alt={attendee.full_name || ''}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
             onError={() => setBroken(true)}
             className={`w-[72px] h-[72px] rounded-2xl object-cover border border-gray-200 shadow-sm ${className || ''}`}
         />

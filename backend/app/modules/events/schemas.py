@@ -222,10 +222,10 @@ class ScheduleSlotConferenceAssign(BaseModel):
 class EventApproveRequest(BaseModel):
     """Schema for admin approving an event (sets payment amount)."""
 
-    payment_amount: Optional[float] = Field(
-        None,
+    payment_amount: float = Field(
+        ...,
         ge=0,
-        description="Override payment amount. If omitted, auto-calculated from enterprises × days.",
+        description="Required payment amount set by admin.",
     )
 
 

@@ -196,6 +196,7 @@ interface EventPanelProps {
 
 function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [approveError, setApproveError] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const [confirming, setConfirming] = useState<'approve' | 'reject' | 'confirm_payment' | 'start_event' | 'close_event' | null>(null);
 
@@ -384,15 +385,34 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                 <p className="text-sm font-medium text-zinc-700">Approve this event?</p>
                                 <input
                                     type="number" min="0" step="0.01"
-                                    placeholder="Payment amount override (optional)"
+                                    placeholder="Payment amount (required)"
                                     value={paymentAmount}
-                                    onChange={e => setPaymentAmount(e.target.value)}
+                                    onChange={e => {
+                                        setPaymentAmount(e.target.value);
+                                        if (approveError) setApproveError(null);
+                                    }}
                                     className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    required
                                 />
+                                {approveError && <p className="text-xs text-red-600">{approveError}</p>}
                                 <div className="flex gap-3">
                                     <button
                                         onClick={async () => {
-                                            await onApprove(event.id, paymentAmount ? parseFloat(paymentAmount) : undefined);
+                                            const normalized = paymentAmount.trim();
+                                            if (!normalized) {
+                                                setApproveError('Payment required. Please enter an amount.');
+                                                return;
+                                            }
+                                            const parsed = Number(normalized);
+                                            if (!Number.isFinite(parsed) || parsed < 0) {
+                                                setApproveError('Payment amount is required and must be 0 or greater.');
+                                                return;
+                                            }
+                                            try {
+                                                await onApprove(event.id, parsed);
+                                            } catch (err) {
+                                                setApproveError((err as Error)?.message || 'Payment required. Please enter an amount.');
+                                            }
                                         }}
                                         disabled={busy}
                                         className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
@@ -434,7 +454,10 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                 {canAct ? (
                                     <>
                                         <button
-                                            onClick={() => setConfirming('approve')}
+                                            onClick={() => {
+                                                setApproveError(null);
+                                                setConfirming('approve');
+                                            }}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                         >
                                             <CheckCircle2 className="w-4 h-4" /> Approve
@@ -568,7 +591,13 @@ export default function AdminEventsPage() {
             }
             setSelected(null);
             fetchEvents();
-        } catch (e: any) { setError(e.message ?? 'Failed'); }
+        } catch (e: any) {
+            const msg = e?.message ?? 'Failed';
+            if (!isConfirmPayment && !specialAction) {
+                throw new Error(msg);
+            }
+            setError(msg);
+        }
         finally { setBusy(false); }
     };
 
@@ -668,7 +697,7 @@ export default function AdminEventsPage() {
                         <p className="text-zinc-500 font-medium">No events found</p>
                     </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm table-auto">
                         <thead>
                             <tr className="border-b border-zinc-100">
                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Event</th>
@@ -687,8 +716,8 @@ export default function AdminEventsPage() {
                                     className="hover:bg-zinc-50 transition-colors cursor-pointer group"
                                 >
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{ev.title}</div>
-                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5">{ev.category}</div>}
+                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors truncate max-w-[260px]" title={ev.title}>{ev.title}</div>
+                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-[260px]">{ev.category}</div>}
                                     </td>
                                     <td className="px-4 py-4 hidden md:table-cell text-xs text-zinc-500">
                                         <div>{fmt(ev.start_date)}</div>

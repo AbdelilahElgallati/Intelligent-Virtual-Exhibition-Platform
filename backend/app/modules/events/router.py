@@ -538,14 +538,14 @@ async def delete_existing_event(
 @router.post("/{event_id}/approve", response_model=EventRead)
 async def approve_event_request(
     event_id: str,
-    body: EventApproveRequest = EventApproveRequest(),
+    body: EventApproveRequest,
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ) -> EventRead:
     """
     Approve an event request.
 
     Transition: PENDING_APPROVAL → WAITING_FOR_PAYMENT
-    Calculates payment amount (enterprises × days × rate) unless overridden.
+    Uses admin-provided payment amount.
     Admin only.
     """
     event_id = await resolve_event_id(event_id)

@@ -262,7 +262,7 @@ async def atomic_transition(
     return stringify_object_ids(updated) if updated else None
 
 
-async def approve_event(event_id, payment_amount: Optional[float] = None) -> Optional[dict]:
+async def approve_event(event_id, payment_amount: float) -> Optional[dict]:
     """
     Approve event request → WAITING_FOR_PAYMENT.
     Auto-calculates payment if not provided.
@@ -271,13 +271,6 @@ async def approve_event(event_id, payment_amount: Optional[float] = None) -> Opt
     event = await collection.find_one(_id_query(event_id))
     if not event:
         return None
-
-    if payment_amount is None:
-        payment_amount = _calculate_payment(
-            event.get("num_enterprises", 1),
-            event.get("start_date", datetime.now(timezone.utc)),
-            event.get("end_date", datetime.now(timezone.utc)),
-        )
 
     # Fixed RIB for the platform (per request)
     rib_code = "007 999 000123456789 01"
