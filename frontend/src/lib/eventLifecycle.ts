@@ -41,7 +41,13 @@ function hasExplicitTime(value: string): boolean {
 function parseDate(value: unknown, boundary: 'start' | 'end' = 'start'): Date | null {
     if (!value) return null;
     const raw = String(value);
-    const d = new Date(raw);
+
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw.trim());
+    const normalized = isDateOnly
+        ? raw.trim() + (boundary === 'end' ? 'T23:59:59.999Z' : 'T00:00:00.000Z')
+        : raw;
+
+    const d = new Date(normalized);
     if (!isValidDate(d)) return null;
 
     if (!hasExplicitTime(raw)) {

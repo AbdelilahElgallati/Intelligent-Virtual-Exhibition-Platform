@@ -124,7 +124,7 @@ function dateMatchesFilter(rawDate: string, filter: DateFilter): boolean {
     const now = new Date();
 
     if (filter === "today") {
-        return value.toDateString() === now.toDateString();
+        return value.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
     }
 
     const days = filter === "last7" ? 7 : 30;

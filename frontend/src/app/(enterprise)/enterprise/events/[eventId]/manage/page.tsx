@@ -942,9 +942,9 @@ export default function EventManagementHub() {
                 {/* Event period */}
                 <div className="flex items-center gap-3 text-sm text-zinc-400 mb-8">
                     <Calendar size={14} />
-                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{new Date((eventTimeline as any).startDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
                     <ArrowRight size={14} />
-                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>{new Date((eventTimeline as any).endDate).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
                 </div>
 
                 <div className="flex gap-4">
@@ -1702,6 +1702,110 @@ export default function EventManagementHub() {
                                         )}
                                     </div>
 
+                                    {/* Meeting List with sender/receiver context */}
+                                    {!loadingPartnerMeetings && partnerMeetings && partnerMeetings.length > 0 && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+                                                <Calendar size={13} /> Meetings with this Partner
+                                            </div>
+                                            <div className="space-y-2">
+                                                {[...(partnerMeetings || [])]
+                                                    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+                                                    .map((m) => {
+                                                        const isSender = (m.type ?? 'outbound') === 'outbound'
+                                                        const isReceiver = m.type === 'inbound';
+                                                        const now = Date.now();
+                                                        const start = new Date(m.start_time).getTime();
+                                                        const end = new Date(m.end_time).getTime();
+                                                        const canJoin = m.status === 'approved' && now >= start - 5 * 60 * 1000 && now < end;
+                                                        const isExpired = now > end && m.status === 'pending';
+
+                                                        return (
+                                                            <div key={m.id || m._id} className={clsx(
+                                                                "rounded-2xl border p-4 bg-white space-y-3",
+                                                                m.status === 'approved' ? "border-emerald-100" :
+                                                                m.status === 'pending' ? "border-amber-100" :
+                                                                "border-zinc-100"
+                                                            )}>
+                                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <span className={clsx(
+                                                                            "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border",
+                                                                            isSender
+                                                                                ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                                                                : "bg-violet-50 text-violet-600 border-violet-100"
+                                                                        )}>
+                                                                            {isSender ? "↑ You sent" : "↓ They sent"}
+                                                                        </span>
+                                                                        <span className={clsx(
+                                                                            "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                                                                            m.status === 'pending' ? "bg-amber-100 text-amber-700" :
+                                                                            m.status === 'approved' ? "bg-emerald-100 text-emerald-700" :
+                                                                            m.status === 'rejected' ? "bg-red-100 text-red-600" :
+                                                                            "bg-zinc-100 text-zinc-500"
+                                                                        )}>
+                                                                            {m.status}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                                                                        <Calendar size={11} />
+                                                                        {formatInTZ(m.start_time, eventData?.event_timezone || 'UTC', 'MMM d, h:mm a')}
+                                                                        {' → '}
+                                                                        {formatInTZ(m.end_time, eventData?.event_timezone || 'UTC', 'h:mm a')}
+                                                                    </span>
+                                                                </div>
+
+                                                                {m.purpose && (
+                                                                    <p className="text-xs text-zinc-500 italic">&ldquo;{m.purpose}&rdquo;</p>
+                                                                )}
+
+                                                                <div className="flex gap-2 flex-wrap">
+                                                                    {isReceiver && m.status === 'pending' && !isExpired && (
+                                                                        <>
+                                                                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}>
+                                                                                <CheckCircle2 size={12} className="mr-1" /> Approve
+                                                                            </Button>
+                                                                            <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-100 hover:bg-red-50"
+                                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}>
+                                                                                <XCircle size={12} className="mr-1" /> Reject
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
+                                                                    {isSender && m.status === 'pending' && !isExpired && (
+                                                                        <span className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                                                                            <Hourglass size={11} className="animate-pulse" /> Awaiting their approval
+                                                                        </span>
+                                                                    )}
+                                                                    {m.status === 'pending' && isExpired && (
+                                                                        <span className="text-xs text-red-400 flex items-center gap-1.5">
+                                                                            <Timer size={11} /> Time slot passed
+                                                                        </span>
+                                                                    )}
+                                                                    {canJoin && (
+                                                                        <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                                            onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}>
+                                                                            <Video size={12} className="mr-1" /> Join Now
+                                                                        </Button>
+                                                                    )}
+                                                                    {m.status === 'approved' && !canJoin && now < end && (
+                                                                        <span className="text-xs text-emerald-600 flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-lg">
+                                                                            <CheckCircle2 size={11} /> Approved · starts {formatInTZ(m.start_time, eventData?.event_timezone || 'UTC', 'h:mm a')}
+                                                                        </span>
+                                                                    )}
+                                                                    {m.status === 'approved' && now >= end && (
+                                                                        <span className="text-xs text-zinc-400 flex items-center gap-1.5">
+                                                                            <CheckCircle2 size={11} /> Meeting ended
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Company Overview */}
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
@@ -1805,6 +1909,7 @@ export default function EventManagementHub() {
                         String(selectedPartner._id || '')
                     ]}
                     standName={selectedPartner.organization_name}
+                    showApproveReject={true}
                     eventId={String(eventId)}
                     eventAliasIds={[String(eventId)]}
                     eventStartDate={eventData?.start_date}

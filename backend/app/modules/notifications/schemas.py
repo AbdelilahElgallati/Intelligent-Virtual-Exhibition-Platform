@@ -26,6 +26,8 @@ class NotificationType(str, Enum):
     # Conferences
     CONFERENCE_ASSIGNED = "conference_assigned"
     CONFERENCE_LIVE = "conference_live"
+    MEETING_REQUEST = "meeting_request"
+    MEETING_UPDATE = "meeting_update"
     MEETING_APPROVED = "meeting_approved"
     MEETING_REJECTED = "meeting_rejected"
     MARKETPLACE_ORDER_UPDATED = "marketplace_order_updated"

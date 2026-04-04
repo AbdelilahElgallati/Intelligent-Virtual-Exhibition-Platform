@@ -42,6 +42,7 @@ interface MeetingRequestModalProps {
     myStandId?: string;
     meetings?: Meeting[];
     onSuccess?: () => void;
+    showApproveReject?: boolean;
     onUpdateStatus?: (meetingId: string, status: string) => Promise<void>;
     initialView?: 'list' | 'request';
 }
@@ -171,6 +172,7 @@ export function MeetingRequestModal({
     myStandId,
     meetings: meetingsProp,
     onSuccess,
+    showApproveReject = false,
     onUpdateStatus,
     initialView = 'list',
 }: MeetingRequestModalProps) {
@@ -472,8 +474,8 @@ export function MeetingRequestModal({
                 throw new Error('Please select date and time');
             }
 
-            const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, viewerTimeZone);
-            const endTime = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, viewerTimeZone);
+            const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, eventTimeZone);
+            const endTime = fromZonedTime(`${meetingForm.date}T${meetingForm.endTime}:00`, eventTimeZone);
             const now = Date.now();
 
             if (!startTime || Number.isNaN(startTime.getTime())) {
@@ -648,24 +650,24 @@ export function MeetingRequestModal({
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
                                                     {m.status === 'pending' && (
-                                                        <>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}
-                                                            >
-                                                                <CheckCircle2 size={13} className="mr-1.5" /> Approve
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="border-red-200 text-red-600 hover:bg-red-50"
-                                                                onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}
-                                                            >
-                                                                <X size={13} className="mr-1.5" /> Reject
-                                                            </Button>
-                                                        </>
+                                                        showApproveReject && (m as Meeting & { type?: string }).type === 'inbound' ? (
+                                                            <>
+                                                                <Button size="sm" variant="outline"
+                                                                    className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                                                                    onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}>
+                                                                    <CheckCircle2 size={13} className="mr-1.5" /> Approve
+                                                                </Button>
+                                                                <Button size="sm" variant="outline"
+                                                                    className="border-red-200 text-red-600 hover:bg-red-50"
+                                                                    onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}>
+                                                                    <X size={13} className="mr-1.5" /> Reject
+                                                                </Button>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                                                                <Hourglass size={13} className="shrink-0" /> Awaiting approval
+                                                            </span>
+                                                        )
                                                     )}
                                                     {canJoin && (
                                                         <Button

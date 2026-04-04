@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getApiUrl } from '@/lib/config';
+import { getDirectApiUrl } from '@/lib/config';
 
 interface Message {
     _id?: string;
@@ -54,8 +54,8 @@ export function useChatWebSocket(roomId: string | null) {
                 wsRef.current.close();
             }
 
-            const endpointUrl = getApiUrl(`/chat/ws/chat/${roomId}?token=${accessToken}`);
-            const wsUrl = endpointUrl.replace(/^http/, 'ws');
+            const endpointUrl = getDirectApiUrl(`/chat/ws/chat/${roomId}?token=${accessToken}`); // <-- changed
+            const wsUrl = endpointUrl.replace(/^https/, 'wss').replace(/^http/, 'ws');
 
             try {
                 const ws = new WebSocket(wsUrl);

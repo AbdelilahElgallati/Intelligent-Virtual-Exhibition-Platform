@@ -82,6 +82,13 @@ export default function VisitorDashboard() {
     fetchJoinedEvents();
     fetchRecommendations();
     fetchNotifications();
+
+    // Poll notifications every 30 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (

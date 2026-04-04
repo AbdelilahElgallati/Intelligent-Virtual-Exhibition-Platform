@@ -91,7 +91,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
 
 // ─── Meeting Item ────────────────────────────────────────────────────────────
 
-const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; timeZone: string; onStatusUpdate: (id: string, status: string) => void }) => {
+const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeting: Meeting; timeZone: string; onStatusUpdate: (id: string, status: string) => void; currentTime: number }) => {
     const statusStyles = {
         pending: 'bg-amber-50 text-amber-700 border-amber-100',
         approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -168,6 +168,30 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate }: { meeting: Meeting; 
                                 </Button>
                             </div>
                         )}
+                        {meeting.status === 'approved' && (() => {
+                            const now = currentTime;
+                            const start = new Date(meeting.start_time).getTime();
+                            const end = new Date(meeting.end_time).getTime();
+                            const canJoin = now >= start - 5 * 60 * 1000 && now < end; // 5 min early entry
+                            return canJoin ? (
+                                <Button
+                                    size="sm"
+                                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={() => window.location.href = `/meetings/${meeting.id || meeting._id}/room`}
+                                >
+                                    <ArrowRight size={12} className="mr-1" /> Join
+                                </Button>
+                            ) : now >= end ? (
+                                <span className="text-[10px] text-zinc-400 text-center">Meeting ended</span>
+                            ) : (
+                                <span className="text-[10px] text-zinc-400 text-center">
+                                    Approved · starts {formatInTZ(meeting.start_time, getUserTimezone(), 'h:mm a')}
+                                </span>
+                            );
+                        })()}
+                        {meeting.status === 'rejected' && (
+                            <span className="text-[10px] text-red-400 text-center">Declined</span>
+                        )}
                     </div>
                 </div>
             </CardContent>
@@ -188,6 +212,7 @@ export default function EnterpriseCommunicationsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [activeEventTimeZone, setActiveEventTimeZone] = useState('UTC');
+    const [currentTime, setCurrentTime] = useState(0);
 
     const fetchEventTimeZone = async (eventId?: string) => {
         if (!eventId) {
@@ -252,6 +277,14 @@ export default function EnterpriseCommunicationsPage() {
         const timer = setInterval(() => {
             fetchRooms().catch((err) => console.error('Failed to refresh rooms', err));
         }, 5000);
+
+        return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const updateCurrentTime = () => setCurrentTime(Date.now());
+        updateCurrentTime();
+        const timer = setInterval(updateCurrentTime, 30000);
 
         return () => clearInterval(timer);
     }, []);
@@ -455,6 +488,7 @@ export default function EnterpriseCommunicationsPage() {
                                     meeting={meeting}
                                     timeZone={tz}
                                     onStatusUpdate={handleUpdateMeetingStatus}
+                                    currentTime={currentTime}
                                 />
                             );
                         })

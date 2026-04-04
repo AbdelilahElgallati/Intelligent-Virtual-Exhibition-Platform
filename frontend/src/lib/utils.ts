@@ -12,6 +12,7 @@ export function formatDate(dateString: string | Date) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',   
   }).format(date);
 }
 
@@ -24,5 +25,6 @@ export function formatDateTime(dateString: string | Date) {
     year: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
+    timeZone: 'UTC',   
   }).format(date);
 }

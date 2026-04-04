@@ -465,7 +465,19 @@ async def get_meetings_between_orgs(
     }).to_list(length=None)
 
     print(f"[between-orgs] found {len(meetings)} meetings")
-    return [stringify_object_ids(m) for m in meetings]
+
+    org1_stand_ids = {str(s["_id"]) for s in org1_stands}
+
+    result = []
+    for m in meetings:
+        m = stringify_object_ids(m)
+        stand_id = str(m.get("stand_id", ""))
+        # inbound = the meeting is AT org1's stand (org2 is visiting org1)
+        # outbound = the meeting is AT org2's stand (org1 is visiting org2)
+        m["type"] = "inbound" if stand_id in org1_stand_ids else "outbound"
+        result.append(m)
+
+    return result
 
 
 
