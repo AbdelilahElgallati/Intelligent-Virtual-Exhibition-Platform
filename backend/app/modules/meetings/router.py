@@ -19,7 +19,7 @@ from ...core.config import settings
 from ..stands.service import get_stand_by_id
 from ..organizations.service import get_organization_by_id
 from ..events.service import get_event_by_id, resolve_event_id
-from ...core.database import get_database
+from ...db.mongo import get_database
 from bson import ObjectId
 from ..daily import service as daily_svc
 from ..analytics.service import log_event_persistent
@@ -27,7 +27,6 @@ from ..analytics.schemas import AnalyticsEventType
 from ..notifications.service import create_notification
 from ..notifications.schemas import NotificationType
 from bson import ObjectId
-from app.core.database import get_database
 
 from app.modules.stands.service import (
     create_stand, 

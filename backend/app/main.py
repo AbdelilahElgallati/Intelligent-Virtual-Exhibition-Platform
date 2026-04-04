@@ -47,13 +47,27 @@ from app.modules.conferences.router import router as conferences_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
-from app.modules.ai_rag.router import router as rag_router
-from app.modules.ai_translation.router import router as translation_router
-from app.modules.transcripts.router import router as transcripts_router
+try:
+    from app.modules.ai_rag.router import router as rag_router
+except Exception:
+    rag_router = None
+
+try:
+    from app.modules.ai_translation.router import router as translation_router
+except Exception:
+    translation_router = None
+
+try:
+    from app.modules.transcripts.router import router as transcripts_router
+except Exception:
+    transcripts_router = None
 from app.modules.meetings.router import router as meetings_router
 from app.modules.resources.router import router as resources_router
 from app.modules.leads.router import router as leads_router
-from app.modules.recommendations.router import router as recommendations_router
+try:
+    from app.modules.recommendations.router import router as recommendations_router
+except Exception:
+    recommendations_router = None
 from app.modules.favorites.router import router as favorites_router
 from app.modules.payments.router import router as payments_router
 from app.modules.marketplace.router import router as marketplace_router
@@ -130,13 +144,28 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(conferences_router, prefix=api_prefix)
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
-    app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])
-    app.include_router(translation_router, prefix=f"{api_prefix}/translation", tags=["translation"])
-    app.include_router(transcripts_router, prefix=f"{api_prefix}/transcripts", tags=["transcripts"])
+    logger = logging.getLogger(__name__)
+    if rag_router is not None:
+        app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])
+    else:
+        logger.warning("assistant router disabled: optional AI dependencies failed to import")
+
+    if translation_router is not None:
+        app.include_router(translation_router, prefix=f"{api_prefix}/translation", tags=["translation"])
+    else:
+        logger.warning("translation router disabled: optional AI dependencies failed to import")
+
+    if transcripts_router is not None:
+        app.include_router(transcripts_router, prefix=f"{api_prefix}/transcripts", tags=["transcripts"])
+    else:
+        logger.warning("transcripts router disabled: optional AI dependencies failed to import")
     app.include_router(meetings_router, prefix=f"{api_prefix}/meetings", tags=["meetings"])
     app.include_router(resources_router, prefix=f"{api_prefix}/resources", tags=["resources"])
     app.include_router(leads_router, prefix=f"{api_prefix}/leads", tags=["leads"])
-    app.include_router(recommendations_router, prefix=f"{api_prefix}/recommendations", tags=["recommendations"])
+    if recommendations_router is not None:
+        app.include_router(recommendations_router, prefix=f"{api_prefix}/recommendations", tags=["recommendations"])
+    else:
+        logger.warning("recommendations router disabled: optional ML dependencies failed to import")
     
     # Dev / Seeding
     if settings.ENV == "dev" or settings.DEBUG:
