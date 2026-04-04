@@ -765,32 +765,3 @@ async def update_meeting(
     return updated
 
 
-@router.patch("/{stand_id}", response_model=StandRead)
-async def update_stand_endpoint(
-    event_id: str,
-    stand_id: str,
-    data: StandUpdate,
-    current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
-) -> StandRead:
-    """
-    Update stand details.
-    """
-    stand_id = await resolve_stand_id(stand_id)
-    from app.modules.stands.service import get_stand_by_id
-    stand = await get_stand_by_id(stand_id)
-    if stand is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
-
-    # Ownership check: organizers can only edit their own org's stands
-    user_role = current_user.get("role", "")
-    if user_role != Role.ADMIN:
-        user_org = str(current_user.get("organization_id", ""))
-        stand_org = str(stand.get("organization_id", ""))
-        if not user_org or user_org != stand_org:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only update stands belonging to your organization"
-            )
-
-    updated = await update_stand(stand_id, data.model_dump(exclude_unset=True))
-    return StandRead(**updated)
