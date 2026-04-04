@@ -19,11 +19,23 @@ from ...core.config import settings
 from ..stands.service import get_stand_by_id
 from ..organizations.service import get_organization_by_id
 from ..events.service import get_event_by_id, resolve_event_id
+from ...core.database import get_database
+from bson import ObjectId
 from ..daily import service as daily_svc
 from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
 from ..notifications.service import create_notification
 from ..notifications.schemas import NotificationType
+from bson import ObjectId
+from app.core.database import get_database
+
+from app.modules.stands.service import (
+    create_stand, 
+    get_stand_by_org, 
+    list_event_stands, 
+    update_stand,
+    resolve_stand_id
+)
 
 router = APIRouter()
 
@@ -681,15 +693,61 @@ async def end_meeting_session(
     return {"session_status": "ended"}
 
 
-@router.patch("/{meeting_id}", response_model=MeetingSchema)
+@router.patch(
+    "/{meeting_id}",
+    response_model=MeetingSchema,
+    responses={404: {"description": "Meeting not found"}},
+)
 async def update_meeting(
     meeting_id: str,
     update: MeetingUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    # Fetch meeting first to verify ownership before applying update
+    meeting = await meeting_repo.get_meeting_by_id(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    user_id = str(current_user["_id"])
+    raw_role = current_user.get("role", "")
+    user_role = str(getattr(raw_role, "value", raw_role)).lower()
+
+    # Only the stand owner (enterprise) or an admin can approve/reject
+    # Visitor can only cancel their own meeting
+    if update.status in ("approved", "rejected"):
+        is_authorized = False
+        stand_id = str(meeting.get("stand_id", ""))
+        if ObjectId.is_valid(stand_id):
+            stand = await get_database().stands.find_one({"_id": ObjectId(stand_id)})
+            if stand:
+                org_id = str(stand.get("organization_id", ""))
+                if org_id:
+                    # Check if user is the org owner
+                    org = await get_database().organizations.find_one(
+                        {"_id": ObjectId(org_id)} if ObjectId.is_valid(org_id) else {"_id": org_id}
+                    )
+                    if org and str(org.get("owner_id", "")) == user_id:
+                        is_authorized = True
+                    # Also allow org members (manager or owner role in organization_members)
+                    if not is_authorized:
+                        member = await get_database().organization_members.find_one({
+                            "organization_id": org_id,
+                            "user_id": user_id,
+                            "role": {"$in": ["owner", "manager"]}
+                        })
+                        if member:
+                            is_authorized = True
+        if user_role != "admin" and not is_authorized:
+            raise HTTPException(status_code=403, detail="Only the stand owner or org manager can approve or reject meetings")
+
+    if update.status == "cancelled":
+        if str(meeting.get("visitor_id")) != user_id and user_role != "admin":
+            raise HTTPException(status_code=403, detail="Only the meeting requester can cancel this meeting")
+
     updated = await meeting_repo.update_meeting_status(meeting_id, update)
     if not updated:
         raise HTTPException(status_code=404, detail="Meeting not found")
+    
     if updated:
         # Notify the visitor about status change
         try:
@@ -705,3 +763,34 @@ async def update_meeting(
             print(f"Failed to create meeting update notification: {e}")
             
     return updated
+
+
+@router.patch("/{stand_id}", response_model=StandRead)
+async def update_stand_endpoint(
+    event_id: str,
+    stand_id: str,
+    data: StandUpdate,
+    current_user: dict = Depends(require_roles([Role.ADMIN, Role.ORGANIZER])),
+) -> StandRead:
+    """
+    Update stand details.
+    """
+    stand_id = await resolve_stand_id(stand_id)
+    from app.modules.stands.service import get_stand_by_id
+    stand = await get_stand_by_id(stand_id)
+    if stand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
+
+    # Ownership check: organizers can only edit their own org's stands
+    user_role = current_user.get("role", "")
+    if user_role != Role.ADMIN:
+        user_org = str(current_user.get("organization_id", ""))
+        stand_org = str(stand.get("organization_id", ""))
+        if not user_org or user_org != stand_org:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only update stands belonging to your organization"
+            )
+
+    updated = await update_stand(stand_id, data.model_dump(exclude_unset=True))
+    return StandRead(**updated)

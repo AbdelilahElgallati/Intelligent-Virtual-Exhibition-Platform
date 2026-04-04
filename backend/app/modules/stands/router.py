@@ -180,12 +180,23 @@ async def update_stand_endpoint(
     """
     Update stand details.
     """
+    event_id = await resolve_event_id(event_id)
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    if current_user["role"] != Role.ADMIN and event["organizer_id"] != str(current_user["_id"]):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
     stand_id = await resolve_stand_id(stand_id)
     from app.modules.stands.service import get_stand_by_id
     
     stand = await get_stand_by_id(stand_id)
     if stand is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
+
+    if str(stand.get("event_id")) != str(event_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found for this event")
     
     updated = await update_stand(stand_id, data.model_dump(exclude_unset=True))
     return StandRead(**updated)
