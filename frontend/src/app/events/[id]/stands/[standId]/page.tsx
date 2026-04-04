@@ -139,9 +139,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const lifecycle = eventData ? getEventLifecycle(eventData, new Date(timelineNow)) : null;
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
     const canAccessLive = isApproved && lifecycle?.hasScheduleSlots && lifecycle.status === 'live';
-    const isBetweenSlots = Boolean(
-        lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
-    );
+    const isBetweenSlots = Boolean(lifecycle && lifecycle.betweenSlots);
 
     useEffect(() => {
         if (lifecycle?.status !== 'ended') return;

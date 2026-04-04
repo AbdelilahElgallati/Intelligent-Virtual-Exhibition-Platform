@@ -17,9 +17,7 @@ Dependency injection module for IVEP backend.
 Provides authentication and authorization dependencies for FastAPI routes.
 """
 
-from typing import Callable
-from fastapi import Depends
-
+from typing import Callable, Optional
 from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -37,6 +35,19 @@ from app.db.mongo import get_database
 
 # Security scheme
 security = HTTPBearer()
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+) -> Optional[dict]:
+    """Bearer token optional; returns None when missing or invalid (no redirect)."""
+    if credentials is None:
+        return None
+    try:
+        return await verify_jwt_token(credentials.credentials)
+    except HTTPException:
+        return None
 
 
 # Get current authenticated user

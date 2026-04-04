@@ -111,7 +111,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
             <div className="grid grid-cols-1 gap-3 relative z-10">
                 {conference.status === 'live' && (
                     <button
-                        onClick={() => router.push(`/events/${eventId}/live/conferences/${conference._id}/watch`)}
+                        onClick={() => router.push(`/events/${eventId}/live/conferences/${conference.id}/watch`)}
                         className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                         Join Live &rarr;
@@ -120,7 +120,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
 
                 {conference.status === 'scheduled' && !conference.is_registered && onRegister && (
                     <button
-                        onClick={() => onRegister(conference._id)}
+                        onClick={() => onRegister(conference.id)}
                         className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-indigo-200 transition-all active:scale-95"
                     >
                         Register for Session
@@ -129,7 +129,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
 
                 {conference.is_registered && conference.status === 'scheduled' && onUnregister && (
                     <button
-                        onClick={() => onUnregister(conference._id)}
+                        onClick={() => onUnregister(conference.id)}
                         className="w-full py-3.5 bg-white border border-zinc-200 text-zinc-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50 rounded-2xl font-bold text-sm transition-all"
                     >
                         &check; Registered &mdash; Cancel

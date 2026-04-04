@@ -18,6 +18,7 @@ import {
 import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
+import { getLiveWorkflowLabel, getEffectiveWorkflowState } from '@/lib/eventWorkflowBadge';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -120,15 +121,33 @@ function resolveEnterpriseEventTimeline(ev: any) {
     const explicitClosed = explicitState === 'closed';
     const explicitLive = explicitState === 'live';
 
-    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+    const isBetweenSlots = lifecycle.betweenSlots;
     const timelineLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
 
-    // If schedule slots exist, trust timeline windows first.
-    // Keep explicit "live" as fallback when timeline data is absent OR unexpectedly evaluates to ended.
-    const explicitLiveFallback = explicitLive && (!lifecycle.hasScheduleSlots || lifecycle.status === 'ended');
-    const isLive = !explicitClosed && (timelineLive || explicitLiveFallback);
-    const isEnded = explicitClosed || (!isLive && lifecycle.status === 'ended');
+    // Date-only "live" window when there are no parsed schedule slots (backend may still be `live`).
+    const explicitLiveFallback =
+        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+
+    const chronologyEnded = lifecycle.status === 'ended';
+    const isEnded = explicitClosed || chronologyEnded;
+    const isLive =
+        !explicitClosed &&
+        !chronologyEnded &&
+        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.status === 'live'));
     const isUpcoming = !isLive && !isEnded && !isBetweenSlots;
+
+    // Enterprise list + modals: only show "Live" / "In Progress" after backend `state` is `live`.
+    // Otherwise approved/upcoming events were labeled "In Progress" when schedule gaps matched first.
+    const eventNotOpenedYet = !explicitLive && explicitState !== 'closed';
+    if (eventNotOpenedYet) {
+        return {
+            lifecycle,
+            isLive: false,
+            isBetweenSlots: false,
+            isEnded,
+            isUpcoming: !isEnded,
+        };
+    }
 
     return {
         lifecycle,
@@ -160,7 +179,6 @@ function ScheduleSection({ ev }: { ev: any }) {
         baseDate.setUTCDate(baseDate.getUTCDate() + dayOffset);
         return formatInUserTZ(baseDate, options, undefined, userTimezone);
     };
-
     const formatSlotTime = (dayNumber: number, timeStr: string) => {
         const eventTZ = ev.event_timezone || 'UTC';
         const startStr = ev.start_date || ev.schedule?.start_date;
@@ -275,7 +293,22 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
         isEnded: isEventEnded,
         isUpcoming: isEventUpcoming,
         isBetweenSlots: isEventInProgress,
-    } = resolveEnterpriseEventTimeline(ev);
+    } = (() => {
+        const evStateStr = String(ev.state || '');
+        const resolved = resolveEnterpriseEventTimeline(ev);
+        // If event is not yet backend-live, it cannot be "in progress" or "live"
+        // on the timeline — force those to false so UI shows "Upcoming" correctly.
+        // Also guard against 'approved' and 'payment_done' showing naturally.
+        if (evStateStr !== 'live') {
+            return {
+                ...resolved,
+                isLive: false,
+                isBetweenSlots: false,
+                isUpcoming: !resolved.isEnded,
+            };
+        }
+        return resolved;
+    })();
     const canConfigure = isAccepted;
     const canManage = isAccepted && lifecycle.hasScheduleSlots;
     const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
@@ -329,6 +362,9 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
+            const tz = ev.event_timezone || getUserTimezone();
+            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -339,6 +375,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                 paidAt: participation?.updated_at,
                 paymentReference: participation?.payment_reference || 'N/A',
                 paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+                eventLocation: ev.location,
+                eventTimezone: ev.event_timezone,
+                category: ev.category,
+                startDateLabel,
+                endDateLabel,
             });
         } catch (error) {
             console.error('Error generating receipt:', error);
@@ -397,11 +438,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                     ? 'Live Now'
                                     : isEventInProgress
                                         ? 'In Progress'
-                                        : isEventEnded
-                                            ? 'Event Ended'
-                                            : isEventUpcoming
-                                                ? 'Upcoming'
-                                                : (evState || '').replace(/_/g, ' ')}
+                                        : (evState === 'approved' || evState === 'payment_done' || isEventUpcoming)
+                                            ? 'Upcoming'
+                                            : isEventEnded
+                                                ? 'Ended'
+                                                : 'Upcoming'}
                             </span>
                             {/* Participation status */}
                             {statusConf && (
@@ -607,6 +648,9 @@ function EnterpriseEventCard({
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
+            const tz = ev.event_timezone || getUserTimezone();
+            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -617,6 +661,11 @@ function EnterpriseEventCard({
                 paidAt: participation?.updated_at,
                 paymentReference: participation?.payment_reference || 'N/A',
                 paymentMethodLabel: participation?.payment_reference ? 'Stripe (Online Card Payment)' : 'Free Access',
+                eventLocation: ev.location,
+                eventTimezone: ev.event_timezone,
+                category: ev.category,
+                startDateLabel,
+                endDateLabel,
             });
         } catch (error) {
             console.error('Error generating receipt:', error);
@@ -633,29 +682,66 @@ function EnterpriseEventCard({
 
     // Timeline status
     const evState = String(ev.state || '');
-    const {
-        lifecycle,
-        isBetweenSlots,
-        isLive: isEventLive,
-        isEnded: isEventEnded,
-        isUpcoming: isEventUpcoming,
-    } = resolveEnterpriseEventTimeline(ev);
+    const _resolved = resolveEnterpriseEventTimeline(ev);
+    // Normalize: only allow live/between/ended states when backend confirms live/closed
+    const _isLive = evState === 'live' ? _resolved.isLive : false;
+    const _isBetweenSlots = evState === 'live' ? _resolved.isBetweenSlots : false;
+    const _isEnded = _resolved.isEnded;
+    const _isUpcoming = !_isLive && !_isBetweenSlots && !_isEnded;
+    const lifecycle = _resolved.lifecycle;
+    const isEventLive = _isLive;
+    const isEventEnded = _isEnded;
+    const isEventUpcoming = _isUpcoming;
+    const isBetweenSlots = _isBetweenSlots;
     const isEventNotReady = ['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(evState);
     const canManage = isAccepted && lifecycle.hasScheduleSlots;
     const canConfigure = isAccepted;
 
     // Single status label for the card
-    const timelineBadge = isEventLive
-        ? { label: 'Live', class: 'bg-emerald-500 text-white', pulse: true }
-        : isBetweenSlots
-            ? { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false }
-            : isEventEnded
-                ? { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false }
-                : isEventUpcoming && !isEventNotReady
-                    ? { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false }
-                    : isEventNotReady
-                        ? { label: (evState || '').replace(/_/g, ' '), class: 'bg-amber-100 text-amber-700', pulse: false }
-                        : null;
+    const timelineBadge = (() => {
+        const evStateStr = String(ev.state || '');
+
+        // For approved/payment_done: event confirmed but not opened yet
+        if (evStateStr === 'approved' || evStateStr === 'payment_done') {
+            return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+        }
+
+        // For ended/closed
+        if (evStateStr === 'closed' || isEventEnded) {
+            return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
+        }
+
+        // For live: use getLiveWorkflowLabel — same source as organizer/admin
+        if (evStateStr === 'live') {
+            const liveLabel = getLiveWorkflowLabel(ev as any);
+            if (liveLabel) {
+                if (liveLabel.kind === 'session_live') {
+                    return { label: 'Live', class: 'bg-emerald-500 text-white', pulse: true };
+                }
+                if (liveLabel.kind === 'between_slots') {
+                    return { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false };
+                }
+                if (liveLabel.kind === 'closed') {
+                    return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
+                }
+                // kind === 'upcoming': live state but before first slot
+                return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+            }
+            // fallback if liveLabel is null
+            return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+        }
+
+        // Pipeline states
+        if (isEventNotReady) {
+            return {
+                label: evStateStr.replace(/_/g, ' '),
+                class: 'bg-amber-100 text-amber-700',
+                pulse: false,
+            };
+        }
+
+        return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+    })();
 
     // Primary action
     const primaryAction = canManage

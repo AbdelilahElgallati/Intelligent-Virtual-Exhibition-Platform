@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatSlotRangeLabel } from '@/lib/schedule';
 import {
@@ -127,21 +128,38 @@ const STATE_META: Record<string, { label: string; cls: string }> = {
     closed: { label: 'Closed', cls: 'bg-zinc-100  text-zinc-600   border border-zinc-200' },
 };
 
-function StateBadge({ state }: { state: string }) {
-    const meta = STATE_META[state] ?? { label: state, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
-    return (
-        <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${meta.cls}`}>
-            {meta.label}
-        </span>
-    );
+
+/** Aligns with organizer / enterprise lists: when workflow is `live`, badge reflects real timing (Upcoming / In progress / Live). */
+function getAdminListStatusBadge(event: OrganizerEvent): { label: string; cls: string } {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state !== 'live') {
+        const meta = STATE_META[effective] ?? { label: effective, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+        return { label: meta.label, cls: meta.cls };
+    }
+    const live = getLiveWorkflowLabel(event);
+    if (!live) {
+        const meta = STATE_META[effective] ?? { label: effective, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+        return { label: meta.label, cls: meta.cls };
+    }
+    if (live.kind === 'closed') {
+        return { label: STATE_META.closed.label, cls: STATE_META.closed.cls };
+    }
+    if (live.kind === 'session_live') {
+        return { label: STATE_META.live.label, cls: STATE_META.live.cls };
+    }
+    if (live.kind === 'between_slots') {
+        return { label: 'In progress', cls: 'bg-sky-50 text-sky-700 border border-sky-200' };
+    }
+    return { label: 'Upcoming', cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
 }
 
-function getEffectiveState(event: OrganizerEvent): string {
-    if (event.state === 'live') {
-        const lifecycle = getEventLifecycle(event as any);
-        if (lifecycle.status === 'ended') return 'closed';
-    }
-    return event.state;
+function EventListStatusBadge({ event }: { event: OrganizerEvent }) {
+    const { label, cls } = getAdminListStatusBadge(event);
+    return (
+        <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>
+            {label}
+        </span>
+    );
 }
 
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
@@ -178,10 +196,11 @@ interface EventPanelProps {
 
 function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [approveError, setApproveError] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const [confirming, setConfirming] = useState<'approve' | 'reject' | 'confirm_payment' | 'start_event' | 'close_event' | null>(null);
 
-    const effectiveState = getEffectiveState(event);
+    const effectiveState = getEffectiveWorkflowState(event);
     const canAct = effectiveState === 'pending_approval';
     const fmt = (d?: string) => d ? formatInTimeZone(new Date(d), timeZone, {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
@@ -199,7 +218,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     <div className="space-y-2 pr-4">
                         <h2 className="text-lg font-bold text-zinc-900 leading-tight">{event.title}</h2>
                         <div className="flex items-center flex-wrap gap-2">
-                            <StateBadge state={effectiveState} />
+                            <EventListStatusBadge event={event} />
                             {event.organizer_name && (
                                 <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
                                     <Building2 className="w-3 h-3" /> {event.organizer_name}
@@ -366,15 +385,34 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                 <p className="text-sm font-medium text-zinc-700">Approve this event?</p>
                                 <input
                                     type="number" min="0" step="0.01"
-                                    placeholder="Payment amount override (optional)"
+                                    placeholder="Payment amount (required)"
                                     value={paymentAmount}
-                                    onChange={e => setPaymentAmount(e.target.value)}
+                                    onChange={e => {
+                                        setPaymentAmount(e.target.value);
+                                        if (approveError) setApproveError(null);
+                                    }}
                                     className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    required
                                 />
+                                {approveError && <p className="text-xs text-red-600">{approveError}</p>}
                                 <div className="flex gap-3">
                                     <button
                                         onClick={async () => {
-                                            await onApprove(event.id, paymentAmount ? parseFloat(paymentAmount) : undefined);
+                                            const normalized = paymentAmount.trim();
+                                            if (!normalized) {
+                                                setApproveError('Payment required. Please enter an amount.');
+                                                return;
+                                            }
+                                            const parsed = Number(normalized);
+                                            if (!Number.isFinite(parsed) || parsed < 0) {
+                                                setApproveError('Payment amount is required and must be 0 or greater.');
+                                                return;
+                                            }
+                                            try {
+                                                await onApprove(event.id, parsed);
+                                            } catch (err) {
+                                                setApproveError((err as Error)?.message || 'Payment required. Please enter an amount.');
+                                            }
                                         }}
                                         disabled={busy}
                                         className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
@@ -416,7 +454,10 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                 {canAct ? (
                                     <>
                                         <button
-                                            onClick={() => setConfirming('approve')}
+                                            onClick={() => {
+                                                setApproveError(null);
+                                                setConfirming('approve');
+                                            }}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                         >
                                             <CheckCircle2 className="w-4 h-4" /> Approve
@@ -518,11 +559,13 @@ export default function AdminEventsPage() {
     }, [filter, searchQuery]);
 
     const filteredEvents = events.filter(ev => {
-        if (filter && getEffectiveState(ev) !== filter) return false;
+        if (filter && getEffectiveWorkflowState(ev) !== filter) return false;
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
+        const statusLabel = getAdminListStatusBadge(ev).label.toLowerCase();
         return ev.title.toLowerCase().includes(q) ||
-            (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q));
+            (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q)) ||
+            statusLabel.includes(q);
     });
 
     const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
@@ -548,7 +591,13 @@ export default function AdminEventsPage() {
             }
             setSelected(null);
             fetchEvents();
-        } catch (e: any) { setError(e.message ?? 'Failed'); }
+        } catch (e: any) {
+            const msg = e?.message ?? 'Failed';
+            if (!isConfirmPayment && !specialAction) {
+                throw new Error(msg);
+            }
+            setError(msg);
+        }
         finally { setBusy(false); }
     };
 
@@ -648,7 +697,7 @@ export default function AdminEventsPage() {
                         <p className="text-zinc-500 font-medium">No events found</p>
                     </div>
                 ) : (
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm table-auto">
                         <thead>
                             <tr className="border-b border-zinc-100">
                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Event</th>
@@ -667,8 +716,8 @@ export default function AdminEventsPage() {
                                     className="hover:bg-zinc-50 transition-colors cursor-pointer group"
                                 >
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{ev.title}</div>
-                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5">{ev.category}</div>}
+                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors truncate max-w-[260px]" title={ev.title}>{ev.title}</div>
+                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-[260px]">{ev.category}</div>}
                                     </td>
                                     <td className="px-4 py-4 hidden md:table-cell text-xs text-zinc-500">
                                         <div>{fmt(ev.start_date)}</div>
@@ -683,7 +732,7 @@ export default function AdminEventsPage() {
                                         ) : '—'}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <StateBadge state={getEffectiveState(ev)} />
+                                        <EventListStatusBadge event={ev} />
                                     </td>
                                     <td className="px-4 py-4 hidden sm:table-cell">
                                         <div className="flex items-center gap-2">

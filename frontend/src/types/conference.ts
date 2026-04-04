@@ -3,7 +3,10 @@
 export type ConferenceStatus = 'scheduled' | 'live' | 'ended' | 'canceled';
 
 export interface Conference {
-    _id: string;
+    /** Public API serializes Mongo id as `id`. */
+    id: string;
+    /** Legacy / mirror when raw Mongo docs are used client-side. */
+    _id?: string;
     title: string;
     description?: string;
     speaker_name?: string;

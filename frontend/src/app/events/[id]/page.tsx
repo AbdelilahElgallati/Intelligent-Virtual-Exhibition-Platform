@@ -15,9 +15,10 @@ import { favoritesService } from '@/services/favorites.service';
 import { Button } from '@/components/ui/Button';
 import { Download, Heart } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
+import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { StandsListResponse } from '@/types/stand';
 import { 
-  getUserTimezone, formatInUserTZ, zonedToUtc 
+  formatInUserTZ, zonedToUtc 
 } from '@/lib/timezone';
 import { isOvernightSlot } from '@/lib/schedule';
 
@@ -197,6 +198,10 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       // Fetch receipt details from backend
       const res = await apiClient.get<any>(ENDPOINTS.PAYMENTS.RECEIPT(id));
       if (!res) throw new Error('No receipt found');
+      const evAny = event as any;
+      const tz = evAny?.event_timezone || getUserTimezone();
+      const startDateLabel = event?.start_date ? formatInTZ(event.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+      const endDateLabel = event?.end_date ? formatInTZ(event.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
       await downloadEventTicketReceiptPdf({
         eventId: id,
         eventTitle: event.title || 'Event',
@@ -206,6 +211,13 @@ export default function EventDetailsPage({ params }: EventPageProps) {
         currency: res.currency || 'MAD',
         paidAt: res.paid_at,
         reference: res.stripe_payment_intent_id || res.receipt_id || 'N/A',
+        organizerName: evAny?.organizer_name,
+        eventLocation: evAny?.location,
+        eventTimezone: evAny?.event_timezone,
+        category: evAny?.category,
+        startDateLabel,
+        endDateLabel,
+        paymentMethodLabel: 'Stripe (Online Card Payment)',
       });
     } catch (err) {
       console.error('Failed to download receipt', err);

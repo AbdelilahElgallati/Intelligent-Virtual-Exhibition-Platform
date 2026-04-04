@@ -39,6 +39,9 @@ const safeApiUrl = preferLoopbackIpv4(normalizeBackendBaseUrl(rawUrl));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  turbopack: {
+    root: process.cwd(),
+  },
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,

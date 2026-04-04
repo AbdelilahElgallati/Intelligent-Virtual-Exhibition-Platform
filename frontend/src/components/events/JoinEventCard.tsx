@@ -26,7 +26,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
   // Use slug when available so the URL shows a human-readable name, not an ObjectId
   const eventRef = eventSlug || eventId;
   const lifecycle = event ? getEventLifecycle(event) : null;
-  const isBetweenSlots = !!(lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow);
+  const isBetweenSlots = !!(lifecycle && lifecycle.betweenSlots);
   const isAccepted = status === 'APPROVED' || status === 'GUEST_APPROVED';
 
   const renderContent = () => {
@@ -204,6 +204,7 @@ export const JoinEventCard: React.FC<JoinEventCardProps> = ({
 
   const getBadge = () => {
     if (isAccepted && lifecycle) {
+      if (lifecycle.status === 'ended') return <Badge className="bg-slate-500">ENDED</Badge>;
       if (!lifecycle.hasScheduleSlots) return <Badge className="bg-amber-500 text-amber-900">TIMELINE PENDING</Badge>;
       if (lifecycle.status === 'live') return <Badge className="bg-green-500">LIVE ACCESS</Badge>;
       if (isBetweenSlots) return <Badge className="bg-blue-500">IN PROGRESS</Badge>;

@@ -8,8 +8,18 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { UnifiedMarketplaceOrder } from '@/types/marketplace';
 import { useSearchParams } from 'next/navigation';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
+import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
 
 import clsx from 'clsx';
+
+function buildOrderRef(groupId: string, createdAt: string): string {
+    const stamp = new Date(createdAt);
+    const y = Number.isNaN(stamp.getTime()) ? '0000' : String(stamp.getFullYear());
+    const m = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getMonth() + 1).padStart(2, '0');
+    const d = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getDate()).padStart(2, '0');
+    const token = groupId.replaceAll(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase() || 'UNKNOWN';
+    return `ORD-${y}${m}${d}-${token}`;
+}
 
 function MarketplaceSuccessContent() {
     const searchParams = useSearchParams();
@@ -65,16 +75,29 @@ function MarketplaceSuccessContent() {
     const downloadInvoice = async () => {
         if (orders.length === 0) return;
         const first = orders[0];
+        const [me, ctx] = await Promise.all([
+            apiClient.get<any>(ENDPOINTS.USERS.ME).catch(() => null),
+            loadEventReceiptContext(first.event_id),
+        ]);
         await downloadMarketplaceUnifiedOrderReceiptPdf({
             groupId: first.group_id,
+            orderReference: buildOrderRef(first.group_id, first.created_at),
             standName: first.stand_name,
             paymentMethod: first.payment_method,
             status: first.status,
+            buyerName: me?.full_name || me?.username || me?.email || 'Visitor',
+            buyerEmail: me?.email,
             buyerPhone: first.buyer_phone,
             shippingAddress: first.shipping_address,
             deliveryNotes: first.delivery_notes,
             createdAt: first.created_at,
             paidAt: first.paid_at || undefined,
+            eventId: first.event_id,
+            standId: first.stand_id,
+            sellerEnterpriseName: first.stand_name,
+            eventTitle: ctx?.eventTitle,
+            eventLocation: ctx?.eventLocation,
+            eventTimezone: ctx?.eventTimezone,
             items: first.items.map((item) => ({
                 product_name: item.product_name,
                 product_type: item.product_type,

@@ -98,9 +98,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
     }
 
     if (!hasLiveAccess) {
-        const isBetweenSlots = Boolean(
-            lifecycle && lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
-        );
+        const isBetweenSlots = Boolean(lifecycle && lifecycle.betweenSlots);
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🕒</div>

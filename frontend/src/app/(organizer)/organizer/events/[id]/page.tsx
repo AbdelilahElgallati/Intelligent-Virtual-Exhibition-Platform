@@ -13,6 +13,7 @@ import OrganizerEventConferences from "@/components/conferences/OrganizerEventCo
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { OrganizerEvent, EventStatus, EventScheduleDay } from "@/types/event";
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { 
   formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc 
@@ -664,9 +665,8 @@ const handleConfirmPayment = async () => {
 
   const enterpriseInviteLink = event.enterprise_link ? buildInviteLink("enterprise", event.enterprise_link) : "";
   const visitorInviteLink = event.visitor_link ? buildInviteLink("visitor", event.visitor_link) : "";
-  const effectiveState: EventStatus = event.state === 'live' && getEventLifecycle(event as any).status === 'ended'
-    ? 'closed'
-    : event.state;
+  const effectiveState: EventStatus = getEffectiveWorkflowState(event);
+  const liveWorkflowBadge = event.state === 'live' ? getLiveWorkflowLabel(event) : null;
   const canPublishEvent = ["payment_done", "live", "closed"].includes(effectiveState);
   const publicityLink = toAbsoluteLink(
     event.publicity_link || (canPublishEvent ? `/events/${event.slug || event.id}` : "")
@@ -683,11 +683,24 @@ const handleConfirmPayment = async () => {
               <ArrowLeft className="w-5 h-5 text-zinc-400 group-hover:text-indigo-600 transition-colors" />
             </Button>
           </Link>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-              <h1 className="text-xl font-black text-zinc-900 tracking-tight leading-none truncate">{event.title}</h1>
-              <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm shrink-0 ${STATE_COLORS[effectiveState]}`}>
-                {STATE_LABELS[effectiveState]}
+
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900 truncate max-w-[300px] md:max-w-md">{event.title}</h1>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  liveWorkflowBadge
+                    ? liveWorkflowBadge.kind === 'session_live'
+                      ? STATE_COLORS.live
+                      : liveWorkflowBadge.kind === 'between_slots'
+                        ? 'bg-sky-100 text-sky-700 border-sky-200'
+                        : liveWorkflowBadge.kind === 'upcoming'
+                          ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                          : STATE_COLORS.closed
+                    : STATE_COLORS[effectiveState]
+                }`}
+              >
+                {liveWorkflowBadge ? liveWorkflowBadge.label : STATE_LABELS[effectiveState]}
               </span>
             </div>
             {event.description && (

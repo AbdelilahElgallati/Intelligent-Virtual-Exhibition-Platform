@@ -16,6 +16,7 @@ export default function RegisterPage() {
         username: '',
         email: '',
         password: '',
+        confirm_password: '',
         full_name: '',
         role: 'visitor',
     });
@@ -34,6 +35,10 @@ export default function RegisterPage() {
             setError('Please fill in all required fields.');
             return;
         }
+        if (formData.password !== formData.confirm_password) {
+            setError('Passwords do not match.');
+            return;
+        }
         if (formData.role === 'enterprise' && !formData.company_name) {
             setError('Company name is required for enterprise accounts.');
             return;
@@ -44,7 +49,9 @@ export default function RegisterPage() {
         }
 
         try {
-            const result = await register(formData);
+            const payload = { ...formData };
+            delete payload.confirm_password;
+            const result = await register(payload);
             if (result.pendingApproval) {
                 setPendingApproval(true);
             }
@@ -205,7 +212,11 @@ export default function RegisterPage() {
 
                             <Input label="Password *" name="password" type="password"
                                 placeholder="••••••••" value={formData.password}
-                                onChange={handleChange} required />
+                                onChange={handleChange} required autoComplete="new-password" />
+
+                            <Input label="Confirm password *" name="confirm_password" type="password"
+                                placeholder="••••••••" value={formData.confirm_password}
+                                onChange={handleChange} required autoComplete="new-password" />
 
                             <Button type="submit" className="w-full" isLoading={isLoading}>
                                 Create Account

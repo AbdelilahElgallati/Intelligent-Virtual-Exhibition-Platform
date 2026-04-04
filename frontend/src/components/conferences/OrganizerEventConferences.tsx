@@ -338,7 +338,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                         <p className="text-xs text-violet-600 mt-0.5">👥 {conf.attendee_count} registered</p>
                                     </div>
                                     {conf.status === 'scheduled' && (
-                                        <button onClick={() => cancelConference(conf._id)} className="text-red-400 hover:text-red-600 text-xs font-medium shrink-0 mt-1">Cancel</button>
+                                        <button onClick={() => cancelConference(conf.id)} className="text-red-400 hover:text-red-600 text-xs font-medium shrink-0 mt-1">Cancel</button>
                                     )}
                                 </div>
                             );

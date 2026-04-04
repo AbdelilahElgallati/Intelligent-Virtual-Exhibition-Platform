@@ -17,6 +17,11 @@ export function resolveMediaUrl(path?: string | null): string {
     const normalized = String(path).trim().replace(/\\/g, '/');
     if (!normalized) return '';
 
+    // Protocol-relative URLs (common on CDNs) — browsers need a scheme.
+    if (normalized.startsWith('//')) {
+        return `https:${normalized}`;
+    }
+
     // 1. Absolute URLs (R2, External, etc.)
     if (ABSOLUTE_URL_PATTERN.test(normalized)) {
         return normalized;
@@ -36,7 +41,7 @@ export function resolveMediaUrl(path?: string | null): string {
 
     // 3. Known media folders -> R2
     if (hasR2Base && !cleanPath.startsWith('/api/')) {
-        const isMediaFolder = /^(\/(event_banners|enterprise_profile|product_images|resources|stand_resources|payments|transcripts)\/)/i.test(cleanPath);
+        const isMediaFolder = /^(\/(event_banners|enterprise_profile|product_images|resources|stand_resources|payments|transcripts|user_avatars|avatars)\/)/i.test(cleanPath);
         
         if (isMediaFolder) {
             return `${R2_PUBLIC_BASE_URL}${cleanPath}`;

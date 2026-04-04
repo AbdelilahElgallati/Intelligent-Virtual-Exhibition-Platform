@@ -24,6 +24,7 @@ import { adminService } from '@/services/admin.service';
 import { OrganizerEvent } from '@/types/event';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInUserTZ } from '@/lib/timezone';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -103,9 +104,43 @@ const STATE_CONFIG: Record<
 
 // ── State Badge ──────────────────────────────────────────────────────────────
 
-function StateBadge({ state }: { state: string }) {
-    const cfg = STATE_CONFIG[state] ?? {
-        label: state,
+function StateBadge({ event }: { event: OrganizerEvent }) {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state === 'live') {
+        const live = getLiveWorkflowLabel(event);
+        if (live) {
+            if (live.kind === 'closed') {
+                const cfg = STATE_CONFIG.closed;
+                return (
+                    <span
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.bg} ${cfg.text}`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                        {cfg.icon}
+                        {cfg.label}
+                    </span>
+                );
+            }
+            const pulse = live.kind === 'session_live';
+            const liveCfg =
+                live.kind === 'upcoming'
+                    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400', icon: <Clock className="w-3.5 h-3.5" /> }
+                    : live.kind === 'between_slots'
+                        ? { bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-400', icon: <Activity className="w-3.5 h-3.5" /> }
+                        : { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', icon: <Activity className="w-3.5 h-3.5" /> };
+            return (
+                <span
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${liveCfg.bg} ${liveCfg.text}`}
+                >
+                    <span className={`w-2 h-2 rounded-full ${liveCfg.dot} ${pulse ? 'animate-pulse' : ''}`} />
+                    {liveCfg.icon}
+                    {live.label}
+                </span>
+            );
+        }
+    }
+    const cfg = STATE_CONFIG[effective] ?? {
+        label: effective,
         bg: 'bg-zinc-100',
         text: 'text-zinc-600',
         dot: 'bg-zinc-400',
@@ -115,7 +150,7 @@ function StateBadge({ state }: { state: string }) {
         <span
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.bg} ${cfg.text}`}
         >
-            <span className={`w-2 h-2 rounded-full ${cfg.dot} ${state === 'live' ? 'animate-pulse' : ''}`} />
+            <span className={`w-2 h-2 rounded-full ${cfg.dot} ${effective === 'live' ? 'animate-pulse' : ''}`} />
             {cfg.icon}
             {cfg.label}
         </span>
@@ -482,7 +517,7 @@ export default function AdminEventDetailPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div className="space-y-2 min-w-0">
                             <h1 className="text-2xl font-bold text-zinc-900 leading-tight">{event.title}</h1>
-                            <StateBadge state={state} />
+                            <StateBadge event={event} />
                         </div>
 
                         {/* Action buttons */}

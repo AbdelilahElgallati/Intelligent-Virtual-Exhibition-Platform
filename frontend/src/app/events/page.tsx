@@ -61,14 +61,22 @@ export default function EventsPage() {
 
                 if (Array.isArray(favoritesResponse)) {
                     const nextMap = new Map<string, string>();
-                    favoritesResponse
-                        .filter((fav: any) => fav?.target_type === 'event' && typeof fav?.target_id === 'string')
-                        .forEach((fav: any) => {
-                            const resolvedFavoriteId = String(fav?.id || fav?._id || '');
-                            if (resolvedFavoriteId) {
-                                nextMap.set(String(fav.target_id), resolvedFavoriteId);
+                    const eventFavs = favoritesResponse.filter(
+                        (fav: any) => fav?.target_type === 'event' && fav?.target_id != null,
+                    );
+                    for (const fav of eventFavs) {
+                        const resolvedFavoriteId = String(fav?.id || fav?._id || '');
+                        const tid = String(fav.target_id);
+                        if (!resolvedFavoriteId || !tid) continue;
+                        nextMap.set(tid, resolvedFavoriteId);
+                        for (const ev of visibleEvents) {
+                            const evAny = ev as any;
+                            const aliases = [evAny?.id, evAny?._id, ev.slug].filter(Boolean).map(String);
+                            if (aliases.includes(tid)) {
+                                aliases.forEach((a) => nextMap.set(a, resolvedFavoriteId));
                             }
-                        });
+                        }
+                    }
                     setFavoriteMap(nextMap);
                 } else {
                     setFavoriteMap(new Map());
@@ -121,10 +129,15 @@ export default function EventsPage() {
                 setFavoriteMap((prev) => {
                     const next = new Map(prev);
                     const resolvedFavoriteId = String((created as any)?.id || (created as any)?._id || '');
+                    const createdTid = String((created as any)?.target_id || '');
                     if (resolvedFavoriteId) {
                         next.set(eventId, resolvedFavoriteId);
+                        if (createdTid) {
+                            next.set(createdTid, resolvedFavoriteId);
+                        }
                     } else {
                         next.delete(eventId);
+                        if (createdTid) next.delete(createdTid);
                     }
                     return next;
                 });
@@ -155,7 +168,7 @@ export default function EventsPage() {
         const lifecycle = getEventLifecycle(event);
         const timelineStatus: TimelineFilter = !lifecycle.hasScheduleSlots
             ? 'timeline_tbd'
-            : lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow
+            : lifecycle.betweenSlots
               ? 'in_progress'
               : lifecycle.status;
 

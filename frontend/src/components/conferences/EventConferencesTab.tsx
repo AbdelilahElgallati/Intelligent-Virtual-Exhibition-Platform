@@ -48,6 +48,16 @@ function parseMs(iso: string): number {
     return new Date(iso).getTime();
 }
 
+function normalizeConferenceListPayload(payload: unknown): Conference[] {
+    if (Array.isArray(payload)) {
+        return payload as Conference[];
+    }
+    if (payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)) {
+        return (payload as { items: Conference[] }).items;
+    }
+    return [];
+}
+
 function normalizeComparableId(value: unknown): string {
     if (typeof value === 'string') {
         const trimmed = value.trim();
@@ -120,6 +130,12 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
     const router = useRouter();
 
     const [event, setEvent] = useState<Event | null>(initialEvent || null);
+
+    useEffect(() => {
+        if (initialEvent) {
+            setEvent(initialEvent);
+        }
+    }, [initialEvent]);
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(true);
@@ -165,14 +181,25 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
         setError(null);
 
         try {
+            const evMerged = initialEvent || event;
+            const canonicalEventId = String(
+                (evMerged as EventWithAliases | null)?.id ||
+                    (evMerged as EventWithAliases | null)?._id ||
+                    eventId,
+            );
+
             const [conferencesRes, meetingsRes, eventRes] = await Promise.allSettled([
-                apiClient.get<Conference[]>(`/conferences/?event_id=${encodeURIComponent(eventId)}`),
+                apiClient.get<unknown>(
+                    `/conferences/?event_id=${encodeURIComponent(canonicalEventId)}`,
+                ),
                 apiClient.get<Meeting[]>('/meetings/my-meetings'),
-                !event ? apiClient.get<Event>(`/events/${eventId}`) : Promise.resolve(event),
+                !(initialEvent || event)
+                    ? apiClient.get<Event>(`/events/${eventId}`)
+                    : Promise.resolve((initialEvent || event) as Event),
             ]);
 
             if (conferencesRes.status === 'fulfilled') {
-                setConferences(Array.isArray(conferencesRes.value) ? conferencesRes.value : []);
+                setConferences(normalizeConferenceListPayload(conferencesRes.value));
             } else {
                 setConferences([]);
             }
@@ -180,7 +207,7 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
             const resolvedEvent: EventWithAliases | null =
                 eventRes.status === 'fulfilled'
                     ? (eventRes.value as EventWithAliases | null)
-                    : (event as EventWithAliases | null);
+                    : ((initialEvent || event) as EventWithAliases | null);
 
             const eventAliasIds = new Set(
                 [
@@ -215,10 +242,6 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
             if (eventRes.status === 'fulfilled') {
                 setEvent(eventRes.value);
             }
-
-            if (conferencesRes.status === 'rejected') {
-                throw conferencesRes.reason;
-            }
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : 'Failed to load timeline';
             setError(message);
@@ -227,7 +250,7 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
         } finally {
             setLoading(false);
         }
-    }, [eventId, event]);
+    }, [eventId, event, initialEvent]);
 
     useEffect(() => {
         load();
@@ -267,8 +290,10 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
         return conferences
             .map((c) => {
                 const status = getConferenceStatus(c, nowMs);
+                const confId = String(c.id || c._id || '').trim();
+                if (!confId) return null;
                 return {
-                    id: c._id,
+                    id: confId,
                     title: c.title || 'Conference session',
                     enterpriseHost: c.assigned_enterprise_name || 'Enterprise host',
                     speakerName: c.speaker_name || 'Speaker not set',
@@ -276,9 +301,10 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                     endTime: c.end_time,
                     status,
                     canJoin: status === 'live',
-                    route: `/events/${eventId}/live/conferences/${c._id}/watch`,
+                    route: `/events/${eventId}/live/conferences/${encodeURIComponent(confId)}/watch`,
                 };
             })
+            .filter((row): row is ConferenceCardModel => row !== null)
             .sort((a, b) => parseMs(a.startTime) - parseMs(b.startTime));
     }, [conferences, eventId, getConferenceStatus, nowMs]);
 

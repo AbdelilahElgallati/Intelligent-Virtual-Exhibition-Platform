@@ -87,29 +87,34 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
     if (loading) return <LoadingState message="Loading event..." />;
     if (!event || !lifecycle) return <div className="text-center py-20 text-gray-500">Event not found or timeline unavailable</div>;
 
-    const isBetweenSlots = lifecycle.hasScheduleSlots && lifecycle.status === 'upcoming' && lifecycle.withinScheduleWindow;
+    const isBetweenSlots = lifecycle.betweenSlots;
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
         const canAccessLive = isApproved && lifecycle.hasScheduleSlots && lifecycle.status === 'live';
 
     const statusPillClass =
-                !lifecycle.hasScheduleSlots
+                lifecycle.status === 'ended'
+                    ? 'bg-slate-200 text-slate-700'
+                    : !lifecycle.hasScheduleSlots
                         ? 'bg-amber-100 text-amber-800'
                         : isBetweenSlots
-                        ? 'bg-blue-100 text-blue-800'
-                        : lifecycle.status === 'live'
-            ? 'bg-green-100 text-green-800'
-            : lifecycle.status === 'upcoming'
-              ? 'bg-cyan-100 text-cyan-800'
-              : 'bg-slate-200 text-slate-700';
-        const statusPillText = !lifecycle.hasScheduleSlots
-                ? 'Timeline pending'
-                : isBetweenSlots
-                    ? 'In progress'
-                : lifecycle.status === 'live'
-                    ? 'Live now'
-                    : lifecycle.status === 'upcoming'
-                        ? 'Upcoming'
-                        : 'Ended';
+                            ? 'bg-blue-100 text-blue-800'
+                            : lifecycle.status === 'live'
+                                ? 'bg-green-100 text-green-800'
+                                : lifecycle.status === 'upcoming'
+                                    ? 'bg-cyan-100 text-cyan-800'
+                                    : 'bg-slate-200 text-slate-700';
+        const statusPillText =
+                lifecycle.status === 'ended'
+                    ? 'Closed'
+                    : !lifecycle.hasScheduleSlots
+                        ? 'Timeline pending'
+                        : isBetweenSlots
+                            ? 'In progress'
+                            : lifecycle.status === 'live'
+                                ? 'Live now'
+                                : lifecycle.status === 'upcoming'
+                                    ? 'Upcoming'
+                                    : 'Closed';
 
     const tabs = [
         { name: 'Recommended', id: 'overview', href: `/events/${eventId}/live` },

@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
+import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import type { Event } from '@/types/event';
@@ -368,6 +369,7 @@ export default function VisitorOrdersPage() {
     new Intl.NumberFormat('fr-MA', { style: 'currency', currency: currency.toUpperCase() }).format(amount);
 
   const handleDownloadReceipt = async (order: UnifiedMarketplaceOrder) => {
+    const ctx = await loadEventReceiptContext(order.event_id);
     await downloadMarketplaceUnifiedOrderReceiptPdf({
       groupId: order.group_id,
       orderReference: buildOrderRef(order.group_id, order.created_at),
@@ -381,6 +383,12 @@ export default function VisitorOrdersPage() {
       deliveryNotes: order.delivery_notes,
       createdAt: order.created_at,
       paidAt: order.paid_at || undefined,
+      eventId: order.event_id,
+      standId: order.stand_id,
+      sellerEnterpriseName: order.stand_name,
+      eventTitle: ctx?.eventTitle,
+      eventLocation: ctx?.eventLocation,
+      eventTimezone: ctx?.eventTimezone,
       items: order.items.map((item) => ({
         product_name: item.product_name,
         product_type: item.product_type,

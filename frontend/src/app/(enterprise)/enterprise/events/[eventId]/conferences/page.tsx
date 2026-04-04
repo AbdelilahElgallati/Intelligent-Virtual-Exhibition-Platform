@@ -115,7 +115,7 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                         )}
                                         {conf.status === 'scheduled' && (
                                             <button
-                                                onClick={() => canGoLive ? startConference(conf._id) : null}
+                                                onClick={() => canGoLive ? startConference(conf.id) : null}
                                                 disabled={!canGoLive}
                                                 style={{
                                                     background: canGoLive
