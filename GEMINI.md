@@ -1,7 +1,10 @@
-# CLAUDE.md — Intelligent Virtual Exhibition Platform
+# GEMINI.md — Intelligent Virtual Exhibition Platform
 
-> This file is the single source of truth for Claude Code operating in this repository.
+> This file is the single source of truth for the AI agent operating in this repository.
 > Read it fully before touching any file. No exceptions.
+
+@./PROJECT_CONTEXT.md
+@./GEMINI_verification_protocol.md
 
 ---
 
@@ -22,15 +25,15 @@ analytics — all deployable worldwide.
 ├── frontend/          # Next.js 14+ (TypeScript) — deployed on Vercel
 ├── backend/           # FastAPI (Python) — deployed on Hetzner
 ├── Ressources/        # Static project assets
-├── PROJECT_CONTEXT.md # need to be updated to the current state of the project
+├── PROJECT_CONTEXT.md # project goals, user stories, business rules
 ```
 
-### Frontend — `frontend/` 
+### Frontend — `frontend/`
 
 | Concern | Technology |
 |---|---|
 | Framework | Next.js 14+ (App Router), TypeScript |
-| Styling | Tailwind CSS (assumed) |
+| Styling | Tailwind CSS |
 | State | React hooks / context |
 | Real-time video | Daily.co SDK (WebRTC) |
 | Auth | JWT (via backend API) |
@@ -124,14 +127,14 @@ Confirm?
 - Never expose raw MongoDB `_id` ObjectIds to the API — serialize to strings
 - Environment variables via `.env` / `os.getenv` — never hardcode secrets or URLs
 - File uploads go through Cloudflare R2 — never write to local disk in production
-- LiveKit token generation must use the server-side SDK — never expose LiveKit secrets to frontend
+- Daily.co token generation must use the server-side SDK — never expose Daily.co secrets to frontend
 
 ### Frontend (Next.js / TypeScript)
 
 - Strict TypeScript — no `any` types unless pre-existing
 - API calls centralized in a service/api layer — no raw `fetch` scattered in components
 - Environment variables via `NEXT_PUBLIC_` prefix for client-side, plain for server-side
-- LiveKit room logic stays in dedicated hooks/components — not mixed into page logic
+- Daily.co room logic stays in dedicated hooks/components — not mixed into page logic
 - No hardcoded backend URLs — use environment variables
 
 ---
@@ -146,17 +149,17 @@ Confirm?
 | `Stand` | A virtual booth within an exhibition, owned by an exhibitor |
 | `User` | Can be Admin, Organizer, Exhibitor, or Visitor |
 | `Product` | An item listed within a Stand |
-| `Meeting` | A scheduled video session between visitor and exhibitor (via LiveKit) |
+| `Meeting` | A scheduled video session between visitor and exhibitor (via Daily.co) |
 | `Lead` | A captured contact/interest generated during the event |
 | `Media` | Files/images stored in Cloudflare R2, referenced by URL |
 
 ### User Roles
 
 ```
-Admin → manages platform
-Organizer → creates and manages exhibitions
-Exhibitor → owns one or more stands within an exhibition
-Visitor → browses exhibitions, views stands, schedules meetings
+Admin      → manages platform
+Organizer  → creates and manages exhibitions
+Exhibitor  → owns one or more stands within an exhibition
+Visitor    → browses exhibitions, views stands, schedules meetings
 ```
 
 ### Video / Real-time
@@ -218,9 +221,30 @@ NEXT_PUBLIC_R2_PUBLIC_BASE_URL=
 - **MongoDB ObjectId**: Always convert `_id` to `str` in Pydantic models; Motor returns `ObjectId` objects
 - **CORS**: Backend CORS origins are configured for Vercel domain(s) — don't add wildcard `*` in production
 - **Daily.co room names**: Must be unique per Meeting — use Meeting ID as room name; rooms should be deleted after the meeting ends to stay within plan limits
-- **R2 URLs**: R2 public URLs differ from the API endpoint URL — check both `CLOUDFLARE_R2_ENDPOINT` vs `CLOUDFLARE_R2_PUBLIC_URL`
+- **R2 URLs**: R2 public URLs differ from the API endpoint URL — check both `R2_ENDPOINT` vs `R2_PUBLIC_BASE_URL`
 - **Async in FastAPI**: All DB calls use `await` with Motor — never use synchronous PyMongo in route handlers
 - **Next.js App Router**: Server Components cannot use browser APIs or React hooks — check component type before adding interactivity
+
+---
+
+## Gemini CLI Session Rules
+
+### How to start a session
+Always tell me what you are working on today:
+- Which feature or bug
+- Which role is affected (visitor / exhibitor / organizer / admin)
+- Whether it is frontend, backend, or both
+
+### Useful in-session commands
+- `/memory add <note>` — save a discovery permanently (e.g. "Daily.co room deletion is fixed")
+- `/restore` — undo any file Gemini modified (checkpointing is always on)
+- `/compress` — compress context if the session gets very long
+- `/chat save <name>` — save session to resume later
+
+### When to stop and ask
+- Any change that touches auth, payments, or database schemas
+- Any change affecting more than 3 files
+- Anything that would break the existing API contract for the frontend
 
 ---
 
@@ -229,9 +253,9 @@ NEXT_PUBLIC_R2_PUBLIC_BASE_URL=
 | File | Purpose |
 |---|---|
 | `PROJECT_CONTEXT.md` | High-level project goals, user stories, business rules |
-| `backend_api_guide.md` | API endpoint reference (routes, methods, payloads) |
-| `backend_implementation_details.md` | Implementation notes, architectural decisions |
-| `CLAUDE.md` (this file) | Claude Code operating rules — read first, always |
+| `docs/backend_api_guide.md` | API endpoint reference (routes, methods, payloads) |
+| `docs/backend_implementation_details.md` | Implementation notes, architectural decisions |
+| `GEMINI.md` (this file) | AI agent operating rules — read first, always |
 
 > When in doubt about business logic or API contracts, consult `PROJECT_CONTEXT.md`
-> and `backend_api_guide.md` **before** making assumptions.
+> and `docs/backend_api_guide.md` **before** making assumptions.

@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md - Intelligent Virtual Exhibition Platform (IVEP)
 
-Generated: 2026-03-23
+Generated: 2026-04-05
 Purpose: Full, code-verified project context snapshot up to current state, including the latest production deployment architecture and API provider swaps.
 
 ---
@@ -21,7 +21,7 @@ Core capability areas:
 - Virtual stands and product marketplace
 - Real-time communication (chat, meetings, conferences)
 - AI assistant (RAG), translation, and transcription
-- Governance and operations (audit, incidents, monitoring)
+- Governance and operations (audit, incidents, monitoring, finance)
 
 ---
 
@@ -110,35 +110,11 @@ Health/root endpoints:
 All primary routers are mounted under API prefix (default `/api/v1`).
 
 Mounted core routers:
-- auth
-- users
-- organizations
-- events
-- participants
-- stands
-- analytics
-- notifications
-- favorites
-- admin
-- audit
-- incidents
-- payments
-- marketplace
-- monitoring
-- sessions
-- organizer_report
-- enterprise
-- conferences
+- auth, users, organizations, events, participants, stands, analytics, notifications, favorites
+- admin, audit, incidents, payments, marketplace, finance, monitoring, sessions, organizer_report, enterprise, conferences
 
 Mounted legacy/extra routers with explicit sub-prefixes:
-- `/chat`
-- `/assistant`
-- `/translation`
-- `/transcripts`
-- `/meetings`
-- `/resources`
-- `/leads`
-- `/recommendations`
+- `/chat`, `/assistant`, `/translation`, `/transcripts`, `/meetings`, `/resources`, `/leads`, `/recommendations`
 
 Conditional router:
 - `dev` router only when environment is dev or debug is enabled
@@ -151,38 +127,10 @@ Important current note:
 ## 6) Backend Modules Inventory
 
 Modules present in `backend/app/modules/`:
-- admin
-- ai_rag
-- ai_translation
-- analytics
-- audit
-- auth
-- chat
-- conferences
-- dev
-- enterprise
-- events
-- favorites
-- incidents
-- leads
-- marketplace
-- meetings
-- monitoring
-- notifications
-- organizations
-- organizer_report
-- participants
-- payments
-- recommendations
-- resources
-- sessions
-- stands
-- subscriptions
-- transcripts
-- users
+- admin, ai_rag, ai_translation, analytics, audit, auth, chat, conferences, dev, daily, enterprise, events, favorites, finance, incidents, leads, marketplace, meetings, monitoring, notifications, organizations, organizer_report, participants, payments, recommendations, resources, sessions, stands, subscriptions, transcripts, users
 
 Router coverage:
-- 29 module routers currently exist under `backend/app/modules/**/router.py`
+- 30 module routers currently exist under `backend/app/modules/**/router.py`
 - all major business modules are routable except subscriptions (present but currently disabled in app registration)
 
 ---
@@ -197,32 +145,33 @@ Router coverage:
 - Event creation and moderation lifecycle
 - Participant invitation/request/approval flows
 - Event lifecycle transitions (approval, live, close)
+- Visitor invitation acceptance with token validation
 
-### Payments
+### Payments and Finance
 - Event ticket checkout and verification endpoints in payments module
 - Global webhook endpoint (`/webhook`) handling Stripe `checkout.session.completed` events
-- Stripe-backed payment sessions and payment status checks (using Test API keys)
+- **Finance Module**: Comprehensive tracking of financial transactions and payouts.
+- Platform-wide payout management for admins (mark, update, delete payouts).
 
-### Enterprise Ecosystem
+### Enterprise Ecosystem & Marketplace
 - Enterprise profile and media management
 - Product catalog and product requests
 - Enterprise event participation and stand management
+- **Marketplace**: Stand-specific product/service CRUD, Stripe checkout, cart management, and unified order tracking.
 
 ### Conferences, Meetings, and Real-Time
 - Conference create/manage/start/end with role-specific operations
-- Meeting booking and meeting room experiences
+- Meeting booking and meeting room experiences (Daily.co)
 - Chat and monitoring websocket-enabled experiences
 
 ### AI and Knowledge Features
 - AI assistant (RAG query/ingest/stats flows)
-- Translation endpoints
-- Transcription endpoints (including websocket-related flows)
+- Translation and Transcription endpoints (including websocket-related flows)
 - Recommendation endpoints and interaction logging
 
 ### Governance and Operations
-- Audit logs and action tracking
-- Incident/content flag management
-- Live monitoring metrics endpoints
+- Audit logs, action tracking, and incident management
+- Live monitoring metrics and presence tracking
 
 ---
 
@@ -230,47 +179,31 @@ Router coverage:
 
 Primary app structure:
 - Root app router under `frontend/src/app`
-- Role-separated route groups:
-  - `(admin)`
-  - `(organizer)`
-  - `(enterprise)`
+- Role-separated route groups: `(admin)`, `(organizer)`, `(enterprise)`
 
 Public/common routes include:
-- landing page
-- auth (login/register)
-- events list and event details
-- event live pages and stand detail pages
-- event payment page
-- dashboard/profile/favorites/assistant/webinars
-- meetings room page
+- landing page, auth (login/register), marketplace
+- events list/details/live/payment, favorites, assistant, webinars
+- join (enterprise/visitor) with event-specific tokens
+- meetings room page, diagnostic (`/diag`)
 
 Admin pages include:
-- dashboard
-- users, organizations, subscriptions, payments
-- incidents, audit, monitoring
-- events list/detail, per-event sessions, monitoring, enterprises, organizer report
-- analytics overview and per-event analytics
-- organizer registrations and event join requests
+- dashboard, users, organizations, subscriptions, payments
+- finance (transactions/payouts), incidents, audit, monitoring
+- events list/detail, sessions, monitoring, enterprises, organizer report
+- analytics (overview/per-event), organizer registrations, event join requests
 
 Organizer pages include:
-- dashboard
-- event list/new/detail/analytics
+- dashboard, event list/new/detail/analytics
 - profile, notifications, subscription
 
 Enterprise pages include:
 - dashboard, profile, notifications, communications
-- events list and per-event manage/stand/analytics/conferences/live pages
-- products and product requests
-- leads and analytics
-- conferences overview
-
-Marketplace frontend route status:
-- `frontend/src/app/marketplace/success/page.tsx` exists
-- `frontend/src/app/marketplace/cancel/page.tsx` exists
-- `frontend/src/app/marketplace/page.tsx` is still not present
+- events list, manage/stand/analytics/conferences/live pages
+- event payment success, products, product requests, leads, analytics
 
 Current route density signal:
-- 61 `page.tsx` files found under `frontend/src/app/**/page.tsx`
+- 70+ `page.tsx` files found under `frontend/src/app/**/page.tsx`
 
 ---
 
@@ -282,20 +215,13 @@ API client and endpoint layers exist in:
 - `frontend/src/lib/api/endpoints.ts`
 
 Service layer currently includes (non-exhaustive):
-- auth service
-- events service
-- favorites service
-- assistant service
-- admin service
-- organizer service
+- auth, events, favorites, assistant, admin, organizer, stands (placeholder), chat (placeholder)
 
 Known placeholder service/hook areas still present:
-- `chat.service.ts`
-- `stands.service.ts`
-- `useChat.ts`
-- `useEvents.ts`
-- `useNotifications.ts`
-- `useStands.ts`
+- `chat.service.ts` (0 lines)
+- `stands.service.ts` (0 lines)
+- `src/types/chat.ts` (empty)
+- `useChat.ts`, `useNotifications.ts`, `useStands.ts`
 
 ---
 
@@ -303,11 +229,7 @@ Known placeholder service/hook areas still present:
 
 Persistent and media storage seen in workspace:
 - `backend/data/chroma_db/` for local embedding/vector data persistence
-- `backend/uploads/` for user and business uploads
-  - enterprise profile assets
-  - payment-related uploads
-  - product images
-  - resources
+- `backend/uploads/` for user and business uploads (enterprise assets, product images, resources, etc.)
 
 ---
 
@@ -323,38 +245,35 @@ Frontend local boot baseline:
 2. Configure environment (API base URL)
 3. Run development server
 
-Observed in workspace context:
-- Multiple fix scripts indicate ongoing iterative stabilization on routers/payment/webhook/service paths.
-
 ---
 
 ## 12) Known Gaps / Technical Debt (Current)
 
-- subscriptions router is present but not mounted in backend application registration
-- some frontend hooks/services are placeholders and may not yet be wired to complete flows
-- marketplace landing/index route is absent (only success/cancel routes exist)
+- **Subscriptions**: Router is present but not mounted in backend application registration.
+- **Placeholders**: Several frontend services (`chat`, `stands`) and types are still empty placeholders.
+- **Marketplace UI**: The marketplace index page (`/marketplace`) is currently a placeholder landing page.
+- **R2 Media Status**: Core assets verified. Some event banners may still require manual sync from legacy `backend/uploads` to R2 bucket.
 
 ---
 
 ## 13) Change Log (Latest Verified Modifications)
 
+### 2026-04-05 - Finance & Marketplace Integration
+
+Implemented a comprehensive finance and marketplace ecosystem.
+
+- **Finance Module**: Added platform-wide transaction tracking and payout management. Admin can now manage payouts and view financial transactions across events and marketplace.
+- **Marketplace**: Fully functional backend for stand products/services, cart checkout, and unified order tracking. Added frontend marketplace routes including success/cancel pages.
+- **Participation**: Added specific routes and logic for enterprise and visitor join requests with token validation.
+- **Governance**: Enhanced admin finance dashboard and payout workflows.
+
 ### 2026-03-23 - Platform Audit & R2 Media Verification
 
-Comprehensive audit of all user roles (Admin, Organizer, Enterprise, Visitor) for both GET and Mutation (POST/PATCH) flows.
+Comprehensive audit of all user roles for both GET and Mutation (POST/PATCH) flows.
 
-- **Storage**: Fixed `resolveMediaUrl` in [media.ts](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/lib/media.ts) and upload logic in [storage.py](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/backend/app/core/storage.py) to prioritize Cloudflare R2 and handle legacy folder structures (e.g., `/event_banners/`).
-- **Security**: Implemented protocol enforcement in [config.ts](file:///d:/My_Projects/Intelligent-Virtual-Exhibition-Platform/frontend/src/lib/config.ts) to resolve Mixed Content errors on the hosted site `https://eglobal-expo.com`.
-- **Validation**:
-    - Verified **GET** flow for all dashboards, event lists, and profiles.
-    - Verified **POST/PATCH** mutation flows for:
-        - Enterprise Profile updates
-        - Organizer Event creation
-        - Admin Event approval & Organization verification
-    - Identified missing R2 assets (event banners) as a data migration task (Manual upload required).
-
-Validation performed:
-- Successful cross-role simulated audits with recorded evidence.
-- Verified 200/201 status codes for mutation endpoints.
+- **Storage**: Fixed `resolveMediaUrl` and upload logic to prioritize Cloudflare R2.
+- **Security**: Implemented protocol enforcement in `config.ts` to resolve Mixed Content errors.
+- **Validation**: Verified GET/POST/PATCH flows for profiles, event creation, and admin approval.
 
 ---
 
@@ -362,149 +281,7 @@ Validation performed:
 
 Primary reference files:
 - `PROJECT_CONTEXT.md` (this document)
-- `backend_api_guide.md`
-- `backend_implementation_details.md`
-- `docs/backend_routes_postman.md`
-
-Operationally useful scripts/docs in root:
-- `fix_*.py` scripts (hotfix helpers)
-- payload samples for login/registration under `backend/`
 
 ---
 
-This snapshot is intended to be maintained as the single source of truth for current structure, implemented capabilities, and recently applied changes.
-
-Important state note:
-- `src/types/chat.ts` exists but is currently empty.
-
----
-
-## 8. AI and Real-time Capabilities
-
-### AI Assistant (RAG)
-
-Module: `backend/app/modules/ai_rag`
-
-- scope-based query and ingestion
-- vector retrieval + DB facts retrieval
-- streaming and source-attributed responses
-
-### Translation
-
-Module: `backend/app/modules/ai_translation`
-
-- language detection endpoint
-- translation endpoint
-
-### Transcription
-
-Module: `backend/app/modules/transcripts`
-
-- file/base64 transcription
-- language detection
-- supported languages endpoint
-- websocket live transcription route
-
-### Conferences and Meetings (Daily.co)
-
-- conference host/audience token generation
-- conference room lifecycle integration utilizing Daily.co REST API
-- meeting generation/start/end endpoints in meetings module
-
----
-
-## 9. Workers and Background Processing
-
-Workers directory:
-- `backend/app/workers/lifecycle.py` active
-- placeholder tasks in `backend/app/workers/tasks`:
-  - `embeddings.py`
-  - `recommendations.py`
-  - `transcripts.py`
-
-Lifecycle worker handles scheduled event transitions.
-
----
-
-## 10. Database and Indexes (Observed)
-
-Indexes are created in `backend/app/db/indexes.py` for:
-- users, organizations, events, participants, stands, resources
-- meetings, leads, lead_interactions
-- chat_rooms, chat_messages
-- notifications, subscriptions
-- assistant sessions/messages
-- analytics_events
-- content_flags
-- event_sessions
-- event_payments
-- enterprise products/product_requests
-- stand marketplace collections (`stand_products`, `stand_orders`)
-- conferences, conference_registrations, conference_qa
-
-Collections referenced by code include all of the above plus:
-- audit logs and incident collections from respective modules
-
----
-
-## 11. Scripts and Test Assets
-
-Current backend scripts folder contains:
-- `backend/scripts/seed_platform_test_data.py`
-
-Current `backend/tests` directory:
-- no Python test files detected in workspace root tests folder
-
----
-
-## 12. Known Alignment Notes
-
-- Subscriptions module exists but router is not currently mounted.
-- Frontend route tree includes many admin and enterprise pages beyond older docs.
-- Marketplace frontend has success/cancel pages but no marketplace index page file currently.
-- Some frontend hooks/services/types remain placeholders or empty while backend endpoints exist.
-- **R2 Media Status**: Core assets (logos, product images) are verified. Some event banners are missing from R2 bucket (404) and require manual upload/sync from legacy `backend/uploads`.
-- **API Protocol**: Code-level safety implemented in `config.ts` to prevent mixed-content blocks by forcing HTTPS when the site is secure.
-
----
-
-## 13. Directory Snapshot (Condensed)
-
-```
-backend/
-  app/
-    main.py
-    core/
-    db/
-    modules/
-      admin, ai_rag, ai_translation, analytics, audit, auth, chat,
-      conferences, dev, enterprise, events, favorites, incidents, leads,
-      marketplace, meetings, monitoring, notifications, organizations,
-      organizer_report, participants, payments, recommendations, resources,
-      sessions, stands, subscriptions, transcripts, users
-    workers/
-  scripts/
-    seed_platform_test_data.py
-  uploads/
-
-frontend/
-  src/
-    app/
-      (admin)/admin/*
-      (organizer)/organizer/*
-      (enterprise)/enterprise/*
-      auth/*
-      events/*
-      meetings/*
-      marketplace/success, marketplace/cancel
-    components/
-    context/
-    hooks/
-    lib/
-    services/
-    types/
-```
-
----
-
-This document reflects the workspace state verified from source files on 2026-03-23, including the final production deployment configuration.
+This document reflects the workspace state verified from source files on 2026-04-05, including the final production deployment configuration.
