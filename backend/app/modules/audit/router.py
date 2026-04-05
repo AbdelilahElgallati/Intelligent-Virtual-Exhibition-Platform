@@ -21,6 +21,7 @@ KNOWN_ACTIONS = [
 ]
 
 
+@router.get("", response_model=List[AuditLogRead], include_in_schema=False)
 @router.get("/", response_model=List[AuditLogRead])
 async def get_audit_logs(
     actor_id: Optional[str] = Query(None, description="Filter by actor user ID"),

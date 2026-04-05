@@ -27,8 +27,15 @@ def _slugify(text: str) -> str:
 def _id_query(oid) -> dict:
     s = str(oid)
     if ObjectId.is_valid(s):
-        return {"_id": ObjectId(s)}
-    return {"slug": s}
+        return {
+            "$or": [
+                {"_id": ObjectId(s)},
+                {"_id": s},
+                {"owner_id": s},
+                {"owner_id": ObjectId(s)},
+            ]
+        }
+    return {"$or": [{"slug": s}, {"_id": s}, {"owner_id": s}]}
 
 
 def get_organizations_collection() -> AsyncIOMotorCollection:
@@ -96,10 +103,30 @@ async def get_organization_by_id(organization_id) -> Optional[dict]:
 
 async def resolve_organization_id(identifier: str) -> str:
     """Returns the internal ObjectId string for a given slug or ID."""
-    if ObjectId.is_valid(identifier):
-        return identifier
     collection = get_organizations_collection()
-    doc = await collection.find_one({"slug": identifier}, {"_id": 1})
+    if ObjectId.is_valid(identifier):
+        # Prefer direct organization _id match.
+        by_org_id = await collection.find_one(
+            {"$or": [{"_id": ObjectId(identifier)}, {"_id": identifier}]},
+            {"_id": 1},
+        )
+        if by_org_id:
+            return str(by_org_id["_id"])
+
+        # Admin dashboards may pass owner user_id fallback; resolve it to organization _id.
+        by_owner = await collection.find_one(
+            {"$or": [{"owner_id": identifier}, {"owner_id": ObjectId(identifier)}]},
+            {"_id": 1},
+        )
+        if by_owner:
+            return str(by_owner["_id"])
+
+        return identifier
+
+    doc = await collection.find_one(
+        {"$or": [{"slug": identifier}, {"_id": identifier}, {"owner_id": identifier}]},
+        {"_id": 1},
+    )
     if doc:
         return str(doc["_id"])
     return identifier
