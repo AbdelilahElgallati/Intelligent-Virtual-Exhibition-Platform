@@ -42,6 +42,13 @@ interface Attendee {
     networking_goals?: string[];
 }
 
+function toExternalUrl(raw?: string): string | null {
+    const value = (raw || '').trim();
+    if (!value) return null;
+    if (/^https?:\/\//i.test(value)) return value;
+    return `https://${value}`;
+}
+
 /* ── Main Component ── */
 
 export function NetworkingTab({ eventId }: NetworkingTabProps) {
@@ -416,6 +423,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
     const location = [attendee.org_city, attendee.org_country].filter(Boolean).join(', ');
     const role = String(attendee.role || 'participant').toLowerCase();
     const companyLabel = attendee.company || attendee.org_name || 'Independent professional';
+    const websiteUrl = toExternalUrl(attendee.org_website);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
@@ -498,10 +506,10 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                                 <p className="text-sm text-slate-700 inline-flex items-center gap-1.5"><Building2 size={13} /> {attendee.org_name}</p>
                             </div>
                         )}
-                        {attendee.org_website && (
+                        {attendee.org_website && websiteUrl && (
                             <div>
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Website</p>
-                                <a href={attendee.org_website} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1.5 truncate"><Globe size={13} /> {attendee.org_website}</a>
+                                <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1.5 truncate"><Globe size={13} /> {attendee.org_website}</a>
                             </div>
                         )}
                     </div>
@@ -581,9 +589,9 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                         >
                             <Mail size={16} /> Send Email
                         </a>
-                        {attendee.org_website && (
+                        {attendee.org_website && websiteUrl && (
                             <a
-                                href={attendee.org_website}
+                                href={websiteUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-all"
