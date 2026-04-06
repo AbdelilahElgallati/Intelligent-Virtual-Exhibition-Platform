@@ -148,6 +148,28 @@ async def admin_verify_organization(
     """
     resolved_id = await resolve_organization_id(organization_id)
     updated = await update_organization_moderation(resolved_id, is_verified=True)
+
+    # Compatibility fallback: some organizer rows can exist without an organization document yet.
+    if updated is None:
+        from app.modules.users.service import get_user_by_id
+
+        user = await get_user_by_id(organization_id)
+        role = user.get("role") if user else None
+        role_value = str(getattr(role, "value", role or "")).lower()
+
+        if user and role_value == Role.ORGANIZER.value:
+            org_name = user.get("org_name") or user.get("full_name") or "Organization"
+            created_org = await service_create_org(
+                OrganizationCreate(
+                    name=org_name,
+                    description=None,
+                ),
+                user["_id"],
+            )
+            created_org_id = str(created_org.get("_id") or created_org.get("id") or "")
+            if created_org_id:
+                updated = await update_organization_moderation(created_org_id, is_verified=True)
+
     if updated is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     return OrganizationRead(**updated)

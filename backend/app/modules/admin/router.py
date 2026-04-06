@@ -355,15 +355,17 @@ async def get_detailed_organizations(current_user: dict = Depends(require_role(R
     detailed_orgs = []
     for user in organizer_users:
         user_id = str(user["_id"])
-        
-        org = await db.organizations.find_one({"owner_id": user_id})
+
+        owner_match = [{"owner_id": user_id}]
+        if ObjectId.is_valid(user_id):
+            owner_match.append({"owner_id": ObjectId(user_id)})
+        org = await db.organizations.find_one({"$or": owner_match})
         
         events_count = await db.events.count_documents({"organizer_id": user_id})
         
         event_ids_cursor = db.events.find({"organizer_id": user_id}, {"_id": 1})
         event_ids_docs = await event_ids_cursor.to_list(length=None)
         event_ids = [str(e["_id"]) for e in event_ids_docs]
-        from bson import ObjectId
         event_ids_str: list[str] = [str(eid) for eid in event_ids]
         event_ids_oid: list[ObjectId] = [ObjectId(e) for e in event_ids if ObjectId.is_valid(e)]
         
