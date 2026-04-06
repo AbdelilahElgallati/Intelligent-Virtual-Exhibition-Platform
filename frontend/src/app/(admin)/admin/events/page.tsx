@@ -716,12 +716,12 @@ export default function AdminEventsPage() {
                                     className="hover:bg-zinc-50 transition-colors cursor-pointer group"
                                 >
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors truncate max-w-[260px]" title={ev.title}>{ev.title}</div>
-                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-[260px]">{ev.category}</div>}
+                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors truncate max-w-[205px]" title={ev.title}>{ev.title}</div>
+                                        {ev.category && <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-[205px]">{ev.category}</div>}
                                     </td>
-                                    <td className="px-4 py-4 hidden md:table-cell text-xs text-zinc-500">
-                                        <div>{fmt(ev.start_date)}</div>
-                                        <div className="text-zinc-400">→ {fmt(ev.end_date)}</div>
+                                    <td className="px-4 py-4 hidden md:table-cell text-xs text-zinc-500 whitespace-nowrap">
+                                        <div className="whitespace-nowrap leading-tight">{fmt(ev.start_date)}</div>
+                                        <div className="text-zinc-400 whitespace-nowrap leading-tight">→ {fmt(ev.end_date)}</div>
                                     </td>
                                     <td className="px-4 py-4 hidden lg:table-cell text-sm text-zinc-600">
                                         {ev.organizer_name ? (
