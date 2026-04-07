@@ -5,6 +5,8 @@
 
 @./PROJECT_CONTEXT.md
 @./GEMINI_verification_protocol.md
+@.gemini/commands/commands.md
+
 
 ---
 
@@ -258,4 +260,3 @@ Always tell me what you are working on today:
 | `GEMINI.md` (this file) | AI agent operating rules — read first, always |
 
 > When in doubt about business logic or API contracts, consult `PROJECT_CONTEXT.md`
-> and `docs/backend_api_guide.md` **before** making assumptions.

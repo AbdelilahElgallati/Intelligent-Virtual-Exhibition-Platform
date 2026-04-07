@@ -171,14 +171,18 @@ function buildScheduleWindows(event: Event): SlotWindow[] {
     const days = parseScheduleDays(event);
     if (days.length === 0) return [];
 
-    const tz = getEventTimezone(event);
+    const tz = event.event_timezone || getUserTimezone();
     const eventStart = parseDate(event.start_date) || new Date();
-    const eventStartLocal = getDatePartsInTimezone(eventStart, tz);
+
+    // Use centralized helper to get the calendar date parts in event timezone.
+    // This prevents the 1-day shift bug.
+    const baseDate = getEventBaseDate(eventStart, tz);
     const baseYmd = {
-        year: eventStartLocal.year,
-        month: eventStartLocal.month,
-        day: eventStartLocal.day,
+        year: baseDate.getFullYear(),
+        month: baseDate.getMonth() + 1,
+        day: baseDate.getDate(),
     };
+
 
     const windows: SlotWindow[] = [];
 

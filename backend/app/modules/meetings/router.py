@@ -22,6 +22,7 @@ from ..events.service import get_event_by_id, resolve_event_id
 from ...db.mongo import get_database
 from bson import ObjectId
 from ..daily import service as daily_svc
+from ...core.timezone import timezone_service
 from ..analytics.service import log_event_persistent
 from ..analytics.schemas import AnalyticsEventType
 from ..notifications.service import create_notification
@@ -40,19 +41,7 @@ router = APIRouter()
 
 
 def _to_utc_datetime(value) -> Optional[datetime]:
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
-    except Exception:
-        return None
+    return timezone_service.to_aware_utc(value)
 
 
 def _ensure_meeting_within_scheduled_window(meeting: dict):
@@ -61,7 +50,7 @@ def _ensure_meeting_within_scheduled_window(meeting: dict):
     End-of-slot cleanup and 410 responses are handled by _ensure_meeting_not_expired.
     """
     start_time = _to_utc_datetime(meeting.get("start_time"))
-    now_utc = datetime.now(timezone.utc)
+    now_utc = timezone_service.get_now_utc()
 
     if start_time and now_utc < start_time:
         raise HTTPException(
@@ -75,7 +64,7 @@ async def _ensure_meeting_not_expired(meeting_id: str, meeting: dict):
     if not end_time:
         return
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = timezone_service.get_now_utc()
     if now_utc < end_time:
         return
 
@@ -124,56 +113,7 @@ def _extract_schedule_days(event: dict) -> list[dict]:
 
 
 def _is_event_live_by_timeline(event: dict, now_utc: datetime) -> bool:
-    if str(event.get("state") or "").lower() == "closed":
-        return False
-
-    days = _extract_schedule_days(event)
-    start_date = _to_utc_datetime(event.get("start_date"))
-
-    if days and start_date:
-        tz_name = str(event.get("event_timezone") or "UTC")
-        try:
-            event_tz = ZoneInfo(tz_name)
-        except Exception:
-            event_tz = timezone.utc
-
-        base_local_date = start_date.astimezone(event_tz).date()
-        windows: list[tuple[datetime, datetime]] = []
-
-        for idx, day in enumerate(days):
-            day_num = int(day.get("day_number") or (idx + 1))
-            day_offset = max(0, day_num - 1)
-            day_date = base_local_date + timedelta(days=day_offset)
-
-            for slot in day.get("slots") or []:
-                start_minutes = _parse_hhmm_to_minutes(slot.get("start_time"))
-                end_minutes = _parse_hhmm_to_minutes(slot.get("end_time"))
-                if start_minutes is None or end_minutes is None or end_minutes == start_minutes:
-                    continue
-
-                end_day_offset = 1 if end_minutes <= start_minutes else 0
-
-                slot_start_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(minutes=int(start_minutes or 0))
-                slot_end_local = datetime.combine(day_date, datetime.min.time(), tzinfo=event_tz) + timedelta(days=end_day_offset, minutes=int(end_minutes or 0))
-                slot_start = slot_start_local.astimezone(timezone.utc)
-                slot_end = slot_end_local.astimezone(timezone.utc)
-                windows.append((slot_start, slot_end))
-
-        if windows:
-            return any(start <= now_utc <= end for start, end in windows)
-
-    # Fallback to event date range if no valid schedule slots.
-    event_start = _to_utc_datetime(event.get("start_date"))
-    event_end = _to_utc_datetime(event.get("end_date"))
-    # Normalize event_end for single-day events ending at midnight (fixes midnight boundary bug)
-    # This ensures event is considered live for the full day, not just until 00:00
-    if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
-        event_end = event_end + timedelta(days=1)
-    if event_start and now_utc < event_start:
-        return False
-    if event_end and now_utc > event_end:
-        return False
-    return True
+    return timezone_service.is_event_live(event, now_utc)
 
 
 async def _ensure_event_timeline_live(meeting: dict):
@@ -185,7 +125,7 @@ async def _ensure_event_timeline_live(meeting: dict):
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = timezone_service.get_now_utc()
     if not _is_event_live_by_timeline(event, now_utc):
         raise HTTPException(
             status_code=403,
@@ -328,28 +268,25 @@ async def request_meeting(
         raise HTTPException(status_code=404, detail="Event not found")
     
     # 1. Date Validation
-    meeting_start = meeting.start_time.replace(tzinfo=None)
-    meeting_end = meeting.end_time.replace(tzinfo=None)
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    meeting_start = timezone_service.to_aware_utc(meeting.start_time)
+    meeting_end = timezone_service.to_aware_utc(meeting.end_time)
+    now_utc = timezone_service.get_now_utc()
 
-    if meeting_start < now_utc:
+    if meeting_start and meeting_start < now_utc:
         raise HTTPException(status_code=400, detail="Meeting start time must be in the future")
 
-    event_start = event["start_date"].replace(tzinfo=None) if isinstance(event["start_date"], datetime) else datetime.fromisoformat(event["start_date"].replace("Z", "+00:00")).replace(tzinfo=None)
-    event_end = event["end_date"].replace(tzinfo=None) if isinstance(event["end_date"], datetime) else datetime.fromisoformat(event["end_date"].replace("Z", "+00:00")).replace(tzinfo=None)
-    # Minimal fix: Normalize event_end for single-day events ending at midnight (prevents valid meetings from being rejected)
-    if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
-        event_end = event_end + timedelta(days=1)
+    event_start = timezone_service.to_aware_utc(event.get("start_date"))
+    event_end = timezone_service.to_aware_utc(event.get("end_date"))
     # Normalize event_end for single-day events ending at midnight (fixes midnight boundary bug)
-    # This ensures meetings on the event day are accepted, but not outside the event
     if event_start and event_end and event_start.date() == event_end.date() and event_end.time() == datetime.min.time():
         event_end = event_end + timedelta(days=1)
 
-    if meeting_start < event_start or meeting_end > event_end:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Meeting must be within event dates: {event['start_date']} to {event['end_date']}"
-        )
+    if meeting_start and event_start and meeting_end and event_end:
+        if meeting_start < event_start or meeting_end > event_end:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Meeting must be within event dates: {event_start.isoformat()} to {event_end.isoformat()}"
+            )
 
     # 2. Participant Approval Validation (Requester)
     from ..participants.service import get_user_participation
@@ -460,24 +397,43 @@ async def get_meetings_between_orgs(
         "organization_id": org_id_2
     }).to_list(length=None)
 
-    all_stand_ids = (
-        [str(s["_id"]) for s in org1_stands] +
-        [str(s["_id"]) for s in org2_stands]
-    )
-    print(f"[between-orgs] stand_ids={all_stand_ids}")
+    org1_stand_ids = [str(s["_id"]) for s in org1_stands]
+    org2_stand_ids = [str(s["_id"]) for s in org2_stands]
 
-    if not all_stand_ids:
+    if not org1_stand_ids and not org2_stand_ids:
         return []
 
-    # Find meetings where stand_id is in either org's stands
+    # Get all User IDs belonging to both orgs to identify B2B participants.
+    # We query organization_members using both string and ObjectId variants to handle mixed data types.
+    org_variants_1 = [org_id_1]
+    if ObjectId.is_valid(org_id_1):
+        org_variants_1.append(ObjectId(org_id_1))
+        
+    org_variants_2 = [org_id_2]
+    if ObjectId.is_valid(org_id_2):
+        org_variants_2.append(ObjectId(org_id_2))
+
+    org1_members = await db.organization_members.find({"organization_id": {"$in": org_variants_1}}).to_list(length=None)
+    org2_members = await db.organization_members.find({"organization_id": {"$in": org_variants_2}}).to_list(length=None)
+    
+    org1_user_ids = [str(m["user_id"]) for m in org1_members]
+    org2_user_ids = [str(m["user_id"]) for m in org2_members]
+
+    # Find meetings specifically BETWEEN these two organizations (B2B):
+    # - Stand belongs to Org 1 AND Visitor is a member of Org 2
+    # - OR
+    # - Stand belongs to Org 2 AND Visitor is a member of Org 1
     meetings = await db.meetings.find({
         "event_id": resolved_event_id,
-        "stand_id": {"$in": all_stand_ids}
+        "$or": [
+            {"stand_id": {"$in": org1_stand_ids}, "visitor_id": {"$in": org2_user_ids}},
+            {"stand_id": {"$in": org2_stand_ids}, "visitor_id": {"$in": org1_user_ids}}
+        ]
     }).to_list(length=None)
 
-    print(f"[between-orgs] found {len(meetings)} meetings")
+    print(f"[between-orgs] found {len(meetings)} meetings after B2B cross-filtering")
 
-    org1_stand_ids = {str(s["_id"]) for s in org1_stands}
+    org1_stand_ids_set = set(org1_stand_ids)
 
     result = []
     for m in meetings:
@@ -485,7 +441,7 @@ async def get_meetings_between_orgs(
         stand_id = str(m.get("stand_id", ""))
         # inbound = the meeting is AT org1's stand (org2 is visiting org1)
         # outbound = the meeting is AT org2's stand (org1 is visiting org2)
-        m["type"] = "inbound" if stand_id in org1_stand_ids else "outbound"
+        m["type"] = "inbound" if stand_id in org1_stand_ids_set else "outbound"
         result.append(m)
 
     return result
@@ -555,6 +511,7 @@ async def get_meeting_token(
 
     _ensure_meeting_within_scheduled_window(meeting)
     await _ensure_meeting_not_expired(meeting_id, meeting)
+    await _ensure_event_timeline_live(meeting)
 
     uid = str(current_user["_id"])
 
@@ -622,6 +579,7 @@ async def start_meeting_session(
 
     _ensure_meeting_within_scheduled_window(meeting)
     await _ensure_meeting_not_expired(meeting_id, meeting)
+    await _ensure_event_timeline_live(meeting)
 
     uid = str(current_user["_id"])
     is_requester = uid == meeting.get("visitor_id") or uid == meeting.get("initiator_id")
@@ -711,53 +669,74 @@ async def update_meeting(
     raw_role = current_user.get("role", "")
     user_role = str(getattr(raw_role, "value", raw_role)).lower()
 
-    # Only the stand owner (enterprise) or an admin can approve/reject
-    # Visitor can only cancel their own meeting
-    if update.status in ("approved", "rejected"):
-        is_authorized = False
+    # We need to resolve the stand owner/org info for authorization (all statuses) 
+    # and notification (cancellation recipient)
+    is_authorized = False
+    stand_owner_id = None
+    if update.status in ("approved", "rejected", "canceled"):
         stand_id = str(meeting.get("stand_id", ""))
         if ObjectId.is_valid(stand_id):
             stand = await get_database().stands.find_one({"_id": ObjectId(stand_id)})
             if stand:
                 org_id = str(stand.get("organization_id", ""))
                 if org_id:
-                    # Check if user is the org owner
                     org = await get_database().organizations.find_one(
                         {"_id": ObjectId(org_id)} if ObjectId.is_valid(org_id) else {"_id": org_id}
                     )
-                    if org and str(org.get("owner_id", "")) == user_id:
-                        is_authorized = True
-                    # Also allow org members (manager or owner role in organization_members)
-                    if not is_authorized:
-                        member = await get_database().organization_members.find_one({
-                            "organization_id": org_id,
-                            "user_id": user_id,
-                            "role": {"$in": ["owner", "manager"]}
-                        })
-                        if member:
+                    if org:
+                        stand_owner_id = str(org.get("owner_id", ""))
+                        if stand_owner_id == user_id:
                             is_authorized = True
+                        
+                        # Also allow org members (manager or owner role in organization_members)
+                        if not is_authorized:
+                            member = await get_database().organization_members.find_one({
+                                "organization_id": org_id,
+                                "user_id": user_id,
+                                "role": {"$in": ["owner", "manager"]}
+                            })
+                            if member:
+                                is_authorized = True
+
+    # Only the stand owner (enterprise) or an admin can approve/reject
+    if update.status in ("approved", "rejected"):
         if user_role != "admin" and not is_authorized:
             raise HTTPException(status_code=403, detail="Only the stand owner or org manager can approve or reject meetings")
 
-    if update.status == "cancelled":
-        if str(meeting.get("visitor_id")) != user_id and user_role != "admin":
-            raise HTTPException(status_code=403, detail="Only the meeting requester can cancel this meeting")
+    # BUG FIX 1: Allow both sender (visitor_id) and receiver (is_authorized) to cancel
+    # Note: Original code used "cancelled" (2 l's) which was dead code (enum uses "canceled")
+    if update.status == "canceled":
+        if user_role != "admin" and str(meeting.get("visitor_id")) != user_id and not is_authorized:
+            raise HTTPException(status_code=403, detail="Only the meeting participants can cancel this meeting")
 
     updated = await meeting_repo.update_meeting_status(meeting_id, update)
     if not updated:
         raise HTTPException(status_code=404, detail="Meeting not found")
     
     if updated:
-        # Notify the visitor about status change
+        # BUG FIX 2 & 3: Notify the OTHER party and avoid self-notification
         try:
-            msg = f"Your meeting request was {update.status}"
-            if update.notes:
-                msg += f": {update.notes}"
-            await create_notification(
-                user_id=updated["visitor_id"],
-                type=NotificationType.MEETING_UPDATE,
-                message=msg
-            )
+            target_user_id = None
+            if update.status == "canceled":
+                # If sender cancels -> notify receiver (stand owner)
+                if user_id == str(updated["visitor_id"]):
+                    target_user_id = stand_owner_id
+                # If receiver cancels -> notify sender (visitor)
+                else:
+                    target_user_id = updated["visitor_id"]
+            else:
+                # For approved/rejected, notify the visitor (sender)
+                target_user_id = updated["visitor_id"]
+
+            if target_user_id and str(target_user_id) != user_id:
+                msg = f"Meeting request was {update.status}"
+                if update.notes:
+                    msg += f": {update.notes}"
+                await create_notification(
+                    user_id=str(target_user_id),
+                    type=NotificationType.MEETING_UPDATE,
+                    message=msg
+                )
         except Exception as e:
             print(f"Failed to create meeting update notification: {e}")
             

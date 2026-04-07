@@ -20,6 +20,42 @@ import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import { getLiveWorkflowLabel, getEffectiveWorkflowState } from '@/lib/eventWorkflowBadge';
 
+// Helper: format a date string using UTC parts to avoid timezone shifts in display labels
+const formatToUTCDisplay = (dateStr?: string, formatStr: string = 'MMM d, yyyy') => {
+    if (!dateStr) return null;
+    let normalized = dateStr;
+    // Force UTC if no timezone is present
+    if (typeof dateStr === 'string' && !dateStr.includes('Z') && !dateStr.includes('+')) {
+        normalized = dateStr.replace(' ', 'T') + 'Z';
+    }
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) return null;
+
+    const monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const day = d.getUTCDate();
+    const month = d.getUTCMonth();
+    const year = d.getUTCFullYear();
+
+    if (formatStr === 'MMMM d, yyyy') {
+        return `${monthsFull[month]} ${day}, ${year}`;
+    }
+    if (formatStr === 'MMM d, yyyy') {
+        return `${monthsShort[month]} ${day}, ${year}`;
+    }
+    if (formatStr === 'MMM d, yyyy h:mm a') {
+        const hours = d.getUTCHours();
+        const minutes = d.getUTCMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        const mStr = minutes < 10 ? `0${minutes}` : minutes;
+        return `${monthsShort[month]} ${day}, ${year} ${h12}:${mStr} ${ampm}`;
+    }
+    // Fallback
+    return `${monthsShort[month]} ${day}, ${year}`;
+};
+
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; badgeClass: string; icon: React.ReactNode }> = {
@@ -169,33 +205,32 @@ function ScheduleSection({ ev }: { ev: any }) {
     const scheduleDays: any[] = ev.schedule_days || [];
     
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
-        const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
+        const dayNum = Number(dayNumber || (dayIndex + 1));
+        const eventTZ = ev.event_timezone || 'UTC';
         const startStr = ev.start_date || ev.schedule?.start_date || new Date().toISOString();
-        const eventStartDate = new Date(startStr);
-        const options: Intl.DateTimeFormatOptions = { 
-            weekday: 'short', day: '2-digit', month: 'short' 
+        const dayDate = getEventDayDate(startStr, eventTZ, dayNum);
+        const options: Intl.DateTimeFormatOptions = {
+            weekday: 'short', day: '2-digit', month: 'short'
         };
-        const baseDate = new Date(eventStartDate);
-        baseDate.setUTCDate(baseDate.getUTCDate() + dayOffset);
-        return formatInUserTZ(baseDate, options, undefined, userTimezone);
+        return formatInUserTZ(dayDate, options, undefined, userTimezone);
     };
-    const formatSlotTime = (dayNumber: number, timeStr: string) => {
+
+    const formatSlotTime = (dayNumber: number, timeStr: string, nextDay = false) => {
         const eventTZ = ev.event_timezone || 'UTC';
         const startStr = ev.start_date || ev.schedule?.start_date;
         if (!startStr || !timeStr) return '--:--';
-        
-        const dayDate = new Date(startStr);
-        dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1));
+
+        const dayNum = Number(dayNumber) + (nextDay ? 1 : 0);
+        const dayDate = getEventDayDate(startStr, eventTZ, dayNum);
         const ymd = dayDate.toISOString().split('T')[0];
         const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTZ);
-        
+
         return formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone);
     };
 
+
     // Fallback: if no structured days, show key dates
-    const fmt = (d?: string) => d
-        ? formatInTZ(d, ev.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')
-        : '—';
+    const fmt = (d?: string) => formatToUTCDisplay(d, 'MMM d, yyyy h:mm a') || '—';
 
     if (scheduleDays.length === 0) {
         // Simple fallback dates
@@ -314,9 +349,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
 
     const tz = ev.event_timezone || getUserTimezone();
-    const fmtDate = (d?: string) => d
-        ? formatInTZ(d, tz, 'MMMM d, yyyy')
-        : null;
+    const fmtDate = (d?: string) => formatToUTCDisplay(d, 'MMMM d, yyyy');
     const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
 
@@ -363,8 +396,8 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
             const tz = ev.event_timezone || getUserTimezone();
-            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
-            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const startDateLabel = formatToUTCDisplay(ev.start_date, 'MMM d, yyyy h:mm a') || undefined;
+            const endDateLabel = formatToUTCDisplay(ev.end_date, 'MMM d, yyyy h:mm a') || undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -649,8 +682,8 @@ function EnterpriseEventCard({
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
             const tz = ev.event_timezone || getUserTimezone();
-            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
-            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const startDateLabel = formatToUTCDisplay(ev.start_date, 'MMM d, yyyy h:mm a') || undefined;
+            const endDateLabel = formatToUTCDisplay(ev.end_date, 'MMM d, yyyy h:mm a') || undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -674,9 +707,7 @@ function EnterpriseEventCard({
     };
 
     const tz = ev.event_timezone || getUserTimezone();
-    const fmtDate = (d?: string) => d
-        ? formatInTZ(d, tz, 'MMM d, yyyy')
-        : null;
+    const fmtDate = (d?: string) => formatToUTCDisplay(d, 'MMM d, yyyy');
     const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
     const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
 

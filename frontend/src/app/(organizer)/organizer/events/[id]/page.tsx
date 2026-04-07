@@ -305,12 +305,23 @@ function EditEventModal({
     extended_details: event.extended_details || "",
     additional_info: event.additional_info || "",
     slug: event.slug || "",
+    event_timezone: event.event_timezone || "UTC",
+    start_date: event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : "",
+    end_date: event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : "",
+    registration_deadline: event.registration_deadline ? new Date(event.registration_deadline).toISOString().slice(0, 16) : "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      // Localize dates for the input[type="datetime-local"]
+      // To show local time in the picker, we use the event's timezone
+      const toLocalInput = (iso?: string) => {
+        if (!iso) return "";
+        return formatInTZ(iso, event.event_timezone || "UTC", "yyyy-MM-dd'T'HH:mm");
+      };
+
       setForm({
         title: event.title,
         description: event.description || "",
@@ -323,6 +334,10 @@ function EditEventModal({
         extended_details: event.extended_details || "",
         additional_info: event.additional_info || "",
         slug: event.slug || "",
+        event_timezone: event.event_timezone || "UTC",
+        start_date: toLocalInput(event.start_date),
+        end_date: toLocalInput(event.end_date),
+        registration_deadline: toLocalInput(event.registration_deadline),
       });
       setError(null);
     }
@@ -344,12 +359,19 @@ function EditEventModal({
     setLoading(true);
     setError(null);
     try {
-      await organizerService.updateEvent(event.id, {
+      const tz = form.event_timezone;
+      // Convert local inputs back to UTC
+      const payload = {
         ...form,
         stand_price: parseFloat(form.stand_price),
         ticket_price: form.is_paid ? parseFloat(form.ticket_price) : undefined,
         tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
-      });
+        start_date: form.start_date ? zonedToUtc(form.start_date, tz).toISOString() : undefined,
+        end_date: form.end_date ? zonedToUtc(form.end_date, tz).toISOString() : undefined,
+        registration_deadline: form.registration_deadline ? zonedToUtc(form.registration_deadline, tz).toISOString() : undefined,
+      };
+
+      await organizerService.updateEvent(event.id, payload);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -389,6 +411,32 @@ function EditEventModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">URL Slug (Friendly ID)</label>
               <input name="slug" value={form.slug} onChange={handleChange} placeholder="e.g. tech-expo-2025" className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Event Timezone</label>
+              <select name="event_timezone" value={form.event_timezone} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 bg-white">
+                {["UTC", "Africa/Casablanca", "Europe/Paris", "Europe/London", "America/New_York", "Asia/Dubai", "Asia/Tokyo"].map(tz => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Registration Deadline</label>
+              <input type="datetime-local" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Start Date</label>
+              <input type="datetime-local" name="start_date" value={form.start_date} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">End Date</label>
+              <input type="datetime-local" name="end_date" value={form.end_date} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
             </div>
           </div>
 

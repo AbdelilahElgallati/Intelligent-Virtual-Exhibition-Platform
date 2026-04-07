@@ -412,13 +412,13 @@ export default function EventManagementHub() {
             // Deduplicate meetings by ID
             const deduped: Record<string, Meeting> = {};
 
-            // Add outbound meetings first (preferred as 'sent')
+            // Add meetings from my-meetings (enriched with correct type by backend)
             outboundMeetings.forEach(m => {
                 const id = m.id || m._id;
-                if (id) deduped[id] = { ...m, type: 'outbound' };
+                if (id) deduped[id] = m;
             });
 
-            // Add inbound meetings only if they don't exist in deduped
+            // Add meetings from stand-specific list (always inbound for this stand)
             inboundMeetings.forEach(m => {
                 const id = m.id || m._id;
                 if (id && !deduped[id]) {
@@ -784,8 +784,10 @@ export default function EventManagementHub() {
         } else if (state === 'approved' || state === 'payment_done' || state === 'live') {
             if (!lifecycle.hasScheduleSlots) {
                 res = { gate: 'timeline-missing' as const, title: eventData.title };
-            } else if (lifecycle.status === 'live' || lifecycle.withinScheduleWindow) {
+            } else if (lifecycle.status === 'live') {
                 res = { gate: 'active' as const, title: eventData.title };
+            } else if (lifecycle.betweenSlots) {
+                res = { gate: 'between-slots' as const, title: eventData.title, nextSlotStart: lifecycle.nextSlotStart?.toISOString() };
             } else if (lifecycle.status === 'ended') {
                 res = { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
             } else {

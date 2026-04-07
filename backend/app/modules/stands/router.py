@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.dependencies import require_roles
 from app.modules.auth.enums import Role
 from app.modules.events.service import get_event_by_id, resolve_event_id
+from app.core.timezone import timezone_service
 from app.modules.stands.schemas import StandCreate, StandRead, StandUpdate
 from app.modules.stands.service import (
     create_stand, 
@@ -75,6 +76,12 @@ async def get_event_stands(
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
+    if not timezone_service.is_event_live(event):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Stand access is only available during the live event."
+        )
+
     # Parse tags if provided
     tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
     
@@ -141,6 +148,13 @@ async def get_stand(event_id: str, stand_id: str) -> StandRead:
     stand = await get_stand_by_id(stand_id)
     if stand is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stand not found")
+
+    event = await get_event_by_id(str(stand["event_id"]))
+    if event and not timezone_service.is_event_live(event):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Stand access is only available during the live event."
+        )
 
     # Enrich with organization cover/logo so visitor view can use enterprise profile branding.
     from app.db.mongo import get_database

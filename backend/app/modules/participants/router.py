@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.enums import Role
 from app.modules.events.service import get_event_by_id, resolve_event_id
+from app.core.timezone import timezone_service
 from app.modules.notifications.schemas import NotificationType
 from app.modules.notifications.service import create_notification
 from app.modules.participants.schemas import (
@@ -79,6 +80,24 @@ async def request_to_join_event(
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    # Status check
+    state = str(event.get("state") or "").lower()
+    if state in ("cancelled", "ended", "closed"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This event is no longer accepting registrations."
+        )
+
+    # Deadline check
+    deadline = event.get("registration_deadline")
+    if deadline:
+        deadline_utc = timezone_service.to_aware_utc(deadline)
+        if deadline_utc and timezone_service.get_now_utc() > deadline_utc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Registration for this event has closed."
+            )
 
     existing = await get_user_participation(event_id, current_user["_id"])
     if existing:

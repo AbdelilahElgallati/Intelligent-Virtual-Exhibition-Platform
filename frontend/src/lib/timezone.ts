@@ -1,122 +1,109 @@
+import { format, parseISO } from 'date-fns';
+import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz';
+
+/**
+ * Gets the user's browser timezone or defaults to UTC.
+ */
+export function getUserTimezone(): string {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('user_timezone');
+    if (stored) return stored;
+  }
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
 /**
  * Formats a date as YYYY-MM-DD in a specific timezone.
  */
 export function toYmdInEventTz(date: string | number | Date, timeZone: string): string {
-  return formatInTimeZone(date, timeZone, 'yyyy-MM-dd');
+  return formatInTimeZone(new Date(date), timeZone, 'yyyy-MM-dd');
 }
-import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 /**
- * Ensures a date string is treated as UTC if it lacks a timezone offset.
+ * Converts a string date/time in a specific timezone to a UTC Date.
+ * e.g. ("2025-06-15T14:00:00", "Africa/Casablanca") -> UTC Date
  */
-function toUTCDate(date: string | number | Date): Date {
-  if (!date) return new Date(NaN); // Results in Invalid Date
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(date) && !date.includes('Z') && !date.includes('+')) {
-    return new Date(date + 'Z');
-  }
-  return new Date(date);
+export function zonedToUtc(dateTimeStr: string, timeZone: string): Date {
+  return fromZonedTime(dateTimeStr, timeZone);
 }
 
 /**
- * Formats a date (UTC string, number, or Date) into a specific timezone.
- * Returns a string (e.g., "10:30 AM" or "Mar 24, 2026").
+ * Formats a UTC date into a specific timezone with a standard set of options.
  */
 export function formatInTZ(
   date: string | number | Date,
   timeZone: string,
-  formatStr: string = 'MMM d, yyyy h:mm a'
+  options: Intl.DateTimeFormatOptions = {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  },
+  locale = 'en-GB'
 ): string {
-  if (!date) return '';
-  try {
-    const d = toUTCDate(date);
-    if (isNaN(d.getTime())) return '';
-    return formatInTimeZone(d, timeZone, formatStr);
-  } catch (error) {
-    console.error('Timezone formatting error:', error);
-    const d = toUTCDate(date);
-    if (isNaN(d.getTime())) return '';
-    // Fallback to local time if timezone is invalid
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(d);
-  }
-}
-
-/**
- * Converts a localized date/time string (e.g., "2026-03-24T00:00:00") in a 
- * specific timezone into a UTC Date object.
- */
-export function zonedToUtc(dateStr: string, timeZone: string): Date {
-  return fromZonedTime(dateStr, timeZone);
-}
-
-/**
- * Gets the current time in a specific timezone, formatted as ISO.
- */
-export function getNowInTZ(timeZone: string): Date {
-  return toZonedTime(new Date(), timeZone);
-}
-
-/**
- * Gets the today's date string (YYYY-MM-DD) in a specific timezone.
- */
-export function getTodayInTZ(timeZone: string): string {
-  return formatInTimeZone(new Date(), timeZone, 'yyyy-MM-dd');
-}
-
-/**
- * Formats a short time string from a UTC date.
- */
-export function formatTimeInTZ(date: string | number | Date, timeZone: string): string {
-  return formatInTZ(date, timeZone, 'h:mm a');
-}
-
-/**
- * Returns the current user's local timezone (e.g. "Africa/Casablanca", "Europe/London")
- * using the native browser Intl API.
- */
-export function getUserTimezone(): string {
-  try {
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('auth_user');
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as { timezone?: unknown };
-          const tz = parsed?.timezone;
-          if (typeof tz === 'string' && tz.length > 0) return tz;
-        } catch {
-          // Ignore parse errors and fallback to browser timezone.
-        }
-      }
-    }
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch (e) {
-    return 'UTC';
-  }
-}
-
-/**
- * Formats a date/time using the user's saved timezone (falls back to browser auto).
- * This is useful when you previously used `date.toLocale*` which always uses browser timezone.
- */
-export function formatInUserTZ(
-  date: string | number | Date,
-  options: Intl.DateTimeFormatOptions,
-  locale?: string,
-  tz?: string,
-): string {
-  const timeZone = tz || getUserTimezone();
-  const d = toUTCDate(date);
-  if (isNaN(d.getTime())) return '';
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
   try {
     return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(d);
   } catch {
-    // If timezone is invalid, fall back to formatting without timezone override.
     return new Intl.DateTimeFormat(locale, options).format(d);
   }
 }
 
+/**
+ * Convenience wrapper for formatting in the user's local timezone.
+ */
+export function formatInUserTZ(
+  date: string | number | Date,
+  options?: Intl.DateTimeFormatOptions,
+  locale?: string,
+  overrideTz?: string
+): string {
+  const tz = overrideTz || getUserTimezone();
+  return formatInTZ(date, tz, options, locale);
+}
+
+/**
+ * Returns the "Base Date" for an event's schedule.
+ * This is the calendar date of the event's start_date in its own timezone.
+ * Resolves the "Day Shift" bug where midnight UTC might be yesterday in local time.
+ */
+export function getEventBaseDate(startDate: string | number | Date, eventTimeZone: string): Date {
+  // 1. Convert the UTC start date to the event's local timezone
+  const zonedDate = toZonedTime(new Date(startDate), eventTimeZone);
+  // 2. Return a new Date set to midnight on that calendar day (still in local context)
+  // We actually just need the year/month/day to build subsequent slot dates.
+  return zonedDate;
+}
+
+/**
+ * Calculates a specific day's date based on day number (1-based).
+ */
+export function getEventDayDate(startDate: string | number | Date, eventTimeZone: string, dayNumber: number): Date {
+  const baseDate = getEventBaseDate(startDate, eventTimeZone);
+  const dayDate = new Date(baseDate);
+  dayDate.setDate(baseDate.getDate() + (dayNumber - 1));
+  return dayDate;
+}
+
+/**
+ * Formats an ISO string to a display time with timezone label.
+ * e.g. "2025-06-15T13:00:00Z" -> "15:00 (Paris, GMT+2)"
+ */
+export function formatWithTzLabel(
+  date: string | number | Date,
+  timeZone?: string,
+  options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
+): string {
+  const tz = timeZone || getUserTimezone();
+  const formattedTime = formatInTZ(date, tz, options);
+  
+  // Get short timezone name / offset
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', { 
+      timeZone: tz, 
+      timeZoneName: 'short' 
+    }).formatToParts(new Date(date));
+    const tzName = parts.find(p => p.type === 'timeZoneName')?.value || '';
+    return `${formattedTime} (${tzName})`;
+  } catch {
+    return formattedTime;
+  }
+}

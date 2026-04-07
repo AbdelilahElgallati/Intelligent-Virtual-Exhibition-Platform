@@ -255,12 +255,9 @@ export default function EventDetailsPage({ params }: EventPageProps) {
     const eventTimezone = ((ev as any).event_timezone as string) || 'UTC';
 
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
-      const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-      const seedStr = (ev as any).start_date || new Date().toISOString();
-      const seed = new Date(seedStr);
-      const base = new Date(seed);
-      base.setUTCDate(base.getUTCDate() + dayOffset);
-      return formatInUserTZ(base, {
+      const dayNum = Number(dayNumber || (dayIndex + 1));
+      const dayDate = getEventDayDate((ev as any).start_date || new Date().toISOString(), eventTimezone, dayNum);
+      return formatInUserTZ(dayDate, {
         weekday: 'short',
         day: '2-digit',
         month: 'short',
@@ -269,9 +266,8 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
     const formatSlotTime = (dayNumber: number, timeStr: string, nextDay = false) => {
       if (!(ev as any).start_date || !timeStr) return '--:--';
-      const eventStart = new Date((ev as any).start_date);
-      const dayDate = new Date(eventStart);
-      dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1) + (nextDay ? 1 : 0));
+      const dayNum = Number(dayNumber) + (nextDay ? 1 : 0);
+      const dayDate = getEventDayDate((ev as any).start_date, eventTimezone, dayNum);
       const ymd = dayDate.toISOString().split('T')[0];
       const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTimezone);
       return formatInUserTZ(utcDate, { 
@@ -280,7 +276,6 @@ export default function EventDetailsPage({ params }: EventPageProps) {
         hour12: false 
       }, undefined, userTimezone);
     };
-
     const days = Array.isArray((ev as any).schedule_days)
       ? ((ev as any).schedule_days as Array<any>)
       : (() => {
