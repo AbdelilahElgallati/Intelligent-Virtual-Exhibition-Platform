@@ -28,18 +28,24 @@ export function zonedToUtc(dateTimeStr: string, timeZone: string): Date {
 }
 
 /**
- * Formats a UTC date into a specific timezone with a standard set of options.
+ * Formats a UTC date into a specific timezone.
+ * Supports both standard Intl.DateTimeFormatOptions or a date-fns format string.
  */
 export function formatInTZ(
   date: string | number | Date,
   timeZone: string,
-  options: Intl.DateTimeFormatOptions = {
+  options: Intl.DateTimeFormatOptions | string = {
     dateStyle: 'medium',
     timeStyle: 'short'
   },
   locale = 'en-GB'
 ): string {
   const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  
+  if (typeof options === 'string') {
+    return formatInTimeZone(d, timeZone, options);
+  }
+
   try {
     return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(d);
   } catch {
@@ -66,11 +72,27 @@ export function formatInUserTZ(
  * Resolves the "Day Shift" bug where midnight UTC might be yesterday in local time.
  */
 export function getEventBaseDate(startDate: string | number | Date, eventTimeZone: string): Date {
-  // 1. Convert the UTC start date to the event's local timezone
-  const zonedDate = toZonedTime(new Date(startDate), eventTimeZone);
-  // 2. Return a new Date set to midnight on that calendar day (still in local context)
-  // We actually just need the year/month/day to build subsequent slot dates.
-  return zonedDate;
+  const d = new Date(startDate);
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: eventTimeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(d);
+  const read = (type: Intl.DateTimeFormatPartTypes): number => {
+    const raw = parts.find((p) => p.type === type)?.value;
+    return Number(raw || 0);
+  };
+
+  // Create a UTC Date that represents midnight on that calendar day in the target timezone
+  // This is a "conceptual" Date object used for subsequent arithmetic.
+  return new Date(Date.UTC(read('year'), read('month') - 1, read('day'), 0, 0, 0, 0));
 }
 
 /**
@@ -78,8 +100,8 @@ export function getEventBaseDate(startDate: string | number | Date, eventTimeZon
  */
 export function getEventDayDate(startDate: string | number | Date, eventTimeZone: string, dayNumber: number): Date {
   const baseDate = getEventBaseDate(startDate, eventTimeZone);
-  const dayDate = new Date(baseDate);
-  dayDate.setDate(baseDate.getDate() + (dayNumber - 1));
+  // Add days in UTC to avoid local timezone jumps
+  const dayDate = new Date(baseDate.getTime() + (dayNumber - 1) * 24 * 60 * 60 * 1000);
   return dayDate;
 }
 

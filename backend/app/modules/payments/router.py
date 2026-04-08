@@ -27,6 +27,7 @@ from app.modules.payments.schemas import (
 )
 from app.modules.payments.service import (
     create_payment,
+    delete_payment,
     get_payment_by_id,
     get_payment_by_stripe_id,
     get_user_payment,
@@ -129,6 +130,7 @@ async def create_event_checkout(
         )
     except Exception as exc:
         logger.error("Stripe checkout failed: %s", exc)
+        await delete_payment(payment["_id"])
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
     # Update payment with stripe payment id

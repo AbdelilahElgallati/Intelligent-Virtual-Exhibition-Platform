@@ -107,6 +107,13 @@ async def mark_payment_paid(
     return stringify_object_ids(updated) if updated else None
 
 
+async def delete_payment(payment_id: str) -> bool:
+    """Delete a payment record (used for cleanup on failure)."""
+    collection = get_payments_collection()
+    result = await collection.delete_one(_id_query(payment_id))
+    return result.deleted_count > 0
+
+
 async def list_payments(
     status_filter: Optional[PaymentStatus] = None,
     event_id: Optional[str] = None,

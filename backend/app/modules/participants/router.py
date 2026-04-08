@@ -32,6 +32,9 @@ from app.modules.participants.service import (
     request_to_join,
 )
 from app.modules.audit.service import log_audit
+from app.modules.marketplace.stripe_service import create_payment_session
+from app.core.config import settings
+from fastapi import Request
 
 
 router = APIRouter(prefix="/participants/event/{event_id}", tags=["Participants"])
@@ -40,6 +43,12 @@ router = APIRouter(prefix="/participants/event/{event_id}", tags=["Participants"
 class InviteRequest(BaseModel):
     """Schema for inviting a participant."""
     user_id: str
+
+
+class StandFeePaymentResponse(BaseModel):
+    """Schema for stand fee payment response."""
+    payment_url: str
+    participant_id: str
 
 
 @router.post("/invite", response_model=ParticipantRead, status_code=status.HTTP_201_CREATED)
@@ -198,6 +207,78 @@ async def reject_event_participant(
     )
 
     return ParticipantRead(**updated)
+
+
+@router.post("/stands/payment/initiate", response_model=StandFeePaymentResponse)
+async def initiate_stand_fee_payment(
+    event_id: str,
+    request: Request,
+    current_user: dict = Depends(require_roles([Role.ENTERPRISE])),
+) -> StandFeePaymentResponse:
+    """
+    Allow an enterprise participant to initiate payment for the stand fee.
+    The participant must be in PENDING_PAYMENT status.
+    """
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    event = await get_event_by_id(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Fetch participation record
+    participant = await get_user_participation(event_id, current_user["_id"])
+    if not participant:
+        raise HTTPException(status_code=404, detail="You are not registered for this event")
+
+    if participant.get("status") != ParticipantStatus.PENDING_PAYMENT.value:
+        if participant.get("status") == ParticipantStatus.APPROVED.value:
+            raise HTTPException(status_code=400, detail="Stand fee already paid and approved")
+        raise HTTPException(status_code=400, detail=f"Cannot initiate payment. Current status: {participant.get('status')}")
+
+    amount = float(event.get("stand_price") or 0)
+    if amount <= 0:
+        # Auto-approve if price is 0
+        await approve_participant(participant["_id"], target_status=ParticipantStatus.APPROVED.value)
+        # We need a URL to return, but if it's free, maybe we just return a success signal.
+        # For now, let's assume stand fee is always > 0 if status is PENDING_PAYMENT.
+        raise HTTPException(status_code=400, detail="Stand price is 0. Please contact the organizer.")
+
+    # Build URLs
+    origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
+    origin = origin.rstrip("/")
+    success_url = f"{origin}/enterprise/events/{event_id}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/enterprise/events/{event_id}/payment-cancel"
+
+    try:
+        # Use marketplace stripe service
+        st_result = create_payment_session(
+            order_id=str(participant["_id"]),
+            amount=amount,
+            product_name=f"Stand Fee: {event['title']}",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            buyer_email=current_user.get("email"),
+            metadata={
+                "source": "enterprise_stand_fee",
+                "participant_id": str(participant["_id"]),
+                "event_id": str(event_id),
+                "user_id": str(current_user["_id"]),
+            },
+            line_items=[{
+                'name': f"Exhibition Stand Fee: {event['title']}",
+                'description': f"Registration and stand setup fee for {event['title']}",
+                'unit_amount': int(amount * 100),
+                'currency': 'mad',
+                'quantity': 1,
+            }],
+        )
+        return StandFeePaymentResponse(
+            payment_url=st_result["url"],
+            participant_id=str(participant["_id"])
+        )
+    except Exception as exc:
+        print(f"ERROR initiating stand fee payment: {exc}")
+        raise HTTPException(status_code=502, detail="Payment gateway error")
 
 
 @router.get("", response_model=list[ParticipantRead])

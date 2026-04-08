@@ -15,7 +15,8 @@ from app.modules.analytics.service import log_event_persistent
 from app.modules.analytics.schemas import AnalyticsEventType
 from app.modules.stands.service import resolve_stand_id
 from app.modules.organizations.service import resolve_organization_id
-from app.modules.events.service import resolve_event_id
+from app.modules.events.service import resolve_event_id, get_event_by_id
+from app.core.timezone import timezone_service
 
 router = APIRouter()
 
@@ -100,6 +101,15 @@ async def initiate_chat_with_stand(
     if not stand:
         raise HTTPException(status_code=404, detail="Stand not found")
 
+    # --- Fix H5: is_live check ---
+    event_id = stand.get("event_id")
+    event = await get_event_by_id(str(event_id)) if event_id else None
+    if event and not timezone_service.is_event_live(event):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chat is only available during the live event."
+        )
+
     # Resolve to internal ID for consistency in other services
     resolved_stand_id = await resolve_stand_id(stand_id)
     org_id = stand.get("organization_id")
@@ -108,7 +118,6 @@ async def initiate_chat_with_stand(
         owner_id = org.get("owner_id")
     else:
         # Fallback: use event organizer as chat owner when organization doc is missing
-        event = await get_event_by_id(stand.get("event_id")) if stand.get("event_id") else None
         owner_id = event.get("organizer_id") if event else None
     if not owner_id:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -125,7 +134,6 @@ async def initiate_chat_with_stand(
         except Exception:
             pass
 
-    event_id = stand.get("event_id")
     room = await chat_repo.get_or_create_direct_room(
         str(current_user["_id"]), owner_id,
         room_category="visitor",
@@ -182,6 +190,13 @@ async def initiate_b2b_chat(
         event_doc = await db.events.find_one({"alias": event_id})
     if event_doc:
         event_id = str(event_doc["_id"])
+        
+    # --- Fix H5: is_live check ---
+    if event_doc and not timezone_service.is_event_live(event_doc):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chat is only available during the live event."
+        )
 
     # --- Fix 1: owner_id is a string, not ObjectId ---
     org = await db.organizations.find_one({"owner_id": str(current_user["_id"])})
@@ -250,6 +265,11 @@ async def websocket_endpoint(
              user = await get_user_by_id(payload.get("sub"))
     
     if not user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    # --- Fix H6: is_active check ---
+    if not user.get("is_active"):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

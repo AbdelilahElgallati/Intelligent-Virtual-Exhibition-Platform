@@ -15,11 +15,8 @@ import { favoritesService } from '@/services/favorites.service';
 import { Button } from '@/components/ui/Button';
 import { Download, Heart } from 'lucide-react';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc, getEventDayDate } from '@/lib/timezone';
 import { StandsListResponse } from '@/types/stand';
-import { 
-  formatInUserTZ, zonedToUtc 
-} from '@/lib/timezone';
 import { isOvernightSlot } from '@/lib/schedule';
 
 

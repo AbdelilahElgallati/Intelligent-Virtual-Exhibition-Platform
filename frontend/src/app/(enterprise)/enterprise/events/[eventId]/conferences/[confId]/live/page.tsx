@@ -41,7 +41,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
 
     const lifecycle = eventData ? getEventLifecycle(eventData, new Date(timelineNow)) : null;
-    const hasLiveAccess = lifecycle?.hasScheduleSlots && lifecycle.status === 'live';
+    const hasLiveAccess = lifecycle?.accessState === 'OPEN_SLOT_ACTIVE';
 
     useEffect(() => {
         let cancelled = false;
@@ -60,14 +60,14 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
                 setEventData(evt);
 
                 const currentLifecycle = getEventLifecycle(evt, new Date());
-                if (!currentLifecycle.hasScheduleSlots || currentLifecycle.status !== 'live') {
+                if (currentLifecycle.accessState !== 'OPEN_SLOT_ACTIVE') {
                     if (cancelled) return;
                     setError(
                         !currentLifecycle.hasScheduleSlots
                             ? 'Timeline is not published yet. Speaker studio opens only during live schedule slots.'
-                            : currentLifecycle.status === 'ended'
+                            : currentLifecycle.displayState === 'ENDED'
                               ? 'Event timeline has ended. Broadcast access is closed.'
-                              : formatTimeToStart(currentLifecycle.nextSlotStart)
+                              : formatTimeToStart(currentLifecycle.nextSlot?.start || null)
                     );
                     setLoading(false);
                     return;

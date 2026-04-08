@@ -488,11 +488,18 @@ async def assign_conference_to_slot(
     else:
         # Remove conference assignment
         old_conf_id = slot.get("conference_id")
-        if old_conf_id and _OID.is_valid(old_conf_id):
-            await db.conferences.update_one(
-                {"_id": _OID(old_conf_id)},
-                {"$set": {"status": "canceled", "updated_at": _dt.now(_tz.utc)}},
-            )
+        if old_conf_id:
+            try:
+                oid = _OID(old_conf_id)
+                existing = await db.conferences.find_one({"_id": oid})
+                if existing:
+                    await db.conferences.update_one(
+                        {"_id": oid}, 
+                        {"$set": {"status": "canceled", "updated_at": _dt.now(_tz.utc)}}
+                    )
+            except Exception:
+                pass  # Skip invalid IDs or missing records
+        
         slot["is_conference"] = False
         slot["assigned_enterprise_id"] = None
         slot["assigned_enterprise_name"] = None

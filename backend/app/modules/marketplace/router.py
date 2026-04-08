@@ -9,7 +9,7 @@ import os
 import uuid
 
 import stripe
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 
 from app.core.config import settings
 from app.core.storage import store_upload
@@ -33,6 +33,9 @@ from app.modules.marketplace.schemas import (
 from app.modules.marketplace.stripe_service import create_payment_session, construct_event
 from app.modules.notifications.schemas import NotificationType
 from app.modules.notifications.service import create_notification
+from app.core.timezone import timezone_service
+from app.modules.participants.service import get_user_participation
+from app.modules.participants.schemas import ParticipantStatus
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +57,18 @@ async def _get_stand(stand_id: str) -> dict:
 
 
 async def _require_stand_owner(stand_id: str, user: dict) -> dict:
-    """Return the stand if the current user owns the organization or is admin."""
+    """Return the stand if the current user owns the organization, is event organizer, or is admin."""
     stand = await _get_stand(stand_id)
     org_id = stand.get("organization_id")
 
     # Admin bypass
     if user.get("role") == "admin":
+        return stand
+
+    # Organizer bypass
+    from app.modules.events.service import get_event_by_id
+    event = await get_event_by_id(str(stand["event_id"]))
+    if event and str(event.get("organizer_id")) == str(user["_id"]):
         return stand
 
     # Check organization ownership
@@ -145,10 +154,13 @@ os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 
 @router.post("/upload-product-image")
 async def upload_product_image(
+    stand_id: str = Form(...),
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
-    """Upload a single product image and return its URL path."""
+    """Upload a single product image and return its URL path (Admin or Stand Owner only)."""
+    await _require_stand_owner(stand_id, user)
+    
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
@@ -181,6 +193,20 @@ async def checkout_product(
     Returns the Stripe payment URL or successfully registers the order for COD.
     """
     stand = await _get_stand(stand_id)
+    
+    # --- Fix H4: Live and Participation check ---
+    from app.modules.events.service import get_event_by_id
+    event = await get_event_by_id(str(stand["event_id"]))
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if not timezone_service.is_event_live(event):
+        raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
+    
+    part = await get_user_participation(str(event["_id"]), user["_id"])
+    if not part or part.get("status") != ParticipantStatus.APPROVED:
+        raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
+
     product = await mkt_svc.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -277,6 +303,19 @@ async def cart_checkout(
     Creates one Stripe payment session for the total cart amount or processes COD.
     """
     stand = await _get_stand(stand_id)  # validate stand exists
+
+    # --- Fix H4: Live and Participation check ---
+    from app.modules.events.service import get_event_by_id
+    event = await get_event_by_id(str(stand["event_id"]))
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if not timezone_service.is_event_live(event):
+        raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
+    
+    part = await get_user_participation(str(event["_id"]), user["_id"])
+    if not part or part.get("status") != ParticipantStatus.APPROVED:
+        raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
 
     order_ids: list[str] = []
     checkout_group_id = str(uuid.uuid4())
@@ -465,28 +504,36 @@ async def cancel_order(
     body: OrderCancelRequest,
     user: dict = Depends(get_current_user),
 ):
-    """Stand owner / admin — cancel an order and restore stock when applicable."""
+    """Stand owner / admin / buyer — cancel an order and restore stock when applicable."""
     order = await mkt_svc.get_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    await _require_stand_owner(order["stand_id"], user)
+    is_buyer = str(order.get("buyer_id")) == str(user["_id"])
+    
+    # Check authorization (buyer, stand owner, or admin)
+    if not is_buyer:
+        await _require_stand_owner(order["stand_id"], user)
 
     current_status = str(order.get("fulfillment_status") or "requested")
-    if current_status == "completed":
-        raise HTTPException(status_code=400, detail="Completed orders cannot be cancelled")
+    if current_status != "requested":
+        raise HTTPException(status_code=400, detail="Cannot cancel a processed order.")
 
     updated = await mkt_svc.cancel_order(order_id, body.note)
     if not updated:
         raise HTTPException(status_code=404, detail="Order not found")
-    try:
-        await create_notification(
-            user_id=updated["buyer_id"],
-            type=NotificationType.MARKETPLACE_ORDER_CANCELLED,
-            message=f"Your order for {updated.get('product_name', 'a product')} was cancelled by the stand.",
-        )
-    except Exception:
-        logger.warning("Failed to create cancellation notification for order %s", order_id)
+    
+    # If stand owner cancels -> notify buyer
+    if not is_buyer:
+        try:
+            await create_notification(
+                user_id=updated["buyer_id"],
+                type=NotificationType.MARKETPLACE_ORDER_CANCELLED,
+                message=f"Your order for {updated.get('product_name', 'a product')} was cancelled by the stand.",
+            )
+        except Exception:
+            logger.warning("Failed to create cancellation notification for order %s", order_id)
+    
     return updated
 
 

@@ -217,11 +217,27 @@ async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
 
 async def delete_event(event_id) -> bool:
     """
-    Delete an event.
+    Delete an event and all associated data (cascade).
     """
-    collection = get_events_collection()
+    db = get_database()
+    collection = db["events"]
+    
+    # 1. Delete the event document
     result = await collection.delete_one(_id_query(event_id))
-    return result.deleted_count > 0
+    if result.deleted_count == 0:
+        return False
+
+    # 2. Cascade delete associated data
+    eid_str = str(event_id)
+    
+    # Collection names based on project audit
+    await db["stands"].delete_many({"event_id": eid_str})
+    await db["participants"].delete_many({"event_id": eid_str})
+    await db["meetings"].delete_many({"event_id": eid_str})
+    await db["leads"].delete_many({"event_id": eid_str})
+    await db["notifications"].delete_many({"event_id": eid_str})
+    
+    return True
 
 
 async def update_event_state(event_id, state: EventState) -> Optional[dict]:

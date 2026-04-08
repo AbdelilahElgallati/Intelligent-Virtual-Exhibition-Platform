@@ -39,6 +39,7 @@ export interface OrganizerEvent {
     start_date: string;
     end_date: string;
     event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     tags: string[];
     created_at: string;
@@ -79,6 +80,7 @@ export interface EventCreatePayload {
     start_date?: string;
     end_date?: string;
     event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     banner_url?: string;
     tags?: string[];
@@ -101,6 +103,7 @@ export interface EventUpdatePayload {
     start_date?: string;
     end_date?: string;
     event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     banner_url?: string;
     tags?: string[];

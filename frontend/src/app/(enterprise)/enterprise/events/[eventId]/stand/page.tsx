@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInUserTZ } from '@/lib/timezone';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -54,6 +55,7 @@ export default function StandConfigPage() {
     const params = useParams();
     const eventId = params?.eventId as string;
 
+    const [event, setEvent] = useState<any | null>(null);
     const [stand, setStand] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<Tab>('branding');
     const [isLoading, setIsLoading] = useState(true);
@@ -88,11 +90,15 @@ export default function StandConfigPage() {
     const fetchAll = async () => {
         setIsLoading(true);
         try {
-            const [standData, ragData, productsData] = await Promise.allSettled([
+            const [eventData, standData, ragData, productsData] = await Promise.allSettled([
+                http.get<any>(`/events/${eventId}`),
                 http.get<any>(`/enterprise/events/${eventId}/stand`),
                 http.get<any>(`/enterprise/events/${eventId}/stand/assistant-status`),
                 http.get<any>('/enterprise/products'),
             ]);
+            
+            if (eventData.status === 'fulfilled') setEvent(eventData.value);
+
             if (standData.status === 'fulfilled') {
                 const s = standData.value;
                 setStand(s);
@@ -303,6 +309,9 @@ export default function StandConfigPage() {
         </div>
     );
 
+    const lifecycle = event ? getEventLifecycle(event) : null;
+    const isLive = lifecycle?.displayState === 'LIVE';
+
     return (
         <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-20 mt-4">
             {/* Header */}
@@ -314,11 +323,13 @@ export default function StandConfigPage() {
                     </div>
                     {/* Shortcut buttons */}
                     <div className="flex flex-wrap gap-2 justify-center sm:justify-end mt-2 sm:mt-0">
-                        <Link href={`/enterprise/events/${eventId}/manage`}>
-                            <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
-                                <MessageSquare size={15} /> Manage Event
-                            </button>
-                        </Link>
+                        {isLive && (
+                            <Link href={`/enterprise/events/${eventId}/manage`}>
+                                <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
+                                    <MessageSquare size={15} /> Manage Event
+                                </button>
+                            </Link>
+                        )}
                         <Link href={`/enterprise/events/${eventId}/analytics`}>
                             <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
                                 <BarChart3 size={15} /> Analytics
