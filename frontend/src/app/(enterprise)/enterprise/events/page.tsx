@@ -187,18 +187,18 @@ function resolveEnterpriseEventTimeline(ev: any) {
     const explicitClosed = explicitState === 'closed';
     const explicitLive = explicitState === 'live';
 
-    const isBetweenSlots = lifecycle.betweenSlots;
-    const timelineLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+    const isBetweenSlots = lifecycle.isBetweenSlots;
+    const timelineLive = lifecycle.hasScheduleSlots && lifecycle.displayState === 'LIVE';
 
     const explicitLiveFallback =
-        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.displayState === 'LIVE';
 
-    const chronologyEnded = lifecycle.status === 'ended';
+    const chronologyEnded = lifecycle.displayState === 'ENDED';
     const isEnded = explicitClosed || chronologyEnded;
     const isLive =
         !explicitClosed &&
         !chronologyEnded &&
-        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.status === 'live'));
+        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.displayState === 'LIVE'));
     const isUpcoming = !isLive && !isEnded && !isBetweenSlots;
 
     const eventNotOpenedYet = !explicitLive && explicitState !== 'closed';
@@ -367,7 +367,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     })();
     const canConfigure = isAccepted;
     const canManage = isAccepted && lifecycle.hasScheduleSlots;
-    const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
+    const canAnalytics = isAccepted && (lifecycle.displayState === 'LIVE' || lifecycle.displayState === 'ENDED');
 
     const tz = resolveDisplayTimezone(ev.event_timezone);
     const fmtDate = (d?: any) => formatToUTCDisplay(d, 'MMMM d, yyyy', tz);
@@ -500,19 +500,19 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                 </>
                             )}
                         </div>
-                        {isEventLive && lifecycle.activeSlotLabel && (
+                        {isEventLive && lifecycle.currentSlot?.label && (
                             <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                                {lifecycle.activeSlotLabel}
+                                {lifecycle.currentSlot?.label}
                             </span>
                         )}
-                        {isEventUpcoming && lifecycle.nextSlotStart && (
+                        {isEventUpcoming && lifecycle.nextSlot?.start && (
                             <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full">
-                                {formatTimeToStart(lifecycle.nextSlotStart)}
+                                {formatTimeToStart(lifecycle.nextSlot?.start)}
                             </span>
                         )}
-                        {isEventInProgress && lifecycle.nextSlotStart && (
+                        {isEventInProgress && lifecycle.nextSlot?.start && (
                             <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">
-                                Next slot: {formatTimeToStart(lifecycle.nextSlotStart)}
+                                Next slot: {formatTimeToStart(lifecycle.nextSlot?.start)}
                             </span>
                         )}
                     </div>
@@ -814,14 +814,14 @@ function EnterpriseEventCard({
                     </div>
                 )}
 
-                {isEventLive && lifecycle.activeSlotLabel && (
+                {isEventLive && lifecycle.currentSlot?.label && (
                     <div className="text-[11px] font-semibold text-emerald-600">
-                        Live slot: {lifecycle.activeSlotLabel}
+                        Live slot: {lifecycle.currentSlot?.label}
                     </div>
                 )}
-                {lifecycle.status === 'upcoming' && lifecycle.nextSlotStart && (
+                {lifecycle.displayState === 'UPCOMING' && lifecycle.nextSlot?.start && (
                     <div className="text-[11px] font-semibold text-indigo-600">
-                        {formatTimeToStart(lifecycle.nextSlotStart)}
+                        {formatTimeToStart(lifecycle.nextSlot?.start)}
                     </div>
                 )}
 

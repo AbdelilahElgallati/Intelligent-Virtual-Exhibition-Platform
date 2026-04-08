@@ -98,7 +98,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
     }
 
     if (!hasLiveAccess) {
-        const isBetweenSlots = Boolean(lifecycle && lifecycle.betweenSlots);
+        const isBetweenSlots = Boolean(lifecycle && lifecycle.isBetweenSlots);
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🕒</div>
@@ -109,7 +109,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                           ? 'Conference Has Ended'
                           : !lifecycle?.hasScheduleSlots
                             ? 'Timeline Not Published Yet'
-                            : lifecycle?.status === 'ended'
+                            : lifecycle?.displayState === 'ENDED'
                               ? 'Event Timeline Ended'
                               : isBetweenSlots
                                 ? 'Event In Progress'
@@ -122,11 +122,11 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                           ? 'This conference has ended.'
                           : !lifecycle?.hasScheduleSlots
                             ? 'Conference access is enabled only during published live schedule slots.'
-                            : lifecycle?.status === 'ended'
+                            : lifecycle?.displayState === 'ENDED'
                               ? 'This event has ended, so conference access is now closed.'
                               : isBetweenSlots
                                 ? 'There is no active slot right now. Access opens automatically at the next slot.'
-                                : formatTimeToStart(lifecycle?.nextSlotStart || null)}
+                                : formatTimeToStart(lifecycle?.nextSlot?.start || null)}
                 </p>
                 <button
                     onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
