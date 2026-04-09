@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
-import { getEventLifecycle } from '@/lib/eventLifecycle';
+import { 
+    formatInTZ, 
+    getUserTimezone, 
+    formatInUserTZ, 
+    getEventDayDate,
+    zonedToUtc
+} from '@/lib/timezone';
 import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatSlotRangeLabel } from '@/lib/schedule';
@@ -52,11 +58,11 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
         return (
             <div className="space-y-3">
                 {days.map((day, dayIndex) => {
-                    const fallbackDate = new Date(event.start_date || new Date().toISOString());
-                    fallbackDate.setHours(0, 0, 0, 0);
-                    const dayOffset = Math.max(0, Number(day.day_number || (dayIndex + 1)) - 1);
-                    fallbackDate.setDate(fallbackDate.getDate() + dayOffset);
-                    const dayTitle = formatInTimeZone(fallbackDate, timeZone, {
+                    const dayNum = Number(day.day_number || (dayIndex + 1));
+                    const eventStart = event.start_date || new Date().toISOString();
+                    const dayDate = getEventDayDate(eventStart, timeZone, dayNum);
+                    
+                    const dayTitle = formatInTZ(dayDate, timeZone, {
                         weekday: 'short',
                         day: '2-digit',
                         month: 'short',
@@ -79,12 +85,12 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
                                 let endLabel = slot.end_time;
 
                                 if (startParts && endParts) {
-                                    const slotStart = new Date(fallbackDate);
-                                    slotStart.setHours(startParts[0], startParts[1], 0, 0);
-                                    const slotEnd = new Date(fallbackDate);
-                                    slotEnd.setHours(endParts[0], endParts[1], 0, 0);
-                                    startLabel = formatInTimeZone(slotStart, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
-                                    endLabel = formatInTimeZone(slotEnd, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    const ymd = dayDate.toISOString().split('T')[0];
+                                    const slotStart = zonedToUtc(`${ymd}T${slot.start_time}:00`, timeZone);
+                                    const slotEnd = zonedToUtc(`${ymd}T${slot.end_time}:00`, timeZone);
+                                    
+                                    startLabel = formatInTZ(slotStart, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    endLabel = formatInTZ(slotEnd, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
                                 }
 
                                 return (

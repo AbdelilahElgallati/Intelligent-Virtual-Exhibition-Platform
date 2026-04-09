@@ -26,6 +26,11 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     if log_level is None:
         log_level = "DEBUG" if settings.DEBUG else "INFO"
     
+    # Check if already configured to avoid duplicate configuration during reloads
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        return
+
     # Create formatter
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
@@ -38,17 +43,13 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     console_handler.setLevel(log_level)
     
     # Configure root logger
-    root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
-    
-    # Remove existing handlers to avoid duplicates
-    root_logger.handlers.clear()
     root_logger.addHandler(console_handler)
     
-    # Set uvicorn loggers to same level
+    # Ensure uvicorn loggers use the same level but don't clear them if uvicorn set them up
     for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error"]:
         uvicorn_logger = logging.getLogger(logger_name)
-        uvicorn_logger.handlers.clear()
+        uvicorn_logger.setLevel(log_level)
 
 
 def get_logger(name: str) -> logging.Logger:

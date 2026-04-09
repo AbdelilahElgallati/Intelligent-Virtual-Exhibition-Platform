@@ -118,6 +118,13 @@ async def admin_create_user(
     """
     Admin: Create a new user (e.g., another administrator).
     """
+    # Fix M2: Validate role
+    try:
+        # payload.role might be a string, validate it against the Role enum
+        Role(payload.role)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid role: {payload.role}")
+
     from app.core.security import hash_password
     from datetime import datetime, timezone
     

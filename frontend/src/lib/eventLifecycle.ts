@@ -1,23 +1,43 @@
 import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { getUserTimezone } from './timezone';
 
-export type EventLifecycleStatus = 'upcoming' | 'live' | 'ended';
+/**
+ * Access State: Strictly controls the gating logic (permission to enter/interact)
+ */
+export type EventAccessState = 
+    | 'CLOSED_BEFORE_EVENT' 
+    | 'OPEN_SLOT_ACTIVE' 
+    | 'CLOSED_BETWEEN_SLOTS' 
+    | 'CLOSED_AFTER_EVENT';
+
+/**
+ * Display State: Controls labels, badges, and colors in the UI
+ */
+export type EventDisplayState = 
+    | 'UPCOMING' 
+    | 'LIVE' 
+    | 'IN_PROGRESS' 
+    | 'ENDED';
 
 export interface EventLifecycleSnapshot {
-    status: EventLifecycleStatus;
+    accessState: EventAccessState;
+    displayState: EventDisplayState;
+    
+    // Core flags
+    isInActiveSlot: boolean;
+    isBetweenSlots: boolean;
+    
+    // Slot Metadata
+    currentSlot: SlotWindow | null;
+    nextSlot: SlotWindow | null;
+    
+    // Timeline Metadata
     startsAt: Date | null;
     endsAt: Date | null;
-    nextSlotStart: Date | null;
-    activeSlotLabel: string | null;
-    source: 'schedule' | 'dates';
     hasScheduleSlots: boolean;
-    scheduleSlotCount: number;
-    withinScheduleWindow: boolean;
-    /** True only in gaps between scheduled slots (after a slot has started); not before the first slot. */
-    betweenSlots: boolean;
 }
 
-interface SlotWindow {
+export interface SlotWindow {
     start: Date;
     end: Date;
     label: string;
@@ -32,69 +52,9 @@ interface TimezoneParts {
     second: number;
 }
 
-function isValidDate(value: unknown): value is Date {
-    return value instanceof Date && !Number.isNaN(value.getTime());
-}
-
-function hasExplicitTime(value: string): boolean {
-    return /[T\s]\d{1,2}:\d{2}/.test(value);
-}
-
-function parseDate(value: unknown, boundary: 'start' | 'end' = 'start'): Date | null {
-    if (!value) return null;
-    const raw = String(value);
-
-    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw.trim());
-    const normalized = isDateOnly
-        ? raw.trim() + (boundary === 'end' ? 'T23:59:59.999Z' : 'T00:00:00.000Z')
-        : raw;
-
-    const d = new Date(normalized);
-    if (!isValidDate(d)) return null;
-
-    if (!hasExplicitTime(raw)) {
-        if (boundary === 'end') {
-            d.setUTCHours(23, 59, 59, 999);
-        } else {
-            d.setUTCHours(0, 0, 0, 0);
-        }
-    }
-
-    return isValidDate(d) ? d : null;
-}
-
-function parseTimeToMinutes(value?: string): number | null {
-    if (!value) return null;
-    const [h, m] = value.split(':').map((p) => Number(p));
-    if (Number.isNaN(h) || Number.isNaN(m)) return null;
-    return h * 60 + m;
-}
-
-function parseScheduleDays(event: Event): EventScheduleDay[] {
-    if (Array.isArray(event.schedule_days) && event.schedule_days.length > 0) {
-        return event.schedule_days;
-    }
-
-    if (Array.isArray(event.event_timeline)) {
-        return event.event_timeline;
-    }
-
-    if (!event.event_timeline || typeof event.event_timeline !== 'string') {
-        return [];
-    }
-
-    try {
-        const parsed = JSON.parse(event.event_timeline);
-        return Array.isArray(parsed) ? (parsed as EventScheduleDay[]) : [];
-    } catch {
-        return [];
-    }
-}
-
-function getEventTimezone(event: Event): string {
-    return event.event_timezone || getUserTimezone();
-}
-
+/**
+ * Bypasses local JS Date pitfalls by extracting calendar parts directly in the event's timezone.
+ */
 function getDatePartsInTimezone(value: Date, timeZone: string): TimezoneParts {
     const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone,
@@ -123,6 +83,9 @@ function getDatePartsInTimezone(value: Date, timeZone: string): TimezoneParts {
     };
 }
 
+/**
+ * Reconstructs a UTC Date from calendar parts in a specific timezone.
+ */
 function zonedDateTimeToUtc(
     year: number,
     month: number,
@@ -145,248 +108,180 @@ function zonedDateTimeToUtc(
     return new Date(guess);
 }
 
-function addDaysToYmd(
-    year: number,
-    month: number,
-    day: number,
-    offset: number,
-): { year: number; month: number; day: number } {
-    const d = new Date(Date.UTC(year, month - 1, day + offset));
-    return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+function parseTimeToMinutes(value?: string): number | null {
+    if (!value) return null;
+    const [h, m] = value.split(':').map((p) => Number(p));
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
 }
 
-function resolveDayYmd(
-    dayLabel: string | undefined,
-    fallback: { year: number; month: number; day: number },
-    timeZone: string,
-): { year: number; month: number; day: number } {
-    // day.date_label is display-only and may be stale when timezone/date inputs changed.
-    // Lifecycle logic must rely on canonical start_date + day_number.
-    void dayLabel;
-    void timeZone;
-    return fallback;
+function parseScheduleDays(event: Event): EventScheduleDay[] {
+    if (Array.isArray(event.schedule_days) && event.schedule_days.length > 0) return event.schedule_days;
+    if (Array.isArray(event.event_timeline)) return event.event_timeline;
+    if (typeof event.event_timeline === 'string') {
+        try {
+            const parsed = JSON.parse(event.event_timeline);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
+    }
+    return [];
 }
 
+/**
+ * Builds a normalized list of all slot windows in UTC.
+ */
 function buildScheduleWindows(event: Event): SlotWindow[] {
     const days = parseScheduleDays(event);
     if (days.length === 0) return [];
 
-    const tz = getEventTimezone(event);
-    const eventStart = parseDate(event.start_date) || new Date();
+    const tz = event.event_timezone || getUserTimezone();
+    const eventStart = new Date(event.start_date || new Date());
     const eventStartLocal = getDatePartsInTimezone(eventStart, tz);
-    const baseYmd = {
-        year: eventStartLocal.year,
-        month: eventStartLocal.month,
-        day: eventStartLocal.day,
-    };
 
     const windows: SlotWindow[] = [];
 
     days.forEach((day, dayIndex) => {
         const dayOffset = (day.day_number || dayIndex + 1) - 1;
-        const fallbackYmd = addDaysToYmd(baseYmd.year, baseYmd.month, baseYmd.day, dayOffset);
-        const dayYmd = resolveDayYmd(day.date_label, fallbackYmd, tz);
+        const dayDate = new Date(Date.UTC(eventStartLocal.year, eventStartLocal.month - 1, eventStartLocal.day + dayOffset));
+        const dayYmd = { year: dayDate.getUTCFullYear(), month: dayDate.getUTCMonth() + 1, day: dayDate.getUTCDate() };
 
         (day.slots || []).forEach((slot: EventScheduleSlot) => {
             const startMinutes = parseTimeToMinutes(slot.start_time);
             const endMinutes = parseTimeToMinutes(slot.end_time);
-
             if (startMinutes === null || endMinutes === null) return;
-            if (startMinutes === endMinutes) return;
 
-            const endDayYmd = endMinutes <= startMinutes
-                ? addDaysToYmd(dayYmd.year, dayYmd.month, dayYmd.day, 1)
-                : dayYmd;
+            const start = zonedDateTimeToUtc(dayYmd.year, dayYmd.month, dayYmd.day, Math.floor(startMinutes / 60), startMinutes % 60, tz);
+            const isOvernight = endMinutes <= startMinutes;
+            const endDay = isOvernight ? dayYmd.day + 1 : dayYmd.day;
+            const end = zonedDateTimeToUtc(dayYmd.year, dayYmd.month, endDay, Math.floor(endMinutes / 60), endMinutes % 60, tz);
 
-            const start = zonedDateTimeToUtc(
-                dayYmd.year,
-                dayYmd.month,
-                dayYmd.day,
-                Math.floor(startMinutes / 60),
-                startMinutes % 60,
-                tz,
-            );
-            const end = zonedDateTimeToUtc(
-                endDayYmd.year,
-                endDayYmd.month,
-                endDayYmd.day,
-                Math.floor(endMinutes / 60),
-                endMinutes % 60,
-                tz,
-            );
-
-            if (end <= start) return;
-
-            windows.push({
-                start,
-                end,
-                label: slot.label || 'Session',
-            });
+            windows.push({ start, end, label: slot.label || 'Session' });
         });
     });
 
     return windows.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
+/**
+ * CORE ARCHITECTURAL FIX:
+ * Computes both AccessState and DisplayState independently based on current UTC time.
+ */
 export function getEventLifecycle(event: Event, now: Date = new Date()): EventLifecycleSnapshot {
-    const explicitState = String(event.state || '').toLowerCase();
     const windows = buildScheduleWindows(event);
-    const startDate = parseDate(event.start_date, 'start');
-    const endDate = parseDate(event.end_date, 'end');
+    const startDate = event.start_date ? new Date(event.start_date) : null;
+    const endDate = event.end_date ? new Date(event.end_date) : null;
+    const explicitState = String(event.state || '').toLowerCase();
 
-    // If an event is explicitly 'closed', i.e. it is ALWAYS ended.
+    const firstSlot = windows[0] || null;
+    const lastSlot = windows[windows.length - 1] || null;
+    const hasSlots = windows.length > 0;
+
+    const startsAt = firstSlot ? firstSlot.start : startDate;
+    const endsAt = lastSlot ? lastSlot.end : endDate;
+
+    // 1. Explicitly Closed
     if (explicitState === 'closed') {
-        const first = windows[0];
-        const last = windows[windows.length - 1];
-        const displayStart = first ? first.start : startDate;
-        const displayEnd = last ? last.end : endDate;
         return {
-            status: 'ended',
-            startsAt: displayStart,
-            endsAt: displayEnd,
-            nextSlotStart: null,
-            activeSlotLabel: null,
-            source: windows.length > 0 ? 'schedule' : 'dates',
-            hasScheduleSlots: windows.length > 0,
-            scheduleSlotCount: windows.length,
-            withinScheduleWindow: false,
-            betweenSlots: false,
+            accessState: 'CLOSED_AFTER_EVENT',
+            displayState: 'ENDED',
+            isInActiveSlot: false,
+            isBetweenSlots: false,
+            currentSlot: null,
+            nextSlot: null,
+            startsAt, endsAt, hasScheduleSlots: hasSlots
         };
     }
 
-    if (windows.length > 0) {
-        const first = windows[0];
-        const last = windows[windows.length - 1];
+    // 2. Timeline Based Logic
+    if (hasSlots) {
         const active = windows.find((w) => now >= w.start && now <= w.end) || null;
-
-        // Determine if we are past the point where the event should be considered 'ended'.
-        // We trust the explicit 'endDate' if it is later than the last scheduled slot.
-        const effectiveEnd = (endDate && endDate > last.end) ? endDate : last.end;
-
-        if (now < first.start) {
-            // Before first slot: always "upcoming" (not "in progress"). Do not set withinScheduleWindow
-            // for gaps before the first session — that is reserved for true between-slot gaps.
-            if (startDate && now >= startDate) {
-                return {
-                    status: 'upcoming',
-                    startsAt: first.start,
-                    endsAt: effectiveEnd,
-                    nextSlotStart: first.start,
-                    activeSlotLabel: null,
-                    source: 'schedule',
-                    hasScheduleSlots: true,
-                    scheduleSlotCount: windows.length,
-                    withinScheduleWindow: false,
-                    betweenSlots: false,
-                };
-            }
+        const next = windows.find((w) => w.start > now) || null;
+        
+        if (now < firstSlot.start) {
             return {
-                status: 'upcoming',
-                startsAt: first.start,
-                endsAt: effectiveEnd,
-                nextSlotStart: first.start,
-                activeSlotLabel: null,
-                source: 'schedule',
-                hasScheduleSlots: true,
-                scheduleSlotCount: windows.length,
-                withinScheduleWindow: false,
-                betweenSlots: false,
-            };
-        }
-
-        if (now > effectiveEnd) {
-            return {
-                status: 'ended',
-                startsAt: first.start,
-                endsAt: effectiveEnd,
-                nextSlotStart: null,
-                activeSlotLabel: null,
-                source: 'schedule',
-                hasScheduleSlots: true,
-                scheduleSlotCount: windows.length,
-                withinScheduleWindow: false,
-                betweenSlots: false,
+                accessState: 'CLOSED_BEFORE_EVENT',
+                displayState: 'UPCOMING',
+                isInActiveSlot: false,
+                isBetweenSlots: false,
+                currentSlot: null,
+                nextSlot: firstSlot,
+                startsAt, endsAt, hasScheduleSlots: true
             };
         }
 
         if (active) {
             return {
-                status: 'live',
-                startsAt: first.start,
-                endsAt: effectiveEnd,
-                nextSlotStart: null,
-                activeSlotLabel: active.label,
-                source: 'schedule',
-                hasScheduleSlots: true,
-                scheduleSlotCount: windows.length,
-                withinScheduleWindow: true,
-                betweenSlots: false,
+                accessState: 'OPEN_SLOT_ACTIVE',
+                displayState: 'LIVE',
+                isInActiveSlot: true,
+                isBetweenSlots: false,
+                currentSlot: active,
+                nextSlot: next,
+                startsAt, endsAt, hasScheduleSlots: true
             };
         }
 
-        // Gap between two slots (first slot has started; not before first slot).
-        const next = windows.find((w) => w.start > now) || null;
+        if (next) {
+            return {
+                accessState: 'CLOSED_BETWEEN_SLOTS',
+                displayState: 'IN_PROGRESS',
+                isInActiveSlot: false,
+                isBetweenSlots: true,
+                currentSlot: null,
+                nextSlot: next,
+                startsAt, endsAt, hasScheduleSlots: true
+            };
+        }
+
         return {
-            status: 'upcoming',
-            startsAt: first.start,
-            endsAt: effectiveEnd,
-            nextSlotStart: next ? next.start : null,
-            activeSlotLabel: null,
-            source: 'schedule',
-            hasScheduleSlots: true,
-            scheduleSlotCount: windows.length,
-            withinScheduleWindow: true,
-            betweenSlots: true,
+            accessState: 'CLOSED_AFTER_EVENT',
+            displayState: 'ENDED',
+            isInActiveSlot: false,
+            isBetweenSlots: false,
+            currentSlot: null,
+            nextSlot: null,
+            startsAt, endsAt, hasScheduleSlots: true
         };
     }
 
-
+    // 3. Date-only Fallback
     if (startDate && now < startDate) {
         return {
-            status: 'upcoming',
-            startsAt: startDate,
-            endsAt: endDate,
-            nextSlotStart: startDate,
-            activeSlotLabel: null,
-            source: 'dates',
-            hasScheduleSlots: false,
-            scheduleSlotCount: 0,
-            withinScheduleWindow: false,
-            betweenSlots: false,
+            accessState: 'CLOSED_BEFORE_EVENT',
+            displayState: 'UPCOMING',
+            isInActiveSlot: false,
+            isBetweenSlots: false,
+            currentSlot: null,
+            nextSlot: null,
+            startsAt, endsAt, hasScheduleSlots: false
         };
     }
 
     if (endDate && now > endDate) {
         return {
-            status: 'ended',
-            startsAt: startDate,
-            endsAt: endDate,
-            nextSlotStart: null,
-            activeSlotLabel: null,
-            source: 'dates',
-            hasScheduleSlots: false,
-            scheduleSlotCount: 0,
-            withinScheduleWindow: false,
-            betweenSlots: false,
+            accessState: 'CLOSED_AFTER_EVENT',
+            displayState: 'ENDED',
+            isInActiveSlot: false,
+            isBetweenSlots: false,
+            currentSlot: null,
+            nextSlot: null,
+            startsAt, endsAt, hasScheduleSlots: false
         };
     }
 
     return {
-        status: 'live',
-        startsAt: startDate,
-        endsAt: endDate,
-        nextSlotStart: null,
-        activeSlotLabel: null,
-        source: 'dates',
-        hasScheduleSlots: false,
-        scheduleSlotCount: 0,
-        withinScheduleWindow: false,
-        betweenSlots: false,
+        accessState: 'OPEN_SLOT_ACTIVE',
+        displayState: 'LIVE',
+        isInActiveSlot: true,
+        isBetweenSlots: false,
+        currentSlot: null,
+        nextSlot: null,
+        startsAt, endsAt, hasScheduleSlots: false
     };
 }
 
 export function formatTimeToStart(target: Date | null, now: Date = new Date()): string {
-    if (!target) return 'No upcoming slot';
+    if (!target) return '';
     const diff = target.getTime() - now.getTime();
     if (diff <= 0) return 'Starting now';
 

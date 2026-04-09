@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
-import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc, getEventDayDate } from '@/lib/timezone';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -20,7 +20,70 @@ import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import { getLiveWorkflowLabel, getEffectiveWorkflowState } from '@/lib/eventWorkflowBadge';
 
-// ─── Status config ────────────────────────────────────────────────────────────
+const resolveDisplayTimezone = (rawTz?: string, fallback?: string): string => {
+    const base = fallback || 'Africa/Casablanca';
+    if (!rawTz) return base;
+    const tz = String(rawTz).trim();
+    if (!tz || tz.toUpperCase() === 'UTC' || tz === 'Etc/UTC' || tz.toUpperCase() === 'GMT') return 'Africa/Casablanca';
+    return tz;
+};
+
+// Helper: extract ISO string from raw date value (handles MongoDB $date objects)
+const extractDateStr = (raw: any): string => {
+    if (!raw) return '';
+    let str = '';
+    if (typeof raw === 'string') {
+        str = raw;
+    } else if (raw instanceof Date) {
+        str = raw.toISOString();
+    } else if (typeof raw === 'object' && raw.$date) {
+        const val = raw.$date;
+        str = typeof val === 'number' ? new Date(val).toISOString() : String(val);
+    } else {
+        str = String(raw);
+    }
+
+    if (str.includes('T') && !str.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(str)) {
+        return str + 'Z';
+    }
+    return str;
+};
+
+// Helper: format date in enterprise display timezone
+const formatToUTCDisplay = (rawDate?: any, formatStr: string = 'MMM d, yyyy', tz?: string) => {
+    const dateStr = extractDateStr(rawDate);
+    if (!dateStr) return null;
+    const displayTz = resolveDisplayTimezone(tz);
+    try {
+        const formatted = formatInTZ(dateStr, displayTz, formatStr);
+        // Robust cleanup: replace narrow non-breaking spaces (\u202f) and standard NBSP (\u00A0) with normal spaces
+        return formatted.replace(/[\u202f\u00A0]/g, " ");
+    } catch (err) {
+        console.error('formatToUTCDisplay error:', err);
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
+            const result = new Intl.DateTimeFormat('en-US', {
+                ...(formatStr.includes('yyyy') || formatStr.includes('MMMM') || formatStr.includes('MMM') ? {
+                    year: 'numeric',
+                    month: formatStr.includes('MMMM') ? 'long' : 'short',
+                    day: 'numeric',
+                } : {}),
+                ...(formatStr.includes('h:mm') || formatStr.includes('HH:mm') ? {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: formatStr.includes('a'),
+                } : {}),
+                timeZone: displayTz,
+            }).format(date);
+            return result.replace(/[\u202f\u00A0]/g, " ");
+        } catch {
+            return null;
+        }
+    }
+};
+
+// --- Status config ---
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; badgeClass: string; icon: React.ReactNode }> = {
     pending_payment: {
@@ -55,9 +118,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; badgeClass: 
     },
 };
 
-// Helper: resolve stand price from raw event doc
 const getStandPrice = (ev: any): number | null => {
-    // Events schema uses "stand_price" but some legacy docs may use "stand_fee"
     const val = ev.stand_price ?? ev.stand_fee;
     return (val !== undefined && val !== null) ? Number(val) : null;
 };
@@ -71,7 +132,7 @@ const parseClockTime = (value?: string): [number, number] | null => {
 
 const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null } => {
     const scheduleDays: any[] = Array.isArray(ev?.schedule_days) ? ev.schedule_days : [];
-    const baseDateValue = ev?.start_date || ev?.schedule?.start_date;
+    const baseDateValue = extractDateStr(ev?.start_date) || extractDateStr(ev?.schedule?.start_date);
 
     if (scheduleDays.length > 0 && baseDateValue) {
         let earliest: Date | null = null;
@@ -111,33 +172,35 @@ const getEventScheduleWindow = (ev: any): { start: Date | null; end: Date | null
 
     return {
         start: baseDateValue ? new Date(baseDateValue) : null,
-        end: ev?.end_date ? new Date(ev.end_date) : (ev?.schedule?.end_date ? new Date(ev.schedule.end_date) : null),
+        end: extractDateStr(ev?.end_date) ? new Date(extractDateStr(ev.end_date)) : (extractDateStr(ev?.schedule?.end_date) ? new Date(extractDateStr(ev.schedule.end_date)) : null),
     };
 };
 
 function resolveEnterpriseEventTimeline(ev: any) {
-    const lifecycle = getEventLifecycle(ev);
+    const normalizedEv = {
+        ...ev,
+        start_date: extractDateStr(ev.start_date),
+        end_date: extractDateStr(ev.end_date),
+    };
+    const lifecycle = getEventLifecycle(normalizedEv);
     const explicitState = String(ev?.state || '').toLowerCase();
     const explicitClosed = explicitState === 'closed';
     const explicitLive = explicitState === 'live';
 
-    const isBetweenSlots = lifecycle.betweenSlots;
-    const timelineLive = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+    const isBetweenSlots = lifecycle.isBetweenSlots;
+    const timelineLive = lifecycle.hasScheduleSlots && lifecycle.displayState === 'LIVE';
 
-    // Date-only "live" window when there are no parsed schedule slots (backend may still be `live`).
     const explicitLiveFallback =
-        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+        explicitLive && !lifecycle.hasScheduleSlots && lifecycle.displayState === 'LIVE';
 
-    const chronologyEnded = lifecycle.status === 'ended';
+    const chronologyEnded = lifecycle.displayState === 'ENDED';
     const isEnded = explicitClosed || chronologyEnded;
     const isLive =
         !explicitClosed &&
         !chronologyEnded &&
-        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.status === 'live'));
+        (timelineLive || explicitLiveFallback || (explicitLive && lifecycle.displayState === 'LIVE'));
     const isUpcoming = !isLive && !isEnded && !isBetweenSlots;
 
-    // Enterprise list + modals: only show "Live" / "In Progress" after backend `state` is `live`.
-    // Otherwise approved/upcoming events were labeled "In Progress" when schedule gaps matched first.
     const eventNotOpenedYet = !explicitLive && explicitState !== 'closed';
     if (eventNotOpenedYet) {
         return {
@@ -158,52 +221,50 @@ function resolveEnterpriseEventTimeline(ev: any) {
     };
 }
 
-// ─── Day-by-Day Schedule Panel ───────────────────────────────────────────────
+// --- Day-by-Day Schedule Panel ---
 
 function ScheduleSection({ ev }: { ev: any }) {
     const { user } = useAuth();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
-    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone() || 'Africa/Casablanca') : 'Africa/Casablanca';
 
     const scheduleDays: any[] = ev.schedule_days || [];
     
     const formatDayLabel = (dayNumber: number, dayIndex: number): string => {
-        const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
-        const startStr = ev.start_date || ev.schedule?.start_date || new Date().toISOString();
-        const eventStartDate = new Date(startStr);
-        const options: Intl.DateTimeFormatOptions = { 
-            weekday: 'short', day: '2-digit', month: 'short' 
+        const dayNum = Number(dayNumber || (dayIndex + 1));
+        const eventTZ = resolveDisplayTimezone(ev.event_timezone, userTimezone);
+        const startStr = extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date) || new Date().toISOString();
+        const dayDate = getEventDayDate(startStr, eventTZ, dayNum);
+        const options: Intl.DateTimeFormatOptions = {
+            weekday: 'short', day: '2-digit', month: 'short'
         };
-        const baseDate = new Date(eventStartDate);
-        baseDate.setUTCDate(baseDate.getUTCDate() + dayOffset);
-        return formatInUserTZ(baseDate, options, undefined, userTimezone);
-    };
-    const formatSlotTime = (dayNumber: number, timeStr: string) => {
-        const eventTZ = ev.event_timezone || 'UTC';
-        const startStr = ev.start_date || ev.schedule?.start_date;
-        if (!startStr || !timeStr) return '--:--';
-        
-        const dayDate = new Date(startStr);
-        dayDate.setUTCDate(dayDate.getUTCDate() + (dayNumber - 1));
-        const ymd = dayDate.toISOString().split('T')[0];
-        const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTZ);
-        
-        return formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone);
+        const result = formatInUserTZ(dayDate, options, undefined, userTimezone);
+        return result.replace(/[\u202f\u00A0]/g, " ");
     };
 
-    // Fallback: if no structured days, show key dates
-    const fmt = (d?: string) => d
-        ? formatInTZ(d, ev.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')
-        : '—';
+    const formatSlotTime = (dayNumber: number, timeStr: string, nextDay = false) => {
+        const eventTZ = resolveDisplayTimezone(ev.event_timezone, userTimezone);
+        const startStr = extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date);
+        if (!startStr || !timeStr) return '--:--';
+
+        const dayNum = Number(dayNumber) + (nextDay ? 1 : 0);
+        const dayDate = getEventDayDate(startStr, eventTZ, dayNum);
+        const ymd = formatInTZ(dayDate, eventTZ, 'yyyy-MM-dd');
+        const utcDate = zonedToUtc(`${ymd}T${timeStr}:00`, eventTZ);
+
+        const result = formatInUserTZ(utcDate, { hour: '2-digit', minute: '2-digit', hour12: false }, undefined, userTimezone);
+        return result.replace(/[\u202f\u00A0]/g, " ");
+    };
+
+    const fmt = (d?: any) => formatToUTCDisplay(d, 'MMM d, yyyy h:mm a') || '-';
 
     if (scheduleDays.length === 0) {
-        // Simple fallback dates
         const phases = [
             { label: 'Registration Opens', date: ev.schedule?.registration_open_date },
             { label: 'Registration Deadline', date: ev.schedule?.registration_deadline },
-            { label: 'Event Starts', date: ev.start_date || ev.schedule?.start_date },
-            { label: 'Event Ends', date: ev.end_date || ev.schedule?.end_date },
+            { label: 'Event Starts', date: extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date) },
+            { label: 'Event Ends', date: extractDateStr(ev.end_date) || extractDateStr(ev.schedule?.end_date) },
         ].filter(p => p.date);
 
         if (phases.length === 0) return null;
@@ -233,7 +294,6 @@ function ScheduleSection({ ev }: { ev: any }) {
             <div className="space-y-4">
                 {scheduleDays.map((day: any, di: number) => (
                     <div key={di} className="rounded-xl border border-zinc-100 overflow-hidden">
-                        {/* Day header */}
                         <div className="flex items-center gap-3 px-4 py-2.5 bg-indigo-50 border-b border-indigo-100">
                             <div className="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">
                                 D{day.day_number}
@@ -242,13 +302,12 @@ function ScheduleSection({ ev }: { ev: any }) {
                                 {formatDayLabel(day.day_number, di)}
                             </span>
                         </div>
-                        {/* Slots */}
                         {day.slots && day.slots.length > 0 ? (
                             <div className="divide-y divide-zinc-50">
                                 {day.slots.map((slot: any, si: number) => (
                                     <div key={si} className="flex items-start gap-3 px-4 py-3">
                                         <div className="flex-shrink-0 text-xs font-mono font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg whitespace-nowrap mt-0.5">
-                                            {formatSlotTime(day.day_number, slot.start_time)} – {formatSlotTime(day.day_number, slot.end_time)}
+                                            {formatSlotTime(day.day_number, slot.start_time)} - {formatSlotTime(day.day_number, slot.end_time)}
                                         </div>
                                         <span className="text-sm text-zinc-700 leading-snug">
                                             {slot.label || 'Activity'}
@@ -271,7 +330,7 @@ function ScheduleSection({ ev }: { ev: any }) {
     );
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
+// --- Detail Modal ---
 
 function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     ev: any;
@@ -296,9 +355,6 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     } = (() => {
         const evStateStr = String(ev.state || '');
         const resolved = resolveEnterpriseEventTimeline(ev);
-        // If event is not yet backend-live, it cannot be "in progress" or "live"
-        // on the timeline — force those to false so UI shows "Upcoming" correctly.
-        // Also guard against 'approved' and 'payment_done' showing naturally.
         if (evStateStr !== 'live') {
             return {
                 ...resolved,
@@ -311,14 +367,12 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     })();
     const canConfigure = isAccepted;
     const canManage = isAccepted && lifecycle.hasScheduleSlots;
-    const canAnalytics = isAccepted && (lifecycle.status === 'live' || lifecycle.status === 'ended');
+    const canAnalytics = isAccepted && (lifecycle.displayState === 'LIVE' || lifecycle.displayState === 'ENDED');
 
-    const tz = ev.event_timezone || getUserTimezone();
-    const fmtDate = (d?: string) => d
-        ? formatInTZ(d, tz, 'MMMM d, yyyy')
-        : null;
-    const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
-    const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
+    const tz = resolveDisplayTimezone(ev.event_timezone);
+    const fmtDate = (d?: any) => formatToUTCDisplay(d, 'MMMM d, yyyy', tz);
+    const startDate = fmtDate(extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date));
+    const endDate = fmtDate(extractDateStr(ev.end_date) || extractDateStr(ev.schedule?.end_date));
 
     // Accent color based on event lifecycle
     const accentColor = isEventLive
@@ -362,9 +416,9 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
-            const tz = ev.event_timezone || getUserTimezone();
-            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
-            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const tz = resolveDisplayTimezone(ev.event_timezone);
+            const startDateLabel = formatToUTCDisplay(ev.start_date, 'MMM d, yyyy h:mm a', tz) || undefined;
+            const endDateLabel = formatToUTCDisplay(ev.end_date, 'MMM d, yyyy h:mm a', tz) || undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -393,14 +447,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
                 onClick={e => e.stopPropagation()}>
 
-                {/* Accent bar */}
                 <div className={`h-1.5 bg-gradient-to-r ${accentColor} flex-shrink-0`}>
                     {isEventLive && <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-teal-400 animate-pulse" />}
                 </div>
 
-                {/* Scrollable content */}
                 <div className="overflow-y-auto flex-1">
-                    {/* Banner */}
                     <div className="relative">
                         {ev.banner_url ? (
                             <div className="h-48 w-full overflow-hidden">
@@ -411,27 +462,23 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             <div className={`h-48 w-full bg-gradient-to-br ${accentColor} opacity-90`} />
                         )}
 
-                        {/* Close button */}
                         <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 rounded-full text-white transition-colors backdrop-blur-sm">
                             <X size={18} />
                         </button>
 
-                        {/* Title overlay */}
                         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                             <h2 className="text-2xl font-bold tracking-tight drop-shadow-lg">{ev.title}</h2>
                             {(startDate || endDate) && (
                                 <p className="text-white/80 text-sm mt-1 flex items-center gap-1.5">
                                     <Calendar size={13} />
-                                    {startDate}{endDate && startDate !== endDate ? ` — ${endDate}` : ''}
+                                    {startDate}{endDate && startDate !== endDate ? ` - ${endDate}` : ''}
                                 </p>
                             )}
                         </div>
                     </div>
 
-                    {/* Status hero strip */}
                     <div className={`px-6 py-3 ${accentBg} border-b ${accentBorder} flex items-center justify-between flex-wrap gap-2`}>
                         <div className="flex items-center gap-3">
-                            {/* Event status */}
                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${accentText}`}>
                                 {isEventLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
                                 {isEventLive
@@ -444,41 +491,37 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                                 ? 'Ended'
                                                 : 'Upcoming'}
                             </span>
-                            {/* Participation status */}
                             {statusConf && (
                                 <>
-                                    <span className="text-zinc-300">•</span>
+                                    <span className="text-zinc-300">|</span>
                                     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
                                         {statusConf.icon} {statusConf.label}
                                     </span>
                                 </>
                             )}
                         </div>
-                        {/* Countdown / live slot */}
-                        {isEventLive && lifecycle.activeSlotLabel && (
+                        {isEventLive && lifecycle.currentSlot?.label && (
                             <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                                {lifecycle.activeSlotLabel}
+                                {lifecycle.currentSlot?.label}
                             </span>
                         )}
-                        {isEventUpcoming && lifecycle.nextSlotStart && (
+                        {isEventUpcoming && lifecycle.nextSlot?.start && (
                             <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full">
-                                {formatTimeToStart(lifecycle.nextSlotStart)}
+                                {formatTimeToStart(lifecycle.nextSlot?.start)}
                             </span>
                         )}
-                        {isEventInProgress && lifecycle.nextSlotStart && (
+                        {isEventInProgress && lifecycle.nextSlot?.start && (
                             <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">
-                                Next slot: {formatTimeToStart(lifecycle.nextSlotStart)}
+                                Next slot: {formatTimeToStart(lifecycle.nextSlot?.start)}
                             </span>
                         )}
                     </div>
 
                     <div className="p-6 space-y-5">
-                        {/* Description */}
                         {ev.description && (
                             <p className="text-zinc-600 text-sm leading-relaxed">{ev.description}</p>
                         )}
 
-                        {/* Info grid — compact */}
                         <div className="grid grid-cols-2 gap-2.5">
                             {ev.organizer_name && (
                                 <div className="flex items-center gap-2.5 p-3 bg-zinc-50 rounded-xl">
@@ -533,7 +576,6 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             )}
                         </div>
 
-                        {/* Tags */}
                         {ev.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                                 {ev.tags.map((tag: string) => (
@@ -544,10 +586,8 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             </div>
                         )}
 
-                        {/* Day-by-Day Schedule */}
                         <ScheduleSection ev={ev} />
 
-                        {/* Rejection reason */}
                         {partStatus === 'rejected' && participation?.rejection_reason && (
                             <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
                                 <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -558,7 +598,6 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             </div>
                         )}
 
-                        {/* Quick navigation — for accepted users */}
                         {isAccepted && (
                             <div className="grid grid-cols-3 gap-2">
                                 {canManage && (
@@ -573,7 +612,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                     <Link href={`/enterprise/events/${evId}/analytics`}>
                                         <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
                                             <BarChart3 size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
-                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Analytics</span>
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Analyse</span>
                                         </div>
                                     </Link>
                                 )}
@@ -590,7 +629,6 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                     </div>
                 </div>
 
-                {/* Sticky action footer */}
                 <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/80 flex gap-3 flex-shrink-0">
                     {!participation && !isEventEnded && (
                         <Button onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm shadow-indigo-200">
@@ -628,7 +666,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     );
 }
 
-// ─── Event Card ───────────────────────────────────────────────────────────────
+// --- Event Card ---
 
 function EnterpriseEventCard({
     ev, onDetails, onJoin, actionLoading,
@@ -648,9 +686,9 @@ function EnterpriseEventCard({
     const downloadReceipt = async () => {
         try {
             const user = await http.get<any>('/users/me').catch(() => null);
-            const tz = ev.event_timezone || getUserTimezone();
-            const startDateLabel = ev.start_date ? formatInTZ(ev.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
-            const endDateLabel = ev.end_date ? formatInTZ(ev.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
+            const tz = resolveDisplayTimezone(ev.event_timezone);
+            const startDateLabel = formatToUTCDisplay(ev.start_date, 'MMM d, yyyy h:mm a', tz) || undefined;
+            const endDateLabel = formatToUTCDisplay(ev.end_date, 'MMM d, yyyy h:mm a', tz) || undefined;
             await downloadEnterpriseStandFeeReceiptPdf({
                 eventId: String(evId),
                 eventTitle: ev.title || 'Event',
@@ -673,17 +711,14 @@ function EnterpriseEventCard({
         }
     };
 
-    const tz = ev.event_timezone || getUserTimezone();
-    const fmtDate = (d?: string) => d
-        ? formatInTZ(d, tz, 'MMM d, yyyy')
-        : null;
-    const startDate = fmtDate(ev.start_date || ev.schedule?.start_date);
-    const endDate = fmtDate(ev.end_date || ev.schedule?.end_date);
+    const tz = resolveDisplayTimezone(ev.event_timezone);
+    const fmtDate = (d?: any) => formatToUTCDisplay(d, 'MMM d, yyyy', tz);
+    const startDate = fmtDate(extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date));
+    const endDate = fmtDate(extractDateStr(ev.end_date) || extractDateStr(ev.schedule?.end_date));
 
     // Timeline status
     const evState = String(ev.state || '');
     const _resolved = resolveEnterpriseEventTimeline(ev);
-    // Normalize: only allow live/between/ended states when backend confirms live/closed
     const _isLive = evState === 'live' ? _resolved.isLive : false;
     const _isBetweenSlots = evState === 'live' ? _resolved.isBetweenSlots : false;
     const _isEnded = _resolved.isEnded;
@@ -694,24 +729,18 @@ function EnterpriseEventCard({
     const isEventUpcoming = _isUpcoming;
     const isBetweenSlots = _isBetweenSlots;
     const isEventNotReady = ['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(evState);
-    const canManage = isAccepted && lifecycle.hasScheduleSlots;
-    const canConfigure = isAccepted;
 
-    // Single status label for the card
     const timelineBadge = (() => {
         const evStateStr = String(ev.state || '');
 
-        // For approved/payment_done: event confirmed but not opened yet
         if (evStateStr === 'approved' || evStateStr === 'payment_done') {
             return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
         }
 
-        // For ended/closed
         if (evStateStr === 'closed' || isEventEnded) {
             return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
         }
 
-        // For live: use getLiveWorkflowLabel — same source as organizer/admin
         if (evStateStr === 'live') {
             const liveLabel = getLiveWorkflowLabel(ev as any);
             if (liveLabel) {
@@ -724,14 +753,11 @@ function EnterpriseEventCard({
                 if (liveLabel.kind === 'closed') {
                     return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
                 }
-                // kind === 'upcoming': live state but before first slot
                 return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
             }
-            // fallback if liveLabel is null
             return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
         }
 
-        // Pipeline states
         if (isEventNotReady) {
             return {
                 label: evStateStr.replace(/_/g, ' '),
@@ -742,13 +768,6 @@ function EnterpriseEventCard({
 
         return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
     })();
-
-    // Primary action
-    const primaryAction = canManage
-        ? { label: 'Manage Event', href: `/enterprise/events/${evId}/manage`, icon: <MessageSquare size={14} /> }
-        : canConfigure
-            ? { label: 'Configure Stand', href: `/enterprise/events/${evId}/stand`, icon: <Settings size={14} /> }
-            : null;
 
     return (
         <div
@@ -761,7 +780,6 @@ function EnterpriseEventCard({
             }`}
             onClick={onDetails}
         >
-            {/* Banner — clean with just one status pill */}
             <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0">
                 {ev.banner_url ? (
                     <img
@@ -774,10 +792,8 @@ function EnterpriseEventCard({
                         <Globe size={40} className="text-white" />
                     </div>
                 )}
-                {/* Subtle gradient overlay for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-                {/* Single timeline badge */}
                 {timelineBadge && (
                     <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm ${timelineBadge.class}`}>
                         {timelineBadge.pulse && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
@@ -786,14 +802,11 @@ function EnterpriseEventCard({
                 )}
             </div>
 
-            {/* Body */}
             <div className="p-5 flex flex-col flex-1 gap-2.5">
-                {/* Title */}
                 <h3 className="font-bold text-zinc-900 text-[15px] leading-snug group-hover:text-indigo-700 transition-colors line-clamp-1">
                     {ev.title}
                 </h3>
 
-                {/* Date line */}
                 {(startDate || endDate) && (
                     <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                         <Calendar size={12} className="text-indigo-400 flex-shrink-0" />
@@ -801,19 +814,17 @@ function EnterpriseEventCard({
                     </div>
                 )}
 
-                {/* Lifecycle timing */}
-                {isEventLive && lifecycle.activeSlotLabel && (
+                {isEventLive && lifecycle.currentSlot?.label && (
                     <div className="text-[11px] font-semibold text-emerald-600">
-                        Live slot: {lifecycle.activeSlotLabel}
+                        Live slot: {lifecycle.currentSlot?.label}
                     </div>
                 )}
-                {lifecycle.status === 'upcoming' && lifecycle.nextSlotStart && (
+                {lifecycle.displayState === 'UPCOMING' && lifecycle.nextSlot?.start && (
                     <div className="text-[11px] font-semibold text-indigo-600">
-                        {formatTimeToStart(lifecycle.nextSlotStart)}
+                        {formatTimeToStart(lifecycle.nextSlot?.start)}
                     </div>
                 )}
 
-                {/* Participation status */}
                 {statusConf && (
                     <div className={`flex items-center gap-1.5 text-[11px] font-semibold w-fit`}>
                         <span className={`inline-flex items-center gap-1 ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
@@ -827,12 +838,10 @@ function EnterpriseEventCard({
                     </div>
                 )}
 
-                {/* Description */}
                 {ev.description && (
                     <p className="text-[13px] text-zinc-500 line-clamp-2 leading-relaxed">{ev.description}</p>
                 )}
 
-                {/* Tags */}
                 {ev.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                         {ev.tags.slice(0, 3).map((tag: string, index: number) => (
@@ -844,7 +853,6 @@ function EnterpriseEventCard({
                     </div>
                 )}
 
-                {/* Stands left (only for non-participants) */}
                 {ev.stands_left !== undefined && ev.num_enterprises > 0 && !participation && (
                     <div className={`flex items-center gap-1.5 text-[10px] font-bold w-fit ${
                         ev.stands_left === 0 ? 'text-red-500' : ev.stands_left <= 2 ? 'text-amber-600' : 'text-emerald-600'
@@ -856,82 +864,75 @@ function EnterpriseEventCard({
 
                 <div className="flex-1" />
 
-                {/* Actions */}
                 <div className="flex flex-col gap-2 pt-3 mt-auto border-t border-zinc-100" onClick={e => e.stopPropagation()}>
-                    {/* Row 1: View Details + primary CTA */}
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
-                            View Details
-                        </Button>
-                        {!participation && !isEventEnded && ev.stands_left !== 0 && (
-                            <Button
-                                size="sm"
-                                onClick={() => onJoin(evId)}
-                                isLoading={actionLoading === evId}
-                                className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold"
-                            >
-                                Join Event
+                    {!isAccepted ? (
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
+                                View Details
                             </Button>
-                        )}
-                        {!participation && !isEventEnded && ev.stands_left === 0 && (
-                            <Button size="sm" disabled className="flex-1 text-xs h-10 opacity-50 bg-zinc-100 text-zinc-400 font-bold">
-                                Fully Booked
+                            {!participation && !isEventEnded && ev.stands_left !== 0 && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => onJoin(evId)}
+                                    isLoading={actionLoading === evId}
+                                    className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold"
+                                >
+                                    Join Event
+                                </Button>
+                            )}
+                            {!participation && !isEventEnded && ev.stands_left === 0 && (
+                                <Button size="sm" disabled className="flex-1 text-xs h-10 opacity-50 bg-zinc-100 text-zinc-400 font-bold">
+                                    Fully Booked
+                                </Button>
+                            )}
+                            {partStatus === 'pending_payment' && !isEventEnded && (
+                                <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-100 font-bold">
+                                    <CreditCard size={14} className="mr-1.5" />
+                                    {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
+                                </Button>
+                            )}
+                            {(partStatus === 'pending_admin_approval') && (
+                                <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100 font-bold">
+                                    Awaiting Approval
+                                </Button>
+                            )}
+                            {partStatus === 'rejected' && (
+                                <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-red-50 border-red-100 text-red-400 font-bold">
+                                    Rejected
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button variant="outline" size="sm" onClick={onDetails} className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
+                                Details
                             </Button>
-                        )}
-                        {partStatus === 'pending_payment' && !isEventEnded && (
-                            <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-100 font-bold">
-                                <CreditCard size={14} className="mr-1.5" />
-                                {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
-                            </Button>
-                        )}
-                        {canManage && (
-                            <Link href={`/enterprise/events/${evId}/manage`} className="flex-1">
-                                <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
-                                    <MessageSquare size={14} /> Manage
+
+                            {lifecycle.displayState !== 'ENDED' && (
+                                <Link href={`/enterprise/events/${evId}/stand`} className="contents">
+                                    <Button variant="outline" size="sm" className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
+                                        <Settings size={13} /> Configure
+                                    </Button>
+                                </Link>
+                            )}
+
+                            <Link href={`/enterprise/events/${evId}/analytics`} className="contents">
+                                <Button variant="outline" size="sm" className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
+                                    <BarChart3 size={13} /> Analyse
                                 </Button>
                             </Link>
-                        )}
-                        {!canManage && isAccepted && !isEventEnded && evState !== 'closed' && (
-                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100 text-zinc-400">
-                                Scheduled
-                            </Button>
-                        )}
-                        {(partStatus === 'pending_admin_approval') && (
-                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100">
-                                Awaiting Approval
-                            </Button>
-                        )}
-                        {partStatus === 'rejected' && (
-                            <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-red-50 border-red-100 text-red-400">
-                                Rejected
-                            </Button>
-                        )}
-                    </div>
 
-                    {/* Row 2: Quick-access icon buttons — Analytics, Configure, Receipt */}
-                    {isAccepted && (
-                        <div className="flex gap-1.5">
-                            {(lifecycle.status === 'live' || lifecycle.status === 'ended') && (
-                                <Link href={`/enterprise/events/${evId}/analytics`} className="flex-1">
-                                    <button className="w-full h-9 flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 text-xs font-semibold text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
-                                        <BarChart3 size={13} /> Analytics
-                                    </button>
+                            <Button variant="outline" size="sm" onClick={downloadReceipt} className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
+                                <Download size={13} /> Receipt
+                            </Button>
+
+                            {lifecycle.displayState === 'LIVE' && (
+                                <Link href={`/enterprise/events/${evId}/manage`} className="col-span-2">
+                                    <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-[11px] h-9 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
+                                        <MessageSquare size={13} /> Manage Event
+                                    </Button>
                                 </Link>
                             )}
-                            {canConfigure && (
-                                <Link href={`/enterprise/events/${evId}/stand`} className="flex-1">
-                                    <button className="w-full h-9 flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 text-xs font-semibold text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
-                                        <Settings size={13} /> Configure
-                                    </button>
-                                </Link>
-                            )}
-                            <button
-                                onClick={downloadReceipt}
-                                title="Download Receipt"
-                                className="h-9 w-9 flex items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-colors flex-shrink-0"
-                            >
-                                <Download size={14} />
-                            </button>
                         </div>
                     )}
                 </div>
@@ -940,7 +941,7 @@ function EnterpriseEventCard({
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// --- Main Page ---
 
 export default function EnterpriseEventsPage() {
     const VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
@@ -986,12 +987,10 @@ export default function EnterpriseEventsPage() {
         setActionLoading(eventId + '_pay');
         try {
             const res = await http.post<any>(`/enterprise/events/${eventId}/pay`, {});
-            // If Payzone returns a payment_url, redirect to it
             if (res.payment_url) {
                 window.location.href = res.payment_url;
                 return;
             }
-            // Otherwise (free stand fee), just refresh
             await fetchEvents();
             setSelectedEvent(null);
         } catch (err: any) {
@@ -1002,7 +1001,6 @@ export default function EnterpriseEventsPage() {
     };
 
     const filtered = events.filter(ev => {
-        // Text search
         if (search) {
             const q = search.toLowerCase();
             const matchText =
@@ -1011,7 +1009,6 @@ export default function EnterpriseEventsPage() {
                 ev.organizer_name?.toLowerCase().includes(q);
             if (!matchText) return false;
         }
-        // Status filter
         if (filterStatus !== 'all') {
             const { isLive, isEnded, isUpcoming, isBetweenSlots } = resolveEnterpriseEventTimeline(ev);
             const hasPart = Boolean(ev.participation);
@@ -1047,23 +1044,21 @@ export default function EnterpriseEventsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-zinc-500 text-sm">Browse available events and manage your participation.</p>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    {/* Status filter */}
                     <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
                         className="pl-3 pr-8 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition text-zinc-700 cursor-pointer"
                     >
                         <option value="all">All Events</option>
-                        <option value="live">🔴 Live Now</option>
-                        <option value="in_progress">🔵 In Progress</option>
-                        <option value="upcoming">🔵 Upcoming</option>
-                        <option value="ended">⚫ Ended</option>
-                        <option value="mine">✅ My Events</option>
+                        <option value="live">Live Now</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="ended">Ended</option>
+                        <option value="mine">My Events</option>
                     </select>
-                    {/* Text search */}
                     <input
                         type="text"
-                        placeholder="Search events…"
+                        placeholder="Search events"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         className="w-full sm:w-56 pl-4 pr-4 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"

@@ -45,3 +45,9 @@ out/
 playwright-report/
 playwright/
 test-results/
+
+.vscode/
+.gemini/
+.aider*
+.gemini/
+GEMINI*

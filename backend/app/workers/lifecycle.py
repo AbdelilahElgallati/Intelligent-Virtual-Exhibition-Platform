@@ -120,14 +120,25 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
     started_ids: list[str] = []
     closed_ids: list[str] = []
 
-    # ── Auto-start: payment_done AND start_date <= now ────────────────────────
-    async for event in col.find(
-        {"state": "payment_done", "start_date": {"$lte": now}}
-    ):
+    # ── Auto-start: (payment_done OR (approved AND free)) AND start_date <= now ──
+    start_query = {
+        "$or": [
+            {"state": "payment_done"},
+            {"state": "approved", "is_paid": False}
+        ],
+        "start_date": {"$lte": now}
+    }
+    async for event in col.find(start_query):
         event_id = str(event["_id"])
-        # Atomic: only update if still payment_done (idempotent)
+        # Atomic: only update if still in a startable state
         result = await col.find_one_and_update(
-            {"_id": event["_id"], "state": "payment_done"},
+            {
+                "_id": event["_id"], 
+                "$or": [
+                    {"state": "payment_done"},
+                    {"state": "approved", "is_paid": False}
+                ]
+            },
             {"$set": {"state": "live"}},
             return_document=True,
         )
@@ -136,7 +147,7 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
             continue
 
         started_ids.append(event_id)
-        logger.info("[lifecycle] auto-started event %s", event_id)
+        logger.info("[lifecycle] auto-started event %s (was %s)", event_id, event.get("state"))
 
         try:
             await log_audit(
@@ -145,7 +156,7 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
                 entity="event",
                 entity_id=event_id,
                 metadata={
-                    "previous_state": "payment_done",
+                    "previous_state": event.get("state"),
                     "new_state": "live",
                     "start_date": event.get("start_date").isoformat() if event.get("start_date") else None,
                     "triggered_at": now.isoformat(),

@@ -101,3 +101,14 @@ async def set_user_active(user_id: str, is_active: bool) -> Optional[dict]:
         return_document=ReturnDocument.AFTER,
     )
     return stringify_object_ids(result) if result else None
+
+
+async def delete_user(user_id: str) -> bool:
+    """
+    Delete a user record (used for cleanup on registration failure).
+    """
+    collection = get_users_collection()
+    uid = str(user_id)
+    query = {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
+    result = await collection.delete_one(query)
+    return result.deleted_count > 0

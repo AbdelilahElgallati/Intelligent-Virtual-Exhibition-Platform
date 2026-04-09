@@ -416,7 +416,7 @@ export default function VisitorOrdersPage() {
 
       const eventData = await apiClient.get<Event>(ENDPOINTS.EVENTS.GET(resolvedEventId));
       const lifecycle = getEventLifecycle(eventData, new Date());
-      const canAccessStand = lifecycle.hasScheduleSlots && lifecycle.status === 'live';
+      const canAccessStand = lifecycle.accessState === 'OPEN_SLOT_ACTIVE';
 
       if (canAccessStand) {
         router.push(`/events/${resolvedEventId}/stands/${order.stand_id}`);

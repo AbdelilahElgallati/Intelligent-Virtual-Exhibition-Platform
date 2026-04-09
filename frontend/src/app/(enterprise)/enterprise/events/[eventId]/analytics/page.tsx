@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
+import { getEventLifecycle } from '@/lib/eventLifecycle';
 import {
     BarChart3,
     TrendingUp,
@@ -96,6 +97,7 @@ export default function EventAnalyticsPage() {
     const router = useRouter();
     const eventId = params.eventId as string;
 
+    const [event, setEvent] = useState<any | null>(null);
     const [stand, setStand] = useState<Stand | null>(null);
     const [analytics, setAnalytics] = useState<StandAnalytics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -105,8 +107,12 @@ export default function EventAnalyticsPage() {
         setIsLoading(true);
         setIsForbidden(false);
         try {
-            // 1. Fetch stand for this event
-            const standData = await http.get<Stand>(`/enterprise/events/${eventId}/stand`);
+            // 1. Fetch event and stand
+            const [eventData, standData] = await Promise.all([
+                http.get<any>(`/events/${eventId}`),
+                http.get<Stand>(`/enterprise/events/${eventId}/stand`)
+            ]);
+            setEvent(eventData);
             setStand(standData);
 
             // 2. Fetch live analytics for this stand (with fallback)
@@ -172,6 +178,9 @@ export default function EventAnalyticsPage() {
         pulse: []
     };
 
+    const lifecycle = event ? getEventLifecycle(event) : null;
+    const isLive = lifecycle?.displayState === 'LIVE';
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
@@ -194,9 +203,11 @@ export default function EventAnalyticsPage() {
                     <Button variant="outline" size="sm" onClick={fetchData}>
                         <Clock size={16} />
                     </Button>
-                    <Button size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage`)}>
-                        Manage Hub
-                    </Button>
+                    {isLive && (
+                        <Button size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage`)}>
+                            Manage Hub
+                        </Button>
+                    )}
                 </div>
             </div>
 

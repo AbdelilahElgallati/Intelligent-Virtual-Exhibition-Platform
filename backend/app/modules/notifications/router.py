@@ -41,10 +41,16 @@ async def mark_notification_read(
     current_user: dict = Depends(get_current_user),
 ) -> NotificationRead:
     notification = await get_notification_by_id(notification_id)
-    if notification is None or notification["user_id"] != str(current_user["_id"]):
+    if notification is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Notification not found",
+        )
+    
+    if notification["user_id"] != str(current_user["_id"]):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
         )
     
     updated = await mark_as_read(notification_id)

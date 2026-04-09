@@ -64,3 +64,13 @@ class TokenResponse(BaseModel):
     user: UserRead
     
     model_config = {"from_attributes": True}
+
+
+class RegisterResponse(BaseModel):
+    """Schema for registration response, which may or may not include tokens."""
+    message: str
+    user_id: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
+    user: Optional[UserRead] = None

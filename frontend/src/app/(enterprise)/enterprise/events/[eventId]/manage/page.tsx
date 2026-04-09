@@ -412,13 +412,13 @@ export default function EventManagementHub() {
             // Deduplicate meetings by ID
             const deduped: Record<string, Meeting> = {};
 
-            // Add outbound meetings first (preferred as 'sent')
+            // Add meetings from my-meetings (enriched with correct type by backend)
             outboundMeetings.forEach(m => {
                 const id = m.id || m._id;
-                if (id) deduped[id] = { ...m, type: 'outbound' };
+                if (id) deduped[id] = m;
             });
 
-            // Add inbound meetings only if they don't exist in deduped
+            // Add meetings from stand-specific list (always inbound for this stand)
             inboundMeetings.forEach(m => {
                 const id = m.id || m._id;
                 if (id && !deduped[id]) {
@@ -772,35 +772,56 @@ export default function EventManagementHub() {
     const eventTimeline = useMemo(() => {
         if (!eventData) return null;
         const state = eventData.state;
-        const lifecycle = getEventLifecycle(eventData);
+        const lifecycle = getEventLifecycle(eventData, new Date(timelineNow));
 
-        let res: any = null;
-        if (state === 'closed') {
-            res = { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
-        } else if (state === 'rejected') {
-            res = { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
-        } else if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
-            res = { gate: 'not-ready' as const, title: eventData.title, state };
-        } else if (state === 'approved' || state === 'payment_done' || state === 'live') {
-            if (!lifecycle.hasScheduleSlots) {
-                res = { gate: 'timeline-missing' as const, title: eventData.title };
-            } else if (lifecycle.status === 'live' || lifecycle.withinScheduleWindow) {
-                res = { gate: 'active' as const, title: eventData.title };
-            } else if (lifecycle.status === 'ended') {
-                res = { gate: 'ended' as const, title: eventData.title, startDate: lifecycle.startsAt?.toISOString() || eventData.start_date, endDate: lifecycle.endsAt?.toISOString() || eventData.end_date };
-            } else {
-                res = {
-                    gate: 'not-started' as const,
-                    title: eventData.title,
-                    nextSlotStart: lifecycle.nextSlotStart?.toISOString() || null,
-                    startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
-                    endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
-                };
-            }
-        } else {
-            res = { gate: 'not-ready' as const, title: eventData.title, state };
+        // 1. Technical / Review states
+        if (state === 'rejected') {
+            return { gate: 'rejected' as const, title: eventData.title, reason: eventData.rejection_reason };
         }
-        return res;
+        if (['pending_approval', 'waiting_for_payment', 'payment_proof_submitted'].includes(state)) {
+            return { gate: 'not-ready' as const, title: eventData.title, state };
+        }
+
+        // 2. Schedule Gating (Strict real-world logic)
+        // Access is OPEN ONLY if accessState is 'OPEN_SLOT_ACTIVE'
+        if (lifecycle.accessState === 'OPEN_SLOT_ACTIVE') {
+            return { gate: 'active' as const, title: eventData.title };
+        }
+
+        // Otherwise, access is CLOSED. Handle reasons for UI:
+        if (lifecycle.accessState === 'CLOSED_BEFORE_EVENT') {
+            return {
+                gate: 'not-started' as const,
+                title: eventData.title,
+                nextSlotStart: lifecycle.nextSlot?.start.toISOString() || null,
+                startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
+                endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
+            };
+        }
+
+        if (lifecycle.accessState === 'CLOSED_BETWEEN_SLOTS') {
+            return {
+                gate: 'between-slots' as const,
+                title: eventData.title,
+                nextSlotStart: lifecycle.nextSlot?.start.toISOString() || null,
+            };
+        }
+
+        if (lifecycle.accessState === 'CLOSED_AFTER_EVENT') {
+            return {
+                gate: 'ended' as const,
+                title: eventData.title,
+                startDate: lifecycle.startsAt?.toISOString() || eventData.start_date,
+                endDate: lifecycle.endsAt?.toISOString() || eventData.end_date,
+            };
+        }
+
+        // Fallback for missing timeline slots
+        if (!lifecycle.hasScheduleSlots && (state === 'approved' || state === 'payment_done' || state === 'live')) {
+             return { gate: 'timeline-missing' as const, title: eventData.title };
+        }
+
+        return { gate: 'not-ready' as const, title: eventData.title, state };
     }, [eventData, timelineNow]);
 
     // Allow users to view data for ended events.

@@ -356,13 +356,18 @@ async def get_live_platform_metrics(
     now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
 
-    base = await analytics_repo.get_platform_metrics()
-    live = {
-        "active_conferences": await db["conferences"].count_documents({"status": "live"}),
-        "live_meetings": await db["meetings"].count_documents({"session_status": "live"}),
-        "messages_last_15m": await db["chat_messages"].count_documents({"timestamp": {"$gte": since_15m}}),
-        "events_last_15m": await db["analytics_events"].count_documents({"created_at": {"$gte": since_15m}}),
-    }
+    try:
+        base = await analytics_repo.get_platform_metrics()
+        live = {
+            "active_conferences": await db["conferences"].count_documents({"status": "live"}),
+            "live_meetings": await db["meetings"].count_documents({"session_status": "live"}),
+            "messages_last_15m": await db["chat_messages"].count_documents({"timestamp": {"$gte": since_15m}}),
+            "events_last_15m": await db["analytics_events"].count_documents({"created_at": {"$gte": since_15m}}),
+        }
+    except Exception as e:
+        print(f"ERROR fetching live platform metrics: {e}")
+        raise HTTPException(status_code=503, detail="Metrics temporarily unavailable.")
+
     return {
         "scope": "live_platform",
         "generated_at": now.isoformat(),
@@ -385,14 +390,19 @@ async def get_live_event_metrics(
 
     now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
-    base = await analytics_repo.get_event_analytics(resolved_id)
+    
+    try:
+        base = await analytics_repo.get_event_analytics(resolved_id)
+        live = {
+            "active_conferences": await db["conferences"].count_documents({"event_id": str(resolved_id), "status": "live"}),
+            "live_meetings": await db["meetings"].count_documents({"event_id": str(resolved_id), "session_status": "live"}),
+            "messages_last_15m": await db["chat_messages"].count_documents({"event_id": str(resolved_id), "timestamp": {"$gte": since_15m}}),
+            "events_last_15m": await db["analytics_events"].count_documents({"event_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
+        }
+    except Exception as e:
+        print(f"ERROR fetching live event metrics for {resolved_id}: {e}")
+        raise HTTPException(status_code=503, detail="Metrics temporarily unavailable.")
 
-    live = {
-        "active_conferences": await db["conferences"].count_documents({"event_id": str(resolved_id), "status": "live"}),
-        "live_meetings": await db["meetings"].count_documents({"event_id": str(resolved_id), "session_status": "live"}),
-        "messages_last_15m": await db["chat_messages"].count_documents({"event_id": str(resolved_id), "timestamp": {"$gte": since_15m}}),
-        "events_last_15m": await db["analytics_events"].count_documents({"event_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
-    }
     return {
         "scope": "live_event",
         "event_id": str(resolved_id),
@@ -422,14 +432,19 @@ async def get_live_stand_metrics(
     event_id = str(stand.get("event_id")) if stand and stand.get("event_id") else None
     now = datetime.now(timezone.utc)
     since_15m = now - timedelta(minutes=15)
-    base_metrics = await analytics_repo.get_stand_analytics(resolved_id)
+    
+    try:
+        base_metrics = await analytics_repo.get_stand_analytics(resolved_id)
+        live = {
+            "live_meetings": await db["meetings"].count_documents({"stand_id": str(resolved_id), "session_status": "live"}),
+            "messages_last_15m": await db["chat_messages"].count_documents({"event_id": event_id, "timestamp": {"$gte": since_15m}}) if event_id else 0,
+            "stand_events_last_15m": await db["analytics_events"].count_documents({"stand_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
+            "leads_last_15m": await db["leads"].count_documents({"stand_id": str(resolved_id), "last_interaction": {"$gte": since_15m}}),
+        }
+    except Exception as e:
+        print(f"ERROR fetching live stand metrics for {resolved_id}: {e}")
+        raise HTTPException(status_code=503, detail="Metrics temporarily unavailable.")
 
-    live = {
-        "live_meetings": await db["meetings"].count_documents({"stand_id": str(resolved_id), "session_status": "live"}),
-        "messages_last_15m": await db["chat_messages"].count_documents({"event_id": event_id, "timestamp": {"$gte": since_15m}}) if event_id else 0,
-        "stand_events_last_15m": await db["analytics_events"].count_documents({"stand_id": str(resolved_id), "created_at": {"$gte": since_15m}}),
-        "leads_last_15m": await db["leads"].count_documents({"stand_id": str(resolved_id), "last_interaction": {"$gte": since_15m}}),
-    }
     return {
         "scope": "live_stand",
         "stand_id": str(resolved_id),

@@ -8,8 +8,9 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 from typing import Any, Optional, Union, cast
 from zoneinfo import ZoneInfo
+from app.core.timezone import timezone_service
 
-from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator, ValidationInfo
 
 
 def _parse_time_to_minutes(t_str: str) -> int:
@@ -294,14 +295,14 @@ class EventCreate(BaseModel):
     is_paid: bool = Field(False, description="Whether the event requires visitor ticket payment")
     ticket_price: Optional[float] = Field(None, ge=0, description="Visitor ticket price (required when is_paid=True)")
 
-    @field_validator("start_date", "end_date", mode="after")
-    @classmethod
-    def ensure_utc(cls, v: Optional[datetime]) -> Optional[datetime]:
-        if v is None:
-            return v
-        if v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v.astimezone(timezone.utc)
+    @model_validator(mode="after")
+    def ensure_utc_dates(self) -> "EventCreate":
+        tz = self.event_timezone or "UTC"
+        if self.start_date:
+            self.start_date = timezone_service.to_aware_utc(self.start_date, tz)
+        if self.end_date:
+            self.end_date = timezone_service.to_aware_utc(self.end_date, tz)
+        return self
 
     @model_validator(mode="after")
     def validate_schedule_boundaries(self) -> "EventCreate":
@@ -348,14 +349,14 @@ class EventUpdate(BaseModel):
     ticket_price: Optional[float] = None
     slug: Optional[str] = None
 
-    @field_validator("start_date", "end_date", mode="after")
-    @classmethod
-    def ensure_utc(cls, v: Optional[datetime]) -> Optional[datetime]:
-        if v is None:
-            return v
-        if v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v.astimezone(timezone.utc)
+    @model_validator(mode="after")
+    def ensure_utc_dates(self) -> "EventUpdate":
+        tz = self.event_timezone or "UTC"
+        if self.start_date:
+            self.start_date = timezone_service.to_aware_utc(self.start_date, tz)
+        if self.end_date:
+            self.end_date = timezone_service.to_aware_utc(self.end_date, tz)
+        return self
 
     @model_validator(mode="after")
     def validate_schedule_boundaries(self) -> "EventUpdate":

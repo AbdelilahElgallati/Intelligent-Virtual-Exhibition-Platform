@@ -4,10 +4,11 @@ Stand schemas for IVEP.
 Defines data models for exhibition stands.
 """
 
+import re
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class StandBase(BaseModel):
@@ -32,6 +33,13 @@ class StandBase(BaseModel):
     created_at: datetime
     
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @field_validator("theme_color", "presenter_avatar_bg", mode="before")
+    @classmethod
+    def validate_hex_color(cls, v):
+        if v is not None and not re.match(r'^#(?:[0-9a-fA-F]{3}){1,2}$', str(v)):
+            raise ValueError("Must be a valid hex color code (e.g., #FF5733)")
+        return v
 
 
 class StandCreate(BaseModel):

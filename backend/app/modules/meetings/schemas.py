@@ -56,6 +56,7 @@ class MeetingSchema(MeetingBase):
     receiver_org_name: Optional[str] = None
     sender_enterprise_id: Optional[str] = None
     receiver_enterprise_id: Optional[str] = None
+    type: Optional[str] = None  # inbound or outbound relative to the caller
 
     # Video session fields — provider-agnostic
     meeting_type: MeetingType = MeetingType.ONE_TO_ONE

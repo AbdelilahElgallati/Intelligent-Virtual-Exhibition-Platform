@@ -101,14 +101,15 @@ class MeetingRepository:
         # Also fetch meetings where the user's org owns the stand (recipient)
         user = await self.db.users.find_one({"_id": ObjectId(visitor_id) if ObjectId.is_valid(visitor_id) else visitor_id})
         org_stand_meetings = []
+        my_stand_ids = set()
         if user and user.get("role") == "enterprise":
             member = await self.db.organization_members.find_one({"user_id": str(visitor_id)})
             if member:
                 org_id = member["organization_id"]
                 stands = await self.db.stands.find({"organization_id": org_id}).to_list(length=100)
-                stand_ids = [str(s["_id"]) for s in stands]
-                if stand_ids:
-                    cursor2 = self.collection.find({"stand_id": {"$in": stand_ids}})
+                my_stand_ids = {str(s["_id"]) for s in stands}
+                if my_stand_ids:
+                    cursor2 = self.collection.find({"stand_id": {"$in": list(my_stand_ids)}})
                     org_stand_meetings = await cursor2.to_list(length=100)
 
         all_meetings = meetings + org_stand_meetings
@@ -121,7 +122,14 @@ class MeetingRepository:
                 continue
             seen.add(mid)
             m["_id"] = mid
-            stand_id = m.get("stand_id")
+            
+            # Determine direction relative to this visitor_id
+            stand_id = str(m.get("stand_id", ""))
+            if stand_id in my_stand_ids:
+                m["type"] = "inbound"
+            else:
+                m["type"] = "outbound"
+
             if stand_id:
                 stand = await self.db.stands.find_one({"_id": ObjectId(stand_id) if ObjectId.is_valid(stand_id) else stand_id})
                 if stand:
@@ -159,6 +167,7 @@ class MeetingRepository:
         enriched = []
         for m in meetings:
             m["_id"] = str(m["_id"])
+            m["type"] = "inbound" # Meetings at this stand are always inbound for the stand owner
 
             user_id = m.get("visitor_id")
             if user_id:

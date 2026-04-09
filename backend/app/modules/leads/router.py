@@ -47,9 +47,33 @@ async def track_interaction(
     await lead_repo.log_interaction(interaction)
     return {"status": "logged"}
 
+import csv, io
+from fastapi.responses import StreamingResponse
+
 @router.get("/export/{stand_id}")
 async def export_leads(stand_id: str, current_user: dict = Depends(get_current_user)):
-    await verify_stand_ownership(stand_id, str(current_user["_id"]))
+    stand = await verify_stand_ownership(stand_id, str(current_user["_id"]))
     leads = await lead_repo.get_stand_leads(stand_id)
-    # Mock CSV export
-    return {"message": f"Exported {len(leads)} leads successfully", "format": "csv"}
+    
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=[
+        "id", "visitor_name", "visitor_email", "interaction_type", "score", "last_interaction"
+    ])
+    writer.writeheader()
+    for lead in leads:
+        writer.writerow({
+            "id": str(lead.get("_id", lead.get("id", ""))),
+            "visitor_name": lead.get("visitor_name", ""),
+            "visitor_email": lead.get("visitor_email", ""),
+            "interaction_type": lead.get("interaction_type", ""),
+            "score": lead.get("score", 0),
+            "last_interaction": str(lead.get("last_interaction", "")),
+        })
+    
+    output.seek(0)
+    filename = f"leads_{stand.get('slug', stand_id)}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

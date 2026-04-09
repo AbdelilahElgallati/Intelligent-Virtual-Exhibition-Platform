@@ -2,7 +2,7 @@
 Transcription Router - Whisper-Powered Speech-to-Text.
 Provides endpoints for audio transcription with real-time streaming support.
 """
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, UploadFile, File, HTTPException, Query
 from fastapi import status as http_status
 from typing import List, Dict, Optional
 from pydantic import BaseModel
@@ -50,7 +50,6 @@ class ConnectionManager:
         self.active_transcripts: Dict[str, List[WebSocket]] = {}
 
     async def connect(self, room_id: str, websocket: WebSocket):
-        await websocket.accept()
         if room_id not in self.active_transcripts:
             self.active_transcripts[room_id] = []
         self.active_transcripts[room_id].append(websocket)
@@ -172,7 +171,11 @@ async def get_supported_languages(
 
 
 @router.websocket("/ws/live/{room_id}")
-async def live_transcription_ws(websocket: WebSocket, room_id: str):
+async def live_transcription_ws(
+    websocket: WebSocket, 
+    room_id: str,
+    token: str = Query(None),
+):
     """
     WebSocket endpoint for live transcription.
 
@@ -185,6 +188,20 @@ async def live_transcription_ws(websocket: WebSocket, room_id: str):
 
     Audio should be sent as base64-encoded chunks.
     """
+    await websocket.accept()
+    from app.core.security import decode_token
+
+    user = None
+    if token:
+         payload = decode_token(token)
+         if payload:
+             from app.modules.users.service import get_user_by_id
+             user = await get_user_by_id(payload.get("sub"))
+
+    if not user:
+        await websocket.close(code=http_status.WS_1008_POLICY_VIOLATION)
+        return
+
     # Session-live guard: if room_id is a known session, require status == live
     try:
         from app.modules.sessions.service import get_session_by_id

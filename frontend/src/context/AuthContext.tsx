@@ -174,11 +174,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         try {
             const response = await authService.register(userData);
+            
+            // Organizer & enterprise accounts need admin approval before they can use the platform.
+            // In these cases, the backend doesn't return user data or tokens.
+            if (!response.user) {
+                return { pendingApproval: true };
+            }
+
             const { access_token, refresh_token, token_type } = response;
             const user = await ensureAccountTimezone(response.user, access_token);
 
-            // Organizer & enterprise accounts need admin approval before they can use the platform.
-            // Do NOT store tokens or redirect — just signal pending approval.
+            // Re-check activation status just in case
             if (user.is_active === false || user.approval_status === 'PENDING_APPROVAL') {
                 return { pendingApproval: true };
             }
