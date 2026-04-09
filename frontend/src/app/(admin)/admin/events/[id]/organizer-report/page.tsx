@@ -255,7 +255,7 @@ export default function OrganizerReportPage() {
                                         <span className="text-zinc-600 font-medium">{r.label}</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`font-bold text-xl ${r.colour}`}>${r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className={`font-bold text-xl ${r.colour}`}>{r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD</p>
                                         <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Verified Income</p>
                                     </div>
                                 </div>
@@ -265,7 +265,7 @@ export default function OrganizerReportPage() {
                             <div>
                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Total Gross Revenue</p>
                                 <p className="text-4xl font-black text-zinc-900 tracking-tight">
-                                    ${ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    {ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD
                                 </p>
                             </div>
                             <div className="text-right">
