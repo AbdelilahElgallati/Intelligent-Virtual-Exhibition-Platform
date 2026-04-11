@@ -3,5 +3,6 @@
     "allow": [
       "Read(C:\\Users\\hp\\Desktop\\PFE PROJECT\\Intelligent-Virtual-Ex/**)"
     ]
-  }
+  },
+  "$version": 3
 }
