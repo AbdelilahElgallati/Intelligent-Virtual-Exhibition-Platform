@@ -1,0 +1,899 @@
+{
+  "auth": {
+    "login": {
+      "title": "Login",
+      "subtitle": "Welcome back to IVEP",
+      "email": {
+        "label": "Email",
+        "placeholder": "Enter your email"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register here",
+      "error": {
+        "allFields": "Please fill in all fields.",
+        "invalidEmail": "Please enter a valid email address.",
+        "incorrectPassword": "The password you entered is incorrect. Please try again.",
+        "noAccountFound": "No account found with this email address.",
+        "pendingApproval": "Your account is pending admin approval. You will be notified by email once it is activated.",
+        "rejected": "Your account registration was rejected. Please contact support.",
+        "suspended": "Your account has been suspended. Please contact support for assistance.",
+        "notActive": "Your account is not active. Please contact support.",
+        "unauthorized": "Invalid email or password. Please check your credentials and try again.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Join the IVEP platform",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "John Doe"
+      },
+      "username": {
+        "label": "Username *",
+        "placeholder": "johndoe"
+      },
+      "email": {
+        "label": "Email *",
+        "placeholder": "john@example.com"
+      },
+      "password": {
+        "label": "Password *",
+        "placeholder": "••••••••"
+      },
+      "confirmPassword": {
+        "label": "Confirm password *",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "roleLabel": "I am a:",
+      "roles": {
+        "visitor": "visitor",
+        "organizer": "organizer",
+        "enterprise": "enterprise"
+      },
+      "organizer": {
+        "title": "Organisation Details",
+        "approvalNote": "Your account will be reviewed by an admin before activation.",
+        "orgName": {
+          "label": "Organisation Name *",
+          "placeholder": "Event Masters Inc."
+        },
+        "orgType": {
+          "label": "Organisation Type *",
+          "placeholder": "Select type…"
+        },
+        "orgTypes": {
+          "company": "Company",
+          "ngo": "NGO",
+          "university": "University",
+          "government": "Government",
+          "startup": "Startup",
+          "association": "Association",
+          "other": "Other"
+        },
+        "professionalEmail": {
+          "label": "Professional Email *",
+          "placeholder": "contact@eventmasters.com"
+        },
+        "country": {
+          "label": "Country *",
+          "placeholder": "France"
+        },
+        "city": {
+          "label": "City *",
+          "placeholder": "Paris"
+        },
+        "phone": {
+          "label": "Phone",
+          "placeholder": "+33 6 12 34 56 78"
+        },
+        "website": {
+          "label": "Website",
+          "placeholder": "https://eventmasters.com"
+        }
+      },
+      "enterprise": {
+        "title": "Company Details",
+        "approvalNote": "Your account will be reviewed by an admin before activation.",
+        "companyName": {
+          "label": "Company Name *",
+          "placeholder": "Acme Corp"
+        },
+        "professionalEmail": {
+          "label": "Professional Email *",
+          "placeholder": "contact@acme.com"
+        },
+        "industry": {
+          "label": "Industry *",
+          "placeholder": "Tech"
+        },
+        "country": {
+          "label": "Country *",
+          "placeholder": "France"
+        },
+        "city": {
+          "label": "City *",
+          "placeholder": "Paris"
+        },
+        "companySize": {
+          "label": "Company Size *",
+          "placeholder": "10-50"
+        }
+      },
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "approvalNotice": "{role} accounts require admin approval before you can log in.",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign In",
+      "error": {
+        "allFields": "Please fill in all required fields.",
+        "passwordMinLength": "Password must be at least 8 characters long.",
+        "passwordMismatch": "Passwords do not match. Please check and try again.",
+        "companyNameRequired": "Company name is required for enterprise accounts.",
+        "orgNameRequired": "Organisation name is required for organizer accounts.",
+        "emailExists": "An account with this email already exists. Try logging in instead.",
+        "invalidEmail": "Please enter a valid email address.",
+        "registrationFailed": "Registration failed during organization creation. Please try again.",
+        "generic": "Registration failed. Please check your information and try again."
+      },
+      "success": {
+        "title": "Registration successful!",
+        "message": "Your account is pending admin approval. You will receive an email notification once it is activated.",
+        "goToLogin": "Go to Login"
+      }
+    },
+    "changePassword": {
+      "button": "Change Password",
+      "hideButton": "Hide Change Password",
+      "title": "Change Password",
+      "currentPassword": {
+        "label": "Current Password",
+        "placeholder": "Enter your current password"
+      },
+      "newPassword": {
+        "label": "New Password",
+        "placeholder": "Enter new password (min 6 characters)"
+      },
+      "confirmPassword": {
+        "label": "Confirm New Password",
+        "placeholder": "Confirm your new password"
+      },
+      "cancel": "Cancel",
+      "submit": "Update Password",
+      "error": {
+        "mismatch": "New passwords do not match.",
+        "minLength": "New password must be at least 6 characters.",
+        "generic": "Failed to change password."
+      },
+      "success": "Password changed successfully!"
+    }
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "loading": "Loading profile…",
+    "organizer": {
+      "subtitle": "Manage your identity and organization presence on IVEP.",
+      "basicInfo": "Basic Information",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)",
+        "note": "Email changes require support verification."
+      },
+      "shortBio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about your professional background..."
+      },
+      "preferredLanguage": "Preferred Language",
+      "timezone": "Timezone",
+      "updateProfile": "Update Profile",
+      "accountVerified": "Account Verified",
+      "joinedYear": "Joined {year}",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "needHelp": {
+        "title": "Need Help?",
+        "message": "For organization-level changes or role migrations, please contact our support team."
+      },
+      "fallbackOrg": "IVEP Organizer",
+      "notifications": "Notifications"
+    },
+    "admin": {
+      "subtitle": "Manage your administrator account settings.",
+      "accountInfo": "Account Information",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)"
+      },
+      "shortBio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about yourself..."
+      },
+      "preferredLanguage": "Preferred Language",
+      "timezone": "Timezone",
+      "updateProfile": "Update Profile",
+      "administratorAccount": "Administrator Account",
+      "joinedYear": "Joined {year}",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "needHelp": {
+        "title": "Need Help?",
+        "message": "For platform-level support, please contact the system administrator."
+      }
+    },
+    "enterprise": {
+      "updateCoverPhoto": "Update Cover Photo",
+      "updateLogo": "Update Logo",
+      "accountVerified": "Account Verified",
+      "primaryContact": "Primary Contact",
+      "accountEmail": "Account Email",
+      "registeredEntity": "Registered Entity",
+      "baseLocation": "Base Location",
+      "globalLocation": "Global",
+      "sector": "Sector",
+      "memberSince": "Member since {year}",
+      "completionStatus": {
+        "title": "Completion Status",
+        "message": "Complete your profile to increase your visibility in virtual exhibitions."
+      },
+      "aboutCompany": "About Company",
+      "companyName": {
+        "label": "Company Name",
+        "placeholder": "Acme Corporation"
+      },
+      "industry": {
+        "label": "Industry",
+        "placeholder": "Technology"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "Morocco"
+      },
+      "city": {
+        "label": "City",
+        "placeholder": "Casablanca"
+      },
+      "companySize": {
+        "label": "Company Size",
+        "placeholder": "51-200"
+      },
+      "professionalEmail": {
+        "label": "Professional Email",
+        "placeholder": "business@acme.com"
+      },
+      "companyBio": {
+        "label": "Company Bio",
+        "note": "Displayed on your booth",
+        "placeholder": "Tell visitors about your company value proposition..."
+      },
+      "category": {
+        "label": "Category",
+        "placeholder": "Select a category"
+      },
+      "businessTags": {
+        "label": "Business Tags",
+        "placeholder": "AI, Blockchain, SaaS, Green Energy (comma separated)"
+      },
+      "accountTimezone": {
+        "label": "Account Timezone",
+        "note": "Used as your personal display timezone across the platform."
+      },
+      "contactPresence": "Contact & Presence",
+      "publicBusinessEmail": {
+        "label": "Public Business Email",
+        "placeholder": "contact@acme.com"
+      },
+      "phoneNumber": {
+        "label": "Phone Number",
+        "placeholder": "+212 600-000000"
+      },
+      "corporateWebsite": {
+        "label": "Corporate Website",
+        "placeholder": "https://acme.com"
+      },
+      "linkedinProfile": {
+        "label": "LinkedIn Profile",
+        "placeholder": "https://linkedin.com/company/acme"
+      },
+      "saveChanges": "Save All Changes",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "logoUploaded": "Logo uploaded!",
+      "bannerUploaded": "Banner uploaded!",
+      "uploadFailed": "Failed to upload {type}.",
+      "categoryOptions": {
+        "technology": "Technology",
+        "healthcare": "Healthcare",
+        "finance": "Finance",
+        "education": "Education",
+        "manufacturing": "Manufacturing",
+        "retail": "Retail",
+        "logistics": "Logistics",
+        "energy": "Energy",
+        "telecommunications": "Telecommunications",
+        "consulting": "Consulting",
+        "mediaMarketing": "Media & Marketing",
+        "tourismHospitality": "Tourism & Hospitality",
+        "governmentPublicServices": "Government & Public Services",
+        "nonProfit": "Non-Profit",
+        "other": "Other"
+      },
+      "pageSubtitle": "Manage your company profile, products, and presence on IVEP."
+    },
+    "visitor": {
+      "subtitle": "Manage your personal details, preferences, and discovery settings.",
+      "basicInfo": {
+        "title": "Basic Information",
+        "description": "Your personal details visible to event organizers.",
+        "fullName": {
+          "label": "Full Name",
+          "placeholder": "John Doe"
+        },
+        "email": "Email",
+        "language": {
+          "label": "Language Preference",
+          "placeholder": "Select language…"
+        },
+        "timezone": {
+          "label": "Timezone"
+        },
+        "bio": {
+          "label": "Short Bio",
+          "placeholder": "Tell us a little about yourself…"
+        }
+      },
+      "professionalInfo": {
+        "title": "Professional Information",
+        "description": "Helps us match you with relevant exhibitions and opportunities.",
+        "jobTitle": {
+          "label": "Job Title",
+          "placeholder": "e.g. Software Engineer"
+        },
+        "industry": {
+          "label": "Industry",
+          "placeholder": "e.g. Technology"
+        },
+        "company": {
+          "label": "Company",
+          "placeholder": "e.g. Google"
+        },
+        "experienceLevel": {
+          "label": "Experience Level",
+          "placeholder": "Select level…"
+        }
+      },
+      "interests": {
+        "title": "Interests",
+        "description": "Select topics you're interested in — these power our recommendation engine.",
+        "addCustom": "Add custom…",
+        "addButton": "Add"
+      },
+      "eventPreferences": {
+        "title": "Event Preferences",
+        "description": "Tell us what kind of events you prefer to attend.",
+        "types": "Preferred Event Types",
+        "languages": "Preferred Languages",
+        "regions": "Preferred Regions (Optional)"
+      },
+      "networking": {
+        "title": "Networking Preferences",
+        "description": "What are you looking for at events?",
+        "goals": {
+          "label": "Networking Goals",
+          "placeholder": "Select your networking goals…"
+        },
+        "experienceLevel": {
+          "label": "Experience Level",
+          "placeholder": "Select your level…"
+        }
+      },
+      "notifications": {
+        "title": "Notifications & Recommendations",
+        "description": "Control how and when we reach out.",
+        "recommendations": "Receive personalized recommendations",
+        "emailNotifications": "Receive email notifications"
+      },
+      "save": "Save Profile",
+      "saving": "Saving…",
+      "success": {
+        "title": "Profile Updated",
+        "message": "Your profile has been saved successfully!"
+      },
+      "error": {
+        "title": "Save Failed",
+        "message": "Something went wrong. Please try again."
+      },
+      "authRequired": {
+        "title": "Sign in required",
+        "message": "Please log in to view your profile."
+      },
+      "engagement": {
+        "title": "Engagement Settings",
+        "description": "Control how we communicate with you."
+      }
+    },
+    "common": {
+      "languages": {
+        "english": "English",
+        "spanish": "Spanish",
+        "french": "French",
+        "arabic": "Arabic",
+        "german": "German",
+        "chinese": "Chinese",
+        "japanese": "Japanese"
+      },
+      "experienceLevels": {
+        "junior": "Junior",
+        "mid": "Mid",
+        "senior": "Senior",
+        "executive": "Executive"
+      },
+      "interests": {
+        "ai": "AI",
+        "tech": "Tech",
+        "education": "Education",
+        "healthcare": "Healthcare",
+        "sustainability": "Sustainability",
+        "finance": "Finance",
+        "startups": "Startups"
+      },
+      "eventTypes": {
+        "webinar": "Webinar",
+        "exhibition": "Exhibition",
+        "networking": "Networking",
+        "workshop": "Workshop"
+      },
+      "regions": {
+        "northAmerica": "North America",
+        "europe": "Europe",
+        "asia": "Asia",
+        "middleEast": "Middle East",
+        "africa": "Africa",
+        "latinAmerica": "Latin America",
+        "southAmerica": "South America",
+        "oceania": "Oceania"
+      },
+      "networkingGoals": {
+        "partnerships": "Partnerships",
+        "investors": "Investors",
+        "clients": "Clients",
+        "knowledge": "Knowledge",
+        "jobs": "Jobs"
+      }
+    }
+  },
+  "common": {
+    "brand": "IVEP",
+    "buttons": {
+      "submit": "Submit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "login": "Login",
+      "register": "Register",
+      "signIn": "Sign In",
+      "signOut": "Sign Out",
+      "createAccount": "Create Account",
+      "goToLogin": "Go to Login"
+    },
+    "navigation": {
+      "home": "Home",
+      "events": "Events",
+      "orders": "Orders",
+      "favorites": "Favorites",
+      "adminPanel": "Admin Panel",
+      "dashboard": "Dashboard",
+      "myEvents": "My Events",
+      "products": "Products",
+      "requests": "Requests",
+      "leads": "Leads",
+      "myProfile": "My Profile",
+      "myOrders": "My Orders",
+      "manageProducts": "Manage Products",
+      "allRequests": "All Requests",
+      "organizerPanel": "Organizer Panel",
+      "openMenu": "Open main menu"
+    },
+    "footer": {
+      "tagline": "Intelligent Virtual Exhibition Platform for immersive events, networking, and commerce.",
+      "platform": "Platform",
+      "eventsDirectory": "Events Directory",
+      "globalMarketplace": "Global Marketplace",
+      "aiAssistant": "AI Event Assistant",
+      "account": "Account",
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "myFavorites": "My Favorites",
+      "connectWithUs": "Connect With Us",
+      "allRightsReserved": "All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {year} IVEP. All rights reserved."
+    },
+    "messages": {
+      "loading": "Loading...",
+      "checkingAuth": "Checking authorization...",
+      "noResults": "No results found.",
+      "error": "An error occurred.",
+      "success": "Operation completed successfully.",
+      "unauthorized": "Unauthorized",
+      "notFound": "Not found."
+    },
+    "roles": {
+      "admin": "admin",
+      "organizer": "organizer",
+      "enterprise": "enterprise",
+      "visitor": "visitor"
+    },
+    "ui": {
+      "dataTable": {
+        "noData": "No data available"
+      },
+      "scheduleBuilder": {
+        "startTimeTooltip": "Use 24-hour format (HH:mm)",
+        "endTimeTooltip": "Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day.",
+        "nextDayBadge": "+1 day",
+        "slotPlaceholder": "Activity / description...",
+        "removeSlotTooltip": "Remove slot",
+        "dayLabel": "Day {day_number}",
+        "emptySlots": "No time slots yet -- click + Add Slot below",
+        "addSlot": "+ Add Time Slot",
+        "noDatesPlaceholder": "Select a start & end date above",
+        "noDatesHelper": "Schedule days will be generated automatically from the date range."
+      }
+    }
+  },
+  "dashboard": {
+    "visitor": {
+      "joinedEvents": {
+        "title": "My Joined Events",
+        "subtitle": "Events you are participating in"
+      },
+      "recommended": {
+        "title": "Recommended for You",
+        "subtitle": "Events based on your interests"
+      }
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Intelligent Virtual Exhibition Platform",
+      "heading": "Build immersive exhibitions that convert visitors into business.",
+      "subtitle": "IVEP gives organizers, enterprises, and attendees one premium digital venue for events, stands, networking, and marketplace outcomes.",
+      "exploreEvents": "Explore Events",
+      "createEvent": "Create Event",
+      "visitorWarning": "Creating events requires an organizer account. Please contact an administrator to upgrade your account, or sign out and register as an organizer if your organisation is not yet on the platform.",
+      "badges": {
+        "secureAccess": "Secure Access",
+        "liveInteractions": "Live Interactions",
+        "aiPowered": "AI-Powered",
+        "b2bReady": "B2B Ready"
+      },
+      "preview": {
+        "label": "Live Platform Preview",
+        "heading": "Immersive event control center",
+        "stats": {
+          "activeStands": {
+            "label": "Active Stands",
+            "value": "120+"
+          },
+          "liveAttendees": {
+            "label": "Live Attendees",
+            "value": "8.4K"
+          },
+          "meetingsScheduled": {
+            "label": "Meetings Scheduled",
+            "value": "2.1K"
+          },
+          "conversionRate": {
+            "label": "Conversion Rate",
+            "value": "37%"
+          }
+        }
+      }
+    },
+    "features": {
+      "title": "Core Platform Features",
+      "subtitle": "A complete toolkit to launch, manage, and scale world-class virtual exhibitions.",
+      "items": {
+        "virtualStands": {
+          "title": "Virtual Stands",
+          "description": "Immersive branded stands where enterprises showcase products, media, and live interactions."
+        },
+        "aiAssistant": {
+          "title": "AI Assistant",
+          "description": "Guide visitors instantly with smart event Q&A, recommendations, and multilingual support."
+        },
+        "networking": {
+          "title": "Networking",
+          "description": "Create real business opportunities through chat, reach-out requests, and meeting flows."
+        },
+        "liveEvents": {
+          "title": "Live Events",
+          "description": "Run conferences, keynotes, and product sessions with real-time attendee engagement."
+        },
+        "marketplace": {
+          "title": "Marketplace",
+          "description": "Enable direct purchases from stands with secure checkout and transparent order tracking."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Measure booth performance, lead quality, and attendee behavior with actionable insights."
+        }
+      }
+    },
+    "experience": {
+      "title": "Platform Experience",
+      "subtitle": "Designed for immersive discovery, seamless communication, and measurable outcomes.",
+      "items": {
+        "hallNavigation": {
+          "title": "2D/3D Hall Navigation",
+          "description": "Visitors move naturally through your event using fluid hall exploration and stand discovery."
+        },
+        "standExperience": {
+          "title": "Interactive Stand Experience",
+          "description": "Show products, media, resources, and business profiles in a polished digital booth environment."
+        },
+        "chatInteraction": {
+          "title": "Chat and Live Interaction",
+          "description": "Connect visitors and exhibitors through instant messaging and contextual communication tools."
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "A simple journey from event entry to high-value business interaction.",
+      "steps": {
+        "joinEvent": {
+          "title": "Join Event",
+          "description": "Sign in as a visitor or enterprise and enter your selected event in seconds."
+        },
+        "exploreStands": {
+          "title": "Explore Stands",
+          "description": "Discover powerful exhibitors, products, and live sessions from an intuitive hall view."
+        },
+        "interact": {
+          "title": "Interact",
+          "description": "Start meaningful chats, request meetings, and engage directly with brands."
+        },
+        "buyConnect": {
+          "title": "Buy / Connect",
+          "description": "Complete purchases seamlessly or capture leads to convert engagement into outcomes."
+        }
+      }
+    },
+    "socialProof": {
+      "title": "Trusted by Modern Event Teams",
+      "subtitle": "Built for organizers and enterprises that care about premium attendee experiences.",
+      "stats": {
+        "eventsHosted": {
+          "label": "Events Hosted",
+          "value": "1,200+"
+        },
+        "registeredUsers": {
+          "label": "Registered Users",
+          "value": "95K+"
+        },
+        "enterpriseExhibitors": {
+          "label": "Enterprise Exhibitors",
+          "value": "3,400+"
+        }
+      }
+    },
+    "cta": {
+      "title": "Start your virtual exhibition today",
+      "subtitle": "Launch a premium event experience for visitors, exhibitors, and partners with one unified platform.",
+      "joinVisitor": "Join as Visitor",
+      "hostEvent": "Host an Event"
+    }
+  },
+  "layout": {
+    "organizer": {
+      "sidebar": {
+        "brand": "IVEP",
+        "suffix": "ORG",
+        "dashboard": "Dashboard",
+        "myEvents": "My Events",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Organizer",
+      "workspace": "Organizer Workspace",
+      "checkingAuth": "Checking authorization...",
+      "notifications": "Notifications"
+    },
+    "enterprise": {
+      "sidebar": {
+        "title": "Enterprise Panel",
+        "subtitle": "Business Journey",
+        "dashboard": "Dashboard",
+        "events": "Events",
+        "requests": "Requests",
+        "analytics": "Analytics",
+        "products": "Products",
+        "profile": "Profile",
+        "notifications": "Notifications",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Enterprise",
+      "workspace": "Enterprise Workspace",
+      "loading": "Loading...",
+      "fallbackUser": "Enterprise User"
+    },
+    "admin": {
+      "sidebar": {
+        "title": "Admin Panel",
+        "dashboard": "Dashboard",
+        "events": "Events",
+        "users": "Users",
+        "organizations": "Organizations",
+        "enterprises": "Enterprises",
+        "organizerApprovals": "Organizer Approvals",
+        "enterpriseApprovals": "Enterprise Approvals",
+        "finance": "Finance",
+        "monitoring": "Monitoring",
+        "auditLogs": "Audit Logs",
+        "incidents": "Incidents",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Admin",
+      "workspace": "Admin Workspace",
+      "checkingAuth": "Checking authorization...",
+      "fallbackUser": "Administrator"
+    }
+  },
+  "events": {
+    "listing": {
+      "title": "Events",
+      "subtitle": "Track upcoming, live, and ended exhibitions with timeline-aware access.",
+      "timelineLabel": "Timeline",
+      "timelineFilters": {
+        "all": "All",
+        "live": "Live",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "timelineTbd": "Timeline TBD"
+      },
+      "errorLoad": "Could not load events."
+    },
+    "detail": {
+      "loading": "Loading event details...",
+      "notFound": "Event not found",
+      "tryAgain": "Try again",
+      "liveAccessClosed": {
+        "title": "Live Access Closed",
+        "message": "This event has ended, so you were moved out of the live area."
+      },
+      "aboutThisEvent": "About this Event",
+      "downloadReceipt": "Download Receipt",
+      "favorited": "Favorited",
+      "addToFavorites": "Add to favorites",
+      "insights": {
+        "title": "Event Insights",
+        "attendingEnterprises": {
+          "label": "Attending Enterprises",
+          "description": "Companies ready to connect during the event."
+        },
+        "scheduleSessions": {
+          "label": "Schedule Sessions",
+          "description": "Planned activities across the event timeline."
+        },
+        "experienceFocus": {
+          "label": "Experience Focus",
+          "description": "Networking, showcases, and live knowledge sessions",
+          "subtitle": "Designed for discovery and real business conversations."
+        }
+      },
+      "whoYouCanMeet": {
+        "title": "Who You Can Meet",
+        "lineupFinalized": "Enterprise lineup is being finalized. Check again soon for participating companies and stands.",
+        "unlockFullList": "Register to unlock the full participant list and direct live access."
+      },
+      "scheduleHighlights": {
+        "title": "Schedule Highlights",
+        "dayLabel": "Day {day_number}",
+        "nextDayBadge": "+1 day",
+        "noSchedule": "Full schedule details will appear here as soon as timeline slots are published.",
+        "unlockFullSchedule": "Register to unlock the complete schedule and all live sections."
+      },
+      "joinCard": {
+        "title": "Participation",
+        "footer": "By joining, you agree to the code of conduct.",
+        "approved": {
+          "noTimeline": {
+            "message": "Your registration is approved, but the event timeline is not published yet.",
+            "action": "Access will open when schedule slots are published.",
+            "button": "Waiting for Timeline"
+          },
+          "accessOpen": {
+            "message": "Your registration is approved. You can access the live event now.",
+            "button": "Enter Event"
+          },
+          "closedBeforeEvent": {
+            "message": "You are approved. Event access opens when the timeline goes live.",
+            "button": "Access Opens Soon"
+          },
+          "closedBetweenSlots": {
+            "message": "Event is in progress. Live access opens at the next active slot.",
+            "button": "Next Slot Soon"
+          },
+          "ended": {
+            "message": "This event timeline has ended. Live access is now closed.",
+            "button": "Event Ended"
+          }
+        },
+        "paymentRequired": {
+          "ended": {
+            "message": "This event has ended. New paid access is closed.",
+            "button": "Event Ended"
+          },
+          "active": {
+            "message": "This event requires payment.",
+            "ticketPrice": "Ticket Price: {price} {currency}",
+            "button": "Pay Now"
+          }
+        },
+        "paymentPending": {
+          "message": "Your payment is being processed. You'll be granted access shortly.",
+          "button": "Check Status"
+        },
+        "pending": {
+          "message": "Your request is pending approval. You'll be notified once it's reviewed.",
+          "button": "Pending Approval"
+        },
+        "rejected": {
+          "message": "Your request was not approved."
+        },
+        "notJoined": {
+          "description": "Join this event to access stands, schedule, and resources.",
+          "buttonPaid": "Register & Pay",
+          "buttonFree": "Register Now"
+        },
+        "badges": {
+          "ended": "ENDED",
+          "timelinePending": "TIMELINE PENDING",
+          "liveAccess": "LIVE ACCESS",
+          "inProgress": "IN PROGRESS",
+          "upcoming": "UPCOMING",
+          "approved": "APPROVED",
+          "paymentRequired": "PAYMENT REQUIRED",
+          "paymentPending": "PAYMENT PENDING",
+          "pending": "PENDING",
+          "rejected": "REJECTED",
+          "notJoined": "NOT JOINED"
+        }
+      },
+      "receiptDownload": {
+        "payerDefault": "Visitor",
+        "paymentMethod": "Stripe (Online Card Payment)",
+        "error": "Could not download receipt. You might not have a paid receipt for this event."
+      },
+      "joinAlert": {
+        "failed": "Failed to join event. Please try again.",
+        "notFound": "Event not found."
+      }
+    }
+  }
+}
