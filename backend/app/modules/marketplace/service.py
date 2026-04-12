@@ -354,7 +354,34 @@ async def list_orders_for_stand(stand_id: str) -> list[dict]:
     orders = [_serialize(d) async for d in cursor]
     if not orders:
         return orders
+    return await _enrich_orders(orders)
 
+
+async def list_orders_for_enterprise(user_id: str) -> list[dict]:
+    """Find all stands owned by the user and return all associated orders."""
+    # 1. Find organizations owned by this user
+    org_cursor = _db().organizations.find({"owner_id": str(user_id)}, {"_id": 1})
+    org_ids = [str(doc["_id"]) async for doc in org_cursor]
+    if not org_ids:
+        return []
+
+    # 2. Find all stands for these organizations
+    stand_cursor = _db().stands.find({"organization_id": {"$in": org_ids}}, {"_id": 1})
+    stand_oids = [doc["_id"] for doc in await stand_cursor.to_list(length=500)]
+    if not stand_oids:
+        return []
+
+    # 3. Find all orders for these stands
+    order_cursor = _db().stand_orders.find({"stand_id": {"$in": stand_oids}}).sort("created_at", -1)
+    orders = [_serialize(d) async for d in order_cursor]
+    if not orders:
+        return []
+
+    return await _enrich_orders(orders)
+
+
+async def _enrich_orders(orders: list[dict]) -> list[dict]:
+    """Enrich a list of order dicts with buyer names, emails, and product types."""
     buyer_ids: list[ObjectId] = []
     product_ids: list[ObjectId] = []
     for order in orders:

@@ -36,6 +36,14 @@ const ADMIN_NAV: NavLink[] = [
     { label: 'Admin Panel', href: '/admin' },
 ];
 
+const ENTERPRISE_NAV: NavLink[] = [
+    { label: 'Dashboard', href: '/enterprise' },
+    { label: 'My Events', href: '/enterprise/events' },
+    { label: 'Products', href: '/enterprise/products' },
+    { label: 'Requests', href: '/enterprise/product-requests' },
+    { label: 'Leads', href: '/enterprise/leads' },
+];
+
 // ── Per-role dropdown menu items ──────────────────────────────────────────────
 
 type DropdownItem = { label: string; href: string; icon: React.ReactNode };
@@ -80,6 +88,14 @@ function getDropdownItems(role?: string): DropdownItem[] {
             { label: 'Favorites', href: '/favorites', icon: FavIcon },
         ];
     }
+    if (role === 'enterprise') {
+        return [
+            { label: 'My Profile', href: '/enterprise/profile', icon: ProfileIcon },
+            { label: 'Dashboard', href: '/enterprise', icon: DashboardIcon },
+            { label: 'Manage Products', href: '/enterprise/products', icon: ReceiptIcon },
+            { label: 'All Requests', href: '/enterprise/product-requests', icon: FavIcon },
+        ];
+    }
     if (role === 'organizer') {
         return [
             { label: 'My Profile', href: '/organizer/profile', icon: ProfileIcon },
@@ -97,6 +113,7 @@ function getDropdownItems(role?: string): DropdownItem[] {
 
 function getNavLinks(role?: string): NavLink[] {
     if (role === 'visitor') return VISITOR_NAV;
+    if (role === 'enterprise') return ENTERPRISE_NAV;
     if (role === 'organizer') return ORGANIZER_NAV;
     if (role === 'admin') return ADMIN_NAV;
     return GUEST_NAV;
@@ -106,6 +123,7 @@ function getNavLinks(role?: string): NavLink[] {
 
 const roleBadge: Record<string, string> = {
     visitor: 'bg-sky-50 text-sky-700',
+    enterprise: 'bg-amber-50 text-amber-700',
     organizer: 'bg-indigo-50 text-indigo-700',
     admin: 'bg-rose-50 text-rose-700',
 };

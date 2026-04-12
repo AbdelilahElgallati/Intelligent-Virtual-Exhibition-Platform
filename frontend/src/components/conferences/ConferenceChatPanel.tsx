@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { DailyRoomMessage } from '@/hooks/useDailyRoom';
 import { Send } from 'lucide-react';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 
 interface ConferenceChatPanelProps {
   title?: string;
@@ -26,7 +26,7 @@ export default function ConferenceChatPanel({
 }: Readonly<ConferenceChatPanelProps>) {
   const [draft, setDraft] = useState('');
   const ordered = useMemo(() => messages.slice().sort((a, b) => {
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return parseISOUTC(a.createdAt).getTime() - parseISOUTC(b.createdAt).getTime();
   }), [messages]);
 
   const submit = async (e: React.FormEvent) => {

@@ -37,6 +37,7 @@ export interface MarketplaceOrder {
   id: string;
   product_id: string;
   stand_id: string;
+  event_id?: string;
   buyer_id: string;
   product_name: string;
   quantity: number;

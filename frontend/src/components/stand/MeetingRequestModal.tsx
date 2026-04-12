@@ -629,15 +629,16 @@ export function MeetingRequestModal({
                                                         <span className={clsx('text-[11px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide', tl.bgColor, tl.color)}>
                                                             <TlIcon size={12} className="inline mr-1 -mt-0.5" /> {tl.label}
                                                         </span>
-                                                        <span className={clsx(
-                                                            'text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide',
-                                                            m.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                                            m.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                                                            m.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                            'bg-zinc-100 text-zinc-600'
-                                                        )}>
-                                                            {m.status}
-                                                        </span>
+                                                        {m.status !== 'canceled' && m.status !== 'rejected' && m.status !== 'completed' && (
+                                                            <span className={clsx(
+                                                                'text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide',
+                                                                m.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                                                m.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                                                'bg-zinc-100 text-zinc-600'
+                                                            )}>
+                                                                {m.status}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <p className="text-sm font-semibold text-zinc-900">{m.purpose || 'General discussion'}</p>
                                                     <p className="text-xs text-zinc-500 mt-1">

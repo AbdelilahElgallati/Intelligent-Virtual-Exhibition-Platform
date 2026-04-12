@@ -40,7 +40,7 @@ export function formatInTZ(
   },
   locale = 'en-GB'
 ): string {
-  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  const d = parseISOUTC(date);
   
   if (typeof options === 'string') {
     return formatInTimeZone(d, timeZone, options);
@@ -51,6 +51,32 @@ export function formatInTZ(
   } catch {
     return new Intl.DateTimeFormat(locale, options).format(d);
   }
+}
+
+/**
+ * Robustly parses an ISO-like date string from the backend.
+ * If the string lacks a timezone offset, it assumes UTC and appends 'Z'.
+ */
+export function parseISOUTC(date: string | number | Date): Date {
+  if (date instanceof Date) return date;
+  if (typeof date === 'number') return new Date(date);
+  
+  const trimmed = String(date).trim();
+  if (!trimmed) return new Date();
+
+  // If it already has a timezone indicator, parse normally
+  if (trimmed.includes('Z') || trimmed.includes('+') || / \d{4}$/.test(trimmed)) {
+    return parseISO(trimmed);
+  }
+
+  // Handle "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss" without TZ
+  // Replace space with T and append 'Z' to force UTC parsing
+  const iso = trimmed.replace(' ', 'T');
+  if (iso.includes('-') && iso.includes(':')) {
+    return parseISO(iso + 'Z');
+  }
+
+  return parseISO(trimmed);
 }
 
 /**

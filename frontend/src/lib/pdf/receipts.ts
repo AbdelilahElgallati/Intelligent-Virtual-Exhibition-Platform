@@ -72,9 +72,9 @@ type MarketplaceUnifiedOrderReceiptInput = {
 export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInput) {
   const { default: jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
-  const { formatInTZ, getUserTimezone } = await import('@/lib/timezone');
+  const { formatInTZ, getUserTimezone, parseISOUTC } = await import('@/lib/timezone');
 
-  const paidAt = new Date(input.paidAt || new Date().toISOString());
+  const paidAt = parseISOUTC(input.paidAt || new Date().toISOString());
   const amount = Number(input.amount || 0);
   const currency = (input.currency || 'MAD').toUpperCase();
   const reference = input.reference || 'N/A';
@@ -190,9 +190,9 @@ export async function downloadEventTicketReceiptPdf(input: EventTicketReceiptInp
 export async function downloadEnterpriseStandFeeReceiptPdf(input: EnterpriseStandReceiptInput) {
   const { default: jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
-  const { formatInTZ, getUserTimezone } = await import('@/lib/timezone');
+  const { formatInTZ, getUserTimezone, parseISOUTC } = await import('@/lib/timezone');
 
-  const paidAt = new Date(input.paidAt || new Date().toISOString());
+  const paidAt = parseISOUTC(input.paidAt || new Date().toISOString());
   const amount = Number(input.amount || 0);
   const paymentMethod = input.paymentMethodLabel || 'Stripe (Online Card Payment)';
   const reference = input.paymentReference || 'N/A';
@@ -308,7 +308,7 @@ export async function downloadEnterpriseStandFeeReceiptPdf(input: EnterpriseStan
 export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: MarketplaceUnifiedOrderReceiptInput) {
   const { default: jsPDF } = await import('jspdf');
   const autoTable = (await import('jspdf-autotable')).default;
-  const { formatInTZ, getUserTimezone } = await import('@/lib/timezone');
+  const { formatInTZ, getUserTimezone, parseISOUTC } = await import('@/lib/timezone');
 
   const doc = new jsPDF();
   const createdAtIso = input.createdAt || new Date().toISOString();
@@ -317,7 +317,7 @@ export async function downloadMarketplaceUnifiedOrderReceiptPdf(input: Marketpla
 
   const currency = (input.items[0]?.currency || 'MAD').toUpperCase();
   const total = input.items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
-  const receiptNo = input.orderReference || `MKT-${new Date(createdAtIso).getFullYear()}-${String(input.groupId || '').replaceAll(/[^a-zA-Z0-9]/g, '').slice(-10).toUpperCase()}`;
+  const receiptNo = input.orderReference || `MKT-${parseISOUTC(createdAtIso).getFullYear()}-${String(input.groupId || '').replaceAll(/[^a-zA-Z0-9]/g, '').slice(-10).toUpperCase()}`;
 
   doc.setFontSize(22);
   doc.setTextColor(79, 70, 229);

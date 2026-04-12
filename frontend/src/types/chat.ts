@@ -10,6 +10,7 @@ export interface ChatMessage {
 
 export interface ChatRoom {
     id: string;
+    _id?: string;
     name: string;
     room_category: 'visitor' | 'b2b';
     event_id?: string;
@@ -17,6 +18,7 @@ export interface ChatRoom {
     members: string[];
     created_at: string;
     last_message?: ChatMessage;
+    last_read_by?: Record<string, string>;
 }
 
 export interface MessageCreatePayload {

@@ -124,4 +124,13 @@ class ChatRepository:
         rooms = await cursor.to_list(length=100)
         return [ChatRoomSchema(**room) for room in rooms]
 
+    async def mark_room_as_read(self, room_id: str, user_id: str) -> bool:
+        from datetime import datetime, timezone
+        room_query = {"_id": ObjectId(room_id)} if ObjectId.is_valid(room_id) else {"id": room_id}
+        result = await self.rooms.update_one(
+            room_query,
+            {"$set": {f"last_read_by.{str(user_id)}": datetime.now(timezone.utc)}}
+        )
+        return result.modified_count > 0
+
 chat_repo = ChatRepository()

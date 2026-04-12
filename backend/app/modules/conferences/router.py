@@ -24,6 +24,27 @@ from fastapi import APIRouter, Request
 router = APIRouter(tags=["conferences"])
 
 
+async def _get_conf_or_404(conf_id: str) -> dict:
+    """Fetch a conference by ID/slug or raise 404."""
+    conf = await conf_repo.get_by_id(conf_id)
+    if not conf:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conference not found")
+    return conf
+
+
+async def _assert_assigned_enterprise(conf: dict, current_user: dict):
+    """Ensure the user is the assigned host for this conference."""
+    user_id = str(current_user["_id"])
+    assigned_id = str(conf.get("assigned_enterprise_id") or "")
+
+    if user_id != assigned_id and current_user.get("role") != Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not the assigned speaker for this conference"
+        )
+
+
+
 def _parse_utc_datetime(value) -> Optional[datetime]:
     if not value:
         return None

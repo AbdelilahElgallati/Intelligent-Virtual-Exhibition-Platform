@@ -17,7 +17,7 @@ import {
   AlertTriangle, Clock3, Mic, MicOff,
   MonitorUp, RefreshCw, Shield, Users, Video, VideoOff,
 } from 'lucide-react';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 
 interface SpeakerRoomProps {
   token: string;
@@ -130,8 +130,8 @@ export default function SpeakerRoom({
     globalThis.setTimeout(() => setModerationMsg(null), 2600);
   };
 
-  const start = startTime ? new Date(startTime).getTime() : null;
-  const end = endTime ? new Date(endTime).getTime() : null;
+  const start = startTime ? parseISOUTC(startTime).getTime() : null;
+  const end = endTime ? parseISOUTC(endTime).getTime() : null;
   const isInSession = Boolean(start && end && now >= start && now < end);
   let sessionState = 'Live session';
   if (start && now < start) {

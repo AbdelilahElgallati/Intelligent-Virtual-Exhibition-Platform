@@ -27,6 +27,17 @@ export function resolveMediaUrl(path?: string | null): string {
         return normalized;
     }
 
+    // 1.5. Common external URLs missing protocol
+    const lowerPath = normalized.toLowerCase();
+    if (
+        lowerPath.startsWith('www.') ||
+        lowerPath.startsWith('youtube.com') ||
+        lowerPath.startsWith('vimeo.com') ||
+        lowerPath.startsWith('youtu.be')
+    ) {
+        return `https://${normalized}`;
+    }
+
     const cleanPath = normalized.startsWith('/')
         ? normalized
         : `/${normalized}`;

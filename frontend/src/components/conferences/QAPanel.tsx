@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { QAItem } from '@/types/conference';
 import { http } from '@/lib/http';
+import { parseISOUTC } from '@/lib/timezone';
 
 interface QAPanelProps {
     conferenceId: string;
@@ -11,7 +12,7 @@ interface QAPanelProps {
 
 function formatRelativeTime(value?: string) {
     if (!value) return 'just now';
-    const date = new Date(value);
+    const date = parseISOUTC(value);
     if (Number.isNaN(date.getTime())) return 'just now';
 
     const diffMs = Date.now() - date.getTime();

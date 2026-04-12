@@ -11,6 +11,7 @@ import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { ParticipantStatus } from '@/lib/api/types';
+import { useAuth } from '@/context/AuthContext';
 
 import { http } from '@/lib/http';
 
@@ -20,6 +21,7 @@ interface Props {
 
 function WatchContent({ eventId, confId }: { eventId: string; confId: string }) {
     const router = useRouter();
+    const { user } = useAuth();
     const [conf, setConf] = useState<Conference | null>(null);
     const [tokenData, setTokenData] = useState<ConferenceTokenResponse | null>(null);
     const [eventData, setEventData] = useState<Event | null>(null);
@@ -29,10 +31,12 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
 
     const lifecycle = eventData ? getEventLifecycle(eventData, new Date(timelineNow)) : null;
-    // Allow access when participant is approved and the conference is live.
-    // The backend already validates the event timeline when issuing audience tokens,
-    // so we don't double-gate on the frontend schedule slots.
-    const isApprovedParticipant = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
+    
+    // Check if user has a privileged role
+    const isPrivileged = user?.role === 'admin' || user?.role === 'organizer';
+    
+    // Allow access when participant is approved, or if the user is an admin/organizer.
+    const isApprovedParticipant = isPrivileged || participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
     const hasLiveAccess = isApprovedParticipant && conf?.status === 'live';
 
     useEffect(() => {
@@ -61,7 +65,11 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                 const tData = await http.get<ConferenceTokenResponse>(`/conferences/${confId}/token`);
                 setTokenData(tData);
             } catch (e: any) {
-                setError(e.message || 'Failed to load conference');
+                if (e.status === 403 && e.message?.toLowerCase().includes('register')) {
+                    setError('CONFERENCE_REGISTRATION_REQUIRED');
+                } else {
+                    setError(e.message || 'Failed to load conference');
+                }
             } finally {
                 setLoading(false);
             }
@@ -139,6 +147,23 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
     }
 
     if (error || !conf) {
+        if (error === 'CONFERENCE_REGISTRATION_REQUIRED') {
+            return (
+                <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+                    <div className="text-6xl mb-5">📝</div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">Registration Required</h2>
+                    <p className="text-zinc-500 text-sm text-center max-w-md">
+                        You are an approved participant of this event, but you haven't registered for this specific conference session yet.
+                    </p>
+                    <button
+                        onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
+                        className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
+                    >
+                        Register Now
+                    </button>
+                </div>
+            );
+        }
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🎙️</div>

@@ -50,7 +50,11 @@ export const ENDPOINTS = {
   },
   MARKETPLACE: {
     PRODUCTS: (standId: string) => `/marketplace/stands/${standId}/products`,
+    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
+    ENTERPRISE_ORDERS: '/marketplace/enterprise/orders',
     CART_CHECKOUT: (standId: string) => `/marketplace/stands/${standId}/cart/checkout`,
+    UPDATE_ORDER_FULFILLMENT: (orderId: string) => `/marketplace/orders/${orderId}/fulfillment-status`,
+    CANCEL_ORDER: (orderId: string) => `/marketplace/orders/${orderId}/cancel`,
     MY_ORDERS: '/marketplace/orders',
     UNIFIED_ORDERS: '/marketplace/orders/unified',
     UNIFIED_ORDERS_BY_SESSION: (sessionId: string) => `/marketplace/orders/unified?session_id=${encodeURIComponent(sessionId)}`,
@@ -60,9 +64,6 @@ export const ENDPOINTS = {
     PRODUCT: (productId: string) => `/marketplace/products/${productId}`,
     CHECKOUT: (standId: string, productId: string) =>
       `/marketplace/stands/${standId}/products/${productId}/checkout`,
-    STAND_ORDERS: (standId: string) => `/marketplace/stands/${standId}/orders`,
-    UPDATE_ORDER_FULFILLMENT: (orderId: string) => `/marketplace/orders/${orderId}/fulfillment-status`,
-    CANCEL_ORDER: (orderId: string) => `/marketplace/orders/${orderId}/cancel`,
   },
   NOTIFICATIONS: {
     LIST: '/notifications',
@@ -88,6 +89,7 @@ export const ENDPOINTS = {
     ROOMS: '/chat/rooms',
     START: (standId: string) => `/chat/rooms/stand/${standId}`,
     HISTORY: (roomId: string) => `/chat/rooms/${roomId}/messages`,
+    READ: (roomId: string) => `/chat/rooms/${roomId}/read`,
   },
   MEETINGS: {
     REQUEST: '/meetings',

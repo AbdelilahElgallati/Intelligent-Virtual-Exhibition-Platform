@@ -158,7 +158,12 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
     /* ---- Scroll to bottom ---- */
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        
+        // Mark as read when messages update and we have a roomId
+        if (roomId && messages.length > 0) {
+            apiClient.post(ENDPOINTS.CHAT.READ(roomId)).catch(() => {});
+        }
+    }, [messages, roomId]);
 
     const handleSend = (e: FormEvent) => {
         e.preventDefault();

@@ -6,6 +6,7 @@
 @./PROJECT_CONTEXT.md
 @./GEMINI_verification_protocol.md
 @.gemini/commands/commands.md
+@./PRE_TEST_VERIFICATION.md
 
 
 ---

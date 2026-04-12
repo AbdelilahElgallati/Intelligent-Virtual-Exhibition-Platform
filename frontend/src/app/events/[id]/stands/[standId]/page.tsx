@@ -34,10 +34,11 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [hasProducts, setHasProducts] = useState(false);
+    const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
     const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
 
     useEffect(() => {
         const fetchStand = async () => {
@@ -70,6 +71,27 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
         const timer = window.setInterval(() => setTimelineNow(Date.now()), 30000);
         return () => window.clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated || !stand) return;
+        const checkUnread = async () => {
+            try {
+                const rooms = await apiClient.get<any[]>(ENDPOINTS.CHAT.ROOMS + `?event_id=${id}&room_category=visitor`);
+                const resolvedStandId = stand.id || stand._id || standId;
+                const standRoom = rooms.find(r => r.stand_id === resolvedStandId);
+                if (standRoom && standRoom.last_message) {
+                    const lastMsgTime = new Date(standRoom.last_message.timestamp).getTime();
+                    const lastReadTime = standRoom.last_read_by?.[user?.id || (user as any)?._id] 
+                        ? new Date(standRoom.last_read_by[user?.id || (user as any)?._id]).getTime() 
+                        : 0;
+                    setHasUnreadMessages(lastMsgTime > lastReadTime);
+                }
+            } catch { }
+        };
+        checkUnread();
+        const interval = setInterval(checkUnread, 10000);
+        return () => clearInterval(interval);
+    }, [id, stand, standId, isAuthenticated, user]);
 
     const toggleFavorite = async () => {
         if (!stand) return;
@@ -136,6 +158,7 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 onChatOpen={() => setIsChatOpen(true)} onMeetingOpen={() => setIsMeetingModalOpen(true)}
                 onAssistantOpen={() => setIsAssistantOpen(true)} onShopOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
                 onFavoriteToggle={toggleFavorite} favoriteId={favoriteId} activeTab={activeTab} onTabChange={setActiveTab}
+                hasUnreadChat={hasUnreadMessages}
             >
                 {activeTab === 'resources' ? (
                     <div className="space-y-5"><StandResources standId={resolvedStandId} /></div>

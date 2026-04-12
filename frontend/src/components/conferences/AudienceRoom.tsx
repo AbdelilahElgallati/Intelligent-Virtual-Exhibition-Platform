@@ -14,7 +14,7 @@ import MediaGrid from '../meetings/MediaGrid';
 import QAPanel from './QAPanel';
 import ConferenceChatPanel from './ConferenceChatPanel';
 import { AlertTriangle, CalendarClock, Clock3, Mic, MicOff, RefreshCw, Users, Video, VideoOff } from 'lucide-react';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 
 interface AudienceRoomProps {
   token: string;
@@ -100,8 +100,8 @@ export default function AudienceRoom({
     return () => globalThis.clearInterval(timer);
   }, []);
 
-  const start = startTime ? new Date(startTime).getTime() : null;
-  const end = endTime ? new Date(endTime).getTime() : null;
+  const start = startTime ? parseISOUTC(startTime).getTime() : null;
+  const end = endTime ? parseISOUTC(endTime).getTime() : null;
   const isInSession = Boolean(start && end && now >= start && now < end);
   let sessionState = 'Live session';
   if (start && now < start) {

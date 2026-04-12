@@ -50,6 +50,7 @@ class ChatRoomSchema(BaseModel):
     members: List[str] # List of user_ids
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_message: Optional[dict] = None
+    last_read_by: dict[str, datetime] = Field(default_factory=dict)
 
     class Config:
         populate_by_name = True

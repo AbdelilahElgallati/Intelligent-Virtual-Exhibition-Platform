@@ -291,13 +291,13 @@ async def request_meeting(
     # 2. Participant Approval Validation (Requester)
     from ..participants.service import get_user_participation
     part = await get_user_participation(meeting.event_id, user_id=str(current_user["_id"]))
-    if not part or part.get("status") != "approved":
+    if not part or part.get("status") not in ("approved", "guest_approved"):
         raise HTTPException(status_code=403, detail="You must be an approved participant of this event to request meetings")
 
     # 3. Participant Approval Validation (Target Stand)
     # stand already resolved above
     target_part = await get_user_participation(meeting.event_id, organization_id=str(stand["organization_id"]))
-    if not target_part or target_part.get("status") != "approved":
+    if not target_part or target_part.get("status") not in ("approved", "guest_approved"):
         raise HTTPException(status_code=403, detail="The target enterprise is not an approved participant for this event")
 
     # 4. Conflict Detection (overlapping meetings)

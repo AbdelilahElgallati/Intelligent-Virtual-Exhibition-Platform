@@ -9,7 +9,7 @@ import { getEventLifecycle } from '@/lib/eventLifecycle';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
 import { useAuth } from '@/context/AuthContext';
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 import type { Event } from '@/types/event';
 import type { MarketplaceOrder, UnifiedMarketplaceOrder } from '@/types/marketplace';
 import type { Stand } from '@/lib/api/types';
@@ -66,7 +66,7 @@ function resolveOrderGroupId(order: MarketplaceOrderExt): string {
 }
 
 function buildOrderRef(groupId: string, createdAt: string): string {
-  const stamp = new Date(createdAt);
+  const stamp = parseISOUTC(createdAt);
   const y = Number.isNaN(stamp.getTime()) ? '0000' : String(stamp.getFullYear());
   const m = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getMonth() + 1).padStart(2, '0');
   const d = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getDate()).padStart(2, '0');
@@ -205,10 +205,10 @@ function upsertGroupedOrder(
     }
   }
 
-  if (new Date(order.created_at).getTime() < new Date(group.created_at).getTime()) {
+  if (parseISOUTC(order.created_at).getTime() < parseISOUTC(group.created_at).getTime()) {
     group.created_at = order.created_at;
   }
-  if (order.paid_at && (!group.paid_at || new Date(order.paid_at).getTime() > new Date(group.paid_at).getTime())) {
+  if (order.paid_at && (!group.paid_at || parseISOUTC(order.paid_at).getTime() > parseISOUTC(group.paid_at).getTime())) {
     group.paid_at = order.paid_at;
   }
 }
@@ -355,7 +355,7 @@ export default function VisitorOrdersPage() {
     });
 
     return normalizedGroups.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => parseISOUTC(b.created_at).getTime() - parseISOUTC(a.created_at).getTime()
     );
   };
 

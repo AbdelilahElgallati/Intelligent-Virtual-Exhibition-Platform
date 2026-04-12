@@ -229,6 +229,7 @@ interface ChatRoom {
     members: string[];
     created_at: string;
     last_message?: any;
+    last_read_by?: Record<string, string>;
 }
 
 interface Meeting {
@@ -755,16 +756,24 @@ export default function EventManagementHub() {
     }, []);
 
     const unreadByRoomId = useMemo(() => {
+        const curUserId = user?.id || (user as any)?._id;
         return allRooms.reduce<Record<string, number>>((acc, room) => {
             const roomId = room.id || room._id;
             const lastMessageTime = getMessageTime(room.last_message);
-            const lastSeenTime = lastSeenByRoom[roomId] || 0;
+            
+            // Priority: 1. Backend last_read_by, 2. Local lastSeenByRoom
+            let lastSeenTime = lastSeenByRoom[roomId] || 0;
+            if (room.last_read_by?.[curUserId]) {
+                const backendReadTime = new Date(room.last_read_by[curUserId]).getTime();
+                lastSeenTime = Math.max(lastSeenTime, backendReadTime);
+            }
+
             if (roomId !== selectedRoomId && lastMessageTime && lastMessageTime > lastSeenTime) {
                 acc[roomId] = 1;
             }
             return acc;
         }, {});
-    }, [allRooms, lastSeenByRoom, selectedRoomId]);
+    }, [allRooms, lastSeenByRoom, selectedRoomId, user]);
 
     const unreadTotal = useMemo(() => Object.values(unreadByRoomId).reduce((sum, v) => sum + v, 0), [unreadByRoomId]);
 
@@ -1335,15 +1344,16 @@ export default function EventManagementHub() {
                                                         {tl.label}
                                                     </span>
                                                     {/* Approval status badge */}
-                                                    <span className={clsx(
-                                                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
-                                                        m.status === 'pending' ? "bg-amber-100 text-amber-700" :
-                                                        m.status === 'approved' ? "bg-emerald-100 text-emerald-700" :
-                                                        m.status === 'rejected' ? "bg-red-100 text-red-600" :
-                                                        "bg-zinc-200 text-zinc-500"
-                                                    )}>
-                                                        {m.status}
-                                                    </span>
+                                                    {m.status !== 'canceled' && m.status !== 'rejected' && m.status !== 'completed' && (
+                                                        <span className={clsx(
+                                                            "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                                                            m.status === 'pending' ? "bg-amber-100 text-amber-700" :
+                                                            m.status === 'approved' ? "bg-emerald-100 text-emerald-700" :
+                                                            "bg-zinc-200 text-zinc-500"
+                                                        )}>
+                                                            {m.status}
+                                                        </span>
+                                                    )}
                                                     <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
                                                         {m.type === 'inbound' ? 'Received' : 'Sent'}
                                                     </span>

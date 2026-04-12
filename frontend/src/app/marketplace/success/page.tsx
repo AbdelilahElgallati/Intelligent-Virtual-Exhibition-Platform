@@ -9,11 +9,12 @@ import type { UnifiedMarketplaceOrder } from '@/types/marketplace';
 import { useSearchParams } from 'next/navigation';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
+import { parseISOUTC } from '@/lib/timezone';
 
 import clsx from 'clsx';
 
 function buildOrderRef(groupId: string, createdAt: string): string {
-    const stamp = new Date(createdAt);
+    const stamp = parseISOUTC(createdAt);
     const y = Number.isNaN(stamp.getTime()) ? '0000' : String(stamp.getFullYear());
     const m = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getMonth() + 1).padStart(2, '0');
     const d = Number.isNaN(stamp.getTime()) ? '00' : String(stamp.getDate()).padStart(2, '0');

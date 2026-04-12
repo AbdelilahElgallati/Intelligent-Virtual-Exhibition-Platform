@@ -35,6 +35,8 @@ interface VirtualStandLayoutProps {
     /* tab state (owned by parent) */
     activeTab: 'resources' | 'about';
     onTabChange: (tab: 'resources' | 'about') => void;
+    /* unread state */
+    hasUnreadChat?: boolean;
     /* rendered tab content */
     children: React.ReactNode;
 }
@@ -82,6 +84,7 @@ export function VirtualStandLayout({
     favoriteId,
     activeTab,
     onTabChange,
+    hasUnreadChat,
     children,
 }: VirtualStandLayoutProps) {
     const [showPanel, setShowPanel] = useState(false);
@@ -460,6 +463,7 @@ export function VirtualStandLayout({
                         onClick={onChatOpen}
                         icon={<MessageSquare className="w-4 h-4" />}
                         label="Chat"
+                        hasUnread={hasUnreadChat}
                     />
                     {/* Meeting */}
                     <ActionBarBtn
@@ -499,6 +503,7 @@ function ActionBarBtn({
     accent,
     glow,
     themeColor,
+    hasUnread,
 }: {
     icon: React.ReactNode;
     label: string;
@@ -507,21 +512,30 @@ function ActionBarBtn({
     accent?: boolean;
     glow?: boolean;
     themeColor: string;
+    hasUnread?: boolean;
 }) {
     const base =
         'flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-[1.25rem] transition-all duration-300 active:scale-95 group/btn';
+
+    const unreadDot = hasUnread && (
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 border-2 border-white"></span>
+        </span>
+    );
 
     if (glow) {
         return (
             <button
                 onClick={onClick}
-                className={`${base} text-white shadow-lg hover:brightness-110`}
+                className={`${base} relative text-white shadow-lg hover:brightness-110`}
                 style={{
                     backgroundColor: themeColor,
                     boxShadow: `0 8px 16px -4px ${themeColor}88, 0 4px 8px -2px ${themeColor}44`,
                 }}
             >
                 {icon}
+                {unreadDot}
                 <span className="text-[10px] sm:text-xs font-semibold leading-none hidden sm:block">{label}</span>
             </button>
         );
@@ -531,10 +545,11 @@ function ActionBarBtn({
         return (
             <button
                 onClick={onClick}
-                className={`${base} text-white shadow-lg hover:brightness-110`}
+                className={`${base} relative text-white shadow-lg hover:brightness-110`}
                 style={{ backgroundColor: themeColor }}
             >
                 {icon}
+                {unreadDot}
                 <span className="text-[10px] sm:text-xs font-semibold leading-none hidden sm:block">{label}</span>
             </button>
         );
@@ -543,9 +558,12 @@ function ActionBarBtn({
     return (
         <button
             onClick={onClick}
-            className={`${base} text-gray-500 hover:bg-black/5 hover:text-gray-900`}
+            className={`${base} relative text-gray-500 hover:bg-black/5 hover:text-gray-900`}
         >
-            <div>{icon}</div>
+            <div className="relative">
+                {icon}
+                {unreadDot}
+            </div>
             <span className="text-[10px] sm:text-xs font-medium tracking-wide leading-none hidden sm:block opacity-80">
                 {label}
             </span>

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import {
     Palette, Package, FileText, Cpu, CheckCircle2,
     Plus, Trash2, Upload, Zap, AlertCircle,
-    BarChart3, MessageSquare, ChevronLeft
+    BarChart3, MessageSquare, ChevronLeft, Play, ExternalLink
 } from 'lucide-react';
 
 type Tab = 'branding' | 'products' | 'resources' | 'ai';
@@ -575,23 +575,33 @@ export default function StandConfigPage() {
                         <div className="border-t pt-6 space-y-3">
                             {resources.length === 0 ? (
                                 <p className="text-zinc-400 text-sm text-center py-4">No resources uploaded yet.</p>
-                            ) : resources.map((r) => (
-                                <div key={r.id || r._id} className="flex items-center gap-4 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                                    <FileText size={18} className="text-zinc-400 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-zinc-900 text-sm truncate">{r.title}</p>
-                                        <a
-                                            href={resolveMediaUrl(r.file_path)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-indigo-600 hover:underline truncate block"
-                                        >
-                                            {r.file_path}
-                                        </a>
+                            ) : resources.map((r) => {
+                                const isVideo = r.type === 'video' || r.type === 'video_url';
+                                const isLink = r.type === 'link';
+                                return (
+                                    <div key={r.id || r._id} className="flex items-center gap-4 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                                        {isVideo ? (
+                                            <Play size={18} className="text-zinc-400 shrink-0" />
+                                        ) : isLink ? (
+                                            <ExternalLink size={18} className="text-zinc-400 shrink-0" />
+                                        ) : (
+                                            <FileText size={18} className="text-zinc-400 shrink-0" />
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-zinc-900 text-sm truncate">{r.title}</p>
+                                            <a
+                                                href={resolveMediaUrl(r.file_path)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-indigo-600 hover:underline truncate block"
+                                            >
+                                                {r.file_path}
+                                            </a>
+                                        </div>
+                                        <span className="text-xs bg-zinc-100 text-zinc-600 px-2 py-1 rounded font-medium">{r.type}</span>
                                     </div>
-                                    <span className="text-xs bg-zinc-100 text-zinc-600 px-2 py-1 rounded font-medium">{r.type}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>

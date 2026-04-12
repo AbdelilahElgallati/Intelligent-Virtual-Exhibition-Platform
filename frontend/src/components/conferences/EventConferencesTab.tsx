@@ -7,7 +7,7 @@ import { apiClient } from '@/lib/api/client';
 import { Conference } from '@/types/conference';
 import { Meeting } from '@/types/meeting';
 
-import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 import { Event } from '@/types/event';
 
 interface EventConferencesTabProps {
@@ -45,7 +45,7 @@ interface ConferenceCardModel {
 }
 
 function parseMs(iso: string): number {
-    return new Date(iso).getTime();
+    return parseISOUTC(iso).getTime();
 }
 
 function normalizeConferenceListPayload(payload: unknown): Conference[] {

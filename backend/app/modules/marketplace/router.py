@@ -13,7 +13,8 @@ from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query
 
 from app.core.config import settings
 from app.core.storage import store_upload
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_role
+from app.modules.auth.enums import Role
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from app.modules.marketplace import service as mkt_svc
@@ -204,7 +205,7 @@ async def checkout_product(
         raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
     
     part = await get_user_participation(str(event["_id"]), user["_id"])
-    if not part or part.get("status") != ParticipantStatus.APPROVED:
+    if not part or part.get("status") not in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
         raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
 
     product = await mkt_svc.get_product(product_id)
@@ -314,7 +315,7 @@ async def cart_checkout(
         raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
     
     part = await get_user_participation(str(event["_id"]), user["_id"])
-    if not part or part.get("status") != ParticipantStatus.APPROVED:
+    if not part or part.get("status") not in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
         raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
 
     order_ids: list[str] = []
@@ -470,6 +471,14 @@ async def list_my_orders(
 ):
     """Authenticated user — list their own marketplace orders."""
     return await mkt_svc.list_orders_for_buyer(str(user["_id"]))
+
+
+@router.get("/enterprise/orders", response_model=list[OrderOut])
+async def list_enterprise_orders(
+    user: dict = Depends(require_role(Role.ENTERPRISE)),
+):
+    """Stand owner — list all orders across all their stands."""
+    return await mkt_svc.list_orders_for_enterprise(str(user["_id"]))
 
 
 @router.patch("/orders/{order_id}/fulfillment-status", response_model=OrderOut)

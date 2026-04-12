@@ -87,6 +87,15 @@ async def get_room_history(
         raise HTTPException(status_code=404, detail="Chat room not found")
     return await chat_repo.get_room_messages(room_id, limit, skip)
 
+@router.post("/rooms/{room_id}/read")
+async def mark_room_as_read(
+    room_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Mark a room as read for the current user."""
+    success = await chat_repo.mark_room_as_read(room_id, str(current_user["_id"]))
+    return {"success": success}
+
 @router.post("/rooms/stand/{stand_id}", response_model=ChatRoomSchema)
 async def initiate_chat_with_stand(
     stand_id: str,
@@ -207,7 +216,7 @@ async def initiate_b2b_chat(
     current_participation = await get_user_participation(event_id, organization_id=current_org_id)
     import sys
     print(f"DEBUG B2B CHAT: event_id={event_id}, current_org_id={current_org_id}, participation={current_participation}", file=sys.stderr, flush=True)
-    if not current_participation or current_participation.get("status") != "approved":
+    if not current_participation or current_participation.get("status") not in ("approved", "guest_approved"):
         raise HTTPException(status_code=403, detail="Your enterprise is not approved for this event")
     
     resolved_partner_org_id = await resolve_organization_id(partner_org_id)
@@ -216,7 +225,7 @@ async def initiate_b2b_chat(
         raise HTTPException(status_code=404, detail="Partner organization not found")
 
     partner_participation = await get_user_participation(event_id, organization_id=resolved_partner_org_id)
-    if not partner_participation or partner_participation.get("status") != "approved":
+    if not partner_participation or partner_participation.get("status") not in ("approved", "guest_approved"):
         raise HTTPException(status_code=403, detail="The partner enterprise is not approved for this event")
     
     owner_id = partner_org.get("owner_id")

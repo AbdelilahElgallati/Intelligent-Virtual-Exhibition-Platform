@@ -18,6 +18,7 @@ import {
     ChevronLeft,
 } from 'lucide-react';
 import { ChatPanel } from '@/components/stand/ChatPanel';
+import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ interface ChatRoom {
     created_at: string;
     last_message?: any;
     event_id?: string;
+    last_read_by?: Record<string, string>;
 }
 
 interface Meeting {
@@ -202,6 +204,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function EnterpriseCommunicationsPage() {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings'>('chats');
     const [rooms, setRooms] = useState<ChatRoom[]>([]);
     const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -317,16 +320,24 @@ export default function EnterpriseCommunicationsPage() {
     }, [rooms, selectedRoomId]);
 
     const unreadByRoomId = useMemo(() => {
+        const curUserId = user?.id || (user as any)?._id;
         return rooms.reduce<Record<string, number>>((acc, room) => {
             const roomId = room.id || room._id;
             const lastMessageTime = getMessageTime(room.last_message);
-            const lastSeenTime = lastSeenByRoom[roomId] || 0;
+            
+            // Priority: 1. Backend last_read_by, 2. Local lastSeenByRoom
+            let lastSeenTime = lastSeenByRoom[roomId] || 0;
+            if (room.last_read_by?.[curUserId]) {
+                const backendReadTime = new Date(room.last_read_by[curUserId]).getTime();
+                lastSeenTime = Math.max(lastSeenTime, backendReadTime);
+            }
+
             if (roomId !== selectedRoomId && lastMessageTime && lastMessageTime > lastSeenTime) {
                 acc[roomId] = 1;
             }
             return acc;
         }, {});
-    }, [rooms, lastSeenByRoom, selectedRoomId]);
+    }, [rooms, lastSeenByRoom, selectedRoomId, user]);
 
     const unreadTotal = useMemo(() => Object.values(unreadByRoomId).reduce((sum, v) => sum + v, 0), [unreadByRoomId]);
 
