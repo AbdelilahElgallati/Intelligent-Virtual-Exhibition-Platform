@@ -50,4 +50,5 @@ test-results/
 .gemini/
 .aider*
 .gemini/
+.qwen/
 GEMINI*

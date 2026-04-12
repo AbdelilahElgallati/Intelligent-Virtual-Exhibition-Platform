@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(C:\\Users\\hp\\Desktop\\PFE PROJECT\\Intelligent-Virtual-Ex/**)",
+      "Bash(npx *)",
+      "Bash(python *)"
+    ]
+  },
+  "$version": 3
+}

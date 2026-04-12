@@ -7,6 +7,7 @@ from app.db.mongo import get_database
 from app.modules.users.schemas import UserCreate
 from app.modules.auth.enums import Role
 from app.db.utils import stringify_object_ids
+from app.core.security import verify_password, hash_password
 import re
 
 def get_users_collection() -> AsyncIOMotorCollection:
@@ -112,3 +113,29 @@ async def delete_user(user_id: str) -> bool:
     query = {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
     result = await collection.delete_one(query)
     return result.deleted_count > 0
+
+
+async def change_password(user_id: str, current_password: str, new_password: str) -> dict:
+    """
+    Change user password after validating the current password.
+    Returns updated user dict on success.
+    Raises ValueError on validation failure.
+    """
+    collection = get_users_collection()
+    uid = str(user_id)
+    query = {"_id": ObjectId(uid)} if ObjectId.is_valid(uid) else {"_id": uid}
+
+    user = await collection.find_one(query)
+    if user is None:
+        raise ValueError("User not found")
+
+    if not verify_password(current_password, user["hashed_password"]):
+        raise ValueError("Current password is incorrect")
+
+    new_hashed = hash_password(new_password)
+    result = await collection.find_one_and_update(
+        query,
+        {"$set": {"hashed_password": new_hashed}},
+        return_document=ReturnDocument.AFTER,
+    )
+    return stringify_object_ids(result)

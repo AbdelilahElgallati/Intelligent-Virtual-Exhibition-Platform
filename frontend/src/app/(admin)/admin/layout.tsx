@@ -22,6 +22,7 @@ import {
     Briefcase,
     Wallet,
     ChevronRight,
+    User,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
     { label: 'Monitoring', href: '/admin/monitoring', icon: Activity },
     { label: 'Audit Logs', href: '/admin/audit', icon: ScrollText },
     { label: 'Incidents', href: '/admin/incidents', icon: AlertTriangle },
+    { label: 'Profile', href: '/admin/profile', icon: User },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

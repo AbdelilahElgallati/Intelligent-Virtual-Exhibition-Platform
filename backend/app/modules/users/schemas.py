@@ -142,3 +142,12 @@ class ProfileUpdate(BaseModel):
         except Exception as exc:
             raise ValueError("Invalid IANA timezone") from exc
         return value
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing user password."""
+
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6)
+
+    model_config = {"from_attributes": True}

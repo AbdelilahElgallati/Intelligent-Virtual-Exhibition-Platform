@@ -9,8 +9,8 @@ from typing import Optional
 
 from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.enums import Role
-from app.modules.users.schemas import UserRead, ProfileUpdate, UserCreate
-from app.modules.users.service import update_user_profile, list_all_users, set_user_active, create_user, get_user_by_email
+from app.modules.users.schemas import UserRead, ProfileUpdate, UserCreate, ChangePasswordRequest
+from app.modules.users.service import update_user_profile, list_all_users, set_user_active, create_user, get_user_by_email, change_password
 from app.modules.audit.service import log_audit
 
 
@@ -47,6 +47,46 @@ async def update_my_profile(
         )
 
     return UserRead(**updated_user)
+
+
+@router.patch("/change-password")
+async def change_user_password(
+    payload: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """
+    Change the authenticated user's password.
+    Validates current password and sets new password.
+    """
+    user_id = str(current_user["_id"])
+
+    if payload.new_password == payload.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password",
+        )
+
+    try:
+        await change_password(user_id, payload.current_password, payload.new_password)
+    except ValueError as e:
+        if "incorrect" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    await log_audit(
+        actor_id=user_id,
+        action="user.change_password",
+        entity="user",
+        entity_id=user_id,
+    )
+
+    return {"message": "Password changed successfully"}
 
 
 # ============== Admin Endpoints ==============

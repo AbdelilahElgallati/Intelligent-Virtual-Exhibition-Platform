@@ -9,6 +9,7 @@ import { Container } from '@/components/common/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import ChangePassword from '@/components/common/ChangePassword';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -513,10 +514,13 @@ export default function ProfilePage() {
                     </ProfileSection>
 
                     {/* ── Save button ─────────────────────────────────────── */}
-                    <div className="flex justify-end pt-2">
-                        <Button size="lg" onClick={handleSave} isLoading={saving} className="px-10">
-                            {saving ? 'Saving…' : 'Save Profile'}
-                        </Button>
+                    <div className="space-y-6">
+                        <ChangePassword />
+                        <div className="flex justify-end pt-2">
+                            <Button size="lg" onClick={handleSave} isLoading={saving} className="px-10">
+                                {saving ? 'Saving…' : 'Save Profile'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Container>
