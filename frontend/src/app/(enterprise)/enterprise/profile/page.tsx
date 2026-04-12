@@ -12,6 +12,7 @@ import {
     Linkedin, Save, CheckCircle2, Phone,
     Upload, X, Camera, Briefcase
 } from 'lucide-react';
+import ChangePassword from '@/components/common/ChangePassword';
 const ENTERPRISE_CATEGORY_OPTIONS = [
     'Technology',
     'Healthcare',
@@ -322,6 +323,8 @@ export default function EnterpriseProfilePage() {
                             <p className="text-xs text-indigo-600">Complete your profile to increase your visibility in virtual exhibitions.</p>
                         </CardContent>
                     </Card>
+
+                    <ChangePassword />
                 </div>
 
                 {/* Main Content: Editable Form */}
