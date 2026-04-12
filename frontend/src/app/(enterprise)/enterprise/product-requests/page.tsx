@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { http } from "@/lib/http";
 import { ENDPOINTS } from "@/lib/api/endpoints";
-import { formatInUserTZ } from "@/lib/timezone";
+import { formatInUserTZ, parseISOUTC } from "@/lib/timezone";
 import type { MarketplaceOrder } from "@/types/marketplace";
 import {
     Package,
@@ -112,11 +112,13 @@ function nextOrderStatus(status?: FulfillmentStatus): FulfillmentStatus | null {
 
 function dateMatchesFilter(rawDate: string, filter: DateFilter): boolean {
     if (filter === "all") return true;
-    const value = new Date(rawDate);
+    const value = parseISOUTC(rawDate);
     if (Number.isNaN(value.getTime())) return false;
     const now = new Date();
     if (filter === "today") {
-        return value.toISOString().slice(0, 10) === now.toISOString().slice(0, 10);
+        return value.getUTCDate() === now.getUTCDate() && 
+               value.getUTCMonth() === now.getUTCMonth() && 
+               value.getUTCFullYear() === now.getUTCFullYear();
     }
     const days = filter === "last7" ? 7 : 30;
     const threshold = new Date(now);

@@ -60,6 +60,7 @@ class OrderOut(BaseModel):
     id: str
     product_id: str
     stand_id: str
+    event_id: str = ""
     buyer_id: str
     product_name: str = ""
     quantity: int

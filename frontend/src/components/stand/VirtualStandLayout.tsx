@@ -457,14 +457,18 @@ export function VirtualStandLayout({
                     <div className="w-px h-8 bg-black/5 mx-1 shrink-0" />
 
                     {/* Chat (accent) */}
-                    <ActionBarBtn
-                        accent
-                        themeColor={themeColor}
-                        onClick={onChatOpen}
-                        icon={<MessageSquare className="w-4 h-4" />}
-                        label="Chat"
-                        hasUnread={hasUnreadChat}
-                    />
+                    <div className="relative">
+                        <ActionBarBtn
+                            accent
+                            themeColor={themeColor}
+                            onClick={onChatOpen}
+                            icon={<MessageSquare className="w-4 h-4" />}
+                            label="Chat"
+                        />
+                        {hasUnreadChat && (
+                            <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm z-50 translate-x-1/3 -translate-y-1/3" />
+                        )}
+                    </div>
                     {/* Meeting */}
                     <ActionBarBtn
                         themeColor={themeColor}

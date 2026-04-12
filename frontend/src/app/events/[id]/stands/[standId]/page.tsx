@@ -14,6 +14,7 @@ import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { ChatShell } from '@/components/assistant/ChatShell';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
+import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { ParticipantStatus } from '@/lib/api/types';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 
@@ -35,10 +36,26 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [hasProducts, setHasProducts] = useState(false);
     const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+    const [visitorRoomId, setVisitorRoomId] = useState<string | null>(null);
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
     const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
     const { isAuthenticated, user } = useAuth();
+
+    // 1. WebSocket listener for REAL-TIME unread dot
+    const { messages: wsMessages } = useChatWebSocket(
+        (isAuthenticated && visitorRoomId && !isChatOpen) ? visitorRoomId : null
+    );
+
+    useEffect(() => {
+        if (wsMessages.length > 0 && !isChatOpen) {
+            const lastMsg = wsMessages[wsMessages.length - 1];
+            const userId = user?.id || (user as any)?._id;
+            if (lastMsg.sender_id !== userId) {
+                setHasUnreadMessages(true);
+            }
+        }
+    }, [wsMessages, isChatOpen, user]);
 
     useEffect(() => {
         const fetchStand = async () => {
@@ -73,23 +90,44 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated || !stand) return;
+        if (!isAuthenticated || !stand) {
+            setHasUnreadMessages(false);
+            return;
+        }
+        
         const checkUnread = async () => {
             try {
                 const rooms = await apiClient.get<any[]>(ENDPOINTS.CHAT.ROOMS + `?event_id=${id}&room_category=visitor`);
                 const resolvedStandId = stand.id || stand._id || standId;
                 const standRoom = rooms.find(r => r.stand_id === resolvedStandId);
-                if (standRoom && standRoom.last_message) {
-                    const lastMsgTime = new Date(standRoom.last_message.timestamp).getTime();
-                    const lastReadTime = standRoom.last_read_by?.[user?.id || (user as any)?._id] 
-                        ? new Date(standRoom.last_read_by[user?.id || (user as any)?._id]).getTime() 
-                        : 0;
-                    setHasUnreadMessages(lastMsgTime > lastReadTime);
+                
+                if (standRoom) {
+                    setVisitorRoomId(standRoom.id || standRoom._id);
+                    
+                    if (standRoom.last_message) {
+                        const msg = standRoom.last_message;
+                        const rawTs = msg.timestamp || msg.created_at || msg.sent_at || msg.createdAt;
+                        const lastMsgTime = rawTs ? new Date(rawTs).getTime() : 0;
+                        
+                        const userId = user?.id || (user as any)?._id;
+                        const lastReadTime = standRoom.last_read_by?.[userId] 
+                            ? new Date(standRoom.last_read_by[userId]).getTime() 
+                            : 0;
+                            
+                        setHasUnreadMessages(lastMsgTime > lastReadTime);
+                    } else {
+                        setHasUnreadMessages(false);
+                    }
+                } else {
+                    setHasUnreadMessages(false);
                 }
-            } catch { }
+            } catch { 
+                setHasUnreadMessages(false);
+            }
         };
+
         checkUnread();
-        const interval = setInterval(checkUnread, 10000);
+        const interval = setInterval(checkUnread, 5000);
         return () => clearInterval(interval);
     }, [id, stand, standId, isAuthenticated, user]);
 
@@ -155,7 +193,10 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             <VirtualStandLayout
                 stand={stand} themeColor={themeColor} avatarBg={avatarBg}
                 backHref={`/events/${stand.event_id || id}/live?tab=stands`}
-                onChatOpen={() => setIsChatOpen(true)} onMeetingOpen={() => setIsMeetingModalOpen(true)}
+                onChatOpen={() => {
+                    setIsChatOpen(true);
+                    setHasUnreadMessages(false);
+                }} onMeetingOpen={() => setIsMeetingModalOpen(true)}
                 onAssistantOpen={() => setIsAssistantOpen(true)} onShopOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
                 onFavoriteToggle={toggleFavorite} favoriteId={favoriteId} activeTab={activeTab} onTabChange={setActiveTab}
                 hasUnreadChat={hasUnreadMessages}

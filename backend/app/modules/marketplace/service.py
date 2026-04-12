@@ -366,16 +366,24 @@ async def list_orders_for_enterprise(user_id: str) -> list[dict]:
         return []
 
     # 2. Find all stands for these organizations
-    stand_cursor = _db().stands.find({"organization_id": {"$in": org_ids}}, {"_id": 1})
-    stand_oids = [doc["_id"] for doc in await stand_cursor.to_list(length=500)]
-    if not stand_oids:
+    stand_cursor = _db().stands.find({"organization_id": {"$in": org_ids}}, {"_id": 1, "event_id": 1})
+    stands = await stand_cursor.to_list(length=500)
+    if not stands:
         return []
+
+    stand_oids = [doc["_id"] for doc in stands]
+    # Map stand_id string to event_id string
+    stand_to_event = {str(s["_id"]): str(s.get("event_id", "")) for s in stands}
 
     # 3. Find all orders for these stands
     order_cursor = _db().stand_orders.find({"stand_id": {"$in": stand_oids}}).sort("created_at", -1)
     orders = [_serialize(d) async for d in order_cursor]
     if not orders:
         return []
+
+    # Inject event_id into each order
+    for order in orders:
+        order["event_id"] = stand_to_event.get(order.get("stand_id", ""), "")
 
     return await _enrich_orders(orders)
 

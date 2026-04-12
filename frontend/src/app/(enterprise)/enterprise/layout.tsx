@@ -26,8 +26,7 @@ import {
 const NAV_ITEMS = [
     { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
     { label: 'Events', href: '/enterprise/events', icon: Calendar },
-    // { label: 'Communications', href: '/enterprise/communications', icon: MessageSquare },
-    // { label: 'Leads', href: '/enterprise/leads', icon: Users },
+    { label: 'Requests', href: '/enterprise/product-requests', icon: MessageSquare },
     { label: 'Analytics', href: '/enterprise/analytics', icon: BarChart3 },
     { label: 'Products', href: '/enterprise/products', icon: Package },
     { label: 'Profile', href: '/enterprise/profile', icon: User },
