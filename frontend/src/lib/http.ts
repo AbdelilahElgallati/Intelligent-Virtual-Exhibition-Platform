@@ -8,6 +8,11 @@ type RequestOptions = {
     responseType?: 'json' | 'blob';
 };
 
+/** Check if a URL is an authentication endpoint (login, register, refresh). */
+function isAuthEndpoint(url: string): boolean {
+    return /\/auth\/(login|register|refresh)$/.test(url);
+}
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { method = 'GET', headers = {}, body, token, responseType = 'json' } = options;
     const url = getApiUrl(endpoint);
@@ -52,10 +57,27 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     });
 
     if (response.status === 401) {
-        if (typeof window !== 'undefined') {
+        let detail = 'Unauthorized';
+        try {
+            const errorData = await response.json();
+            const msg = errorData?.detail;
+            if (typeof msg === 'string') {
+                detail = msg;
+            } else if (Array.isArray(msg)) {
+                const parts = msg
+                    .map((item: any) => item?.msg)
+                    .filter((item: unknown) => typeof item === 'string');
+                if (parts.length > 0) {
+                    detail = parts.join('; ');
+                }
+            }
+        } catch {
+            // Use default detail
+        }
+        if (typeof window !== 'undefined' && !isAuthEndpoint(url)) {
             window.location.href = '/auth/login';
         }
-        throw new Error('Unauthorized');
+        throw new Error(detail);
     }
 
     if (!response.ok) {
