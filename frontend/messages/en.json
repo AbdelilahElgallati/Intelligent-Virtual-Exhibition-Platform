@@ -531,7 +531,7 @@
       "copyright": "© {year} IVEP. All rights reserved."
     },
     "messages": {
-      "loading": "Loading...",
+      "loading": "Loading…",
       "checkingAuth": "Checking authorization...",
       "noResults": "No results found.",
       "error": "An error occurred.",
@@ -1576,33 +1576,6 @@
       },
       "failedToLoad": "Failed to load incidents"
     },
-    "profile": {
-      "title": "Profile Settings",
-      "description": "Manage your administrator account settings.",
-      "accountInformation": "Account Information",
-      "fullName": {
-        "label": "Full Name",
-        "placeholder": "Enter your full name"
-      },
-      "email": {
-        "label": "Email (Read-only)"
-      },
-      "shortBio": {
-        "label": "Short Bio",
-        "placeholder": "Tell us a bit about yourself..."
-      },
-      "preferredLanguage": "Preferred Language",
-      "timezone": "Timezone",
-      "updateProfile": "Update Profile",
-      "administratorAccount": "Administrator Account",
-      "joinedYear": "Joined {year}",
-      "needHelp": {
-        "title": "Need Help?",
-        "message": "For platform-level support, please contact the system administrator."
-      },
-      "success": "Profile updated successfully!",
-      "error": "Failed to update profile."
-    },
     "payments": {
       "title": "Payment Reviews",
       "disabledMessage": "This page is temporarily disabled while the payment moderation flow is being stabilized."
@@ -1665,45 +1638,6 @@
       },
       "noSessions": "No sessions yet."
     },
-    "eventMonitoring": {
-      "title": "Live Monitor",
-      "backToEvent": "Back to Event",
-      "eventFallback": "Event",
-      "live": "LIVE",
-      "updated": "Updated {time}",
-      "kpis": {
-        "activeUsers": "Active Users",
-        "messagesPerMin": "Messages / Min",
-        "standVisits": "Stand Visits",
-        "chatSessions": "Chat Sessions",
-        "safetyFlags": "Safety Flags"
-      },
-      "charts": {
-        "messagesPerMin": "Messages / min (last 15 min)",
-        "collectingData": "Collecting data…",
-        "topActiveStands": "Top Active Stands",
-        "userDistribution": "User Distribution",
-        "noActivity": "No activity",
-        "noActiveUsers": "No active users"
-      },
-      "activeUsers": {
-        "title": "Active Users ({count})",
-        "online": "Online",
-        "noUsers": "No active users",
-        "since": "Since {time}"
-      },
-      "safetyFlags": {
-        "title": "Safety Flags ({count} recent)",
-        "attention": "Attention",
-        "allClear": "No open flags — all clear",
-        "highPriority": "High priority",
-        "investigate": "Investigate"
-      },
-      "error": {
-        "failedToFetch": "Failed to fetch metrics",
-        "back": "Back"
-      }
-    },
     "organizerReport": {
       "title": "Organizer Report",
       "description": "Business intelligence & event performance · Updated {time}",
@@ -1753,6 +1687,45 @@
         "exporting": "Exporting…",
         "retry": "Retry",
         "exportFailed": "PDF export failed."
+      }
+    },
+    "eventLiveMonitoring": {
+      "title": "Live Monitor",
+      "backToEvent": "Back to Event",
+      "eventFallback": "Event",
+      "live": "LIVE",
+      "updated": "Updated {time}",
+      "kpis": {
+        "activeUsers": "Active Users",
+        "messagesPerMin": "Messages / Min",
+        "standVisits": "Stand Visits",
+        "chatSessions": "Chat Sessions",
+        "safetyFlags": "Safety Flags"
+      },
+      "charts": {
+        "messagesPerMin": "Messages / min (last 15 min)",
+        "collectingData": "Collecting data…",
+        "topActiveStands": "Top Active Stands",
+        "userDistribution": "User Distribution",
+        "noActivity": "No activity",
+        "noActiveUsers": "No active users"
+      },
+      "activeUsers": {
+        "title": "Active Users ({count})",
+        "online": "Online",
+        "noUsers": "No active users",
+        "since": "Since {time}"
+      },
+      "safetyFlags": {
+        "title": "Safety Flags ({count} recent)",
+        "attention": "Attention",
+        "allClear": "No open flags — all clear",
+        "highPriority": "High priority",
+        "investigate": "Investigate"
+      },
+      "error": {
+        "failedToFetch": "Failed to fetch metrics",
+        "back": "Back"
       }
     }
   },
@@ -1819,16 +1792,16 @@
         "analytics": "Analytics"
       },
       "states": {
-        "pendingReview": "Pending Review",
         "approved": "Approved",
         "rejected": "Rejected",
-        "waitingPayment": "Waiting for Payment",
-        "proofSubmitted": "Proof Submitted",
         "paymentDone": "Payment Done",
         "live": "Live",
         "closed": "Closed",
         "inProgress": "In progress",
-        "upcoming": "Upcoming"
+        "upcoming": "Upcoming",
+        "pendingApproval": "Pending Approval",
+        "waitingForPayment": "Waiting for Payment",
+        "paymentProofSubmitted": "Payment Reviewing"
       },
       "confirm": {
         "closeTitle": "Close Event",
@@ -2195,24 +2168,6 @@
     }
   },
   "enterprise": {
-    "layout": {
-      "sidebar": {
-        "title": "Enterprise Panel",
-        "subtitle": "Business Journey",
-        "dashboard": "Dashboard",
-        "events": "Events",
-        "requests": "Requests",
-        "analytics": "Analytics",
-        "products": "Products",
-        "profile": "Profile",
-        "notifications": "Notifications",
-        "signOut": "Sign Out"
-      },
-      "breadcrumb": "Enterprise",
-      "workspace": "Enterprise Workspace",
-      "loading": "Loading...",
-      "fallbackUser": "Enterprise User"
-    },
     "dashboard": {
       "workspaceLabel": "Enterprise Workspace",
       "welcome": "Welcome back, {name}",
@@ -2905,7 +2860,7 @@
     "orders": {
       "title": "My Orders",
       "subtitle": "Track all your stand purchases in unified orders. Product and service items from the same checkout are grouped together.",
-      "loading": "Loading your orders...",
+      "loading": "Loading your orders…",
       "empty": {
         "title": "No orders yet.",
         "subtitle": "Visit event stands and use the marketplace to place your first order."
@@ -3046,12 +3001,25 @@
         "title": "No stands found",
         "subtitle": "Try adjusting your filters or search terms."
       },
-      "loading": "Loading stands...",
+      "loading": "Loading stands…",
       "pagination": {
         "previous": "Previous",
         "next": "Next",
         "showing": "Showing {from}-{to} of {total} stands"
-      }
+      },
+      "categoryLabel": "Category:",
+      "all": "All",
+      "activeLabel": "Active:",
+      "reset": "Reset",
+      "view3D": "3D Hall View",
+      "viewGrid": "Grid View",
+      "noMatching": "No matching stands",
+      "noStands": "No stands yet",
+      "adjustFilters": "Try adjusting your filters...",
+      "emptyHall": "The exhibition hall is currently empty. Check back later!",
+      "sponsor": "Sponsor",
+      "favorite": "Favorite",
+      "goToPage": "Go to page"
     },
     "conferencesTab": {
       "title": "Conferences & Sessions",
@@ -3155,7 +3123,7 @@
       }
     },
     "chatPanel": {
-      "title": "Chat",
+      "title": "Chat with {standName}",
       "placeholder": "Type a message...",
       "messageLimit": "Message limit reached ({count}/15). Request a meeting to continue the conversation.",
       "empty": {
@@ -3163,7 +3131,20 @@
         "subtitle": "Send a message to begin chatting with the stand representative."
       },
       "senderLabel": "You",
-      "requestMeeting": "Request Meeting"
+      "requestMeeting": "Request Meeting",
+      "loginRequired": "Please log in to chat.",
+      "syncActive": "Sync Active",
+      "connecting": "Connecting...",
+      "limitedMessages": "Limited to {n} messages...",
+      "syncingService": "Connecting to sync service...",
+      "noMessages": "No messages yet",
+      "limitReached": "Limit Reached",
+      "limitMessage": "You've used all {n} messages. Request a formal meeting...",
+      "messagesRemaining": "{n} message(s) remaining",
+      "chatLimitReached": "Chat limit reached",
+      "requestMeetingInstead": "Request a meeting instead",
+      "typePlaceholder": "Type something...",
+      "reconnecting": "Reconnecting..."
     },
     "meetingRequestModal": {
       "title": "Request a Meeting",
@@ -3203,7 +3184,24 @@
       "unmute": "Unmute",
       "turnOnCamera": "Turn on camera",
       "turnOffCamera": "Turn off camera",
-      "meetingEnded": "Meeting ended."
+      "meetingEnded": "Meeting ended.",
+      "cannotJoin": "Cannot join this meeting",
+      "timeRestriction": "You can join only during the scheduled meeting time...",
+      "approvalRequired": "The meeting must be approved...",
+      "goBack": "Go Back",
+      "reconnecting": "Reconnecting",
+      "cameraOff": "Turn Camera Off",
+      "cameraOn": "Turn Camera On",
+      "screenShareOff": "Stop Sharing",
+      "screenShareOn": "Share Screen",
+      "endCall": "End Call",
+      "connectionFailed": "Connection Failed",
+      "returnToStand": "Return to Stand",
+      "establishing": "Establishing encrypted connection",
+      "rejoinPrompt": "Rejoin now",
+      "waitingParticipant": "Waiting for the other participant...",
+      "rejoin": "Rejoin",
+      "join": "Join Meeting"
     },
     "inviteAccept": {
       "title": "Visitor Invite",
@@ -3252,29 +3250,6 @@
       "transcriptViewer": "Transcript Viewer",
       "transcriptUpload": "Upload an audio recording to generate a transcript."
     },
-    "meetingRoom": {
-      "connecting": "Connecting to meeting room...",
-      "cannotJoin": "Cannot join this meeting",
-      "timeRestriction": "You can join only during the scheduled meeting time...",
-      "approvalRequired": "The meeting must be approved...",
-      "goBack": "Go Back",
-      "reconnecting": "Reconnecting",
-      "mute": "Mute",
-      "unmute": "Unmute",
-      "cameraOff": "Turn Camera Off",
-      "cameraOn": "Turn Camera On",
-      "screenShareOff": "Stop Sharing",
-      "screenShareOn": "Share Screen",
-      "endCall": "End Call",
-      "connectionFailed": "Connection Failed",
-      "returnToStand": "Return to Stand",
-      "establishing": "Establishing encrypted connection",
-      "rejoinPrompt": "Rejoin now",
-      "waitingParticipant": "Waiting for the other participant...",
-      "rejoin": "Rejoin",
-      "meetingEnded": "Meeting ended.",
-      "join": "Join Meeting"
-    },
     "eventPayment": {
       "loading": "Loading payment details...",
       "freeEvent": "This event is free",
@@ -3317,73 +3292,6 @@
       "organizedBy": "Organized by {name}",
       "virtualPlatform": "Virtual Platform"
     },
-    "joinEventCard": {
-      "title": "Participation",
-      "footer": "By joining, you agree to the code of conduct.",
-      "badges": {
-        "ended": "ENDED",
-        "timelinePending": "TIMELINE PENDING",
-        "liveAccess": "LIVE ACCESS",
-        "inProgress": "IN PROGRESS",
-        "upcoming": "UPCOMING",
-        "approved": "APPROVED",
-        "paymentRequired": "PAYMENT REQUIRED",
-        "paymentPending": "PAYMENT PENDING",
-        "pending": "PENDING",
-        "rejected": "REJECTED",
-        "notJoined": "NOT JOINED"
-      },
-      "approved": {
-        "noTimeline": {
-          "message": "Your registration is approved, but the event timeline is not published yet.",
-          "action": "Access will open when schedule slots are published.",
-          "button": "Waiting for Timeline"
-        },
-        "accessOpen": {
-          "message": "Your registration is approved. You can access the live event now.",
-          "button": "Enter Event"
-        },
-        "closedBeforeEvent": {
-          "message": "You are approved. Event access opens when the timeline goes live.",
-          "button": "Access Opens Soon"
-        },
-        "closedBetweenSlots": {
-          "message": "Event is in progress. Live access opens at the next active slot.",
-          "button": "Next Slot Soon"
-        },
-        "ended": {
-          "message": "This event timeline has ended. Live access is now closed.",
-          "button": "Event Ended"
-        }
-      },
-      "paymentRequired": {
-        "ended": {
-          "message": "This event has ended. New paid access is closed.",
-          "button": "Event Ended"
-        },
-        "active": {
-          "message": "This event requires payment.",
-          "ticketPrice": "Ticket Price: {price} {currency}",
-          "button": "Pay Now"
-        }
-      },
-      "paymentPending": {
-        "message": "Your payment is being processed. You'll be granted access shortly.",
-        "button": "Check Status"
-      },
-      "pending": {
-        "message": "Your request is pending approval. You'll be notified once it's reviewed.",
-        "button": "Pending Approval"
-      },
-      "rejected": {
-        "message": "Your request was not approved."
-      },
-      "notJoined": {
-        "description": "Join this event to access stands, schedule, and resources.",
-        "buttonPaid": "Register & Pay",
-        "buttonFree": "Register Now"
-      }
-    },
     "eventLiveLayout": {
       "loading": "Loading event...",
       "unavailable": "Event unavailable",
@@ -3396,30 +3304,7 @@
       "accessNextSlot": "Access opens at the next active slot.",
       "eventConcluded": "This exhibition has concluded.",
       "accessOpens": "Access opens when the event starts.",
-      "backToDetails": "Back to Details",
-      "tabs": {
-        "recommended": "Recommended",
-        "allStands": "All Stands",
-        "schedule": "Schedule",
-        "conferences": "Conferences",
-        "networking": "Networking"
-      }
-    },
-    "standsGrid": {
-      "categoryLabel": "Category:",
-      "all": "All",
-      "activeLabel": "Active:",
-      "reset": "Reset",
-      "view3D": "3D Hall View",
-      "viewGrid": "Grid View",
-      "loading": "Loading Exhibition Hall...",
-      "noMatching": "No matching stands",
-      "noStands": "No stands yet",
-      "adjustFilters": "Try adjusting your filters...",
-      "emptyHall": "The exhibition hall is currently empty. Check back later!",
-      "sponsor": "Sponsor",
-      "favorite": "Favorite",
-      "goToPage": "Go to page"
+      "backToDetails": "Back to Details"
     },
     "standFilterModal": {
       "title": "Personalize Your Experience",
@@ -3429,23 +3314,6 @@
       "exploreButton": "Explore Stands",
       "skip": "Skip",
       "topicsSelected": "{n} topic(s) selected"
-    },
-    "chatPanel": {
-      "title": "Chat with {standName}",
-      "loginRequired": "Please log in to chat.",
-      "syncActive": "Sync Active",
-      "connecting": "Connecting...",
-      "limitedMessages": "Limited to {n} messages...",
-      "syncingService": "Connecting to sync service...",
-      "noMessages": "No messages yet",
-      "limitReached": "Limit Reached",
-      "limitMessage": "You've used all {n} messages. Request a formal meeting...",
-      "requestMeeting": "Request Meeting",
-      "messagesRemaining": "{n} message(s) remaining",
-      "chatLimitReached": "Chat limit reached",
-      "requestMeetingInstead": "Request a meeting instead",
-      "typePlaceholder": "Type something...",
-      "reconnecting": "Reconnecting..."
     },
     "virtualStandLayout": {
       "sponsorBadge": "SPONSOR",
