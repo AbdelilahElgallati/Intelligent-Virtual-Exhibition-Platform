@@ -1755,5 +1755,443 @@
         "exportFailed": "PDF export failed."
       }
     }
+  },
+  "organizer": {
+    "dashboard": {
+      "welcome": "Welcome back, {name}",
+      "subtitle": "Here's what's happening with your events today.",
+      "lastSynced": "Last synced: {time}",
+      "waitingSync": "Waiting for first sync...",
+      "refresh": "Refresh",
+      "exportPdf": "Export Overall Performance (PDF)",
+      "errorRefresh": "Unable to refresh dashboard data right now.",
+      "errorExport": "Failed to export overall report.",
+      "exportSuccess": "Overall performance report exported successfully!",
+      "stats": {
+        "totalEvents": "Total Events",
+        "activeEvents": "Active Events",
+        "pendingApproval": "Pending Approval",
+        "totalVisitors": "Total Visitors"
+      },
+      "engagementScore": "Engagement Score",
+      "leadsGenerated": "Leads Generated",
+      "safetyResolution": "Safety Resolution",
+      "recentEvents": {
+        "title": "Recent Events",
+        "searchPlaceholder": "Search event",
+        "filters": {
+          "all": "All",
+          "active": "Active",
+          "pending": "Pending",
+          "closed": "Closed"
+        },
+        "loading": "Loading events...",
+        "empty": "No events found. Start by creating one!",
+        "noMatch": "No events match your filter."
+      },
+      "performanceSpotlight": {
+        "title": "Performance Spotlight",
+        "tip": "Add detailed schedules and complete stand profiles to increase conversion from visitors to leads.",
+        "enterpriseParticipation": "Enterprise Participation",
+        "chatInteractions": "Chat Interactions",
+        "improveEvents": "Improve Events"
+      }
+    },
+    "events": {
+      "title": "My Events",
+      "subtitle": "Manage and track your event requests.",
+      "newEvent": "New Event Request",
+      "searchPlaceholder": "Search by title or status…",
+      "empty": "You haven't submitted any event requests yet.",
+      "noMatch": "No events match your search.",
+      "table": {
+        "event": "Event",
+        "dates": "Dates",
+        "enterprises": "Enterprises",
+        "payment": "Payment",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "payNow": "Pay Now",
+        "start": "Start",
+        "analytics": "Analytics"
+      },
+      "states": {
+        "pendingReview": "Pending Review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "waitingPayment": "Waiting for Payment",
+        "proofSubmitted": "Proof Submitted",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed",
+        "inProgress": "In progress",
+        "upcoming": "Upcoming"
+      },
+      "confirm": {
+        "closeTitle": "Close Event",
+        "closeMessage": "Are you sure you want to close this event?"
+      },
+      "toast": {
+        "startFailed": "Failed to start event",
+        "closeFailed": "Failed to close event"
+      }
+    },
+    "newEvent": {
+      "title": "Submit Event Request",
+      "subtitle": "Fill in the details below. Your request will be reviewed by an administrator.",
+      "infoBanner": "Once submitted, an admin will review your request. If approved, you will receive a payment invoice. After payment is confirmed, enterprise and visitor access links will be generated automatically.",
+      "sections": {
+        "basicInfo": "Basic Information",
+        "participationDetails": "Participation Details",
+        "pricing": "Pricing",
+        "schedule": "Event Schedule *",
+        "additionalInfo": "Additional Information",
+        "additionalInfoOptional": "(optional)"
+      },
+      "labels": {
+        "eventTitle": "Event Title *",
+        "description": "Description",
+        "category": "Category",
+        "startDate": "Start Date *",
+        "endDate": "End Date *",
+        "timezone": "Event Timezone",
+        "location": "Location",
+        "tags": "Tags (comma-separated)",
+        "bannerImage": "Banner Image URL",
+        "uploadBanner": "Upload Banner Image",
+        "selectedFile": "Selected: {filename} (will upload on submit)",
+        "fileHint": "You can upload a file or paste an external URL.",
+        "scheduleHint": "Schedule slots use 24-hour format (HH:mm). If a slot ends earlier than it starts, it continues into the next day.",
+        "daysGenerated": "{count} day(s) · add time slots in the schedule section below",
+        "numEnterprises": "Number of Participating Enterprises *",
+        "extendedDetails": "Extended Event Details *",
+        "standPrice": "Stand Price per Enterprise (MAD) *",
+        "standPriceHint": "The amount each enterprise pays to host a stand at this event.",
+        "eventType": "Event Type for Visitors *",
+        "eventTypeFree": "Free — visitors attend at no cost",
+        "eventTypePaid": "Paid — visitors purchase a ticket",
+        "visitorPrice": "Visitor Ticket Price (MAD) *",
+        "visitorPriceHint": "Price visitors pay to access the event.",
+        "scheduleDescription": "Days are generated automatically from your start & end dates. Add time slots for each day.",
+        "additionalInfoPlaceholder": "Any other relevant information for the administrator...",
+        "scheduleAutoGenerated": "Schedule days will be generated automatically from the date range."
+      },
+      "placeholders": {
+        "eventTitle": "e.g. Tech Innovation Expo 2026",
+        "description": "Describe what attendees can expect...",
+        "category": "Virtual Platform",
+        "tags": "e.g. AI, Tech, Startup",
+        "bannerUrl": "https://example.com/banner.jpg or /uploads/event_banners/...",
+        "numEnterprises": "e.g. 20",
+        "extendedDetails": "Provide detailed information: objectives, target audience, special features, etc."
+      },
+      "buttons": {
+        "submit": "Submit Request",
+        "submitting": "Submitting…",
+        "back": "Back"
+      },
+      "validation": {
+        "titleRequired": "Event title is required.",
+        "enterprisesMin": "Number of participating enterprises must be at least 1.",
+        "standPriceRequired": "Stand price is required and must be ≥ 0.",
+        "ticketPriceRequired": "Ticket price is required for paid events and must be ≥ 0.",
+        "endDateInvalid": "End date must be on or after start date.",
+        "startDatePast": "Start date cannot be in the past for the selected event timezone.",
+        "dateRequired": "Please select a start and end date.",
+        "scheduleEmpty": "The event schedule is empty.",
+        "daySlotsRequired": "Day {N} must have at least one time slot.",
+        "daySlotsTimeMissing": "Day {N}: every slot needs a start and end time.",
+        "daySlotsFormatInvalid": "Day {N}: use 24-hour time format (HH:mm) for all slots.",
+        "daySlotsIdentical": "Day {N}: start and end time cannot be identical.",
+        "dayOneSlotPast": "Day 1: {time} is in the past. Please choose a future time for today's schedule.",
+        "daySlotDescriptionMissing": "Day {N}: please describe the activity for the {start}–{end} slot.",
+        "extendedDetailsRequired": "Extended event details are required (at least 10 characters).",
+        "submitFailed": "Failed to submit event request. Please try again."
+      },
+      "categories": {
+        "exhibition": "Exhibition",
+        "conference": "Conference",
+        "webinar": "Webinar",
+        "networking": "Networking",
+        "workshop": "Workshop",
+        "hackathon": "Hackathon"
+      }
+    },
+    "eventDetail": {
+      "states": {
+        "pendingReview": "Pending Review",
+        "approvedPendingPayment": "Approved & Pending Payment",
+        "rejected": "Rejected",
+        "approvedWaitingPayment": "Approved - Waiting Payment",
+        "proofUnderReview": "Payment proof under review",
+        "paymentConfirmed": "Payment Confirmed",
+        "eventLive": "Event is Live",
+        "eventEnded": "Event Ended"
+      },
+      "editEvent": "Edit Event Information",
+      "form": {
+        "eventTitle": "Event Title",
+        "urlSlug": "URL Slug (Friendly ID)",
+        "timezone": "Event Timezone",
+        "registrationDeadline": "Registration Deadline",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "category": "Category",
+        "description": "Description",
+        "location": "Location",
+        "tags": "Tags (comma-separated)",
+        "standPrice": "Stand Price (MAD)",
+        "paidEvent": "Paid Event for Visitors",
+        "ticketPrice": "Ticket Price",
+        "currency": "MAD",
+        "extendedDetails": "Extended Details",
+        "additionalInfo": "Additional Info"
+      },
+      "buttons": {
+        "save": "Save Changes",
+        "cancel": "Cancel",
+        "editInfo": "Edit Info",
+        "analytics": "Analytics",
+        "report": "Report",
+        "start": "Start Event",
+        "close": "Close Event"
+      },
+      "toast": {
+        "updateFailed": "Failed to update event",
+        "startFailed": "Failed to start event.",
+        "closeFailed": "Failed to close event.",
+        "proofFailed": "Payment proof submission failed.",
+        "reportFailed": "Failed to download report."
+      },
+      "tabs": {
+        "overview": "Overview",
+        "schedule": "Schedule",
+        "conferences": "Conferences",
+        "links": "Links"
+      },
+      "approvalWorkflow": {
+        "title": "Approval Workflow",
+        "steps": {
+          "requestSubmitted": {
+            "label": "Request Submitted",
+            "description": "Awaiting admin review"
+          },
+          "adminApproved": {
+            "label": "Admin Approved",
+            "description": "Payment required: {amount} MAD",
+            "descriptionNoAmount": "Payment required"
+          },
+          "paymentConfirmed": {
+            "label": "Payment Confirmed",
+            "description": "Access links generated"
+          },
+          "eventLive": {
+            "label": "Event Live",
+            "description": "Event is currently running"
+          },
+          "eventClosed": {
+            "label": "Event Closed",
+            "description": "Event has ended"
+          }
+        }
+      },
+      "payment": {
+        "actionRequired": "Action Required",
+        "finalizePayment": "Finalize Payment",
+        "instruction": "To activate your event and generate guest links, please send {amount} MAD to the Platform RIB below.",
+        "ribLabel": "Platform RIB",
+        "uploadProof": "Upload Proof (Image/PDF)",
+        "chooseFile": "Choose file or drag here",
+        "fileHint": "PDF, JPG, PNG up to 10MB",
+        "urlPlaceholder": "...or paste proof URL here",
+        "submitProof": "Submit Payment Proof",
+        "confirmMessage": "Confirm that you have sent the payment to the displayed RIB and wish to submit this proof?"
+      },
+      "banners": {
+        "proofUnderReview": {
+          "title": "Payment Proof Under Review",
+          "message": "Your payment proof has been received and is being reviewed by an administrator. You'll be notified once it's confirmed."
+        },
+        "paymentConfirmed": {
+          "title": "Payment Confirmed",
+          "message": "Your payment has been confirmed. You can now start your event."
+        },
+        "rejected": {
+          "title": "Event Request Rejected",
+          "message": "Your event request was not approved. Please contact an administrator for more information."
+        }
+      },
+      "confirm": {
+        "startTitle": "Start Event",
+        "startMessage": "Are you sure you want to start this event? It will go LIVE and be visible to visitors.",
+        "closeTitle": "Close Event",
+        "closeMessage": "Are you sure you want to close this event? This action is permanent."
+      },
+      "notFound": "Event not found.",
+      "backToEvents": "Back to events",
+      "loadFailed": "Could not load event details.",
+      "overview": {
+        "eventInformation": "Event Information",
+        "pricing": "Pricing",
+        "inviteLinks": "Invite Links",
+        "enterpriseInvite": "Enterprise Invite Link",
+        "visitorInvite": "Visitor Invite Link",
+        "publicPage": "Public Event Page",
+        "copy": "Copy",
+        "copied": "Copied!"
+      },
+      "schedule": {
+        "title": "Event Schedule",
+        "editSchedule": "Edit Schedule",
+        "save": "Save Schedule",
+        "cancel": "Cancel",
+        "noSchedule": "No schedule provided",
+        "noDescription": "No description",
+        "noSlots": "No slots defined for this day.",
+        "past": "Past",
+        "crossDay": "Cross-day",
+        "nextDayBadge": "+1d",
+        "conferenceRoom": "Conference Room",
+        "beforeStart": "Before Start",
+        "overlapSpillover": "Overlap spill-over from Day {N}"
+      },
+      "conferences": {
+        "title": "Conference Sessions",
+        "empty": "No conference sessions configured.",
+        "subtitle": "Manage conference rooms and assignments for this event."
+      },
+      "links": {
+        "title": "Event Links",
+        "subtitle": "Access and sharing links for your event.",
+        "enterpriseAccess": "Enterprise Access",
+        "visitorAccess": "Visitor Access",
+        "noEnterpriseLink": "No enterprise link generated yet.",
+        "noVisitorLink": "No visitor link generated yet.",
+        "linkNotAvailable": "Link not available"
+      },
+      "eventEnded": "Event ended"
+    },
+    "eventAnalytics": {
+      "backToDetail": "Back to Event Details",
+      "title": "Performance Metrics & Analysis",
+      "lastRefresh": "Last refresh: {time}",
+      "waitingRefresh": "Waiting for first data refresh...",
+      "coverage": "Coverage: {count} metrics · {count} funnel stages",
+      "export": "Export Data",
+      "exporting": "Generating...",
+      "exportSuccess": "Report exported successfully! Your download should start shortly.",
+      "errorLoad": "Could not load analytics data.",
+      "errorExport": "Failed to export report. Please check your connection.",
+      "loading": "Analysing event data...",
+      "notFound": "Event not found",
+      "backToEvents": "Back to events list",
+      "insightNotReached": {
+        "title": "Insight Horizon Not Reached",
+        "message": "Analytics will materialize once the event transition to live state and participants begin engagement."
+      },
+      "viewTabs": {
+        "overview": "Overview",
+        "engagement": "Engagement",
+        "enterprises": "Enterprises"
+      },
+      "kpi": {
+        "participatingEnterprises": "Participating Enterprises",
+        "uniqueVisitors": "Unique Visitors",
+        "engagementEvents": "Engagement Events",
+        "engagementRate": "Engagement Rate",
+        "leadsCaptured": "Leads Captured",
+        "meetingsInitiated": "Meetings Initiated"
+      },
+      "keyPerformanceIndicators": "Key Performance Indicators",
+      "searchMetrics": "Search metrics…",
+      "funnel": {
+        "title": "Funnel Distribution",
+        "absolute": "Absolute",
+        "percentage": "Percentage"
+      },
+      "enterpriseRoster": {
+        "title": "Enterprise Roster",
+        "searchPlaceholder": "Search enterprises…",
+        "showingCount": "{count} of {total} enterprises",
+        "viewProfile": "View Profile"
+      },
+      "enterpriseModal": {
+        "loading": "Fetching profile...",
+        "verified": "Verified",
+        "description": "Description",
+        "contactEmail": "Contact Email",
+        "website": "Website",
+        "notAvailable": "Not available",
+        "noDescription": "This enterprise has not provided a description yet.",
+        "close": "Close Profile",
+        "loadFailed": "Failed to load organization profile."
+      },
+      "unnamedEnterprise": "Unnamed enterprise"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{count} unread",
+      "allCaughtUp": "All caught up!",
+      "markAllRead": "Mark all read",
+      "empty": "No notifications yet.",
+      "markRead": "Mark read",
+      "timeLabels": {
+        "daysAgo": "{X}d ago",
+        "hoursAgo": "{X}h ago",
+        "minutesAgo": "{X}m ago",
+        "justNow": "just now"
+      },
+      "types": {
+        "paymentRequired": "Payment Required",
+        "paymentConfirmed": "Payment Confirmed",
+        "linksGenerated": "Links Generated",
+        "eventApproved": "Event Approved",
+        "eventRejected": "Event Rejected",
+        "invitationSent": "Invitation Sent"
+      }
+    },
+    "subscription": {
+      "title": "Subscription Plans",
+      "subtitle": "Choose the best plan for your organizing needs.",
+      "plans": {
+        "basic": {
+          "name": "Basic",
+          "price": "$0/month",
+          "features": {
+            "events": "1 Event",
+            "visitors": "Up to 50 visitors",
+            "publicEvents": "Public events only"
+          },
+          "currentPlan": "Current Plan"
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$49/month",
+          "features": {
+            "events": "Unlimited Events",
+            "visitors": "Up to 500 visitors",
+            "privateEvents": "Private events",
+            "analytics": "Basic analytics"
+          },
+          "upgrade": "Upgrade to Pro",
+          "recommended": "Recommended"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "price": "Custom",
+          "features": {
+            "customLimits": "Custom visitor limits",
+            "whiteLabeling": "White-labeling",
+            "support": "Dedicated support",
+            "apiAccess": "API access"
+          },
+          "contactSales": "Contact Sales"
+        }
+      },
+      "perMonth": "/month"
+    }
   }
 }
