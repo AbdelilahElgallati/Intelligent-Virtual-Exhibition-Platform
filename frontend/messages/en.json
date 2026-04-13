@@ -2193,5 +2193,712 @@
       },
       "perMonth": "/month"
     }
+  },
+  "enterprise": {
+    "layout": {
+      "sidebar": {
+        "title": "Enterprise Panel",
+        "subtitle": "Business Journey",
+        "dashboard": "Dashboard",
+        "events": "Events",
+        "requests": "Requests",
+        "analytics": "Analytics",
+        "products": "Products",
+        "profile": "Profile",
+        "notifications": "Notifications",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Enterprise",
+      "workspace": "Enterprise Workspace",
+      "loading": "Loading...",
+      "fallbackUser": "Enterprise User"
+    },
+    "dashboard": {
+      "workspaceLabel": "Enterprise Workspace",
+      "welcome": "Welcome back, {name}",
+      "summary": "You have {count} active stand(s), {count} catalog items, and {count} pending request(s) awaiting your attention.",
+      "pills": {
+        "live": "{count} Live",
+        "upcoming": "{count} Upcoming"
+      },
+      "kpi": {
+        "catalogItems": "Catalog Items",
+        "catalogSub": "{products} products · {services} services",
+        "activeStands": "Active Stands",
+        "activeStandsSub": "across {count} event(s)",
+        "pendingRequests": "Pending Requests",
+        "pendingRequestsSub": "{count} total inquiries",
+        "totalInquiries": "Total Inquiries",
+        "totalInquiriesSub": "{count} handled"
+      },
+      "eventParticipations": {
+        "title": "My Event Participations",
+        "viewAll": "View all",
+        "empty": "No event participations yet",
+        "emptyAction": "Browse events"
+      },
+      "eventStatus": {
+        "approved": "Approved",
+        "payFee": "Pay Fee",
+        "awaiting": "Awaiting",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "tooltips": {
+        "configureStand": "Configure Stand",
+        "analytics": "Analytics"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "browseEvents": {
+          "title": "Browse Events",
+          "subtitle": "Join new events & manage stands"
+        },
+        "manageCatalog": {
+          "title": "Manage Catalog",
+          "subtitle": "Add products & services"
+        },
+        "viewAnalytics": {
+          "title": "View Analytics",
+          "subtitle": "Stand performance & visitor data"
+        },
+        "communications": {
+          "title": "Communications",
+          "subtitle": "B2B chat & follow-ups"
+        },
+        "leadsContacts": {
+          "title": "Leads & Contacts",
+          "subtitle": "Visitor interactions & leads"
+        }
+      },
+      "requestsAwaiting": {
+        "title": "{count} Request(s) Awaiting Response",
+        "subtitle": "Visitors are enquiring about your products. Respond promptly to convert leads.",
+        "action": "Handle now"
+      },
+      "allCaughtUp": {
+        "title": "All caught up!",
+        "subtitle": "{count} inquir(ies/y) handled. Great work."
+      },
+      "catalogHealth": {
+        "title": "Catalog Health",
+        "manage": "Manage",
+        "products": "Products",
+        "services": "Services",
+        "activeStands": "Active Stands",
+        "inquiries": "Inquiries"
+      }
+    },
+    "events": {
+      "title": "Browse & Manage Events",
+      "subtitle": "Discover exhibitions, join as an exhibitor, and manage your stand.",
+      "searchPlaceholder": "Search events…",
+      "loading": "Loading events…",
+      "empty": "No events found.",
+      "emptyAction": "Browse public events",
+      "table": {
+        "event": "Event",
+        "date": "Date",
+        "enterprises": "Enterprises",
+        "standFee": "Stand Fee",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "payStandFee": "Pay Stand Fee",
+        "awaitingApproval": "Awaiting Approval",
+        "standApproved": "Stand Approved",
+        "guestApproved": "Guest Approved",
+        "standRejected": "Stand Rejected"
+      },
+      "actions": {
+        "requestToJoin": "Request to Join",
+        "configureStand": "Configure Stand",
+        "manage": "Manage",
+        "viewAnalytics": "View Analytics",
+        "payNow": "Pay Now",
+        "viewDetails": "View Details",
+        "downloadReceipt": "Download Receipt"
+      },
+      "detail": {
+        "liveNow": "Live Now",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "schedule": "Schedule",
+        "detailedSchedule": "Detailed Schedule",
+        "noSlots": "No slots defined for this day.",
+        "activityFallback": "Activity",
+        "overnight": "Overnight",
+        "organizer": "Organizer",
+        "category": "Category",
+        "date": "Date",
+        "location": "Location",
+        "enterprises": "Enterprises",
+        "standFee": "Stand Fee",
+        "free": "Free",
+        "description": "Description",
+        "participationStatus": "Participation Status",
+        "payment": {
+          "actionRequired": "Action Required",
+          "title": "Pay Stand Fee",
+          "instruction": "To secure your stand, please pay {amount} {currency}.",
+          "payNow": "Pay Now"
+        },
+        "approved": {
+          "title": "Stand Approved",
+          "message": "Your stand has been approved. Configure it before the event goes live.",
+          "action": "Configure Stand"
+        },
+        "rejected": {
+          "title": "Stand Rejected",
+          "message": "Your stand request was not accepted. Contact the organizer for more details."
+        },
+        "registrationOpens": "Registration Opens",
+        "registrationDeadline": "Registration Deadline",
+        "eventStarts": "Event Starts",
+        "eventEnds": "Event Ends",
+        "past": "Past",
+        "nextSlot": "Next slot: {time}",
+        "countdown": "{time}"
+      },
+      "modal": {
+        "configureStand": "Configure Stand",
+        "manageEvent": "Manage Event",
+        "viewAnalytics": "View Analytics",
+        "receiptError": "Could not generate receipt."
+      }
+    },
+    "stand": {
+      "title": "Configure Your Stand",
+      "subtitle": "Customize your virtual exhibition space for {eventTitle}.",
+      "tabs": {
+        "branding": "Branding",
+        "products": "Products",
+        "resources": "Resources",
+        "aiAssistant": "AI Assistant"
+      },
+      "save": "Save Changes",
+      "saving": "Saving…",
+      "savedSuccess": "Your stand has been saved.",
+      "saveFailed": "Failed to save stand.",
+      "branding": {
+        "title": "Stand Appearance",
+        "standName": {
+          "label": "Stand Name",
+          "help": "Stand name visible to visitors"
+        },
+        "tagline": {
+          "label": "Tagline",
+          "help": "Short tagline shown under your stand name"
+        },
+        "companyBio": {
+          "label": "Company Bio",
+          "placeholder": "Tell visitors about your company…"
+        },
+        "coverPhoto": {
+          "label": "Cover Photo",
+          "upload": "Upload Cover",
+          "remove": "Remove",
+          "change": "Change"
+        },
+        "logo": {
+          "label": "Logo",
+          "upload": "Upload Logo",
+          "current": "Current Logo",
+          "remove": "Remove Logo"
+        }
+      },
+      "products": {
+        "title": "Featured Products",
+        "subtitle": "Select products from your catalog to showcase on your stand.",
+        "empty": "No products found. Add products first.",
+        "addProduct": "Add Product",
+        "selected": "Selected Products",
+        "remove": "Remove from stand"
+      },
+      "resources": {
+        "title": "Stand Resources",
+        "subtitle": "Upload documents visitors can download (brochures, catalogs, etc.).",
+        "resourceName": "Resource Name",
+        "file": "File",
+        "upload": "Upload Resource",
+        "empty": "No resources uploaded yet.",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "aiAssistant": {
+        "title": "AI Stand Assistant",
+        "subtitle": "Configure an AI agent to answer visitor questions about your stand.",
+        "enable": "Enable AI Assistant",
+        "description": "AI assistant will respond to visitor questions about your stand, products, and services.",
+        "instructions": {
+          "title": "AI Agent Instructions",
+          "subtitle": "Provide context for the AI. This shapes how it responds to visitors.",
+          "placeholder": "Example: We are a leading provider of cloud analytics. Our flagship product is DataVision Pro. We serve enterprises in healthcare and finance."
+        },
+        "save": "Save AI Configuration"
+      }
+    },
+    "eventManagement": {
+      "title": "Event Management Hub",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "chats": "Chats",
+        "meetings": "Meetings",
+        "conferences": "Conferences",
+        "partners": "Partners"
+      },
+      "chats": {
+        "empty": "No active chats.",
+        "selectConversation": "Select a conversation",
+        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation."
+      },
+      "meetings": {
+        "title": "Meeting Requests",
+        "empty": "No meetings scheduled",
+        "subtitle": "When visitors request meetings with your stands, they will appear here.",
+        "approve": "Approve",
+        "decline": "Decline",
+        "ended": "Meeting ended",
+        "approvedStarts": "Approved · starts {time}",
+        "join": "Join"
+      },
+      "conferences": {
+        "title": "Assigned Conferences",
+        "empty": "No conference sessions assigned.",
+        "subtitle": "When organizers assign you to a conference, it will appear here.",
+        "goLive": "Go Live",
+        "enterStudio": "Enter Studio"
+      },
+      "partners": {
+        "title": "Partner Enterprises",
+        "empty": "No partner enterprises yet.",
+        "subtitle": "Connect with other enterprises participating in this event."
+      }
+    },
+    "eventRequests": {
+      "title": "Product & Service Requests",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "products": "Products",
+        "services": "Services"
+      },
+      "timeFilters": {
+        "all": "All dates",
+        "today": "Today",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days"
+      },
+      "filters": {
+        "byEvent": {
+          "label": "Filter by Event",
+          "all": "All Events"
+        },
+        "orderFulfillment": "Order Fulfillment",
+        "allStatuses": "All Statuses",
+        "requestStatus": "Request Status",
+        "pending": "Pending",
+        "contacted": "Contacted",
+        "closed": "Closed",
+        "timePeriod": "Time Period"
+      },
+      "checkoutOrders": {
+        "title": "Checkout Orders",
+        "count": "{count}",
+        "empty": "No checkout orders match your current filters."
+      },
+      "directInquiries": {
+        "title": "Direct Inquiries",
+        "count": "{count}",
+        "empty": "No direct inquiries match your current filters."
+      },
+      "orderStatus": {
+        "requested": "Requested",
+        "processing": "Processing",
+        "packed": "Packed",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "order": {
+        "label": "Order #{id}",
+        "qty": "Qty: {count}",
+        "total": "Total",
+        "advance": "Advance to next stage",
+        "addNote": "Add note",
+        "cancel": "Cancel order",
+        "cancelConfirm": "Cancel order for \"{product}\"? This will mark the order as cancelled and restore stock for product items.",
+        "cancelNote": "Optional cancellation note"
+      },
+      "refresh": "Refresh Data",
+      "syncing": "Synchronizing records...",
+      "kpi": {
+        "eventsActive": "Events Active",
+        "totalOrders": "Total Orders",
+        "directRequests": "Direct Requests"
+      },
+      "refineView": "Refine View"
+    },
+    "eventAnalytics": {
+      "title": "Stand Analytics",
+      "eventLabel": "{eventTitle}",
+      "backToManagement": "Back to Management",
+      "performance": "Stand Performance",
+      "kpi": {
+        "totalVisits": "Total Stand Visits",
+        "uniqueVisitors": "Unique Visitors",
+        "totalInteractions": "Total Interactions"
+      },
+      "engagementRate": "Engagement Rate",
+      "interactionBreakdown": "Interaction Breakdown",
+      "noData": "No interaction data available yet",
+      "activityTrend": "Activity Trend (Last 30 Days)",
+      "insufficientData": "Insufficient data for trend analysis",
+      "peakDay": "Peak Day",
+      "dailyAvg": "Daily Avg",
+      "views": "views",
+      "noStand": "No approved stand for this event yet.",
+      "noStandHint": "Configure your stand to unlock analytics.",
+      "loading": "Loading analytics..."
+    },
+    "eventConferences": {
+      "title": "My Conferences",
+      "eventLabel": "{eventTitle}",
+      "speakingSessions": "Speaking Sessions",
+      "empty": "No conference sessions assigned to your stand.",
+      "subtitle": "When organizers assign you as a speaker for a conference, it will appear here.",
+      "live": "Live",
+      "scheduled": "Scheduled",
+      "goLive": "Go Live",
+      "enterStudio": "Enter Studio"
+    },
+    "liveConference": {
+      "title": "Speaker Studio",
+      "joining": "Joining your session…",
+      "connecting": "Connecting to the conference room…",
+      "failedConnect": "Failed to connect to the session.",
+      "reconnect": "Reconnect",
+      "leave": "Leave Session",
+      "liveNow": "You are live now.",
+      "sessionEnded": "Session ended."
+    },
+    "paymentSuccess": {
+      "title": "Payment Successful",
+      "subtitle": "Your stand fee has been processed.",
+      "paymentLabel": "Stand Fee Payment",
+      "paymentStatus": "Payment Status: Confirmed",
+      "amountPaid": "Amount Paid",
+      "amount": "{amount} {currency}",
+      "paymentReference": "Payment Reference",
+      "transactionDate": "Transaction Date",
+      "viewReceipt": "View Receipt",
+      "generatingPdf": "Generating PDF…",
+      "backToEvents": "Back to Events",
+      "processing": "Your payment is being processed.",
+      "confirmed": "Your payment has been confirmed. Access will be granted once the organizer activates the event."
+    },
+    "leads": {
+      "title": "Leads & Contacts",
+      "subtitle": "Track visitor interactions and captured leads across all your stands.",
+      "kpi": {
+        "totalLeads": "Total Leads",
+        "visits": "Visits",
+        "chatInquiries": "Chat Inquiries",
+        "actionRate": "Action Rate"
+      },
+      "searchPlaceholder": "Search leads...",
+      "allStands": "All Stands",
+      "exportCsv": "Export CSV",
+      "table": {
+        "visitor": "Visitor",
+        "interaction": "Interaction",
+        "standEvent": "Stand / Event",
+        "time": "Time",
+        "actions": "Actions"
+      },
+      "empty": "No leads found matching your criteria.",
+      "visitorLabel": "Visitor #{id}",
+      "noEmail": "No email provided",
+      "unknownStand": "Unknown Stand",
+      "viewDetails": "View Details",
+      "loading": "Loading leads...",
+      "interactionTypes": {
+        "standVisit": "stand_visit",
+        "chatMessage": "chat_message",
+        "productRequest": "product_request",
+        "eventView": "event_view"
+      }
+    },
+    "productRequests": {
+      "title": "All Inquiries & Orders",
+      "subtitle": "A unified view of all visitor requests and marketplace checkouts across every event you participate in.",
+      "kpi": {
+        "eventsActive": "Events Active",
+        "totalOrders": "Total Orders",
+        "directRequests": "Direct Requests"
+      },
+      "tabs": {
+        "products": "Products",
+        "services": "Services"
+      },
+      "refineView": "Refine View",
+      "filters": {
+        "byEvent": {
+          "label": "Filter by Event",
+          "all": "All Events"
+        },
+        "orderFulfillment": "Order Fulfillment",
+        "allStatuses": "All Statuses",
+        "orderStatuses": {
+          "requested": "requested",
+          "processing": "processing",
+          "packed": "packed",
+          "shipped": "shipped",
+          "delivered": "delivered",
+          "completed": "completed",
+          "cancelled": "cancelled"
+        },
+        "requestStatus": "Request Status",
+        "requestStatuses": {
+          "all": "All Statuses",
+          "pending": "Pending",
+          "contacted": "Contacted",
+          "closed": "Closed"
+        },
+        "timePeriod": "Time Period",
+        "timeOptions": {
+          "all": "All dates",
+          "today": "Today",
+          "last7Days": "Last 7 days",
+          "last30Days": "Last 30 days"
+        }
+      },
+      "checkoutOrders": {
+        "title": "Checkout Orders",
+        "empty": "No checkout orders match your current filters."
+      },
+      "directInquiries": {
+        "title": "Direct Inquiries",
+        "empty": "No direct inquiries match your current filters."
+      },
+      "syncing": "Synchronizing records...",
+      "retry": "Retry Loading",
+      "order": {
+        "label": "Order #{id}",
+        "qty": "Qty: {count}",
+        "amount": "{amount} {currency}",
+        "advance": "Advance to next stage",
+        "addNote": "Add a note",
+        "notePlaceholder": "Note (optional)",
+        "cancelConfirm": "Cancel order for \"{product}\"? This will mark the order as cancelled and restore stock for product items.",
+        "cancelNote": "Optional cancellation note",
+        "cancelledNote": "Cancelled by enterprise: false order"
+      },
+      "inquiry": {
+        "visitorInfo": "Visitor Information",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "location": "Location",
+        "message": "Message",
+        "markContacted": "Mark as Contacted",
+        "markClosed": "Mark as Closed"
+      }
+    },
+    "products": {
+      "subtitle": "Manage your catalog of products and services.",
+      "addButton": "Add Product / Service",
+      "form": {
+        "addProduct": "Add New Product",
+        "addService": "Add New Service",
+        "editProduct": "Edit Product",
+        "editService": "Edit Service",
+        "name": {
+          "label": "Product / Service Name *",
+          "placeholder": "e.g. Cloud Analytics Suite"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Briefly describe what this is..."
+        },
+        "price": {
+          "label": "Price *",
+          "placeholder": "99.99"
+        },
+        "currency": {
+          "label": "Currency",
+          "mad": "MAD"
+        },
+        "stock": {
+          "label": "Stock (quantity available)",
+          "placeholder": "100",
+          "note": "Not applicable for services"
+        },
+        "type": {
+          "label": "Type *",
+          "product": "Product",
+          "service": "Service"
+        },
+        "image": {
+          "label": "Image",
+          "uploadHint": "Click to upload a product image (JPG, PNG, WebP)",
+          "selected": "Image selected — click to replace",
+          "current": "Current"
+        },
+        "cancel": "Cancel",
+        "createProduct": "Create Product",
+        "createService": "Create Service",
+        "updateProduct": "Update Product",
+        "updateService": "Update Service"
+      },
+      "empty": {
+        "title": "No products yet",
+        "subtitle": "Start by adding your first product or service.",
+        "action": "Add First Product"
+      },
+      "badges": {
+        "inStock": "in stock",
+        "noPrice": "No price",
+        "service": "Service",
+        "product": "Product"
+      },
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "loading": "Loading catalog..."
+    },
+    "analytics": {
+      "title": "Stand Performance",
+      "subtitle": "Real-time insights across your virtual exhibition presence.",
+      "standSelector": {
+        "combined": "📊 Combined Overview ({count} stands)",
+        "stand": "🗂 {eventTitle} — {standName}"
+      },
+      "showing": "Showing: {eventTitle} · {standName}",
+      "kpi": {
+        "impressions": "Impressions",
+        "impressionsSub": "Total Views",
+        "engagement": "Engagement",
+        "engagementSub": "Interactions",
+        "uniqueLeads": "Unique Leads",
+        "uniqueLeadsSub": "Visitors"
+      },
+      "interactionBreakdown": "Interaction Breakdown",
+      "noData": "No interaction data available yet",
+      "totalInteractions": "Total interactions",
+      "activityTrend": "Activity Trend (Last 30 Days)",
+      "insufficientData": "Insufficient data for trend analysis",
+      "peakDay": "Peak Day",
+      "dailyAvg": "Daily Avg",
+      "views": "{count} views",
+      "empty": {
+        "title": "No approved event participations yet",
+        "subtitle": "Once your stand is approved for an event, analytics will appear here."
+      },
+      "loading": "Loading analytics..."
+    },
+    "conferences": {
+      "title": "Speaking Sessions",
+      "subtitle": "Manage your webinars and live conferences across all events.",
+      "live": "Live",
+      "scheduled": "Scheduled",
+      "enterStudio": "Enter Studio",
+      "goLive": "Go Live",
+      "empty": {
+        "title": "No Sessions Assigned",
+        "subtitle": "When event organizers assign you as a speaker for a conference or webinar, it will appear here."
+      },
+      "fetchFailed": "Failed to fetch conferences"
+    },
+    "communications": {
+      "tabs": {
+        "chats": "Chats",
+        "chatsUnread": "{unread}",
+        "chatsCount": "{count}",
+        "meetings": "Meetings",
+        "meetingsPending": "{count} pending"
+      },
+      "searchPlaceholder": "Find conversation...",
+      "chats": {
+        "empty": "No active chats yet.",
+        "selectTitle": "Select a Conversation",
+        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation.",
+        "conversation": "Conversation",
+        "member": "Member",
+        "noMessages": "No messages yet"
+      },
+      "meetings": {
+        "requestLabel": "Visitor Request #{id}",
+        "submitted": "Submitted {date}",
+        "duration": "Duration: 30 min",
+        "status": {
+          "pending": "pending",
+          "approved": "approved",
+          "rejected": "rejected",
+          "canceled": "canceled",
+          "completed": "completed"
+        },
+        "approve": "Approve",
+        "decline": "Decline",
+        "join": "Join",
+        "ended": "Meeting ended",
+        "approvedStarts": "Approved · starts {time}",
+        "declined": "Declined",
+        "empty": {
+          "title": "No meetings scheduled",
+          "subtitle": "When visitors request meetings with your stands, they will appear here."
+        }
+      },
+      "loading": "Loading communications..."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{count} unread",
+      "allCaughtUp": "All caught up!",
+      "markAllRead": "Mark all read",
+      "markRead": "Mark read",
+      "empty": "No notifications yet.",
+      "timeLabels": {
+        "daysAgo": "{X}d ago",
+        "hoursAgo": "{X}h ago",
+        "minutesAgo": "{X}m ago",
+        "justNow": "just now"
+      },
+      "types": {
+        "paymentRequired": "payment_required",
+        "paymentConfirmed": "payment_confirmed",
+        "standApproved": "stand_approved",
+        "standRejected": "stand_rejected",
+        "eventApproved": "event_approved",
+        "eventRejected": "event_rejected",
+        "productRequest": "product_request",
+        "joinApproved": "join_approved",
+        "joinRejected": "join_rejected",
+        "invitationSent": "invitation_sent",
+        "linksGenerated": "links_generated"
+      }
+    },
+    "joinAcceptance": {
+      "title": "Join Event as Enterprise",
+      "subtitle": "You've been invited to participate in {eventTitle}.",
+      "eventDetails": "Event Details",
+      "acceptButton": "Accept Invitation",
+      "accepting": "Accepting invitation…",
+      "success": {
+        "title": "Your invitation has been accepted! You can now configure your stand.",
+        "action": "Configure Stand"
+      },
+      "error": "Failed to accept invitation.",
+      "enterpriseOnly": {
+        "title": "This invite is for enterprise accounts only.",
+        "subtitle": "Please sign in with an enterprise account.",
+        "action": "Sign In as Enterprise"
+      },
+      "invalidInvite": {
+        "title": "Invalid or expired invitation.",
+        "subtitle": "This invitation link is no longer valid.",
+        "action": "Return to Home"
+      }
+    }
   }
 }
