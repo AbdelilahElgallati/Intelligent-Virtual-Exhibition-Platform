@@ -549,6 +549,25 @@
       "dataTable": {
         "noData": "No data available"
       },
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {current} of {total}",
+        "showingRange": "Showing {from} to {to} of {total} {entity}",
+        "entities": {
+          "users": "accounts",
+          "organizations": "organizations",
+          "enterprises": "enterprises",
+          "entries": "entries",
+          "subscriptions": "subscriptions",
+          "requests": "requests",
+          "incidents": "incidents",
+          "events": "events",
+          "sessions": "sessions",
+          "transactions": "transactions",
+          "records": "records"
+        }
+      },
       "scheduleBuilder": {
         "startTimeTooltip": "Use 24-hour format (HH:mm)",
         "endTimeTooltip": "Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day.",
@@ -893,6 +912,847 @@
       "joinAlert": {
         "failed": "Failed to join event. Please try again.",
         "notFound": "Event not found."
+      }
+    }
+  },
+  "admin": {
+    "navigation": {
+      "dashboard": "Dashboard",
+      "events": "Events",
+      "users": "Users",
+      "organizations": "Organizations",
+      "enterprises": "Enterprises",
+      "organizerApprovals": "Organizer Approvals",
+      "enterpriseApprovals": "Enterprise Approvals",
+      "finance": "Finance",
+      "monitoring": "Monitoring",
+      "auditLogs": "Audit Logs",
+      "incidents": "Incidents",
+      "profile": "Profile"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance."
+    },
+    "analytics": {
+      "title": "Analytics Dashboard",
+      "description": "Platform-level metrics and engagement trends.",
+      "kpi": {
+        "totalUsers": "Total Users",
+        "activeEvents": "Active Events",
+        "totalStands": "Total Stands",
+        "totalEvents": "Total Events",
+        "organizations": "Organizations",
+        "pendingApproval": "Pending"
+      },
+      "charts": {
+        "thirtyDayTrend": "30-Day Event Creation Trend",
+        "eventDistribution": "Event Distribution",
+        "eventsCreated": "Events Created"
+      },
+      "eventsTable": {
+        "title": "Recent Events — click for deep metrics",
+        "noEvents": "No events found."
+      },
+      "export": {
+        "exportPdf": "Export PDF",
+        "exportCsv": "Export CSV",
+        "generating": "Generating…",
+        "exporting": "Exporting…"
+      },
+      "refresh": "Refresh",
+      "deepMetrics": {
+        "title": "Event Deep Metrics",
+        "breadcrumb": "Analytics",
+        "kpi": {
+          "eventViews": "Event Views",
+          "standVisits": "Stand Visits",
+          "chatsOpened": "Chats Opened",
+          "leadsGenerated": "Leads Generated",
+          "participants": "Participants",
+          "activeStands": "Active Stands"
+        },
+        "charts": {
+          "activityTrend": "14-Day Activity Trend",
+          "interactionBreakdown": "Interaction Breakdown",
+          "activity": "Activity"
+        }
+      }
+    },
+    "events": {
+      "title": "Event Review",
+      "description": "Approve or reject pending event submissions from organisers.",
+      "allEvents": "All Events",
+      "refresh": "Refresh",
+      "report": "Report",
+      "manage": "Manage",
+      "viewEventPage": "View Full Event Page",
+      "viewOrganizerReport": "View Organizer Report",
+      "inProgress": "In progress",
+      "upcoming": "Upcoming",
+      "table": {
+        "title": "Event",
+        "organizer": "Organizer",
+        "date": "Date",
+        "location": "Location",
+        "category": "Category",
+        "state": "State",
+        "payment": "Payment"
+      },
+      "detail": {
+        "backToEvents": "All Events",
+        "refresh": "Refresh",
+        "timelineTitle": "Event Timeline",
+        "timelineNodes": {
+          "pending": "Pending",
+          "paymentDue": "Payment Due",
+          "verifying": "Verifying",
+          "paymentDone": "Payment Done",
+          "live": "Live",
+          "closed": "Closed"
+        },
+        "countdown": {
+          "startsIn": "Event starts in",
+          "endsIn": "Event ends in",
+          "startPassed": "Scheduled start has passed — auto-start pending",
+          "endPassed": "Scheduled end has passed — auto-close pending"
+        },
+        "actions": {
+          "forceStart": "Force Start",
+          "forceClose": "Force Close",
+          "verifyPayment": "Verify Payment",
+          "organizerReport": "Organizer Report",
+          "liveMonitor": "Live Monitor"
+        },
+        "confirm": {
+          "startTitle": "Force Start Event",
+          "startMessage": "Are you sure you want to force start this event? This will make it live immediately.",
+          "startLabel": "Force Start",
+          "closeTitle": "Force Close Event",
+          "closeMessage": "Are you sure you want to force close this event? This will end it immediately.",
+          "closeLabel": "Force Close",
+          "paymentTitle": "Confirm Payment",
+          "paymentMessage": "Are you sure you want to confirm this payment and activate the event?",
+          "paymentLabel": "Confirm Payment"
+        },
+        "toast": {
+          "startSuccess": "Event started successfully",
+          "closeSuccess": "Event closed successfully",
+          "paymentSuccess": "Payment confirmed and event activated",
+          "startFailed": "Failed to start event",
+          "closeFailed": "Failed to close event",
+          "paymentFailed": "Failed to confirm payment"
+        },
+        "eventNotFound": "Event not found",
+        "failedToLoad": "Failed to load event. Please try again."
+      },
+      "states": {
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "waitingForPayment": "Waiting for Payment",
+        "paymentProofSubmitted": "Payment Reviewing",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed",
+        "upcoming": "Upcoming",
+        "inProgress": "In progress"
+      },
+      "panel": {
+        "eventDetails": "Event Details",
+        "timezoneLabel": "Displayed in timezone",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "location": "Location",
+        "category": "Category",
+        "enterprises": "Enterprises",
+        "payment": "Payment",
+        "autoCalc": "Auto-calc",
+        "paymentProof": "Payment Proof",
+        "paymentProofMessage": "Organizer has submitted a proof of payment.",
+        "viewProof": "View Proof / Receipt",
+        "pricing": "Pricing",
+        "standPrice": "Stand price",
+        "visitorAccess": "Visitor access",
+        "paid": "Paid",
+        "free": "Free",
+        "perTicket": "/ ticket",
+        "perEnterprise": "/ enterprise",
+        "description": "Description",
+        "extendedDetails": "Extended Details",
+        "schedule": "Event Schedule",
+        "additionalInfo": "Additional Information",
+        "tags": "Tags",
+        "enterpriseLink": "Enterprise Link",
+        "visitorLink": "Visitor Link",
+        "rejectionReason": "Rejection reason",
+        "approveQuestion": "Approve this event?",
+        "rejectQuestion": "Reject this event?",
+        "paymentAmount": "Payment amount (required)",
+        "paymentRequiredError": "Payment required. Please enter an amount.",
+        "paymentInvalidError": "Payment amount is required and must be 0 or greater.",
+        "rejectReasonPlaceholder": "Reason for rejection (recommended)…",
+        "confirmApprove": "Confirm Approve",
+        "confirmReject": "Confirm Reject",
+        "approveLoading": "Approving…",
+        "rejectLoading": "Rejecting…",
+        "startQuestion": "Start this event immediately?",
+        "closeQuestion": "Close this event now?",
+        "confirmStart": "Confirm Start",
+        "confirmClose": "Confirm Close",
+        "startLoading": "Starting…",
+        "closeLoading": "Closing…",
+        "confirmPaymentQuestion": "Confirm this payment?",
+        "verifyAndActivate": "Verify & Activate",
+        "verifyingLoading": "Verifying…",
+        "noSchedule": "No schedule provided",
+        "noSlots": "No slots defined",
+        "noDescription": "No description",
+        "dayLabel": "Day"
+      }
+    },
+    "users": {
+      "title": "User Governance",
+      "description": "Access control and global registry",
+      "anonymousUser": "Anonymous User",
+      "failedToLoad": "Failed to load user registry",
+      "addAdministrator": "Add Administrator",
+      "searchPlaceholder": "Search by name or email…",
+      "filters": {
+        "allRoles": "All Roles",
+        "administrators": "Administrators",
+        "organizers": "Organizers",
+        "visitors": "Visitors",
+        "enterprise": "Enterprise"
+      },
+      "table": {
+        "identity": "Identity",
+        "role": "Role",
+        "status": "Status",
+        "active": "Active",
+        "blocked": "Blocked",
+        "noAccounts": "No accounts matched your search"
+      },
+      "detail": {
+        "identityGovernance": "Identity & Governance",
+        "emailAddress": "Email Address",
+        "usernameHandle": "Username handle",
+        "affiliationDate": "Affiliation Date",
+        "professionalProfile": "Professional Profile",
+        "corporateCredentials": "Corporate Credentials",
+        "jobTitle": "Job Title",
+        "organization": "Organization",
+        "industry": "Industry",
+        "experience": "Experience",
+        "ecosystemEngagement": "Ecosystem Engagement",
+        "networkingObjectives": "Networking Objectives",
+        "activeAccount": "Active Account",
+        "suspended": "Suspended",
+        "revokePermissions": "Revoke Permissions",
+        "restoreAccess": "Restore Access"
+      },
+      "createModal": {
+        "title": "New Administrator",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "John Doe",
+        "emailAddress": "Email Address",
+        "emailPlaceholder": "admin@ivep.platform",
+        "username": "Username",
+        "usernamePlaceholder": "jdoe_admin",
+        "password": "Password",
+        "passwordPlaceholder": "••••••••",
+        "create": "Create",
+        "errorMessage": "Failed to create administrator account"
+      },
+      "toast": {
+        "suspended": "User privileges revoked.",
+        "activated": "User privileges restored.",
+        "actionFailed": "Action failed"
+      }
+    },
+    "organizations": {
+      "title": "Organization Review",
+      "description": "Corporate partners and enterprise identities",
+      "loadingRegistry": "Loading registry…",
+      "noOrganizations": "No organizations found",
+      "noDescription": "No description provided",
+      "table": {
+        "organization": "Organization",
+        "onboarding": "Onboarding",
+        "status": "Status"
+      },
+      "detail": {
+        "performanceOverview": "Performance Overview",
+        "visitors": "Visitors",
+        "events": "Events",
+        "revenue": "Revenue",
+        "organizationIdentity": "Organization Identity",
+        "registeredName": "Registered Name",
+        "onboardingDate": "Onboarding Date",
+        "industrySector": "Industry / Sector",
+        "businessWebsite": "Business Website",
+        "contactEmail": "Contact Email",
+        "primaryContact": "Primary Contact (Owner)",
+        "ownerName": "Owner Name",
+        "ownerEmail": "Owner Email",
+        "organizationProfile": "Organization Profile",
+        "administrativeGovernance": "Administrative Governance",
+        "verificationStatus": "Verification Status",
+        "verifiedPartner": "Verified Partner",
+        "pendingReview": "Pending Review",
+        "flaggedContent": "Flagged Content",
+        "restricted": "Restricted",
+        "clear": "Clear",
+        "operationalStatus": "Operational Status",
+        "operational": "Operational",
+        "verifyAccount": "Verify Enterprise Account",
+        "flag": "Flag",
+        "unflag": "Unflag",
+        "suspend": "Suspend",
+        "unsuspend": "Unsuspend",
+        "verified": "Verified",
+        "flagged": "Flagged",
+        "suspended": "Suspended"
+      },
+      "toast": {
+        "verified": "{name} verified.",
+        "flagToggled": "{name} flag toggled.",
+        "suspensionToggled": "{name} suspension toggled."
+      }
+    },
+    "enterprises": {
+      "title": "Enterprise Registry",
+      "description": "Exhibitors and corporate participants",
+      "loadingRegistry": "Loading registry…",
+      "noEnterprises": "No enterprises found",
+      "exhibition": "Exhibition",
+      "table": {
+        "company": "Company",
+        "industry": "Industry",
+        "status": "Status"
+      },
+      "detail": {
+        "engagementOverview": "Engagement Overview",
+        "stands": "Stands",
+        "leads": "Leads",
+        "meetings": "Meetings",
+        "exhibitorProfile": "Exhibitor Profile",
+        "companyName": "Company Name",
+        "joinDate": "Join Date",
+        "brandWebsite": "Brand Website",
+        "businessEmail": "Business Email",
+        "authorizedRepresentative": "Authorized Representative",
+        "fullName": "Full Name",
+        "directEmail": "Direct Email",
+        "aboutEnterprise": "About Enterprise",
+        "administrativeGovernance": "Administrative Governance",
+        "verificationStatus": "Verification Status",
+        "verifiedPartner": "Verified partner",
+        "pendingReview": "Pending Review",
+        "flaggedContent": "Flagged Content",
+        "restricted": "Restricted",
+        "clear": "Clear",
+        "operationalStatus": "Operational Status",
+        "active": "Active",
+        "verifyAccount": "Verify Enterprise Account",
+        "flag": "Flag",
+        "unflag": "Unflag",
+        "suspend": "Suspend",
+        "unsuspend": "Unsuspend",
+        "verified": "Verified",
+        "flagged": "Flagged",
+        "suspended": "Suspended",
+        "enterprisePartner": "Enterprise Partner"
+      }
+    },
+    "organizerRegistrations": {
+      "title": "Organizer Registrations",
+      "description": "Review and approve organizer account applications.",
+      "loading": "Loading…",
+      "tabs": {
+        "all": "All",
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "total": "{total} total",
+      "noData": "No organizer registrations found for this status.",
+      "fields": {
+        "organisation": "Organisation",
+        "type": "Type",
+        "location": "Location",
+        "phone": "Phone",
+        "proEmail": "Pro Email",
+        "website": "Website"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectPrompt": "Rejection reason (optional):",
+      "approveFailed": "Approval failed",
+      "rejectFailed": "Rejection failed",
+      "failedToLoad": "Failed to load registrations"
+    },
+    "enterpriseRegistrations": {
+      "title": "Enterprise Registrations",
+      "description": "Review and approve enterprise account applications.",
+      "loading": "Loading…",
+      "contactLabel": "Contact:",
+      "tabs": {
+        "all": "All",
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "total": "{total} total",
+      "noData": "No enterprise registrations found for this status.",
+      "contact": "Contact",
+      "employees": "{count} employees",
+      "founded": "Founded {year}",
+      "linkedin": "LinkedIn",
+      "registered": "Registered",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectPrompt": "Rejection reason (optional):",
+      "approveFailed": "Approval failed",
+      "rejectFailed": "Rejection failed",
+      "failedToLoad": "Failed to load registrations"
+    },
+    "enterpriseJoinRequests": {
+      "title": "Enterprise Join Requests",
+      "tabs": {
+        "awaitingApproval": "Awaiting Approval",
+        "pendingPayment": "Pending Payment",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "searchPlaceholder": "Search by org name or email…",
+      "requestsFound": "{total} requests found",
+      "noRequests": "No {status} requests found",
+      "table": {
+        "enterprise": "Enterprise",
+        "contact": "Contact",
+        "industry": "Industry",
+        "history": "History",
+        "status": "Status",
+        "actions": "Actions",
+        "approvedCount": "{count} approved",
+        "suspended": "suspended"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "approvedToast": "{name} approved",
+      "rejectedToast": "{name} rejected",
+      "approveFailed": "Approve failed",
+      "rejectFailed": "Reject failed",
+      "failedToLoad": "Failed to load requests",
+      "rejectModal": {
+        "title": "Reject Request",
+        "description": "Reject {name}'s join request",
+        "reasonLabel": "Reason",
+        "reasonOptional": "(optional)",
+        "reasonPlaceholder": "Explain why the request is being rejected…",
+        "reject": "Reject"
+      },
+      "statusBadges": {
+        "pendingPayment": "Pending Payment",
+        "pendingAdminApproval": "Awaiting Approval",
+        "requested": "Requested",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "finance": {
+      "title": "Financial Dashboard",
+      "description": "Unified transactions, payout settlement, and payout audit history.",
+      "summary": {
+        "totalVolume": "Total Volume",
+        "settled": "Settled",
+        "unpaid": "Unpaid"
+      },
+      "filters": {
+        "sourceType": "Source Type",
+        "payoutStatus": "Payout Status",
+        "receiverType": "Receiver Type",
+        "all": "All",
+        "eventTicket": "Event Ticket",
+        "marketplace": "Marketplace",
+        "standFee": "Stand Fee",
+        "unpaid": "Unpaid",
+        "processing": "Processing",
+        "paid": "Paid",
+        "organizer": "Organizer",
+        "enterprise": "Enterprise",
+        "platform": "Platform"
+      },
+      "transactionsTable": {
+        "type": "Type",
+        "amount": "Amount",
+        "payer": "Payer",
+        "receiver": "Receiver",
+        "status": "Status",
+        "payoutStatus": "Payout Status",
+        "date": "Date",
+        "actions": "Actions",
+        "markAsPaid": "Mark as Paid",
+        "noAction": "No action",
+        "noTransactions": "No transactions found for the selected filters."
+      },
+      "payoutHistory": {
+        "title": "Payout History",
+        "receiver": "Receiver",
+        "amount": "Amount",
+        "admin": "Admin",
+        "date": "Date",
+        "note": "Note",
+        "actions": "Actions",
+        "noRecords": "No payout records yet.",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleteConfirm": "Delete this payout history record? This action cannot be undone.",
+        "deleteSuccess": "Payout history deleted successfully",
+        "deleteFailed": "Failed to delete payout history",
+        "editSuccess": "Payout history updated successfully",
+        "editFailed": "Failed to update payout history",
+        "invalidId": "Invalid payout id"
+      },
+      "confirmModal": {
+        "title": "Confirm Payout Settlement",
+        "description": "You are settling {source} for {amount}.",
+        "noteLabel": "Optional note",
+        "notePlaceholder": "Settlement note (optional)",
+        "confirm": "Confirm",
+        "processing": "Processing...",
+        "failed": "Failed to mark payout"
+      },
+      "editModal": {
+        "title": "Edit Payout History",
+        "statusLabel": "Status",
+        "completed": "Completed",
+        "pending": "Pending",
+        "noteLabel": "Note",
+        "notePlaceholder": "Edit note"
+      }
+    },
+    "subscriptions": {
+      "title": "Subscriptions",
+      "description": "View and override billing plans for any organization",
+      "stats": {
+        "totalOrganizations": "Total Organizations",
+        "proPlans": "PRO Plans",
+        "freePlans": "FREE Plans"
+      },
+      "table": {
+        "organization": "Organization",
+        "plan": "Plan",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "loading": "Loading subscriptions…",
+      "noSubscriptions": "No subscriptions found",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "cancel": "Cancel",
+      "alreadyFree": "Already on FREE plan",
+      "cancelToFree": "Cancel to FREE",
+      "failedToLoad": "Failed to load subscriptions",
+      "actionFailed": "Action failed",
+      "toast": {
+        "switched": "{name} switched to {plan}.",
+        "cancelled": "{name} subscription cancelled."
+      }
+    },
+    "monitoring": {
+      "title": "Platform Monitoring",
+      "description": "Server health, database status, and incidents.",
+      "lastRefresh": "Last refresh: {time}",
+      "degradedAlert": {
+        "title": "Platform degraded",
+        "message": "one or more services are reporting issues. Consider creating an incident."
+      },
+      "health": {
+        "overall": "Overall",
+        "mongodb": "MongoDB",
+        "redis": "Redis",
+        "apiProcess": "API Process",
+        "uptime": "Uptime",
+        "latency": "Latency",
+        "notConfigured": "Not configured"
+      },
+      "incidents": {
+        "title": "Recent Incidents",
+        "count": "{count} incidents",
+        "noIncidents": "No incidents recorded."
+      },
+      "createIncident": {
+        "title": "Create Incident",
+        "titleLabel": "Title",
+        "titleRequired": "Title is required",
+        "titlePlaceholder": "Brief incident title",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What happened?",
+        "severityLabel": "Severity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical",
+        "create": "Create Incident",
+        "creating": "Creating…",
+        "failed": "Failed to create incident"
+      },
+      "failedToLoad": "Failed to load monitoring data"
+    },
+    "audit": {
+      "title": "Audit Logs",
+      "description": "Full governance trail — every admin action, timestamped.",
+      "filters": {
+        "action": "Action",
+        "entityType": "Entity type",
+        "actorId": "Actor ID",
+        "actorPlaceholder": "User ID…",
+        "from": "From",
+        "to": "To",
+        "allActions": "All actions",
+        "allEntities": "All entities",
+        "event": "Event",
+        "user": "User",
+        "organization": "Organization",
+        "subscription": "Subscription",
+        "incident": "Incident",
+        "apply": "Apply"
+      },
+      "table": {
+        "title": "Log Entries",
+        "entriesCount": "{count} entries",
+        "timestamp": "Timestamp",
+        "action": "Action",
+        "entity": "Entity",
+        "actorId": "Actor ID",
+        "details": "Details",
+        "noEntries": "No audit log entries found."
+      },
+      "failedToLoad": "Failed to load audit logs"
+    },
+    "incidents": {
+      "title": "Incident Management",
+      "description": "Investigate, mitigate, and resolve platform incidents.",
+      "loading": "Loading…",
+      "genericError": "Error",
+      "tabs": {
+        "all": "All",
+        "open": "Open",
+        "investigating": "Investigating",
+        "mitigating": "Mitigating",
+        "resolved": "Resolved"
+      },
+      "list": {
+        "title": "Incidents",
+        "total": "{count} total",
+        "noIncidents": "No incidents found."
+      },
+      "create": {
+        "newIncident": "New Incident",
+        "titleLabel": "Title",
+        "titleRequired": "Title required",
+        "titlePlaceholder": "e.g. Database connection timeout",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What's happening?",
+        "severityLabel": "Severity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical",
+        "create": "Create",
+        "creating": "Creating…"
+      },
+      "detail": {
+        "adminNotes": "Admin Notes",
+        "notesPlaceholder": "Add investigation notes, mitigation steps…",
+        "saveNotes": "Save Notes",
+        "investigate": "Investigate",
+        "mitigate": "Mitigate",
+        "markResolved": "Mark Resolved",
+        "resolved": "Resolved ✓",
+        "saving": "…"
+      },
+      "failedToLoad": "Failed to load incidents"
+    },
+    "profile": {
+      "title": "Profile Settings",
+      "description": "Manage your administrator account settings.",
+      "accountInformation": "Account Information",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)"
+      },
+      "shortBio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about yourself..."
+      },
+      "preferredLanguage": "Preferred Language",
+      "timezone": "Timezone",
+      "updateProfile": "Update Profile",
+      "administratorAccount": "Administrator Account",
+      "joinedYear": "Joined {year}",
+      "needHelp": {
+        "title": "Need Help?",
+        "message": "For platform-level support, please contact the system administrator."
+      },
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile."
+    },
+    "payments": {
+      "title": "Payment Reviews",
+      "disabledMessage": "This page is temporarily disabled while the payment moderation flow is being stabilized."
+    },
+    "sessions": {
+      "managementTitle": "Session Management",
+      "description": "Import from your event schedule or create manually — then hit Start on any scheduled session to go live.",
+      "importFromSchedule": "Import from Schedule",
+      "newSession": "New Session",
+      "form": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Opening Keynote",
+        "speakerLabel": "Speaker",
+        "speakerPlaceholder": "Dr. Jane Smith",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Optional description...",
+        "createSession": "Create Session",
+        "creating": "Creating…",
+        "syncing": "Syncing…"
+      },
+      "validation": {
+        "requiredFields": "Title, start time, and end time are required.",
+        "timeOrder": "Start time must be before end time.",
+        "createFailed": "Failed to create session. Check dates are within event range."
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "live": "LIVE",
+        "ended": "Ended",
+        "transcriptActive": "Transcript Active"
+      },
+      "actions": {
+        "start": "Start",
+        "end": "End"
+      },
+      "timeline": {
+        "legend": {
+          "scheduled": "Scheduled",
+          "live": "Live",
+          "ended": "Ended"
+        }
+      },
+      "confirm": {
+        "startTitle": "Start Session",
+        "startMessage": "Start session \"{name}\" now? Viewers will be notified.",
+        "startLabel": "Start Now",
+        "endTitle": "End Session",
+        "endMessage": "End session \"{name}\" now? This cannot be undone.",
+        "endLabel": "End Now"
+      },
+      "toast": {
+        "startSuccess": "Session \"{name}\" started",
+        "endSuccess": "Session \"{name}\" ended",
+        "startFailed": "Failed to start session",
+        "endFailed": "Failed to end session",
+        "syncSuccess": "{count} session(s) imported from schedule",
+        "syncFailed": "No schedule found for this event. Please add conference slots in the event schedule builder first."
+      },
+      "noSessions": "No sessions yet."
+    },
+    "eventMonitoring": {
+      "title": "Live Monitor",
+      "backToEvent": "Back to Event",
+      "eventFallback": "Event",
+      "live": "LIVE",
+      "updated": "Updated {time}",
+      "kpis": {
+        "activeUsers": "Active Users",
+        "messagesPerMin": "Messages / Min",
+        "standVisits": "Stand Visits",
+        "chatSessions": "Chat Sessions",
+        "safetyFlags": "Safety Flags"
+      },
+      "charts": {
+        "messagesPerMin": "Messages / min (last 15 min)",
+        "collectingData": "Collecting data…",
+        "topActiveStands": "Top Active Stands",
+        "userDistribution": "User Distribution",
+        "noActivity": "No activity",
+        "noActiveUsers": "No active users"
+      },
+      "activeUsers": {
+        "title": "Active Users ({count})",
+        "online": "Online",
+        "noUsers": "No active users",
+        "since": "Since {time}"
+      },
+      "safetyFlags": {
+        "title": "Safety Flags ({count} recent)",
+        "attention": "Attention",
+        "allClear": "No open flags — all clear",
+        "highPriority": "High priority",
+        "investigate": "Investigate"
+      },
+      "error": {
+        "failedToFetch": "Failed to fetch metrics",
+        "back": "Back"
+      }
+    },
+    "organizerReport": {
+      "title": "Organizer Report",
+      "description": "Business intelligence & event performance · Updated {time}",
+      "keyMetrics": "Key Metrics",
+      "kpi": {
+        "totalVisitors": "Total Visitors",
+        "enterpriseRate": "Enterprise Rate",
+        "engagementScore": "Engagement Score",
+        "leadsGenerated": "Leads Generated",
+        "meetingsBooked": "Meetings Booked",
+        "chatInteractions": "Chat Interactions"
+      },
+      "revenue": {
+        "title": "Revenue Performance",
+        "ticketRevenue": "Ticket Revenue",
+        "standRevenue": "Stand Revenue",
+        "totalGross": "Total Gross Revenue",
+        "verifiedIncome": "Verified Income",
+        "revenueMix": "Revenue Mix",
+        "donutCenter": {
+          "share": "Share",
+          "mixPercent": "Mix%"
+        },
+        "stand": "Stand",
+        "ticket": "Ticket",
+        "noRevenueData": "No revenue data available yet.",
+        "vsEventAvg": "+12% vs Event Avg"
+      },
+      "trends": {
+        "title": "Performance Trends",
+        "visitorsOverTime": "Visitors Over Time",
+        "engagementOverTime": "Engagement Over Time",
+        "leadGeneration": "Lead Generation Performance",
+        "noVisitorData": "No visitor data yet.",
+        "noEngagementData": "No engagement data yet.",
+        "noLeadData": "No lead data yet."
+      },
+      "safety": {
+        "title": "Safety & Moderation",
+        "totalFlags": "Total Flags",
+        "resolved": "Resolved",
+        "resolutionRate": "Resolution Rate",
+        "greatModeration": "Great moderation rate",
+        "needsAttention": "Some flags need attention"
+      },
+      "export": {
+        "exporting": "Exporting…",
+        "retry": "Retry",
+        "exportFailed": "PDF export failed."
       }
     }
   }
