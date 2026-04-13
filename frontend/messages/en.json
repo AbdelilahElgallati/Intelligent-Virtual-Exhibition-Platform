@@ -2900,5 +2900,572 @@
         "action": "Return to Home"
       }
     }
+  },
+  "visitor": {
+    "orders": {
+      "title": "My Orders",
+      "subtitle": "Track all your stand purchases in unified orders. Product and service items from the same checkout are grouped together.",
+      "loading": "Loading your orders...",
+      "empty": {
+        "title": "No orders yet.",
+        "subtitle": "Visit event stands and use the marketplace to place your first order."
+      },
+      "enterpriseFallback": "Enterprise Stand",
+      "orderRef": "Order Ref:",
+      "status": {
+        "paid": "paid",
+        "pending": "pending",
+        "cancelled": "cancelled"
+      },
+      "paymentMethod": {
+        "cod": "COD",
+        "stripe": "Stripe"
+      },
+      "fulfillment": {
+        "requested": "requested",
+        "processing": "processing",
+        "packed": "packed",
+        "shipped": "shipped",
+        "delivered": "delivered",
+        "completed": "completed",
+        "cancelled": "cancelled",
+        "approved": "approved"
+      },
+      "itemType": {
+        "product": "Product",
+        "service": "Service"
+      },
+      "labels": {
+        "total": "Total:",
+        "shipping": "Shipping:",
+        "notes": "Notes:"
+      },
+      "actions": {
+        "receipt": "Receipt",
+        "revisitStand": "Revisit Stand"
+      },
+      "summary": "You have {count} paid order(s). Each card groups products and services from the same checkout.",
+      "paymentLabels": {
+        "cashOnReception": "Cash on Reception",
+        "stripePayment": "Stripe Payment"
+      }
+    },
+    "favorites": {
+      "title": "Your Collection",
+      "sectionTitle": "Saved Favorites",
+      "countLabel": "{count} Item(s) Found",
+      "empty": {
+        "unauthenticated": {
+          "title": "Login to view favorites",
+          "subtitle": "Sign in to see events, stands, and resources you've carefully saved for later.",
+          "login": "Login",
+          "createAccount": "Create Account"
+        },
+        "authenticated": {
+          "title": "Your collection is empty",
+          "subtitle": "Start exploring Events, Booths, and Organizations to build your personalized directory.",
+          "action": "Browse Live Events"
+        }
+      },
+      "sections": {
+        "events": "Events",
+        "stands": "Stands & Booths",
+        "organizations": "Organizations"
+      },
+      "badge": "Favorited",
+      "removeTooltip": "Remove from favorites",
+      "viewDetails": "View Details",
+      "fallbacks": {
+        "unreachableRoute": "Unreachable Route",
+        "eventRemoved": "Event Identity Removed",
+        "standRemoved": "Stand Identity Removed",
+        "organizationRemoved": "Organization Identity Removed"
+      },
+      "errors": {
+        "loadFailed": "Failed to load favorites",
+        "removeFailed": "Failed to remove favorite"
+      }
+    },
+    "marketplace": {
+      "success": {
+        "title": "Payment Successful!",
+        "subtitle": "Thank you for your purchase. Your order has been confirmed.",
+        "paymentLabels": {
+          "cashOnReception": "Cash on Reception",
+          "stripePayment": "Stripe Payment"
+        },
+        "grandTotal": "Grand Total",
+        "downloadReceipt": "Download Receipt (PDF)",
+        "goBackToStand": "Go Back to Stand",
+        "browseEvents": "Browse Events",
+        "statusOverride": "CONFIRMED",
+        "statusLabels": {
+          "paid": "paid",
+          "pending": "pending"
+        }
+      },
+      "cancel": {
+        "title": "Payment Cancelled",
+        "subtitle": "Your payment was cancelled. No charges were made. You can return to the stand and try again.",
+        "goBackToStand": "Go Back to Stand",
+        "goToDashboard": "Go to Dashboard"
+      }
+    },
+    "liveEvent": {
+      "welcome": {
+        "title": "Welcome to the Live Event!",
+        "subtitle": "Explore the exhibition hall, visit stands, and network with other participants. Use the tabs above to navigate."
+      },
+      "recommended": "Recommended for You",
+      "exhibitionHall": "Exhibition Hall - All Stands",
+      "tabs": {
+        "recommended": "Recommended",
+        "allStands": "All Stands",
+        "schedule": "Schedule",
+        "conferences": "Conferences",
+        "networking": "Networking"
+      }
+    },
+    "standFilter": {
+      "title": "Personalize Your Experience",
+      "subtitle": "We'll recommend stands based on your interests.",
+      "interestLabel": "What are you interested in?",
+      "searchPlaceholder": "Search stands...",
+      "apply": "Apply Preferences",
+      "skip": "Skip for now"
+    },
+    "standsGrid": {
+      "searchPlaceholder": "Search stands…",
+      "filterButton": "Filter",
+      "allCategories": "All Categories",
+      "viewToggle": {
+        "grid": "Grid View",
+        "hall3d": "3D Hall"
+      },
+      "empty": {
+        "title": "No stands found",
+        "subtitle": "Try adjusting your filters or search terms."
+      },
+      "loading": "Loading stands...",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "showing": "Showing {from}-{to} of {total} stands"
+      }
+    },
+    "conferencesTab": {
+      "title": "Conferences & Sessions",
+      "status": {
+        "live": "Live",
+        "upcoming": "Upcoming",
+        "ended": "Ended"
+      },
+      "actions": {
+        "join": "Join",
+        "startingSoon": "Starting Soon",
+        "ended": "Ended"
+      },
+      "empty": {
+        "title": "No conferences scheduled",
+        "subtitle": "Check back later for upcoming sessions."
+      }
+    },
+    "scheduleTab": {
+      "title": "Event Schedule",
+      "dayLabel": "Day {day}",
+      "status": {
+        "liveNow": "Live Now",
+        "upcoming": "Upcoming",
+        "ended": "Ended"
+      },
+      "startsIn": "Starts in {time}",
+      "empty": "No schedule available"
+    },
+    "networkingTab": {
+      "title": "Networking",
+      "subtitle": "Connect with other attendees",
+      "searchPlaceholder": "Search attendees...",
+      "empty": "No attendees found",
+      "reachOutModal": {
+        "title": "Send Reach-Out Request",
+        "messageLabel": "Add a message (optional)",
+        "submit": "Send Request",
+        "cancel": "Cancel"
+      },
+      "toast": {
+        "sent": "Reach-out sent!",
+        "alreadyConnected": "Already connected"
+      }
+    },
+    "virtualStand": {
+      "actionBar": {
+        "resources": "Resources",
+        "about": "About",
+        "shop": "Shop",
+        "chat": "Chat",
+        "meeting": "Meeting",
+        "assistant": "Assistant"
+      },
+      "messageLimit": "Message limit reached for this stand."
+    },
+    "standResources": {
+      "title": "Resources",
+      "empty": "No resources available",
+      "download": "Download"
+    },
+    "productsPanel": {
+      "shop": "Shop",
+      "cart": {
+        "label": "Cart",
+        "count": "({count} items)"
+      },
+      "actions": {
+        "addToCart": "Add to Cart",
+        "remove": "Remove",
+        "checkout": "Checkout",
+        "proceedToCheckout": "Proceed to Checkout"
+      },
+      "checkout": {
+        "shippingAddress": "Shipping Address",
+        "deliveryNotes": "Delivery Notes (optional)",
+        "paymentMethod": "Payment Method",
+        "payWithStripe": "Pay with Stripe",
+        "cashOnDelivery": "Cash on Delivery"
+      },
+      "cartEmpty": {
+        "title": "Cart is empty",
+        "subtitle": "Browse the catalog to add items."
+      },
+      "orderSummary": "Order Summary",
+      "total": "Total",
+      "placingOrder": "Placing Order...",
+      "orderPlaced": "Order placed successfully!",
+      "orderFailed": "Order failed. Please try again.",
+      "itemType": {
+        "product": "Product",
+        "service": "Service"
+      },
+      "columns": {
+        "price": "Price",
+        "quantity": "Quantity"
+      },
+      "empty": {
+        "title": "No products available",
+        "subtitle": "This stand has no products or services yet."
+      }
+    },
+    "chatPanel": {
+      "title": "Chat",
+      "placeholder": "Type a message...",
+      "messageLimit": "Message limit reached ({count}/15). Request a meeting to continue the conversation.",
+      "empty": {
+        "title": "Start a conversation",
+        "subtitle": "Send a message to begin chatting with the stand representative."
+      },
+      "senderLabel": "You",
+      "requestMeeting": "Request Meeting"
+    },
+    "meetingRequestModal": {
+      "title": "Request a Meeting",
+      "purposeLabel": "Purpose (optional)",
+      "dateLabel": "Select a date",
+      "timeLabel": "Select a time",
+      "busySlots": "Busy Slots",
+      "submit": "Submit Request",
+      "success": "Meeting requested!",
+      "alreadyScheduled": "You already have a meeting scheduled.",
+      "error": "An error occurred. Please try again."
+    },
+    "audienceRoom": {
+      "title": "Conference Room",
+      "watching": "You are watching:",
+      "qa": "Q&A",
+      "askPlaceholder": "Ask a question...",
+      "submitQuestion": "Submit Question",
+      "chat": "Chat",
+      "leaveRoom": "Leave Room",
+      "waitingForSession": "Waiting for the session to start...",
+      "sessionEnded": "Session has ended.",
+      "noQuestions": "No questions yet."
+    },
+    "qaPanel": {
+      "title": "Questions & Answers",
+      "note": "Your question will be visible to the speaker.",
+      "submit": "Submit",
+      "empty": "No questions asked yet."
+    },
+    "meetingRoom": {
+      "title": "Meeting Room",
+      "connecting": "Connecting...",
+      "joinMeeting": "Join Meeting",
+      "leaveMeeting": "Leave Meeting",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "turnOnCamera": "Turn on camera",
+      "turnOffCamera": "Turn off camera",
+      "meetingEnded": "Meeting ended."
+    },
+    "inviteAccept": {
+      "title": "Visitor Invite",
+      "processing": "Processing your invite...",
+      "missingEventId": "Missing event identifier in the invite link.",
+      "visitorOnly": "This invite is for visitor accounts. Please log in with a visitor account.",
+      "success": "You are now accepted as a guest visitor for this event.",
+      "error": "Could not accept the invite. It may be invalid or expired.",
+      "actions": {
+        "goToEvent": "Go to Event Page",
+        "enterLive": "Enter Live Experience",
+        "backToEvents": "Back to Events"
+      }
+    },
+    "aiAssistant": {
+      "title": "AI Assistant",
+      "placeholder": "Ask me anything about events, stands, or the platform.",
+      "inputPlaceholder": "Type your message...",
+      "greeting": "How can I help you today?",
+      "suggestions": "Suggested questions"
+    },
+    "eventDetail": {
+      "schedule": {
+        "title": "Event Schedule",
+        "dayLabel": "Day {day}",
+        "phases": {
+          "registrationOpens": "Registration Opens",
+          "registrationDeadline": "Registration Deadline",
+          "eventStarts": "Event Starts",
+          "eventEnds": "Event Ends"
+        },
+        "detailedSchedule": "Detailed Schedule",
+        "activityFallback": "Activity",
+        "overnightBadge": "Overnight",
+        "noSlots": "No slots defined for this day."
+      }
+    },
+    "liveStand": {
+      "title": "Stand Page",
+      "subtitle": "This dedicated stand route is being prepared...",
+      "backToLive": "Back to Live Event"
+    },
+    "webinars": {
+      "title": "Webinars",
+      "subtitle": "Watch sessions and upload recordings...",
+      "transcriptViewer": "Transcript Viewer",
+      "transcriptUpload": "Upload an audio recording to generate a transcript."
+    },
+    "meetingRoom": {
+      "connecting": "Connecting to meeting room...",
+      "cannotJoin": "Cannot join this meeting",
+      "timeRestriction": "You can join only during the scheduled meeting time...",
+      "approvalRequired": "The meeting must be approved...",
+      "goBack": "Go Back",
+      "reconnecting": "Reconnecting",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "cameraOff": "Turn Camera Off",
+      "cameraOn": "Turn Camera On",
+      "screenShareOff": "Stop Sharing",
+      "screenShareOn": "Share Screen",
+      "endCall": "End Call",
+      "connectionFailed": "Connection Failed",
+      "returnToStand": "Return to Stand",
+      "establishing": "Establishing encrypted connection",
+      "rejoinPrompt": "Rejoin now",
+      "waitingParticipant": "Waiting for the other participant...",
+      "rejoin": "Rejoin",
+      "meetingEnded": "Meeting ended.",
+      "join": "Join Meeting"
+    },
+    "eventPayment": {
+      "loading": "Loading payment details...",
+      "freeEvent": "This event is free",
+      "noPaymentRequired": "No payment is required...",
+      "backToEvent": "Back to Event",
+      "title": "Event Payment",
+      "securePaymentFor": "Secure payment for...",
+      "ticketPrice": "Ticket Price",
+      "verifying": "Verifying Payment...",
+      "verifyingMessage": "Please wait while we confirm...",
+      "confirmed": "Payment Confirmed!",
+      "confirmedMessage": "Your payment has been verified...",
+      "enterEvent": "Enter Event",
+      "downloadInvoice": "Download Invoice (PDF)",
+      "securePaymentTitle": "Secure Payment",
+      "securePaymentDesc": "Click the button below...",
+      "payNow": "Pay Now",
+      "redirecting": "Redirecting to Stripe...",
+      "poweredBy": "Powered by Stripe..."
+    },
+    "eventCard": {
+      "paidEvent": "PAID EVENT",
+      "enterprisesCount": "{n} Enterprises",
+      "enterLiveEvent": "Enter Live Event",
+      "viewDetails": "View Details",
+      "viewSummary": "View Summary",
+      "nextSlot": "Next slot:",
+      "currentSlot": "Current: {label}"
+    },
+    "eventsGrid": {
+      "noEvents": "No events found",
+      "checkBackLater": "Check back later for new exhibition opportunities."
+    },
+    "eventsFilters": {
+      "searchPlaceholder": "Search events by title or description...",
+      "categoryLabel": "Category",
+      "allCategories": "All Categories"
+    },
+    "eventDetailsHeader": {
+      "organizedBy": "Organized by {name}",
+      "virtualPlatform": "Virtual Platform"
+    },
+    "joinEventCard": {
+      "title": "Participation",
+      "footer": "By joining, you agree to the code of conduct.",
+      "badges": {
+        "ended": "ENDED",
+        "timelinePending": "TIMELINE PENDING",
+        "liveAccess": "LIVE ACCESS",
+        "inProgress": "IN PROGRESS",
+        "upcoming": "UPCOMING",
+        "approved": "APPROVED",
+        "paymentRequired": "PAYMENT REQUIRED",
+        "paymentPending": "PAYMENT PENDING",
+        "pending": "PENDING",
+        "rejected": "REJECTED",
+        "notJoined": "NOT JOINED"
+      },
+      "approved": {
+        "noTimeline": {
+          "message": "Your registration is approved, but the event timeline is not published yet.",
+          "action": "Access will open when schedule slots are published.",
+          "button": "Waiting for Timeline"
+        },
+        "accessOpen": {
+          "message": "Your registration is approved. You can access the live event now.",
+          "button": "Enter Event"
+        },
+        "closedBeforeEvent": {
+          "message": "You are approved. Event access opens when the timeline goes live.",
+          "button": "Access Opens Soon"
+        },
+        "closedBetweenSlots": {
+          "message": "Event is in progress. Live access opens at the next active slot.",
+          "button": "Next Slot Soon"
+        },
+        "ended": {
+          "message": "This event timeline has ended. Live access is now closed.",
+          "button": "Event Ended"
+        }
+      },
+      "paymentRequired": {
+        "ended": {
+          "message": "This event has ended. New paid access is closed.",
+          "button": "Event Ended"
+        },
+        "active": {
+          "message": "This event requires payment.",
+          "ticketPrice": "Ticket Price: {price} {currency}",
+          "button": "Pay Now"
+        }
+      },
+      "paymentPending": {
+        "message": "Your payment is being processed. You'll be granted access shortly.",
+        "button": "Check Status"
+      },
+      "pending": {
+        "message": "Your request is pending approval. You'll be notified once it's reviewed.",
+        "button": "Pending Approval"
+      },
+      "rejected": {
+        "message": "Your request was not approved."
+      },
+      "notJoined": {
+        "description": "Join this event to access stands, schedule, and resources.",
+        "buttonPaid": "Register & Pay",
+        "buttonFree": "Register Now"
+      }
+    },
+    "eventLiveLayout": {
+      "loading": "Loading event...",
+      "unavailable": "Event unavailable",
+      "liveNow": "Live Now",
+      "inProgress": "In Progress",
+      "upcoming": "Upcoming",
+      "closed": "Closed",
+      "registrationRequired": "Registration Required",
+      "registerNow": "Register Now",
+      "accessNextSlot": "Access opens at the next active slot.",
+      "eventConcluded": "This exhibition has concluded.",
+      "accessOpens": "Access opens when the event starts.",
+      "backToDetails": "Back to Details",
+      "tabs": {
+        "recommended": "Recommended",
+        "allStands": "All Stands",
+        "schedule": "Schedule",
+        "conferences": "Conferences",
+        "networking": "Networking"
+      }
+    },
+    "standsGrid": {
+      "categoryLabel": "Category:",
+      "all": "All",
+      "activeLabel": "Active:",
+      "reset": "Reset",
+      "view3D": "3D Hall View",
+      "viewGrid": "Grid View",
+      "loading": "Loading Exhibition Hall...",
+      "noMatching": "No matching stands",
+      "noStands": "No stands yet",
+      "adjustFilters": "Try adjusting your filters...",
+      "emptyHall": "The exhibition hall is currently empty. Check back later!",
+      "sponsor": "Sponsor",
+      "favorite": "Favorite",
+      "goToPage": "Go to page"
+    },
+    "standFilterModal": {
+      "title": "Personalize Your Experience",
+      "subtitle": "Select your interests to see the most relevant stands.",
+      "domainCategory": "Domain / Category",
+      "topicsLabel": "Topics you're interested in",
+      "exploreButton": "Explore Stands",
+      "skip": "Skip",
+      "topicsSelected": "{n} topic(s) selected"
+    },
+    "chatPanel": {
+      "title": "Chat with {standName}",
+      "loginRequired": "Please log in to chat.",
+      "syncActive": "Sync Active",
+      "connecting": "Connecting...",
+      "limitedMessages": "Limited to {n} messages...",
+      "syncingService": "Connecting to sync service...",
+      "noMessages": "No messages yet",
+      "limitReached": "Limit Reached",
+      "limitMessage": "You've used all {n} messages. Request a formal meeting...",
+      "requestMeeting": "Request Meeting",
+      "messagesRemaining": "{n} message(s) remaining",
+      "chatLimitReached": "Chat limit reached",
+      "requestMeetingInstead": "Request a meeting instead",
+      "typePlaceholder": "Type something...",
+      "reconnecting": "Reconnecting..."
+    },
+    "virtualStandLayout": {
+      "sponsorBadge": "SPONSOR",
+      "welcome": "Welcome",
+      "welcomeMessage": "Welcome to our virtual stand. Explore our resources...",
+      "visitWebsite": "Visit website",
+      "website": "Website",
+      "backToEvent": "Back to Event",
+      "favorite": "Favorite",
+      "resourcesTab": "Documents & Resources",
+      "aboutTab": "About Stand"
+    },
+    "floatingAssistant": {
+      "buttonLabel": "Assistant",
+      "title": "Virtual Assistant",
+      "suggestedPrompts": [
+        "What events are live now?",
+        "Show me stands I should visit.",
+        "What resources does this stand have?"
+      ]
+    }
   }
 }
