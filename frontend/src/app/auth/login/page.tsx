@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Container } from '@/components/common/Container';
 
 export default function LoginPage() {
+    const { t } = useTranslation();
     const { login, isLoading } = useAuth();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState<string | null>(null);
@@ -18,21 +20,21 @@ export default function LoginPage() {
         const detail = err.message || '';
 
         if (detail.includes('Incorrect password'))
-            return 'The password you entered is incorrect. Please try again.';
+            return t('auth.login.error.incorrectPassword');
         if (detail.includes('No account found'))
-            return 'No account found with this email address.';
+            return t('auth.login.error.noAccountFound');
         if (detail.includes('pending admin approval'))
-            return 'Your account is pending admin approval. You will be notified by email once it is activated.';
+            return t('auth.login.error.pendingApproval');
         if (detail.includes('rejected'))
-            return 'Your account registration was rejected. Please contact support.';
+            return t('auth.login.error.rejected');
         if (detail.includes('suspended'))
-            return 'Your account has been suspended. Please contact support for assistance.';
+            return t('auth.login.error.suspended');
         if (detail.includes('not active'))
-            return 'Your account is not active. Please contact support.';
+            return t('auth.login.error.notActive');
         if (detail.includes('Unauthorized'))
-            return 'Invalid email or password. Please check your credentials and try again.';
+            return t('auth.login.error.unauthorized');
 
-        return 'Something went wrong. Please try again.';
+        return t('auth.login.error.generic');
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -40,14 +42,14 @@ export default function LoginPage() {
         setError(null);
 
         if (!formData.email || !formData.password) {
-            setError('Please fill in all fields.');
+            setError(t('auth.login.error.allFields'));
             return;
         }
 
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
-            setError('Please enter a valid email address.');
+            setError(t('auth.login.error.invalidEmail'));
             return;
         }
 
@@ -68,8 +70,12 @@ export default function LoginPage() {
             <Container className="max-w-md">
                 <Card className="shadow-lg">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-3xl font-bold text-indigo-600">Login</CardTitle>
-                        <p className="text-zinc-500 mt-2">Welcome back to IVEP</p>
+                        <CardTitle className="text-3xl font-bold text-indigo-600">
+                            {t('auth.login.title')}
+                        </CardTitle>
+                        <p className="text-zinc-500 mt-2">
+                            {t('auth.login.subtitle')}
+                        </p>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -82,9 +88,9 @@ export default function LoginPage() {
                             )}
 
                             <Input
-                                label="Email"
+                                label={t('auth.login.email.label')}
                                 name="email"
-                                placeholder="Enter your email"
+                                placeholder={t('auth.login.email.placeholder')}
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
@@ -92,7 +98,7 @@ export default function LoginPage() {
 
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-zinc-700">
-                                    Password
+                                    {t('auth.login.password.label')}
                                 </label>
                                 <div className="relative">
                                     <input
@@ -102,13 +108,13 @@ export default function LoginPage() {
                                         onChange={handleChange}
                                         required
                                         className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-10"
-                                        placeholder="••••••••"
+                                        placeholder={t('auth.login.password.placeholder')}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(prev => !prev)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        aria-label={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                                     >
                                         {showPassword ? (
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,13 +136,13 @@ export default function LoginPage() {
                                 isLoading={isLoading}
                                 disabled={isLoading}
                             >
-                                {isLoading ? 'Signing in...' : 'Sign In'}
+                                {isLoading ? t('auth.login.submitting') : t('auth.login.submit')}
                             </Button>
 
                             <div className="text-center text-sm text-zinc-600">
-                                Don't have an account?{' '}
+                                {t('auth.login.noAccount')}{' '}
                                 <Link href="/auth/register" className="text-indigo-600 font-semibold hover:underline">
-                                    Register here
+                                    {t('auth.login.registerLink')}
                                 </Link>
                             </div>
                         </form>

@@ -3,50 +3,47 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/common/Container';
+import { Globe, Languages } from 'lucide-react';
 
 // ── Per-role top nav links ────────────────────────────────────────────────────
 
-type NavLink = { label: string; href: string };
+type NavLink = { labelKey: string; href: string };
 
 const GUEST_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
+    { labelKey: 'layout.navbar.home', href: '/' },
+    { labelKey: 'layout.navbar.events', href: '/events' },
 ];
 
 const VISITOR_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
-    // { label: 'Webinars', href: '/webinars' },
-    { label: 'Orders', href: '/dashboard/orders' },
-    { label: 'Favorites', href: '/favorites' },
+    { labelKey: 'layout.navbar.home', href: '/' },
+    { labelKey: 'layout.navbar.events', href: '/events' },
+    { labelKey: 'layout.navbar.orders', href: '/dashboard/orders' },
+    { labelKey: 'layout.navbar.favorites', href: '/favorites' },
 ];
 
-const ORGANIZER_NAV: NavLink[] = [
-    // { label: 'Home', href: '/' },
-    // { label: 'Events', href: '/events' },
-    // { label: 'Organizer Panel', href: '/organizer' },
-];
+const ORGANIZER_NAV: NavLink[] = [];
 
 const ADMIN_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
-    { label: 'Admin Panel', href: '/admin' },
+    { labelKey: 'layout.navbar.home', href: '/' },
+    { labelKey: 'layout.navbar.events', href: '/events' },
+    { labelKey: 'layout.navbar.adminPanel', href: '/admin' },
 ];
 
 const ENTERPRISE_NAV: NavLink[] = [
-    { label: 'Dashboard', href: '/enterprise' },
-    { label: 'My Events', href: '/enterprise/events' },
-    { label: 'Products', href: '/enterprise/products' },
-    { label: 'Requests', href: '/enterprise/product-requests' },
-    { label: 'Leads', href: '/enterprise/leads' },
+    { labelKey: 'layout.navbar.dashboard', href: '/enterprise' },
+    { labelKey: 'layout.navbar.myEvents', href: '/enterprise/events' },
+    { labelKey: 'layout.navbar.products', href: '/enterprise/products' },
+    { labelKey: 'layout.navbar.requests', href: '/enterprise/product-requests' },
+    { labelKey: 'layout.navbar.leads', href: '/enterprise/leads' },
 ];
 
 // ── Per-role dropdown menu items ──────────────────────────────────────────────
 
-type DropdownItem = { label: string; href: string; icon: React.ReactNode };
+type DropdownItem = { labelKey: string; href: string; icon: React.ReactNode };
 
 const ProfileIcon = (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -82,33 +79,33 @@ const ShieldIcon = (
 function getDropdownItems(role?: string): DropdownItem[] {
     if (role === 'visitor') {
         return [
-            { label: 'My Profile', href: '/profile', icon: ProfileIcon },
-            { label: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
-            { label: 'My Orders', href: '/dashboard/orders', icon: ReceiptIcon },
-            { label: 'Favorites', href: '/favorites', icon: FavIcon },
+            { labelKey: 'layout.navbar.myProfile', href: '/profile', icon: ProfileIcon },
+            { labelKey: 'layout.navbar.dashboard', href: '/dashboard', icon: DashboardIcon },
+            { labelKey: 'layout.navbar.myOrders', href: '/dashboard/orders', icon: ReceiptIcon },
+            { labelKey: 'layout.navbar.favorites', href: '/favorites', icon: FavIcon },
         ];
     }
     if (role === 'enterprise') {
         return [
-            { label: 'My Profile', href: '/enterprise/profile', icon: ProfileIcon },
-            { label: 'Dashboard', href: '/enterprise', icon: DashboardIcon },
-            { label: 'Manage Products', href: '/enterprise/products', icon: ReceiptIcon },
-            { label: 'All Requests', href: '/enterprise/product-requests', icon: FavIcon },
+            { labelKey: 'layout.navbar.myProfile', href: '/enterprise/profile', icon: ProfileIcon },
+            { labelKey: 'layout.navbar.dashboard', href: '/enterprise', icon: DashboardIcon },
+            { labelKey: 'layout.navbar.manageProducts', href: '/enterprise/products', icon: ReceiptIcon },
+            { labelKey: 'layout.navbar.allRequests', href: '/enterprise/product-requests', icon: FavIcon },
         ];
     }
     if (role === 'organizer') {
         return [
-            { label: 'My Profile', href: '/organizer/profile', icon: ProfileIcon },
-            { label: 'Organizer Panel', href: '/organizer', icon: CalendarIcon },
+            { labelKey: 'layout.navbar.myProfile', href: '/organizer/profile', icon: ProfileIcon },
+            { labelKey: 'layout.navbar.organizerPanel', href: '/organizer', icon: CalendarIcon },
         ];
     }
     if (role === 'admin') {
         return [
-            { label: 'My Profile', href: '/profile', icon: ProfileIcon },
-            { label: 'Admin Panel', href: '/admin', icon: ShieldIcon },
+            { labelKey: 'layout.navbar.myProfile', href: '/profile', icon: ProfileIcon },
+            { labelKey: 'layout.navbar.adminPanel', href: '/admin', icon: ShieldIcon },
         ];
     }
-    return [{ label: 'My Profile', href: '/profile', icon: ProfileIcon }];
+    return [{ labelKey: 'layout.navbar.myProfile', href: '/profile', icon: ProfileIcon }];
 }
 
 function getNavLinks(role?: string): NavLink[] {
@@ -131,16 +128,22 @@ const roleBadge: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const Navbar: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const { isAuthenticated, user, logout } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [langOpen, setLangOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const langRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setProfileOpen(false);
+            }
+            if (langRef.current && !langRef.current.contains(e.target as Node)) {
+                setLangOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -157,6 +160,11 @@ export const Navbar: React.FC = () => {
         .join('')
         .toUpperCase()
         .slice(0, 2);
+
+    const toggleLanguage = (lng: string) => {
+        i18n.changeLanguage(lng);
+        setLangOpen(false);
+    };
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md">
@@ -180,7 +188,7 @@ export const Navbar: React.FC = () => {
                                                 : 'text-zinc-600 hover:text-indigo-600'
                                             }`}
                                     >
-                                        {link.label}
+                                        {t(link.labelKey)}
                                     </Link>
                                 );
                             })}
@@ -189,6 +197,33 @@ export const Navbar: React.FC = () => {
 
                     {/* Right side */}
                     <div className="flex items-center gap-4">
+                        {/* Language Switcher */}
+                        <div className="relative" ref={langRef}>
+                            <button
+                                onClick={() => setLangOpen(!langOpen)}
+                                className="p-2 rounded-full hover:bg-zinc-100 text-zinc-600 transition-colors"
+                                aria-label="Change language"
+                            >
+                                <Languages size={20} />
+                            </button>
+                            {langOpen && (
+                                <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white border border-zinc-200 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <button
+                                        onClick={() => toggleLanguage('en')}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language === 'en' ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
+                                    >
+                                        English
+                                    </button>
+                                    <button
+                                        onClick={() => toggleLanguage('fr')}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language === 'fr' ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
+                                    >
+                                        Français
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {isAuthenticated ? (
                             <div className="relative" ref={dropdownRef}>
                                 {/* Avatar trigger */}
@@ -237,7 +272,7 @@ export const Navbar: React.FC = () => {
                                                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
                                                 >
                                                     {item.icon}
-                                                    {item.label}
+                                                    {t(item.labelKey)}
                                                 </Link>
                                             ))}
                                         </div>
@@ -251,7 +286,7 @@ export const Navbar: React.FC = () => {
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                                 </svg>
-                                                Sign Out
+                                                {t('layout.navbar.signOut')}
                                             </button>
                                         </div>
                                     </div>
@@ -260,10 +295,10 @@ export const Navbar: React.FC = () => {
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link href="/auth/login">
-                                    <Button variant="ghost" size="sm">Login</Button>
+                                    <Button variant="ghost" size="sm">{t('layout.navbar.login')}</Button>
                                 </Link>
                                 <Link href="/auth/register">
-                                    <Button size="sm">Register</Button>
+                                    <Button size="sm">{t('layout.navbar.register')}</Button>
                                 </Link>
                             </div>
                         )}
@@ -273,7 +308,7 @@ export const Navbar: React.FC = () => {
                             className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
                             aria-expanded={mobileMenuOpen}
                         >
-                            <span className="sr-only">Open main menu</span>
+                            <span className="sr-only">{t('layout.navbar.openMenu')}</span>
                             {mobileMenuOpen ? (
                                 <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -302,7 +337,7 @@ export const Navbar: React.FC = () => {
                                             : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
                                         }`}
                                 >
-                                    {link.label}
+                                    {t(link.labelKey)}
                                 </Link>
                             );
                         })}

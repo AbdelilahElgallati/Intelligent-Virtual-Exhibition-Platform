@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { adminService } from '@/services/admin.service';
 import { AdminSubscription, SubscriptionPlan } from '@/types/admin';
 import {
@@ -13,15 +14,17 @@ const PLAN_BADGE: Record<string, string> = {
 };
 
 function PlanBadge({ plan }: { plan: string }) {
+    const { t } = useTranslation();
     const cls = PLAN_BADGE[plan.toLowerCase()] ?? 'bg-zinc-100 text-zinc-600 border border-zinc-200';
     return (
         <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase ${cls}`}>
-            {plan}
+            {t(`admin.subscriptions.plans.${plan.toLowerCase()}`, { defaultValue: plan })}
         </span>
     );
 }
 
 export default function AdminSubscriptionsPage() {
+    const { t } = useTranslation();
     const [subs, setSubs] = useState<AdminSubscription[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -42,11 +45,11 @@ export default function AdminSubscriptionsPage() {
             const data = await adminService.getSubscriptions();
             setSubs(data);
         } catch (e: any) {
-            setError(e.message ?? 'Failed to load subscriptions');
+            setError(e.message ?? t('admin.subscriptions.error.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { fetchSubs(); }, [fetchSubs]);
 
@@ -60,10 +63,10 @@ export default function AdminSubscriptionsPage() {
         setActionId(orgId);
         try {
             await adminService.overrideSubscription(orgId, newPlan);
-            showSuccess(`${orgName} switched to ${newPlan.toUpperCase()}.`);
+            showSuccess(t('admin.subscriptions.success.switched', { name: orgName, plan: newPlan.toUpperCase() }));
             fetchSubs();
         } catch (e: any) {
-            setError(e.message ?? 'Action failed');
+            setError(e.message ?? t('common.errors.actionFailed'));
         } finally {
             setActionId(null);
         }
@@ -73,10 +76,10 @@ export default function AdminSubscriptionsPage() {
         setActionId(orgId);
         try {
             await adminService.cancelSubscription(orgId);
-            showSuccess(`${orgName} subscription cancelled.`);
+            showSuccess(t('admin.subscriptions.success.cancelled', { name: orgName }));
             fetchSubs();
         } catch (e: any) {
-            setError(e.message ?? 'Action failed');
+            setError(e.message ?? t('common.errors.actionFailed'));
         } finally {
             setActionId(null);
         }
@@ -95,8 +98,8 @@ export default function AdminSubscriptionsPage() {
                         <CreditCard className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Subscriptions</h1>
-                        <p className="text-xs text-zinc-500">View and override billing plans for any organization</p>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.subscriptions.title')}</h1>
+                        <p className="text-xs text-zinc-500">{t('admin.subscriptions.description')}</p>
                     </div>
                 </div>
                 <button onClick={fetchSubs} className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
@@ -108,9 +111,9 @@ export default function AdminSubscriptionsPage() {
             {!loading && total > 0 && (
                 <div className="grid grid-cols-3 gap-4">
                     {[
-                        { label: 'Total Organizations', value: total, cls: 'text-zinc-900' },
-                        { label: 'PRO Plans', value: proCount, cls: 'text-indigo-600' },
-                        { label: 'FREE Plans', value: freeCount, cls: 'text-zinc-500' },
+                        { label: t('admin.subscriptions.stats.totalOrgs'), value: total, cls: 'text-zinc-900' },
+                        { label: t('admin.subscriptions.stats.proPlans'), value: proCount, cls: 'text-indigo-600' },
+                        { label: t('admin.subscriptions.stats.freePlans'), value: freeCount, cls: 'text-zinc-500' },
                     ].map(({ label, value, cls }) => (
                         <div key={label} className="bg-white border border-zinc-200 rounded-xl px-5 py-4">
                             <p className="text-xs text-zinc-500 mb-1">{label}</p>
@@ -138,21 +141,21 @@ export default function AdminSubscriptionsPage() {
                 {loading ? (
                     <div className="p-12 text-center text-zinc-400">
                         <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-emerald-400" />
-                        Loading subscriptions…
+                        {t('admin.subscriptions.loading')}
                     </div>
                 ) : subs.length === 0 ? (
                     <div className="p-12 text-center">
                         <CreditCard className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                        <p className="text-zinc-500 font-medium">No subscriptions found</p>
+                        <p className="text-zinc-500 font-medium">{t('admin.subscriptions.noSubscriptions')}</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-zinc-100">
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Organization</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Plan</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">Status</th>
-                                <th className="px-6 py-3.5 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wide">Actions</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('common.entities.organization')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.subscriptions.table.plan')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">{t('common.table.status')}</th>
+                                <th className="px-6 py-3.5 text-right text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('common.table.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
@@ -173,7 +176,7 @@ export default function AdminSubscriptionsPage() {
                                                 }`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-zinc-300'
                                                     }`} />
-                                                {sub.status ?? 'active'}
+                                                {sub.status ? t(`admin.subscriptions.status.${sub.status}`, { defaultValue: sub.status }) : t('admin.subscriptions.status.active')}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -184,15 +187,15 @@ export default function AdminSubscriptionsPage() {
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 transition-colors"
                                                 >
                                                     <ArrowUpDown className="w-3 h-3" />
-                                                    {isFree ? 'Upgrade' : 'Downgrade'}
+                                                    {isFree ? t('admin.subscriptions.actions.upgrade') : t('admin.subscriptions.actions.downgrade')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleCancel(sub.organization_id, sub.organization_name ?? '')}
                                                     disabled={busy || isFree}
-                                                    title={isFree ? 'Already on FREE plan' : 'Cancel to FREE'}
+                                                    title={isFree ? t('admin.subscriptions.tooltips.alreadyFree') : t('admin.subscriptions.tooltips.cancelToFree')}
                                                     className="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                                 >
-                                                    Cancel
+                                                    {t('common.actions.cancel')}
                                                 </button>
                                             </div>
                                         </td>
@@ -205,7 +208,12 @@ export default function AdminSubscriptionsPage() {
                 {!loading && subs.length > 0 && (
                     <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
                         <span className="text-xs text-zinc-500">
-                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, subs.length)} of {subs.length} organization{subs.length !== 1 ? 's' : ''}
+                            {t('common.ui.pagination.showingRange', {
+                                from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                                to: Math.min(currentPage * ITEMS_PER_PAGE, subs.length),
+                                total: subs.length,
+                                entity: t('common.ui.pagination.entities.organizations')
+                            })}
                         </span>
                         {totalPages > 1 && (
                             <div className="flex items-center gap-2">
@@ -214,17 +222,17 @@ export default function AdminSubscriptionsPage() {
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Previous
+                                    {t('common.ui.pagination.previous')}
                                 </button>
                                 <span className="text-xs font-medium text-zinc-600">
-                                    Page {currentPage} of {totalPages}
+                                    {t('common.ui.pagination.pageInfo', { current: currentPage, total: totalPages })}
                                 </span>
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Next
+                                    {t('common.ui.pagination.next')}
                                 </button>
                             </div>
                         )}

@@ -61,7 +61,21 @@
         "organizer": "organizer",
         "enterprise": "enterprise"
       },
-      "organizer": {
+      "assistant": {
+      "buttonLabel": "Assistant",
+      "title": "Virtual Assistant",
+      "subtitles": {
+        "stand": "Ask about this stand and its resources.",
+        "event": "Ask about this event, schedule, and stands.",
+        "platform": "Ask about events, organizations, or how to navigate."
+      },
+      "suggestedPrompts": [
+        "What events are live now?",
+        "Show me stands I should visit.",
+        "What resources does this stand have?"
+      ]
+    },
+    "organizer": {
         "title": "Organisation Details",
         "approvalNote": "Your account will be reviewed by an admin before activation.",
         "orgName": {
@@ -181,6 +195,20 @@
   "profile": {
     "title": "Profile Settings",
     "loading": "Loading profile…",
+    "assistant": {
+      "buttonLabel": "Assistant",
+      "title": "Virtual Assistant",
+      "subtitles": {
+        "stand": "Ask about this stand and its resources.",
+        "event": "Ask about this event, schedule, and stands.",
+        "platform": "Ask about events, organizations, or how to navigate."
+      },
+      "suggestedPrompts": [
+        "What events are live now?",
+        "Show me stands I should visit.",
+        "What resources does this stand have?"
+      ]
+    },
     "organizer": {
       "subtitle": "Manage your identity and organization presence on IVEP.",
       "basicInfo": "Basic Information",
@@ -586,11 +614,46 @@
     "visitor": {
       "joinedEvents": {
         "title": "My Joined Events",
-        "subtitle": "Events you are participating in"
+        "subtitle": "Events you are participating in",
+        "empty": {
+          "title": "No events joined yet",
+          "message": "You haven't joined any events. Explore recommended events to get started!",
+          "browseLink": "Browse All Events"
+        }
       },
       "recommended": {
         "title": "Recommended for You",
-        "subtitle": "Events based on your interests"
+        "subtitle": "Events based on your interests",
+        "highMatch": "High Match",
+        "empty": "No recommendations available yet.",
+        "viewDetails": "View details"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "markAllRead": "Mark all read",
+      "markAsRead": "Mark as read",
+      "empty": "No notifications",
+      "unread": "Unread"
+    },
+    "orders": {
+      "title": "My Orders",
+      "subtitle": "Track all your stand purchases in unified orders. Product and service items from the same checkout are grouped together.",
+      "loading": "Loading your orders...",
+      "noOrders": "No orders yet.",
+      "noOrdersHint": "Visit event stands and use the marketplace to place your first order.",
+      "orderRef": "Order Ref",
+      "total": "Total",
+      "shipping": "Shipping",
+      "notes": "Notes",
+      "receipt": "Receipt",
+      "revisitStand": "Revisit Stand",
+      "product": "Product",
+      "service": "Service",
+      "paidOrdersHint": "You have {{count}} paid order{{plural}}. Each card groups products and services from the same checkout.",
+      "payment": {
+        "stripe": "Stripe",
+        "cod": "COD"
       }
     }
   },
@@ -724,9 +787,84 @@
       "subtitle": "Launch a premium event experience for visitors, exhibitors, and partners with one unified platform.",
       "joinVisitor": "Join as Visitor",
       "hostEvent": "Host an Event"
+    },
+    "testimonials": {
+      "items": {
+        "opsLead": {
+          "quote": "IVEP helped us launch a global expo experience in days, with far better engagement than expected.",
+          "author": "Event Operations Lead",
+          "company": "Apex Business Forum"
+        },
+        "expManager": {
+          "quote": "Our exhibitors loved the stand tools and the marketplace conversion flow was smooth end-to-end.",
+          "author": "Digital Experience Manager",
+          "company": "FutureTech Summit"
+        },
+        "progDirector": {
+          "quote": "The platform feels premium, easy to navigate, and highly practical for both visitors and enterprises.",
+          "author": "Programs Director",
+          "company": "Global Innovation Week"
+        }
+      }
     }
   },
   "layout": {
+    "navbar": {
+      "home": "Home",
+      "events": "Events",
+      "login": "Login",
+      "register": "Register",
+      "orders": "Orders",
+      "favorites": "Favorites",
+      "dashboard": "Dashboard",
+      "adminPanel": "Admin Panel",
+      "organizerPanel": "Organizer Panel",
+      "myEvents": "My Events",
+      "products": "Products",
+      "requests": "Requests",
+      "leads": "Leads",
+      "myProfile": "My Profile",
+      "myOrders": "My Orders",
+      "manageProducts": "Manage Products",
+      "allRequests": "All Requests",
+      "signOut": "Sign Out",
+      "openMenu": "Open main menu"
+    },
+    "footer": {
+      "tagline": "Intelligent Virtual Exhibition Platform for immersive events, networking, and commerce.",
+      "platform": "Platform",
+      "eventsDirectory": "Events Directory",
+      "globalMarketplace": "Global Marketplace",
+      "aiAssistant": "AI Event Assistant",
+      "account": "Account",
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "myFavorites": "My Favorites",
+      "connectWithUs": "Connect With Us",
+      "allRightsReserved": "All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {year} IVEP. All rights reserved."
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "An error occurred.",
+      "noResults": "No results found."
+    },
+    "assistant": {
+      "buttonLabel": "Assistant",
+      "title": "Virtual Assistant",
+      "subtitles": {
+        "stand": "Ask about this stand and its resources.",
+        "event": "Ask about this event, schedule, and stands.",
+        "platform": "Ask about events, organizations, or how to navigate."
+      },
+      "suggestedPrompts": [
+        "What events are live now?",
+        "Show me stands I should visit.",
+        "What resources does this stand have?"
+      ]
+    },
     "organizer": {
       "sidebar": {
         "brand": "IVEP",
@@ -1133,41 +1271,40 @@
         "blocked": "Blocked",
         "noAccounts": "No accounts matched your search"
       },
-      "detail": {
-        "identityGovernance": "Identity & Governance",
-        "emailAddress": "Email Address",
-        "usernameHandle": "Username handle",
-        "affiliationDate": "Affiliation Date",
-        "professionalProfile": "Professional Profile",
-        "corporateCredentials": "Corporate Credentials",
-        "jobTitle": "Job Title",
-        "organization": "Organization",
-        "industry": "Industry",
-        "experience": "Experience",
-        "ecosystemEngagement": "Ecosystem Engagement",
-        "networkingObjectives": "Networking Objectives",
-        "activeAccount": "Active Account",
+      "status": {
+        "active": "Active",
         "suspended": "Suspended",
-        "revokePermissions": "Revoke Permissions",
-        "restoreAccess": "Restore Access"
+        "blocked": "Blocked"
       },
-      "createModal": {
-        "title": "New Administrator",
-        "fullName": "Full Name",
-        "fullNamePlaceholder": "John Doe",
-        "emailAddress": "Email Address",
-        "emailPlaceholder": "admin@ivep.platform",
-        "username": "Username",
-        "usernamePlaceholder": "jdoe_admin",
-        "password": "Password",
-        "passwordPlaceholder": "••••••••",
-        "create": "Create",
-        "errorMessage": "Failed to create administrator account"
+      "newAdministrator": "New Administrator",
+      "fullName": "Full Name",
+      "emailAddress": "Email Address",
+      "username": "Username",
+      "password": "Password",
+      "cancel": "Cancel",
+      "create": "Create",
+      "identityGovernance": "Identity & Governance",
+      "usernameHandle": "Username handle",
+      "affiliationDate": "Affiliation Date",
+      "professionalProfile": "Professional Profile",
+      "corporateCredentials": "Corporate Credentials",
+      "jobTitle": "Job Title",
+      "organization": "Organization",
+      "industry": "Industry",
+      "experience": "Experience",
+      "ecosystemEngagement": "Ecosystem Engagement",
+      "networkingObjectives": "Networking Objectives",
+      "revokePermissions": "Revoke Permissions",
+      "restoreAccess": "Restore Access",
+      "error": {
+        "load": "Failed to load user registry",
+        "actionFailed": "Action failed",
+        "createAdmin": "Failed to create administrator account"
       },
-      "toast": {
-        "suspended": "User privileges revoked.",
-        "activated": "User privileges restored.",
-        "actionFailed": "Action failed"
+      "success": {
+        "revoke": "User privileges revoked.",
+        "restore": "User privileges restored.",
+        "create": "New administrator account created."
       }
     },
     "organizations": {

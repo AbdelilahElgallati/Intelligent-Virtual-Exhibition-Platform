@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +17,6 @@ import {
   Video,
   ShoppingBag,
   BarChart3,
-  ArrowRight,
   Globe,
   MessageSquare
 } from "lucide-react";
@@ -35,123 +35,122 @@ export const staggerContainer: Variants = {
   }
 };
 
-const featureCards = [
-  {
-    title: "Virtual Stands",
-    desc: "Immersive branded stands where enterprises showcase products, media, and live interactions.",
-    icon: <MonitorPlay className="h-6 w-6" />,
-    color: "text-indigo-600 bg-indigo-50 border-indigo-100",
-    shadow: "hover:shadow-indigo-500/20",
-  },
-  {
-    title: "AI Assistant",
-    desc: "Guide visitors instantly with smart event Q&A, recommendations, and multilingual support.",
-    icon: <Bot className="h-6 w-6" />,
-    color: "text-rose-600 bg-rose-50 border-rose-100",
-    shadow: "hover:shadow-rose-500/20",
-  },
-  {
-    title: "Networking",
-    desc: "Create real business opportunities through chat, reach-out requests, and meeting flows.",
-    icon: <Users className="h-6 w-6" />,
-    color: "text-emerald-600 bg-emerald-50 border-emerald-100",
-    shadow: "hover:shadow-emerald-500/20",
-  },
-  {
-    title: "Live Events",
-    desc: "Run conferences, keynotes, and product sessions with real-time attendee engagement.",
-    icon: <Video className="h-6 w-6" />,
-    color: "text-amber-600 bg-amber-50 border-amber-100",
-    shadow: "hover:shadow-amber-500/20",
-  },
-  {
-    title: "Marketplace",
-    desc: "Enable direct purchases from stands with secure checkout and transparent order tracking.",
-    icon: <ShoppingBag className="h-6 w-6" />,
-    color: "text-cyan-600 bg-cyan-50 border-cyan-100",
-    shadow: "hover:shadow-cyan-500/20",
-  },
-  {
-    title: "Analytics",
-    desc: "Measure booth performance, lead quality, and attendee behavior with actionable insights.",
-    icon: <BarChart3 className="h-6 w-6" />,
-    color: "text-purple-600 bg-purple-50 border-purple-100",
-    shadow: "hover:shadow-purple-500/20",
-  },
-];
-
-const experienceBlocks = [
-  {
-    id: "nav",
-    title: "2D/3D Hall Navigation",
-    desc: "Visitors move naturally through your event using fluid hall exploration and stand discovery.",
-    img: "radial-gradient(circle at 100% 100%, #312e81 0%, #1e1b4b 100%)",
-    icon: <Globe size={24} className="text-indigo-400" />
-  },
-  {
-    id: "stand",
-    title: "Interactive Stand Experience",
-    desc: "Show products, media, resources, and business profiles in a polished digital booth environment.",
-    img: "radial-gradient(circle at 0% 100%, #064e3b 0%, #022c22 100%)",
-    icon: <MonitorPlay size={24} className="text-emerald-400" />
-  },
-  {
-    id: "chat",
-    title: "Chat and Live Interaction",
-    desc: "Connect visitors and exhibitors through instant messaging and contextual communication tools.",
-    img: "radial-gradient(circle at 100% 0%, #78350f 0%, #451a03 100%)",
-    icon: <MessageSquare size={24} className="text-amber-400" />
-  },
-];
-
-const steps = [
-  { title: "Join Event", desc: "Sign in as a visitor or enterprise and enter your selected event in seconds." },
-  { title: "Explore Stands", desc: "Discover powerful exhibitors, products, and live sessions from an intuitive hall view." },
-  { title: "Interact", desc: "Start meaningful chats, request meetings, and engage directly with brands." },
-  { title: "Buy / Connect", desc: "Complete purchases seamlessly or capture leads to convert engagement into outcomes." },
-];
-
-const testimonials = [
-  {
-    quote: "IVEP helped us launch a global expo experience in days, with far better engagement than expected.",
-    author: "Event Operations Lead",
-    company: "Apex Business Forum",
-  },
-  {
-    quote: "Our exhibitors loved the stand tools and the marketplace conversion flow was smooth end-to-end.",
-    author: "Digital Experience Manager",
-    company: "FutureTech Summit",
-  },
-  {
-    quote: "The platform feels premium, easy to navigate, and highly practical for both visitors and enterprises.",
-    author: "Programs Director",
-    company: "Global Innovation Week",
-  },
-];
-
-const partners = ["Acme Corp", "Zenith Tech", "Horizon Dynamics", "Nexus Industries", "Quantum Solutions", "Apex Innovations"];
-
 export default function Home() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [activeExp, setActiveExp] = useState(experienceBlocks[0].id);
+  const [activeExp, setActiveExp] = useState("nav");
   const [visitorOrganizerMsg, setVisitorOrganizerMsg] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
     if (isAuthenticated && user) {
-      // Non-visitor users go straight to their dashboard
       if (user.role === 'admin') { router.replace('/admin'); return; }
       if (user.role === 'organizer') { router.replace('/organizer'); return; }
       if (user.role === 'enterprise') { router.replace('/enterprise'); return; }
     }
-    // Visitors or unauthenticated users see the homepage
     setReady(true);
   }, [isLoading, isAuthenticated, user, router]);
 
-  // Show nothing while checking auth / redirecting
+  const featureCards = [
+    {
+      title: t("landing.features.items.virtualStands.title"),
+      desc: t("landing.features.items.virtualStands.description"),
+      icon: <MonitorPlay className="h-6 w-6" />,
+      color: "text-indigo-600 bg-indigo-50 border-indigo-100",
+      shadow: "hover:shadow-indigo-500/20",
+    },
+    {
+      title: t("landing.features.items.aiAssistant.title"),
+      desc: t("landing.features.items.aiAssistant.description"),
+      icon: <Bot className="h-6 w-6" />,
+      color: "text-rose-600 bg-rose-50 border-rose-100",
+      shadow: "hover:shadow-rose-500/20",
+    },
+    {
+      title: t("landing.features.items.networking.title"),
+      desc: t("landing.features.items.networking.description"),
+      icon: <Users className="h-6 w-6" />,
+      color: "text-emerald-600 bg-emerald-50 border-emerald-100",
+      shadow: "hover:shadow-emerald-500/20",
+    },
+    {
+      title: t("landing.features.items.liveEvents.title"),
+      desc: t("landing.features.items.liveEvents.description"),
+      icon: <Video className="h-6 w-6" />,
+      color: "text-amber-600 bg-amber-50 border-amber-100",
+      shadow: "hover:shadow-amber-500/20",
+    },
+    {
+      title: t("landing.features.items.marketplace.title"),
+      desc: t("landing.features.items.marketplace.description"),
+      icon: <ShoppingBag className="h-6 w-6" />,
+      color: "text-cyan-600 bg-cyan-50 border-cyan-100",
+      shadow: "hover:shadow-cyan-500/20",
+    },
+    {
+      title: t("landing.features.items.analytics.title"),
+      desc: t("landing.features.items.analytics.description"),
+      icon: <BarChart3 className="h-6 w-6" />,
+      color: "text-purple-600 bg-purple-50 border-purple-100",
+      shadow: "hover:shadow-purple-500/20",
+    },
+  ];
+
+  const experienceBlocks = [
+    {
+      id: "nav",
+      title: t("landing.experience.items.hallNavigation.title"),
+      desc: t("landing.experience.items.hallNavigation.description"),
+      img: "radial-gradient(circle at 100% 100%, #312e81 0%, #1e1b4b 100%)",
+      icon: <Globe size={24} className="text-indigo-400" />
+    },
+    {
+      id: "stand",
+      title: t("landing.experience.items.standExperience.title"),
+      desc: t("landing.experience.items.standExperience.description"),
+      img: "radial-gradient(circle at 0% 100%, #064e3b 0%, #022c22 100%)",
+      icon: <MonitorPlay size={24} className="text-emerald-400" />
+    },
+    {
+      id: "chat",
+      title: t("landing.experience.items.chatInteraction.title"),
+      desc: t("landing.experience.items.chatInteraction.description"),
+      img: "radial-gradient(circle at 100% 0%, #78350f 0%, #451a03 100%)",
+      icon: <MessageSquare size={24} className="text-amber-400" />
+    },
+  ];
+
+  const steps = [
+    { title: t("landing.howItWorks.steps.joinEvent.title"), desc: t("landing.howItWorks.steps.joinEvent.description") },
+    { title: t("landing.howItWorks.steps.exploreStands.title"), desc: t("landing.howItWorks.steps.exploreStands.description") },
+    { title: t("landing.howItWorks.steps.interact.title"), desc: t("landing.howItWorks.steps.interact.description") },
+    { title: t("landing.howItWorks.steps.buyConnect.title"), desc: t("landing.howItWorks.steps.buyConnect.description") },
+  ];
+
+  const testimonials = [
+    {
+      quote: t("landing.testimonials.items.opsLead.quote"),
+      author: t("landing.testimonials.items.opsLead.author"),
+      company: t("landing.testimonials.items.opsLead.company"),
+    },
+    {
+      quote: t("landing.testimonials.items.expManager.quote"),
+      author: t("landing.testimonials.items.expManager.author"),
+      company: t("landing.testimonials.items.expManager.company"),
+    },
+    {
+      quote: t("landing.testimonials.items.progDirector.quote"),
+      author: t("landing.testimonials.items.progDirector.author"),
+      company: t("landing.testimonials.items.progDirector.company"),
+    },
+  ];
+
+  const partners = ["Acme Corp", "Zenith Tech", "Horizon Dynamics", "Nexus Industries", "Quantum Solutions", "Apex Innovations"];
+
   if (!ready) return null;
+
   return (
     <div className="bg-gradient-to-b from-white via-zinc-50 to-white">
       {/* HERO SECTION */}
@@ -166,19 +165,19 @@ export default function Home() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
-                Intelligent Virtual Exhibition Platform
+                {t("landing.hero.badge")}
               </span>
               <h1 className="mt-5 text-4xl font-bold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-                Build immersive exhibitions that convert visitors into business.
+                {t("landing.hero.heading")}
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600">
-                IVEP gives organizers, enterprises, and attendees one premium digital venue for events, stands, networking, and marketplace outcomes.
+                {t("landing.hero.subtitle")}
               </p>
 
               <div className="mt-10 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-4">
                   <Link href="/events">
-                    <Button size="lg">Explore Events</Button>
+                    <Button size="lg">{t("landing.hero.exploreEvents")}</Button>
                   </Link>
                   {isAuthenticated && user?.role === "visitor" ? (
                     <Button
@@ -187,30 +186,30 @@ export default function Home() {
                       variant="outline"
                       onClick={() => setVisitorOrganizerMsg(true)}
                     >
-                      Create Event
+                      {t("landing.hero.createEvent")}
                     </Button>
                   ) : (
                     <Link href="/auth/register">
-                      <Button size="lg" variant="outline">Create Event</Button>
+                      <Button size="lg" variant="outline">{t("landing.hero.createEvent")}</Button>
                     </Link>
                   )}
                 </div>
                 {visitorOrganizerMsg && (
                   <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-xl">
-                    Creating events requires an <strong>organizer</strong> account. Please contact an administrator to upgrade your account, or sign out and register as an organizer if your organisation is not yet on the platform.
+                    {t("landing.hero.visitorWarning")}
                   </p>
                 )}
               </div>
 
               <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  "Secure Access",
-                  "Live Interactions",
-                  "AI-Powered",
-                  "B2B Ready",
-                ].map((badge) => (
-                  <div key={badge} className="rounded-xl border border-zinc-200 bg-white/90 px-3 py-2 text-center text-xs font-medium text-zinc-700 shadow-sm">
-                    {badge}
+                  "secureAccess",
+                  "liveInteractions",
+                  "aiPowered",
+                  "b2bReady",
+                ].map((key) => (
+                  <div key={key} className="rounded-xl border border-zinc-200 bg-white/90 px-3 py-2 text-center text-xs font-medium text-zinc-700 shadow-sm">
+                    {t(`landing.hero.badges.${key}`)}
                   </div>
                 ))}
               </div>
@@ -219,24 +218,24 @@ export default function Home() {
             <div className="relative">
               <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-xl">
                 <div className="rounded-2xl bg-gradient-to-br from-zinc-900 via-indigo-900 to-zinc-800 p-6 text-white">
-                  <p className="text-sm text-indigo-200">Live Platform Preview</p>
-                  <h3 className="mt-2 text-2xl font-semibold">Immersive event control center</h3>
+                  <p className="text-sm text-indigo-200">{t("landing.hero.preview.label")}</p>
+                  <h3 className="mt-2 text-2xl font-semibold">{t("landing.hero.preview.heading")}</h3>
                   <div className="mt-6 grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-white/10 p-4">
-                      <p className="text-xs text-indigo-100">Active Stands</p>
-                      <p className="mt-2 text-2xl font-bold">120+</p>
+                      <p className="text-xs text-indigo-100">{t("landing.hero.preview.stats.activeStands.label")}</p>
+                      <p className="mt-2 text-2xl font-bold">{t("landing.hero.preview.stats.activeStands.value")}</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-4">
-                      <p className="text-xs text-indigo-100">Live Attendees</p>
-                      <p className="mt-2 text-2xl font-bold">8.4K</p>
+                      <p className="text-xs text-indigo-100">{t("landing.hero.preview.stats.liveAttendees.label")}</p>
+                      <p className="mt-2 text-2xl font-bold">{t("landing.hero.preview.stats.liveAttendees.value")}</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-4">
-                      <p className="text-xs text-indigo-100">Meetings Scheduled</p>
-                      <p className="mt-2 text-2xl font-bold">2.1K</p>
+                      <p className="text-xs text-indigo-100">{t("landing.hero.preview.stats.meetingsScheduled.label")}</p>
+                      <p className="mt-2 text-2xl font-bold">{t("landing.hero.preview.stats.meetingsScheduled.value")}</p>
                     </div>
                     <div className="rounded-xl bg-white/10 p-4">
-                      <p className="text-xs text-indigo-100">Conversion Rate</p>
-                      <p className="mt-2 text-2xl font-bold">37%</p>
+                      <p className="text-xs text-indigo-100">{t("landing.hero.preview.stats.conversionRate.label")}</p>
+                      <p className="mt-2 text-2xl font-bold">{t("landing.hero.preview.stats.conversionRate.value")}</p>
                     </div>
                   </div>
                 </div>
@@ -251,8 +250,8 @@ export default function Home() {
         <Container className="max-w-7xl px-6">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp}>
             <SectionTitle
-              title="Core Platform Features"
-              subtitle="A complete toolkit to launch, manage, and scale world-class virtual exhibitions."
+              title={t("landing.features.title")}
+              subtitle={t("landing.features.subtitle")}
             />
           </motion.div>
 
@@ -288,9 +287,9 @@ export default function Home() {
 
         <Container className="max-w-7xl px-6 relative z-10">
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Platform Experience</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.experience.title")}</h2>
             <p className="mt-4 text-lg text-zinc-400">
-              Designed for immersive discovery, seamless communication, and measurable outcomes.
+              {t("landing.experience.subtitle")}
             </p>
           </div>
 
@@ -360,8 +359,8 @@ export default function Home() {
         <Container className="max-w-7xl px-6">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp}>
             <SectionTitle
-              title="How It Works"
-              subtitle="A simple journey from event entry to high-value business interaction."
+              title={t("landing.howItWorks.title")}
+              subtitle={t("landing.howItWorks.subtitle")}
             />
           </motion.div>
 
@@ -392,19 +391,19 @@ export default function Home() {
       <section className="py-16 sm:py-20">
         <Container className="max-w-7xl px-6">
           <SectionTitle
-            title="Trusted by Modern Event Teams"
-            subtitle="Built for organizers and enterprises that care about premium attendee experiences."
+            title={t("landing.socialProof.title")}
+            subtitle={t("landing.socialProof.subtitle")}
           />
 
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { label: "Events Hosted", value: "1,200+" },
-              { label: "Registered Users", value: "95K+" },
-              { label: "Enterprise Exhibitors", value: "3,400+" },
+              { labelKey: "eventsHosted", valueKey: "eventsHosted" },
+              { labelKey: "registeredUsers", valueKey: "registeredUsers" },
+              { labelKey: "enterpriseExhibitors", valueKey: "enterpriseExhibitors" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
-                <p className="text-3xl font-bold text-zinc-900">{stat.value}</p>
-                <p className="mt-1 text-sm text-zinc-600">{stat.label}</p>
+              <div key={stat.labelKey} className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
+                <p className="text-3xl font-bold text-zinc-900">{t(`landing.socialProof.stats.${stat.valueKey}.value`)}</p>
+                <p className="mt-1 text-sm text-zinc-600">{t(`landing.socialProof.stats.${stat.labelKey}.label`)}</p>
               </div>
             ))}
           </div>
@@ -441,58 +440,21 @@ export default function Home() {
       <section className="py-16 sm:py-20">
         <Container className="max-w-7xl px-6">
           <div className="rounded-3xl bg-gradient-to-r from-indigo-700 to-cyan-700 px-6 py-12 text-center text-white shadow-2xl sm:px-10 sm:py-14">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Start your virtual exhibition today</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("landing.cta.title")}</h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-indigo-100 sm:text-lg">
-              Launch a premium event experience for visitors, exhibitors, and partners with one unified platform.
+              {t("landing.cta.subtitle")}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link href="/events">
-                <Button size="lg" className="border-none bg-white text-indigo-700 hover:bg-indigo-50">Join as Visitor</Button>
+                <Button size="lg" className="border-none bg-white text-indigo-700 hover:bg-indigo-50">{t("landing.cta.joinVisitor")}</Button>
               </Link>
               <Link href="/auth/register">
-                <Button size="lg" variant="outline" className="border-white bg-transparent text-white hover:bg-white/10">Host an Event</Button>
+                <Button size="lg" variant="outline" className="border-white bg-transparent text-white hover:bg-white/10">{t("landing.cta.hostEvent")}</Button>
               </Link>
             </div>
           </div>
         </Container>
       </section>
-              
-        {/*<footer className="mt-auto border-t border-zinc-200 bg-zinc-50 py-12">
-            <Container>
-                <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-                    <div className="flex flex-col items-center gap-2 md:items-start">
-                        <span className="text-xl font-bold tracking-tight text-indigo-600">IVEP</span>
-                        <p className="text-sm text-zinc-500 text-center md:text-left">
-                            Intelligent Virtual Exhibition Platform.
-                        </p>
-                    </div>
-
-                    <div className="flex gap-8">
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Platform</span>
-                            <ul className="flex flex-col gap-1">
-                                <li><a href="#" className="text-sm text-zinc-600 hover:text-indigo-600">About</a></li>
-                                <li><a href="#" className="text-sm text-zinc-600 hover:text-indigo-600">Contact</a></li>
-                            </ul>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Legal</span>
-                            <ul className="flex flex-col gap-1">
-                                <li><a href="#" className="text-sm text-zinc-600 hover:text-indigo-600">Privacy</a></li>
-                                <li><a href="#" className="text-sm text-zinc-600 hover:text-indigo-600">Terms</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-12 border-t border-zinc-200 pt-8 text-center">
-                    <p className="text-xs text-zinc-400">
-                        © {new Date().getFullYear()} IVEP. All rights reserved.
-                    </p>
-                </div>
-            </Container>
-        </footer>*/}
     </div>
   );
 }
-

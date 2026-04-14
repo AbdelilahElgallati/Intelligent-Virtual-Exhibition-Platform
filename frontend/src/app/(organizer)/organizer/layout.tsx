@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingState } from '@/components/ui/LoadingState';
 import {
@@ -17,12 +18,13 @@ import {
 import { notificationsApi } from '@/lib/api/notifications';
 
 const NAV_ITEMS = [
-    { label: 'Dashboard', href: '/organizer', icon: LayoutDashboard },
-    { label: 'My Events', href: '/organizer/events', icon: Calendar },
-    { label: 'Profile', href: '/organizer/profile', icon: User },
+    { labelKey: 'layout.organizer.sidebar.dashboard', href: '/organizer', icon: LayoutDashboard },
+    { labelKey: 'layout.organizer.sidebar.myEvents', href: '/organizer/events', icon: Calendar },
+    { labelKey: 'layout.organizer.sidebar.profile', href: '/organizer/profile', icon: User },
 ];
 
 export default function OrganizerLayout({ children }: { children: React.ReactNode }) {
+    const { t } = useTranslation();
     const { user, isAuthenticated, isLoading, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -46,7 +48,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     }, [isAuthenticated, user]);
 
     if (isLoading || !isAuthenticated || user?.role !== 'organizer') {
-        return <LoadingState message="Checking authorization..." />;
+        return <LoadingState message={t('layout.organizer.checkingAuth')} />;
     }
 
     const initials = (user?.full_name || user?.email || 'OR')
@@ -54,7 +56,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     const currentNav = NAV_ITEMS.find((item) => item.href === '/organizer'
         ? pathname === '/organizer'
         : pathname.startsWith(item.href));
-    const pageLabel = currentNav?.label || 'Organizer Workspace';
+    const pageLabel = currentNav ? t(currentNav.labelKey) : t('layout.organizer.workspace');
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -83,7 +85,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                             I
                         </div>
                         <span className="font-bold text-xl tracking-tight">
-                            IVEP <span className="text-indigo-600 text-sm font-medium">ORG</span>
+                            {t('layout.organizer.sidebar.brand')} <span className="text-indigo-600 text-sm font-medium">{t('layout.organizer.sidebar.suffix')}</span>
                         </span>
                     </Link>
                 </div>
@@ -109,7 +111,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                                 `}
                             >
                                 <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                                {item.label}
+                                {t(item.labelKey)}
                             </Link>
                         );
                     })}
@@ -122,7 +124,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                         className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                         <LogOut className="w-5 h-5" />
-                        Sign Out
+                        {t('layout.organizer.sidebar.signOut')}
                     </button>
                 </div>
             </aside>
@@ -141,7 +143,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                         </button>
                         <div className="min-w-0">
                             <div className="hidden lg:flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                                <span>Organizer</span>
+                                <span>{t('layout.organizer.breadcrumb')}</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                                 <span>{pageLabel}</span>
                             </div>
@@ -153,7 +155,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                         <Link
                             href="/organizer/notifications"
                             className="relative p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                            title="Notifications"
+                            title={t('layout.organizer.notifications')}
                         >
                             <Bell className="w-5 h-5" />
                             {unreadCount > 0 && (
@@ -165,8 +167,8 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
 
                         <div className="flex items-center gap-3 pl-3 border-l border-gray-100">
                             <div className="text-right hidden sm:block">
-                                <div className="text-sm font-medium text-gray-900 leading-none">{user.full_name}</div>
-                                <div className="text-xs text-gray-500 capitalize mt-0.5">{user.role}</div>
+                                <div className="text-sm font-medium text-gray-900 leading-none">{user?.full_name}</div>
+                                <div className="text-xs text-gray-500 capitalize mt-0.5 uppercase tracking-tighter">{user?.role}</div>
                             </div>
                             <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold border border-indigo-200 shrink-0">
                                 {initials}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
 import { 
@@ -45,6 +46,7 @@ function formatInTimeZone(date: Date, timeZone: string, options: Intl.DateTimeFo
 
 // ── Structured schedule renderer ─────────────────────────────────────────────
 function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone: string }) {
+    const { t } = useTranslation();
     let days: EventScheduleDay[] | null = event.schedule_days ?? null;
 
     if (!days && event.event_timeline) {
@@ -74,7 +76,7 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
                             <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
                                 {day.day_number}
                             </span>
-                            <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
+                            <span className="text-sm font-semibold text-zinc-800">{t('admin.events.detail.dayNum', { num: day.day_number })}</span>
                             <span className="text-xs text-zinc-500 ml-1">— {dayTitle}</span>
                         </div>
                         <div className="p-3 space-y-2">
@@ -99,13 +101,13 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
                                             {formatSlotRangeLabel(startLabel, endLabel)}
                                         </span>
                                         <p className="text-sm text-zinc-700 leading-snug pt-0.5">
-                                            {slot.label || <em className="text-zinc-400">No description</em>}
+                                            {slot.label || <em className="text-zinc-400">{t('admin.events.detail.noDescription')}</em>}
                                         </p>
                                     </div>
                                 );
                             })}
                             {day.slots.length === 0 && (
-                                <p className="text-xs text-zinc-400 italic px-1">No slots defined</p>
+                                <p className="text-xs text-zinc-400 italic px-1">{t('admin.events.detail.noSlots')}</p>
                             )}
                         </div>
                     </div>
@@ -118,26 +120,26 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
     if (event.event_timeline) {
         return <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.event_timeline}</p>;
     }
-    return <p className="text-xs text-zinc-400 italic">No schedule provided</p>;
+    return <p className="text-xs text-zinc-400 italic">{t('admin.events.detail.noSchedule')}</p>;
 }
 
 type EventState = OrganizerEvent['state'];
 
-const STATE_META: Record<string, { label: string; cls: string }> = {
-    pending_approval: { label: 'Pending Approval', cls: 'bg-amber-50  text-amber-700  border border-amber-200' },
-    approved: { label: 'Approved', cls: 'bg-green-50  text-green-700  border border-green-200' },
-    rejected: { label: 'Rejected', cls: 'bg-red-50    text-red-700    border border-red-200' },
-    waiting_for_payment: { label: 'Waiting for Payment', cls: 'bg-blue-50   text-blue-700   border border-blue-200' },
-    payment_proof_submitted: { label: 'Payment Reviewing', cls: 'bg-blue-50   text-blue-700   border border-blue-200' },
-    payment_done: { label: 'Payment Done', cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
-    live: { label: 'Live', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-    closed: { label: 'Closed', cls: 'bg-zinc-100  text-zinc-600   border border-zinc-200' },
-};
-
-
 /** Aligns with organizer / enterprise lists: when workflow is `live`, badge reflects real timing (Upcoming / In progress / Live). */
-function getAdminListStatusBadge(event: OrganizerEvent): { label: string; cls: string } {
+function getAdminListStatusBadge(event: OrganizerEvent, t: any): { label: string; cls: string } {
     const effective = getEffectiveWorkflowState(event);
+    
+    const STATE_META: Record<string, { label: string; cls: string }> = {
+        pending_approval: { label: t('admin.events.states.pending_approval'), cls: 'bg-amber-50  text-amber-700  border border-amber-200' },
+        approved: { label: t('admin.events.states.approved'), cls: 'bg-green-50  text-green-700  border border-green-200' },
+        rejected: { label: t('admin.events.states.rejected'), cls: 'bg-red-50    text-red-700    border border-red-200' },
+        waiting_for_payment: { label: t('admin.events.states.waiting_for_payment'), cls: 'bg-blue-50   text-blue-700   border border-blue-200' },
+        payment_proof_submitted: { label: t('admin.events.states.payment_proof_submitted'), cls: 'bg-blue-50   text-blue-700   border border-blue-200' },
+        payment_done: { label: t('admin.events.states.payment_done'), cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
+        live: { label: t('admin.events.states.live'), cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+        closed: { label: t('admin.events.states.closed'), cls: 'bg-zinc-100  text-zinc-600   border border-zinc-200' },
+    };
+
     if (event.state !== 'live') {
         const meta = STATE_META[effective] ?? { label: effective, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
         return { label: meta.label, cls: meta.cls };
@@ -154,13 +156,14 @@ function getAdminListStatusBadge(event: OrganizerEvent): { label: string; cls: s
         return { label: STATE_META.live.label, cls: STATE_META.live.cls };
     }
     if (live.kind === 'between_slots') {
-        return { label: 'In progress', cls: 'bg-sky-50 text-sky-700 border border-sky-200' };
+        return { label: t('admin.events.states.in_progress'), cls: 'bg-sky-50 text-sky-700 border border-sky-200' };
     }
-    return { label: 'Upcoming', cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
+    return { label: t('admin.events.states.upcoming'), cls: 'bg-indigo-50 text-indigo-700 border border-indigo-200' };
 }
 
 function EventListStatusBadge({ event }: { event: OrganizerEvent }) {
-    const { label, cls } = getAdminListStatusBadge(event);
+    const { t } = useTranslation();
+    const { label, cls } = getAdminListStatusBadge(event, t);
     return (
         <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>
             {label}
@@ -201,6 +204,7 @@ interface EventPanelProps {
 }
 
 function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
+    const { t } = useTranslation();
     const [paymentAmount, setPaymentAmount] = useState('');
     const [approveError, setApproveError] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -236,18 +240,18 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                         <button
                             onClick={() => window.location.href = `/admin/events/${event.id}/organizer-report`}
                             className="p-1.5 rounded-lg text-zinc-900 bg-zinc-50 border border-zinc-200 flex items-center gap-1.5 text-xs font-semibold hover:bg-zinc-100 transition-colors"
-                            title="View Organizer Report"
+                            title={t('admin.events.actions.report')}
                         >
                             <BarChart2 className="w-4 h-4" />
-                            Report
+                            {t('admin.events.actions.report')}
                         </button>
                         <button
                             onClick={() => window.location.href = `/admin/events/${event.id}`}
                             className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-indigo-100 flex items-center gap-1.5 text-xs font-semibold transition-colors"
-                            title="Open Full Management Page"
+                            title={t('admin.events.actions.manage')}
                         >
                             <ExternalLink className="w-4 h-4" />
-                            Manage
+                            {t('admin.events.actions.manage')}
                         </button>
                         <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 flex-shrink-0">
                             <X className="w-5 h-5" />
@@ -261,28 +265,28 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     {/* Banner */}
                     {event.banner_url && (
                         <div className="rounded-xl overflow-hidden border border-zinc-200 aspect-video bg-zinc-100">
-                            <img src={resolveMediaUrl(event.banner_url)} alt="Event banner" className="w-full h-full object-cover" />
+                            <img src={resolveMediaUrl(event.banner_url)} alt={t('admin.events.detail.bannerAlt')} className="w-full h-full object-cover" />
                         </div>
                     )}
 
                     {/* Logistics */}
-                    <Section icon={Calendar} title="Event Details">
-                        <p className="text-[11px] text-zinc-500 -mt-1 mb-2">Displayed in timezone: <strong>{timeZone}</strong></p>
+                    <Section icon={Calendar} title={t('admin.events.detail.title')}>
+                        <p className="text-[11px] text-zinc-500 -mt-1 mb-2">{t('admin.events.detail.timezoneLabel')} <strong>{timeZone}</strong></p>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                            <InfoRow label="Start date" value={fmt(event.start_date)} />
-                            <InfoRow label="End date" value={fmt(event.end_date)} />
-                            <InfoRow label="Location" value={event.location} />
-                            <InfoRow label="Category" value={event.category} />
-                            <InfoRow label="Enterprises" value={event.num_enterprises} />
-                            <InfoRow label="Payment" value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} MAD` : 'Auto-calc'} />
+                            <InfoRow label={t('admin.events.detail.startDate')} value={fmt(event.start_date)} />
+                            <InfoRow label={t('admin.events.detail.endDate')} value={fmt(event.end_date)} />
+                            <InfoRow label={t('admin.events.detail.location')} value={event.location} />
+                            <InfoRow label={t('admin.events.detail.category')} value={event.category} />
+                            <InfoRow label={t('admin.events.detail.enterprises')} value={event.num_enterprises} />
+                            <InfoRow label={t('admin.events.detail.payment')} value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} MAD` : t('admin.events.detail.autoCalc')} />
                         </div>
                     </Section>
 
                     {/* Payment Proof */}
                     {event.payment_proof_url && (
-                        <Section icon={CreditCard} title="Payment Proof">
+                        <Section icon={CreditCard} title={t('admin.events.detail.paymentProofTitle')}>
                             <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-3">
-                                <p className="text-xs text-indigo-700 font-medium">Organizer has submitted a proof of payment.</p>
+                                <p className="text-xs text-indigo-700 font-medium">{t('admin.events.detail.paymentProofDescription')}</p>
                                 <a
                                     href={resolveMediaUrl(event.payment_proof_url)}
                                     target="_blank"
@@ -290,7 +294,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    View Proof / Receipt
+                                    {t('admin.events.detail.viewProof')}
                                 </a>
                             </div>
                         </Section>
@@ -298,16 +302,16 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Pricing */}
                     {(event.stand_price != null || event.is_paid != null) && (
-                        <Section icon={DollarSign} title="Pricing">
+                        <Section icon={DollarSign} title={t('admin.events.detail.pricingTitle')}>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                                 {event.stand_price != null && (
-                                    <InfoRow label="Stand price" value={`${event.stand_price.toFixed(2)} MAD / enterprise`} />
+                                    <InfoRow label={t('admin.events.detail.standPrice')} value={`${event.stand_price.toFixed(2)} MAD / enterprise`} />
                                 )}
                                 <InfoRow
-                                    label="Visitor access"
+                                    label={t('admin.events.detail.visitorAccess')}
                                     value={event.is_paid
-                                        ? `Paid — ${event.ticket_price != null ? `${event.ticket_price.toFixed(2)} MAD` : '?'} / ticket`
-                                        : 'Free'}
+                                        ? t('admin.events.detail.paidTicket', { price: event.ticket_price != null ? event.ticket_price.toFixed(2) : '?' })
+                                        : t('admin.events.detail.free')}
                                 />
                             </div>
                         </Section>
@@ -315,34 +319,34 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Description */}
                     {event.description && (
-                        <Section icon={FileText} title="Description">
+                        <Section icon={FileText} title={t('admin.events.detail.descriptionTitle')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.description}</p>
                         </Section>
                     )}
 
                     {/* Extended details */}
                     {event.extended_details && (
-                        <Section icon={Info} title="Extended Details">
+                        <Section icon={Info} title={t('admin.events.detail.extendedDetailsTitle')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.extended_details}</p>
                         </Section>
                     )}
 
                     {/* Schedule */}
-                    <Section icon={Clock} title="Event Schedule">
+                    <Section icon={Clock} title={t('admin.events.detail.scheduleTitle')}>
                         <ScheduleDisplay event={event} timeZone={timeZone} />
                     </Section>
 
 
                     {/* Additional info */}
                     {event.additional_info && (
-                        <Section icon={Info} title="Additional Information">
+                        <Section icon={Info} title={t('admin.events.detail.additionalInfoTitle')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.additional_info}</p>
                         </Section>
                     )}
 
                     {/* Tags */}
                     {event.tags?.length > 0 && (
-                        <Section icon={Tag} title="Tags">
+                        <Section icon={Tag} title={t('admin.events.detail.tagsTitle')}>
                             <div className="flex flex-wrap gap-1.5">
                                 {event.tags.map(t => (
                                     <span key={t} className="text-xs px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-full border border-zinc-200">
@@ -355,18 +359,18 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Links */}
                     {(event.enterprise_link || event.visitor_link) && (
-                        <Section icon={ExternalLink} title="Links">
+                        <Section icon={ExternalLink} title={t('admin.events.detail.linksTitle')}>
                             <div className="space-y-2">
                                 {event.enterprise_link && (
                                     <a href={event.enterprise_link} target="_blank" rel="noopener noreferrer"
                                         className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
-                                        <ExternalLink className="w-3.5 h-3.5" /> Enterprise Link
+                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.detail.enterpriseLink')}
                                     </a>
                                 )}
                                 {event.visitor_link && (
                                     <a href={event.visitor_link} target="_blank" rel="noopener noreferrer"
                                         className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
-                                        <ExternalLink className="w-3.5 h-3.5" /> Visitor Link
+                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.detail.visitorLink')}
                                     </a>
                                 )}
                             </div>
@@ -376,7 +380,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     {/* Rejection reason (if already rejected) */}
                     {event.rejection_reason && (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                            <p className="text-xs font-semibold text-red-600 mb-1">Rejection reason</p>
+                            <p className="text-xs font-semibold text-red-600 mb-1">{t('admin.events.detail.rejectionReasonTitle')}</p>
                             <p className="text-sm text-red-700">{event.rejection_reason}</p>
                         </div>
                     )}
@@ -388,10 +392,10 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                         {/* Inline confirm states */}
                         {confirming === 'approve' ? (
                             <div className="space-y-3">
-                                <p className="text-sm font-medium text-zinc-700">Approve this event?</p>
+                                <p className="text-sm font-medium text-zinc-700">{t('admin.events.actions.approveConfirm')}</p>
                                 <input
                                     type="number" min="0" step="0.01"
-                                    placeholder="Payment amount (required)"
+                                    placeholder={t('admin.events.actions.paymentAmountPlaceholder')}
                                     value={paymentAmount}
                                     onChange={e => {
                                         setPaymentAmount(e.target.value);
@@ -406,36 +410,36 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                         onClick={async () => {
                                             const normalized = paymentAmount.trim();
                                             if (!normalized) {
-                                                setApproveError('Payment required. Please enter an amount.');
+                                                setApproveError(t('admin.events.errors.paymentRequired'));
                                                 return;
                                             }
                                             const parsed = Number(normalized);
                                             if (!Number.isFinite(parsed) || parsed < 0) {
-                                                setApproveError('Payment amount is required and must be 0 or greater.');
+                                                setApproveError(t('admin.events.errors.paymentInvalid'));
                                                 return;
                                             }
                                             try {
                                                 await onApprove(event.id, parsed);
                                             } catch (err) {
-                                                setApproveError((err as Error)?.message || 'Payment required. Please enter an amount.');
+                                                setApproveError((err as Error)?.message || t('admin.events.errors.paymentRequired'));
                                             }
                                         }}
                                         disabled={busy}
                                         className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                                     >
-                                        {busy ? 'Approving…' : 'Confirm Approve'}
+                                        {busy ? t('admin.events.actions.approving') : t('admin.events.actions.confirmApprove')}
                                     </button>
                                     <button onClick={() => setConfirming(null)} className="px-4 py-2.5 rounded-lg text-sm text-zinc-600 hover:bg-zinc-200 transition-colors">
-                                        Cancel
+                                        {t('common.actions.cancel')}
                                     </button>
                                 </div>
                             </div>
                         ) : confirming === 'reject' ? (
                             <div className="space-y-3">
-                                <p className="text-sm font-medium text-zinc-700">Reject this event?</p>
+                                <p className="text-sm font-medium text-zinc-700">{t('admin.events.actions.rejectConfirm')}</p>
                                 <textarea
                                     rows={3}
-                                    placeholder="Reason for rejection (recommended)…"
+                                    placeholder={t('admin.events.actions.rejectReasonPlaceholder')}
                                     value={rejectReason}
                                     onChange={e => setRejectReason(e.target.value)}
                                     className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
@@ -448,10 +452,10 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                         disabled={busy}
                                         className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
                                     >
-                                        {busy ? 'Rejecting…' : 'Confirm Reject'}
+                                        {busy ? t('admin.events.actions.rejecting') : t('admin.events.actions.confirmReject')}
                                     </button>
                                     <button onClick={() => setConfirming(null)} className="px-4 py-2.5 rounded-lg text-sm text-zinc-600 hover:bg-zinc-200 transition-colors">
-                                        Cancel
+                                        {t('common.actions.cancel')}
                                     </button>
                                 </div>
                             </div>
@@ -466,13 +470,13 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                             }}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                         >
-                                            <CheckCircle2 className="w-4 h-4" /> Approve
+                                            <CheckCircle2 className="w-4 h-4" /> {t('admin.events.actions.approve')}
                                         </button>
                                         <button
                                             onClick={() => setConfirming('reject')}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
                                         >
-                                            <XCircle className="w-4 h-4" /> Reject
+                                            <XCircle className="w-4 h-4" /> {t('admin.events.actions.reject')}
                                         </button>
                                     </>
                                 ) : effectiveState === 'payment_proof_submitted' ? (
@@ -480,21 +484,21 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                         onClick={() => setConfirming('confirm_payment')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                                     >
-                                        <CheckCircle2 className="w-4 h-4" /> Confirm & Activate
+                                        <CheckCircle2 className="w-4 h-4" /> {t('admin.events.actions.confirmActivate')}
                                     </button>
                                 ) : effectiveState === 'payment_done' ? (
                                     <button
                                         onClick={() => setConfirming('start_event')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                                     >
-                                        <CalendarCheck className="w-4 h-4" /> Start (Force Live)
+                                        <CalendarCheck className="w-4 h-4" /> {t('admin.events.actions.forceStart')}
                                     </button>
                                 ) : effectiveState === 'live' ? (
                                     <button
                                         onClick={() => setConfirming('close_event')}
                                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
                                     >
-                                        <XCircle className="w-4 h-4" /> Close Event
+                                        <XCircle className="w-4 h-4" /> {t('admin.events.actions.closeEvent')}
                                     </button>
                                 ) : null}
                             </div>
@@ -503,7 +507,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                         {/* Confirmation for specialized actions */}
                         {(confirming === 'confirm_payment' || confirming === 'start_event' || confirming === 'close_event') && (
                             <div className="space-y-3 p-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
-                                <p className="text-sm font-semibold text-zinc-800">Are you sure?</p>
+                                <p className="text-sm font-semibold text-zinc-800">{t('common.actions.confirmSure')}</p>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={async () => {
@@ -514,10 +518,10 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                         disabled={busy}
                                         className="flex-1 py-2 rounded-lg text-xs font-bold bg-zinc-900 text-white hover:bg-black disabled:opacity-50"
                                     >
-                                        Yes, Proceed
+                                        {t('common.actions.yesProceed')}
                                     </button>
                                     <button onClick={() => setConfirming(null)} className="flex-1 py-2 rounded-lg text-xs font-bold bg-zinc-100 text-zinc-600 hover:bg-zinc-200">
-                                        Cancel
+                                        {t('common.actions.cancel')}
                                     </button>
                                 </div>
                             </div>
@@ -531,6 +535,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminEventsPage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -540,7 +545,7 @@ export default function AdminEventsPage() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const detectedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const detectedTimeZone = typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
     const [timeZone, setTimeZone] = useState<string>(detectedTimeZone);
 
     // Pagination
@@ -553,9 +558,9 @@ export default function AdminEventsPage() {
             const res = await adminService.getEvents(filter || undefined);
             setEvents(res.events);
         } catch (e: any) {
-            setError(e.message ?? 'Failed to load events');
+            setError(e.message ?? t('admin.events.failedToLoad'));
         } finally { setLoading(false); }
-    }, [filter]);
+    }, [filter, t]);
 
     useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -568,7 +573,7 @@ export default function AdminEventsPage() {
         if (filter && getEffectiveWorkflowState(ev) !== filter) return false;
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
-        const statusLabel = getAdminListStatusBadge(ev).label.toLowerCase();
+        const statusLabel = getAdminListStatusBadge(ev, t).label.toLowerCase();
         return ev.title.toLowerCase().includes(q) ||
             (ev.organizer_name && ev.organizer_name.toLowerCase().includes(q)) ||
             statusLabel.includes(q);
@@ -584,21 +589,21 @@ export default function AdminEventsPage() {
         try {
             if (isConfirmPayment) {
                 await adminService.confirmEventPayment(id);
-                showSuccess('Payment confirmed and links generated.');
+                showSuccess(t('admin.events.success.paymentConfirmed'));
             } else if (specialAction === 'start') {
                 await adminService.startEvent(id);
-                showSuccess('Event is now LIVE.');
+                showSuccess(t('admin.events.success.eventLive'));
             } else if (specialAction === 'close') {
                 await adminService.closeEvent(id);
-                showSuccess('Event closed.');
+                showSuccess(t('admin.events.success.eventClosed'));
             } else {
                 await adminService.approveEvent(id, paymentAmount ? { payment_amount: paymentAmount } : {});
-                showSuccess('Event approved.');
+                showSuccess(t('admin.events.success.eventApproved'));
             }
             setSelected(null);
             fetchEvents();
         } catch (e: any) {
-            const msg = e?.message ?? 'Failed';
+            const msg = e?.message ?? t('common.errors.actionFailed');
             if (!isConfirmPayment && !specialAction) {
                 throw new Error(msg);
             }
@@ -611,10 +616,10 @@ export default function AdminEventsPage() {
         setBusy(true);
         try {
             await adminService.rejectEvent(id, reason ? { reason } : {});
-            showSuccess('Event rejected.');
+            showSuccess(t('admin.events.success.eventRejected'));
             setSelected(null);
             fetchEvents();
-        } catch (e: any) { setError(e.message ?? 'Failed'); }
+        } catch (e: any) { setError(e.message ?? t('common.errors.actionFailed')); }
         finally { setBusy(false); }
     };
 
@@ -631,8 +636,8 @@ export default function AdminEventsPage() {
                         <CalendarCheck className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Event Review</h1>
-                        <p className="text-xs text-zinc-500">Click any row to see the full event details and take action</p>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.events.title')}</h1>
+                        <p className="text-xs text-zinc-500">{t('admin.events.description')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -640,7 +645,7 @@ export default function AdminEventsPage() {
                         <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="Search events..."
+                            placeholder={t('admin.events.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-9 pr-3 py-2 text-sm border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 lg:w-64"
@@ -651,21 +656,21 @@ export default function AdminEventsPage() {
                         onChange={e => setFilter(e.target.value as EventState | '')}
                         className="text-sm border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
-                        <option value="">All Events</option>
-                        <option value="pending_approval">Pending Approval</option>
-                        <option value="approved">Approved</option>
-                        <option value="waiting_for_payment">Waiting for Payment</option>
-                        <option value="payment_proof_submitted">Payment Reviewing</option>
-                        <option value="payment_done">Payment Done</option>
-                        <option value="live">Live</option>
-                        <option value="closed">Closed</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="">{t('admin.events.filters.all')}</option>
+                        <option value="pending_approval">{t('admin.events.states.pending_approval')}</option>
+                        <option value="approved">{t('admin.events.states.approved')}</option>
+                        <option value="waiting_for_payment">{t('admin.events.states.waiting_for_payment')}</option>
+                        <option value="payment_proof_submitted">{t('admin.events.states.payment_proof_submitted')}</option>
+                        <option value="payment_done">{t('admin.events.states.payment_done')}</option>
+                        <option value="live">{t('admin.events.states.live')}</option>
+                        <option value="closed">{t('admin.events.states.closed')}</option>
+                        <option value="rejected">{t('admin.events.states.rejected')}</option>
                     </select>
                     <select
                         value={timeZone}
                         onChange={(e) => setTimeZone(e.target.value)}
                         className="text-sm border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[220px]"
-                        title="Display timezone"
+                        title={t('admin.events.detail.timezoneLabel')}
                     >
                         {Array.from(new Set([detectedTimeZone, ...COMMON_TIMEZONES])).map((tz) => (
                             <option key={tz} value={tz}>{tz}</option>
@@ -676,7 +681,7 @@ export default function AdminEventsPage() {
                     </button>
                 </div>
             </div>
-            <p className="text-xs text-zinc-500">Times are displayed in <strong>{timeZone}</strong>.</p>
+            <p className="text-xs text-zinc-500">{t('admin.events.detail.timesDisplayedIn')} <strong>{timeZone}</strong>.</p>
 
             {/* Alerts */}
             {success && (
@@ -695,22 +700,22 @@ export default function AdminEventsPage() {
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 {loading ? (
                     <div className="p-12 text-center text-zinc-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> Loading events…
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> {t('admin.events.loading')}
                     </div>
                 ) : events.length === 0 ? (
                     <div className="p-12 text-center">
                         <CalendarCheck className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                        <p className="text-zinc-500 font-medium">No events found</p>
+                        <p className="text-zinc-500 font-medium">{t('admin.events.noEvents')}</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm table-auto">
                         <thead>
                             <tr className="border-b border-zinc-100">
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Event</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">Dates</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Organizer</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden sm:table-cell">Actions</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.events.table.event')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">{t('admin.events.table.dates')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">{t('admin.events.table.organizer')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.events.table.status')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden sm:table-cell">{t('admin.events.table.actions')}</th>
                                 <th className="px-4 py-3.5" />
                             </tr>
                         </thead>
@@ -748,10 +753,10 @@ export default function AdminEventsPage() {
                                                     router.push(`/admin/events/${ev.id}/organizer-report`);
                                                 }}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                                                title="View Organizer Report"
+                                                title={t('admin.events.actions.report')}
                                             >
                                                 <BarChart2 className="w-3.5 h-3.5" />
-                                                Report
+                                                {t('admin.events.actions.report')}
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -759,10 +764,10 @@ export default function AdminEventsPage() {
                                                     router.push(`/admin/events/${ev.id}/enterprises`);
                                                 }}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
-                                                title="View Enterprise Join Requests"
+                                                title={t('admin.events.actions.joinRequests')}
                                             >
                                                 <Users className="w-3.5 h-3.5" />
-                                                Join Requests
+                                                {t('admin.events.actions.joinRequests')}
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -772,7 +777,7 @@ export default function AdminEventsPage() {
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5" />
-                                                Manage
+                                                {t('admin.events.actions.manage')}
                                             </button>
                                         </div>
                                     </td>
@@ -787,7 +792,12 @@ export default function AdminEventsPage() {
                 {!loading && events.length > 0 && (
                     <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
                         <span className="text-xs text-zinc-500">
-                            Showing {filteredEvents.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredEvents.length)} of {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
+                            {t('common.ui.pagination.showingRange', {
+                                from: filteredEvents.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                                to: Math.min(currentPage * ITEMS_PER_PAGE, filteredEvents.length),
+                                total: filteredEvents.length,
+                                entity: t('common.ui.pagination.entities.events')
+                            })}
                         </span>
                         {totalPages > 1 && (
                             <div className="flex items-center gap-2">
@@ -796,17 +806,17 @@ export default function AdminEventsPage() {
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Previous
+                                    {t('common.ui.pagination.previous')}
                                 </button>
                                 <span className="text-xs font-medium text-zinc-600">
-                                    Page {currentPage} of {totalPages}
+                                    {t('common.ui.pagination.pageInfo', { current: currentPage, total: totalPages })}
                                 </span>
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Next
+                                    {t('common.ui.pagination.next')}
                                 </button>
                             </div>
                         )}
@@ -814,7 +824,6 @@ export default function AdminEventsPage() {
                 )}
             </div>
 
-            {/* Side panel */}
             {selected && (
                 <EventPanel
                     event={selected}

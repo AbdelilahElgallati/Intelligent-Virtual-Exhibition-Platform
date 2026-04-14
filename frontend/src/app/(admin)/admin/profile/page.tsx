@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -30,6 +31,7 @@ const TIMEZONE_OPTIONS =
         : FALLBACK_TIMEZONES;
 
 export default function AdminProfile() {
+    const { t } = useTranslation();
     const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -76,21 +78,12 @@ export default function AdminProfile() {
                 // Best-effort only.
             }
             await refreshUser?.();
-            try {
-                if (typeof window !== 'undefined') {
-                    const raw = localStorage.getItem('auth_user');
-                    const parsed = raw ? (JSON.parse(raw) as any) : {};
-                    localStorage.setItem('auth_user', JSON.stringify({ ...parsed, timezone: form.timezone }));
-                }
-            } catch {
-                // Best-effort only.
-            }
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('ivep:auth-user-updated'));
             }
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: t('profile.success.update') });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+            setMessage({ type: 'error', text: err.message || t('profile.errors.updateFailed') });
         } finally {
             setIsLoading(false);
         }
@@ -100,8 +93,8 @@ export default function AdminProfile() {
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Profile Settings</h1>
-                    <p className="text-zinc-500 mt-1">Manage your administrator account settings.</p>
+                    <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">{t('profile.title')}</h1>
+                    <p className="text-zinc-500 mt-1">{t('profile.description')}</p>
                 </div>
             </div>
 
@@ -122,23 +115,23 @@ export default function AdminProfile() {
                         <Card className="border-zinc-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-zinc-50/50 border-b border-zinc-100 py-5 px-8">
                                 <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                                    <UserCircle size={18} className="text-indigo-500" /> Account Information
+                                    <UserCircle size={18} className="text-indigo-500" /> {t('profile.sections.account')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Full Name</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.fullName')}</label>
                                     <Input
                                         name="full_name"
                                         value={form.full_name}
                                         onChange={handleChange}
-                                        placeholder="Enter your full name"
+                                        placeholder={t('profile.placeholders.fullName')}
                                         className="h-11 rounded-xl"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Email (Read-only)</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.emailReadOnly')}</label>
                                     <div className="flex items-center gap-3 h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-500 text-sm">
                                         <Mail size={16} className="text-zinc-400" />
                                         {user?.email}
@@ -146,20 +139,20 @@ export default function AdminProfile() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Short Bio</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.bio')}</label>
                                     <textarea
                                         name="bio"
                                         value={form.bio}
                                         onChange={handleChange}
                                         className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-inner"
-                                        placeholder="Tell us a bit about yourself..."
+                                        placeholder={t('profile.placeholders.bio')}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> Preferred Language
+                                            <Globe size={14} className="text-indigo-500" /> {t('profile.labels.language')}
                                         </label>
                                         <select
                                             name="language"
@@ -167,15 +160,15 @@ export default function AdminProfile() {
                                             onChange={handleChange}
                                             className="w-full h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner"
                                         >
-                                            <option>English</option>
-                                            <option>Spanish</option>
-                                            <option>French</option>
-                                            <option>Arabic</option>
+                                            <option value="English">{t('common.languages.english')}</option>
+                                            <option value="Spanish">{t('common.languages.spanish')}</option>
+                                            <option value="French">{t('common.languages.french')}</option>
+                                            <option value="Arabic">{t('common.languages.arabic')}</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> Timezone
+                                            <Globe size={14} className="text-indigo-500" /> {t('profile.labels.timezone')}
                                         </label>
                                         <select
                                             name="timezone"
@@ -194,7 +187,7 @@ export default function AdminProfile() {
 
                         <div className="flex justify-end">
                             <Button type="submit" className="min-w-[180px] h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow-lg shadow-indigo-100 flex items-center gap-2" isLoading={isLoading}>
-                                <Save size={18} /> Update Profile
+                                <Save size={18} /> {t('profile.actions.update')}
                             </Button>
                         </div>
                     </form>
@@ -208,16 +201,18 @@ export default function AdminProfile() {
                                 {user?.full_name?.charAt(0) || 'A'}
                             </div>
                             <CardTitle className="text-sm font-bold text-zinc-900 mt-2">{user?.full_name}</CardTitle>
-                            <p className="text-[11px] text-zinc-400 font-medium uppercase tracking-widest">{user?.role}</p>
+                            <p className="text-[11px] text-zinc-400 font-medium uppercase tracking-widest">{t(`common.roles.${user?.role || 'admin'}`)}</p>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <Shield size={16} className="text-indigo-500" />
-                                <span className="font-medium">Administrator Account</span>
+                                <span className="font-medium">{t('profile.roles.admin')}</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <User size={16} className="text-indigo-500" />
-                                <span className="font-medium">Joined {user?.created_at ? new Date(user.created_at).getFullYear() : '2024'}</span>
+                                <span className="font-medium">
+                                    {t('profile.joinedDate', { year: user?.created_at ? new Date(user.created_at).getFullYear() : '2024' })}
+                                </span>
                             </div>
                         </CardContent>
                     </Card>
@@ -228,9 +223,9 @@ export default function AdminProfile() {
                         <div className="flex items-start gap-3">
                             <Settings size={20} className="text-indigo-500 mt-1" />
                             <div>
-                                <h4 className="text-sm font-bold text-indigo-900">Need Help?</h4>
+                                <h4 className="text-sm font-bold text-indigo-900">{t('common.help.title')}</h4>
                                 <p className="text-xs text-indigo-700/70 mt-1 leading-relaxed">
-                                    For platform-level support, please contact the system administrator.
+                                    {t('common.help.adminSupportDescription')}
                                 </p>
                             </div>
                         </div>

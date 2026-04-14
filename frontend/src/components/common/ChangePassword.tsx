@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,6 +13,7 @@ interface ChangePasswordProps {
 }
 
 export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -27,13 +29,13 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
         setMessage(null);
 
         if (form.new_password !== form.confirm_password) {
-            setMessage({ type: 'error', text: 'New passwords do not match.' });
+            setMessage({ type: 'error', text: t('auth.changePassword.error.mismatch') });
             setIsLoading(false);
             return;
         }
 
         if (form.new_password.length < 6) {
-            setMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+            setMessage({ type: 'error', text: t('auth.changePassword.error.minLength') });
             setIsLoading(false);
             return;
         }
@@ -43,11 +45,11 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
                 current_password: form.current_password,
                 new_password: form.new_password,
             });
-            setMessage({ type: 'success', text: 'Password changed successfully!' });
+            setMessage({ type: 'success', text: t('auth.changePassword.success') });
             setForm({ current_password: '', new_password: '', confirm_password: '' });
             onSuccess?.();
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to change password.' });
+            setMessage({ type: 'error', text: err.message || t('auth.changePassword.error.generic') });
         } finally {
             setIsLoading(false);
         }
@@ -66,7 +68,7 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
                 className="w-full h-11 rounded-xl border-zinc-200 bg-white gap-2 text-zinc-600 hover:bg-zinc-50"
                 onClick={() => setIsOpen(true)}
             >
-                <Lock size={16} /> Change Password
+                <Lock size={16} /> {t('auth.changePassword.button')}
             </Button>
         );
     }
@@ -78,13 +80,13 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
                 className="w-full h-11 rounded-xl border-zinc-200 bg-white gap-2 text-zinc-600 hover:bg-zinc-50"
                 onClick={handleClose}
             >
-                <Lock size={16} /> Hide Change Password
+                <Lock size={16} /> {t('auth.changePassword.hideButton')}
             </Button>
 
             <Card className="border-zinc-200 shadow-sm overflow-hidden">
                 <CardHeader className="bg-zinc-50/50 border-b border-zinc-100 py-5 px-8">
                     <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                        <Lock size={18} className="text-indigo-500" /> Change Password
+                        <Lock size={18} className="text-indigo-500" /> {t('auth.changePassword.title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -100,35 +102,35 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-zinc-700">Current Password</label>
+                            <label className="text-sm font-semibold text-zinc-700">{t('auth.changePassword.currentPassword.label')}</label>
                             <Input
                                 type="password"
                                 value={form.current_password}
                                 onChange={(e) => setForm(prev => ({ ...prev, current_password: e.target.value }))}
-                                placeholder="Enter your current password"
+                                placeholder={t('auth.changePassword.currentPassword.placeholder')}
                                 className="h-11 rounded-xl"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-zinc-700">New Password</label>
+                            <label className="text-sm font-semibold text-zinc-700">{t('auth.changePassword.newPassword.label')}</label>
                             <Input
                                 type="password"
                                 value={form.new_password}
                                 onChange={(e) => setForm(prev => ({ ...prev, new_password: e.target.value }))}
-                                placeholder="Enter new password (min 6 characters)"
+                                placeholder={t('auth.changePassword.newPassword.placeholder')}
                                 className="h-11 rounded-xl"
                                 required
                                 minLength={6}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-zinc-700">Confirm New Password</label>
+                            <label className="text-sm font-semibold text-zinc-700">{t('auth.changePassword.confirmPassword.label')}</label>
                             <Input
                                 type="password"
                                 value={form.confirm_password}
                                 onChange={(e) => setForm(prev => ({ ...prev, confirm_password: e.target.value }))}
-                                placeholder="Confirm your new password"
+                                placeholder={t('auth.changePassword.confirmPassword.placeholder')}
                                 className="h-11 rounded-xl"
                                 required
                             />
@@ -140,14 +142,14 @@ export default function ChangePassword({ onSuccess }: ChangePasswordProps) {
                                 className="h-11 rounded-xl"
                                 onClick={handleClose}
                             >
-                                Cancel
+                                {t('auth.changePassword.cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 className="h-11 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold"
                                 isLoading={isLoading}
                             >
-                                Update Password
+                                {t('auth.changePassword.submit')}
                             </Button>
                         </div>
                     </form>

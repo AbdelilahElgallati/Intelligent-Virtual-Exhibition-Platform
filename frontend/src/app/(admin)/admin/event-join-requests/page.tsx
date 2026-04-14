@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { http } from '@/lib/http';
 import { formatInUserTZ } from '@/lib/timezone';
 import {
@@ -38,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TABS = ['ALL', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 
 export default function EnterpriseRegistrationsPage() {
+    const { t } = useTranslation();
     const [registrations, setRegistrations] = useState<EnterpriseReg[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -54,7 +56,7 @@ export default function EnterpriseRegistrationsPage() {
             setRegistrations(data.registrations || []);
             setTotal(data.total || 0);
         } catch (e: any) {
-            setError(e.message || 'Failed to load registrations');
+            setError(e.message || t('admin.approvals.enterprise.error.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -70,21 +72,21 @@ export default function EnterpriseRegistrationsPage() {
             await http.post(`/admin/enterprise-registrations/${userId}/approve`, {});
             await fetchRegistrations(activeTab);
         } catch (e: any) {
-            setError(e.message || 'Approval failed');
+            setError(e.message || t('admin.approvals.enterprise.error.approveFailed'));
         } finally {
             setProcessing(null);
         }
     };
 
     const handleReject = async (userId: string) => {
-        const reason = window.prompt('Rejection reason (optional):');
+        const reason = window.prompt(t('admin.approvals.enterprise.rejectionReasonPrompt'));
         if (reason === null) return;
         setProcessing(userId);
         try {
             await http.post(`/admin/enterprise-registrations/${userId}/reject`, { reason });
             await fetchRegistrations(activeTab);
         } catch (e: any) {
-            setError(e.message || 'Rejection failed');
+            setError(e.message || t('admin.approvals.enterprise.error.rejectFailed'));
         } finally {
             setProcessing(null);
         }
@@ -93,8 +95,8 @@ export default function EnterpriseRegistrationsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-zinc-900">Enterprise Registrations</h1>
-                <p className="text-zinc-500 mt-1">Review and approve enterprise account applications.</p>
+                <h1 className="text-2xl font-bold text-zinc-900">{t('admin.approvals.enterprise.title')}</h1>
+                <p className="text-zinc-500 mt-1">{t('admin.approvals.enterprise.description')}</p>
             </div>
 
             {/* Status Tabs */}
@@ -105,10 +107,10 @@ export default function EnterpriseRegistrationsPage() {
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                             : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300'
                             }`}>
-                        {tab === 'ALL' ? 'All' : tab.replace(/_/g, ' ')}
+                        {tab === 'ALL' ? t('admin.approvals.enterprise.tabs.all') : t(`admin.approvals.enterprise.tabs.${tab.toLowerCase().replace('_approval', '')}`)}
                     </button>
                 ))}
-                <span className="ml-auto text-sm text-zinc-500 self-center">{total} total</span>
+                <span className="ml-auto text-sm text-zinc-500 self-center">{t('admin.approvals.enterprise.totalCount', { count: total })}</span>
             </div>
 
             {error && (
@@ -116,11 +118,11 @@ export default function EnterpriseRegistrationsPage() {
             )}
 
             {loading ? (
-                <div className="flex items-center justify-center h-48 text-zinc-400">Loading…</div>
+                <div className="flex items-center justify-center h-48 text-zinc-400">{t('common.status.loading')}</div>
             ) : registrations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 bg-white rounded-2xl border border-zinc-100 text-zinc-400 gap-2">
                     <Building2 size={32} className="text-zinc-200" />
-                    No enterprise registrations found for this status.
+                    {t('admin.approvals.enterprise.noRegistrations')}
                 </div>
             ) : (
                 <div className="grid gap-4">
@@ -141,13 +143,13 @@ export default function EnterpriseRegistrationsPage() {
                                                 <p className="text-xs text-zinc-500">{reg.email}</p>
                                             </div>
                                             <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${STATUS_COLORS[reg.approval_status] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-                                                {reg.approval_status?.replace(/_/g, ' ')}
+                                                {t(`admin.approvals.enterprise.status.${reg.approval_status.toLowerCase()}`, { defaultValue: reg.approval_status?.replace(/_/g, ' ') })}
                                             </span>
                                         </div>
 
                                         {/* Contact person */}
                                         <p className="text-sm text-zinc-600">
-                                            <span className="font-medium text-zinc-700">Contact:</span> {reg.full_name}
+                                            <span className="font-medium text-zinc-700">{t('admin.approvals.enterprise.field.contact')}:</span> {reg.full_name}
                                         </p>
 
                                         {/* Organization Details Grid */}
@@ -168,13 +170,13 @@ export default function EnterpriseRegistrationsPage() {
                                                 {org.company_size && (
                                                     <div className="flex items-center gap-1.5">
                                                         <Users size={13} className="text-zinc-400 flex-shrink-0" />
-                                                        <span className="text-zinc-600">{org.company_size} employees</span>
+                                                        <span className="text-zinc-600">{t('admin.approvals.enterprise.field.employees', { count: org.company_size })}</span>
                                                     </div>
                                                 )}
                                                 {org.creation_year && (
                                                     <div className="flex items-center gap-1.5">
                                                         <Calendar size={13} className="text-zinc-400 flex-shrink-0" />
-                                                        <span className="text-zinc-600">Founded {org.creation_year}</span>
+                                                        <span className="text-zinc-600">{t('admin.approvals.enterprise.field.founded', { year: org.creation_year })}</span>
                                                     </div>
                                                 )}
                                                 {org.professional_email && (
@@ -195,7 +197,7 @@ export default function EnterpriseRegistrationsPage() {
                                                     <div className="flex items-center gap-1.5">
                                                         <LinkIcon size={13} className="text-zinc-400 flex-shrink-0" />
                                                         <a href={org.linkedin} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline truncate">
-                                                            LinkedIn
+                                                            {t('admin.approvals.enterprise.field.linkedin')}
                                                         </a>
                                                     </div>
                                                 )}
@@ -209,7 +211,7 @@ export default function EnterpriseRegistrationsPage() {
 
                                         {/* Created at */}
                                         <p className="text-xs text-zinc-400 mt-1">
-                                            Registered {formatInUserTZ(reg.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {t('admin.approvals.enterprise.registeredOn', { date: formatInUserTZ(reg.created_at, { month: 'short', day: 'numeric', year: 'numeric' }) })}
                                         </p>
                                     </div>
 
@@ -220,13 +222,13 @@ export default function EnterpriseRegistrationsPage() {
                                                 disabled={processing === reg._id}
                                                 className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1.5">
                                                 <CheckCircle2 size={15} />
-                                                {processing === reg._id ? '…' : 'Approve'}
+                                                {processing === reg._id ? '…' : t('common.actions.approve')}
                                             </button>
                                             <button onClick={() => handleReject(reg._id)}
                                                 disabled={processing === reg._id}
                                                 className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-sm font-medium rounded-xl hover:bg-red-100 disabled:opacity-50 transition-all flex items-center gap-1.5">
                                                 <XCircle size={15} />
-                                                Reject
+                                                {t('common.actions.reject')}
                                             </button>
                                         </div>
                                     )}
