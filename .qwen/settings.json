@@ -9,5 +9,23 @@
       "Bash(del *)"
     ]
   },
-  "$version": 3
+  "$version": 3,
+  "modelProviders": {
+    "openai": [
+      {
+        "id": "qwen/qwen3-coder:free",
+        "name": "Qwen3 Coder (OpenRouter)",
+        "envKey": "OPENROUTER_API_KEY",
+        "baseUrl": "https://openrouter.ai/api/v1"
+      }
+    ]
+  },
+  "model": {
+    "name": "qwen/qwen3-coder:free"
+  },
+  "security": {
+    "auth": {
+      "selectedType": "openai"
+    }
+  }
 }

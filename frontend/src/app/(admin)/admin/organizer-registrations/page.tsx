@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { http } from '@/lib/http';
 
 interface OrgReg {
@@ -27,6 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TABS = ['ALL', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 
 export default function OrganizerRegistrationsPage() {
+    const { t } = useTranslation();
     const [registrations, setRegistrations] = useState<OrgReg[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function OrganizerRegistrationsPage() {
             setRegistrations(data.registrations || []);
             setTotal(data.total || 0);
         } catch (e: any) {
-            setError(e.message || 'Failed to load registrations');
+            setError(e.message || t('admin.approvals.organizer.error.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -59,21 +61,21 @@ export default function OrganizerRegistrationsPage() {
             await http.post(`/admin/organizer-registrations/${userId}/approve`, {});
             await fetchRegistrations(activeTab);
         } catch (e: any) {
-            setError(e.message || 'Approval failed');
+            setError(e.message || t('admin.approvals.organizer.error.approveFailed'));
         } finally {
             setProcessing(null);
         }
     };
 
     const handleReject = async (userId: string) => {
-        const reason = window.prompt('Rejection reason (optional):');
+        const reason = window.prompt(t('admin.approvals.organizer.rejectionReasonPrompt'));
         if (reason === null) return;
         setProcessing(userId);
         try {
             await http.post(`/admin/organizer-registrations/${userId}/reject`, { reason });
             await fetchRegistrations(activeTab);
         } catch (e: any) {
-            setError(e.message || 'Rejection failed');
+            setError(e.message || t('admin.approvals.organizer.error.rejectFailed'));
         } finally {
             setProcessing(null);
         }
@@ -82,8 +84,8 @@ export default function OrganizerRegistrationsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-zinc-900">Organizer Registrations</h1>
-                <p className="text-zinc-500 mt-1">Review and approve organizer account applications.</p>
+                <h1 className="text-2xl font-bold text-zinc-900">{t('admin.approvals.organizer.title')}</h1>
+                <p className="text-zinc-500 mt-1">{t('admin.approvals.organizer.description')}</p>
             </div>
 
             {/* Status Tabs */}
@@ -94,10 +96,10 @@ export default function OrganizerRegistrationsPage() {
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                             : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300'
                             }`}>
-                        {tab === 'ALL' ? 'All' : tab.replace('_', ' ')}
+                        {tab === 'ALL' ? t('admin.approvals.organizer.tabs.all') : t(`admin.approvals.organizer.tabs.${tab.toLowerCase().replace('_approval', '')}`)}
                     </button>
                 ))}
-                <span className="ml-auto text-sm text-zinc-500 self-center">{total} total</span>
+                <span className="ml-auto text-sm text-zinc-500 self-center">{t('admin.approvals.organizer.totalCount', { count: total })}</span>
             </div>
 
             {error && (
@@ -105,10 +107,10 @@ export default function OrganizerRegistrationsPage() {
             )}
 
             {loading ? (
-                <div className="flex items-center justify-center h-48 text-zinc-400">Loading…</div>
+                <div className="flex items-center justify-center h-48 text-zinc-400">{t('common.status.loading')}</div>
             ) : registrations.length === 0 ? (
                 <div className="flex items-center justify-center h-48 bg-white rounded-2xl border border-zinc-100 text-zinc-400">
-                    No organizer registrations found for this status.
+                    {t('admin.approvals.organizer.noRegistrations')}
                 </div>
             ) : (
                 <div className="grid gap-4">
@@ -120,20 +122,20 @@ export default function OrganizerRegistrationsPage() {
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <h3 className="font-bold text-zinc-900 truncate">{reg.full_name}</h3>
                                         <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${STATUS_COLORS[reg.approval_status] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-                                            {reg.approval_status?.replace('_', ' ')}
+                                            {t(`admin.approvals.organizer.status.${reg.approval_status.toLowerCase()}`, { defaultValue: reg.approval_status?.replace('_', ' ') })}
                                         </span>
                                     </div>
                                     <p className="text-sm text-zinc-500">{reg.email}</p>
 
                                     {/* Org Details */}
                                     <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                                        <div><span className="font-medium text-zinc-700">Organisation: </span><span className="text-zinc-600">{reg.org_name || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">Type: </span><span className="text-zinc-600">{reg.org_type || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">Location: </span><span className="text-zinc-600">{[reg.org_city, reg.org_country].filter(Boolean).join(', ') || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">Phone: </span><span className="text-zinc-600">{reg.org_phone || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">Pro Email: </span><span className="text-zinc-600">{reg.org_professional_email || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.organization')} </span><span className="text-zinc-600">{reg.org_name || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.type')} </span><span className="text-zinc-600">{reg.org_type || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.location')} </span><span className="text-zinc-600">{[reg.org_city, reg.org_country].filter(Boolean).join(', ') || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.phone')} </span><span className="text-zinc-600">{reg.org_phone || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.proEmail')} </span><span className="text-zinc-600">{reg.org_professional_email || '—'}</span></div>
                                         {reg.org_website && (
-                                            <div><span className="font-medium text-zinc-700">Website: </span>
+                                            <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.website')} </span>
                                                 <a href={reg.org_website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline truncate">{reg.org_website}</a>
                                             </div>
                                         )}
@@ -146,12 +148,12 @@ export default function OrganizerRegistrationsPage() {
                                         <button onClick={() => handleApprove(reg._id)}
                                             disabled={processing === reg._id}
                                             className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all">
-                                            {processing === reg._id ? '…' : 'Approve'}
+                                            {processing === reg._id ? '…' : t('common.actions.approve')}
                                         </button>
                                         <button onClick={() => handleReject(reg._id)}
                                             disabled={processing === reg._id}
                                             className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 text-sm font-medium rounded-xl hover:bg-red-100 disabled:opacity-50 transition-all">
-                                            Reject
+                                            {t('common.actions.reject')}
                                         </button>
                                     </div>
                                 )}

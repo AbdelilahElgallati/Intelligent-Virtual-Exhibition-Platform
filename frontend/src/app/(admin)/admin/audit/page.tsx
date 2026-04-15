@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollText, RefreshCw, Search, Filter } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { AuditLog } from '@/types/audit';
@@ -22,6 +23,7 @@ const ACTION_ICONS: Record<string, string> = {
 };
 
 export default function AuditPage() {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [actions, setActions] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,17 +60,17 @@ export default function AuditPage() {
             setLogs(logsData);
             if (actions.length === 0) setActions(actionsData);
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Failed to load audit logs');
+            setError(e instanceof Error ? e.message : t('admin.audit.failedToLoad'));
         } finally {
             setLoading(false);
         }
-    }, [filterAction, filterEntity, filterActorId, filterFromDate, filterToDate]);
+    }, [filterAction, filterEntity, filterActorId, filterFromDate, filterToDate, t]);
 
     // Reset pagination when loading new filters
     useEffect(() => {
         setCurrentPage(1);
     }, [logs]);
-    useEffect(() => { load(); }, []);
+    useEffect(() => { load(); }, [load]);
 
     const applyFilters = (e: React.FormEvent) => { e.preventDefault(); load(); };
 
@@ -80,8 +82,8 @@ export default function AuditPage() {
                     <ScrollText className="w-5 h-5 text-violet-600" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900">Audit Logs</h1>
-                    <p className="text-zinc-500 text-sm mt-0.5">Full governance trail — every admin action, timestamped.</p>
+                    <h1 className="text-2xl font-bold text-zinc-900">{t('admin.audit.title')}</h1>
+                    <p className="text-zinc-500 text-sm mt-0.5">{t('admin.audit.description')}</p>
                 </div>
             </div>
 
@@ -89,54 +91,54 @@ export default function AuditPage() {
             <form onSubmit={applyFilters} className="bg-white border border-zinc-200 rounded-2xl p-4">
                 <div className="flex flex-wrap gap-3 items-end">
                     <div className="flex-1 min-w-40">
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">Action</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.audit.filters.action')}</label>
                         <select
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={filterAction}
                             onChange={e => setFilterAction(e.target.value)}
                         >
-                            <option value="">All actions</option>
+                            <option value="">{t('admin.audit.filters.allActions')}</option>
                             {actions.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
                     </div>
                     <div className="flex-1 min-w-32">
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">Entity type</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.audit.filters.entityType')}</label>
                         <select
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={filterEntity}
                             onChange={e => setFilterEntity(e.target.value)}
                         >
-                            <option value="">All entities</option>
-                            <option value="event">Event</option>
-                            <option value="user">User</option>
-                            <option value="organization">Organization</option>
-                            <option value="subscription">Subscription</option>
-                            <option value="incident">Incident</option>
+                            <option value="">{t('admin.audit.filters.allEntities')}</option>
+                            <option value="event">{t('common.entities.event')}</option>
+                            <option value="user">{t('common.entities.user')}</option>
+                            <option value="organization">{t('common.entities.organization')}</option>
+                            <option value="subscription">{t('common.entities.subscription')}</option>
+                            <option value="incident">{t('common.entities.incident')}</option>
                         </select>
                     </div>
                     <div className="flex-1 min-w-44">
                         <label className="block text-xs font-medium text-zinc-500 mb-1">
-                            <Filter className="inline w-3 h-3 mr-1" />Actor ID
+                            <Filter className="inline w-3 h-3 mr-1" />{t('admin.audit.filters.actorId')}
                         </label>
                         <input
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder="User ID…"
+                            placeholder={t('admin.audit.filters.actorIdPlaceholder')}
                             value={filterActorId}
                             onChange={e => setFilterActorId(e.target.value)}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">From</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.audit.filters.from')}</label>
                         <input type="date" className="border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={filterFromDate} onChange={e => setFilterFromDate(e.target.value)} />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">To</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.audit.filters.to')}</label>
                         <input type="date" className="border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={filterToDate} onChange={e => setFilterToDate(e.target.value)} />
                     </div>
                     <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors">
-                        <Search className="w-3.5 h-3.5" /> Apply
+                        <Search className="w-3.5 h-3.5" /> {t('admin.audit.filters.apply')}
                     </button>
                     <button
                         type="button"
@@ -155,8 +157,8 @@ export default function AuditPage() {
             {/* Logs table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-zinc-700">Log Entries</h2>
-                    <span className="text-xs text-zinc-400">{logs.length} entries</span>
+                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.audit.table.logEntries')}</h2>
+                    <span className="text-xs text-zinc-400">{t('admin.audit.table.count', { count: logs.length })}</span>
                 </div>
 
                 {loading ? (
@@ -164,17 +166,17 @@ export default function AuditPage() {
                         <div className="animate-spin w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full" />
                     </div>
                 ) : logs.length === 0 ? (
-                    <p className="text-sm text-zinc-400 text-center py-12">No audit log entries found.</p>
+                    <p className="text-sm text-zinc-400 text-center py-12">{t('admin.audit.table.noEntries')}</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-zinc-100 text-left">
-                                    <th className="py-3 px-5 text-xs font-semibold text-zinc-400 uppercase tracking-wide">Timestamp</th>
-                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">Action</th>
-                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">Entity</th>
-                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">Actor ID</th>
-                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">Details</th>
+                                    <th className="py-3 px-5 text-xs font-semibold text-zinc-400 uppercase tracking-wide">{t('admin.audit.table.timestamp')}</th>
+                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">{t('admin.audit.table.action')}</th>
+                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">{t('admin.audit.table.entity')}</th>
+                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">{t('admin.audit.table.actorId')}</th>
+                                    <th className="py-3 px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wide">{t('admin.audit.table.details')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
@@ -217,7 +219,12 @@ export default function AuditPage() {
                 {!loading && logs.length > 0 && (
                     <div className="px-6 py-4 flex items-center justify-between text-xs text-zinc-400 bg-white border-t border-zinc-100">
                         <span className="text-xs text-zinc-500">
-                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, logs.length)} of {logs.length} entries
+                            {t('common.ui.pagination.showingRange', {
+                                from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                                to: Math.min(currentPage * ITEMS_PER_PAGE, logs.length),
+                                total: logs.length,
+                                entity: t('common.ui.pagination.entities.entries')
+                            })}
                         </span>
                         {totalPages > 1 && (
                             <div className="flex items-center gap-2">
@@ -226,17 +233,17 @@ export default function AuditPage() {
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Previous
+                                    {t('common.ui.pagination.previous')}
                                 </button>
                                 <span className="text-xs font-medium text-zinc-600">
-                                    Page {currentPage} of {totalPages}
+                                    {t('common.ui.pagination.pageInfo', { current: currentPage, total: totalPages })}
                                 </span>
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Next
+                                    {t('common.ui.pagination.next')}
                                 </button>
                             </div>
                         )}

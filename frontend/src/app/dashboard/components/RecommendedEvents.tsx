@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Recommendation } from '@/lib/api/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +14,8 @@ interface RecommendedEventsProps {
 }
 
 export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommendations, loading }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -24,7 +29,7 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
   if (recommendations.length === 0) {
     return (
       <div className="text-center p-6 bg-muted/20 rounded-lg border border-dashed">
-        <p className="text-muted-foreground text-sm">No recommendations available yet.</p>
+        <p className="text-muted-foreground text-sm">{t("dashboard.visitor.recommended.empty")}</p>
       </div>
     );
   }
@@ -38,7 +43,7 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
               <CardTitle className="text-base">{rec.title}</CardTitle>
               {rec.score > 0.8 && (
                 <Badge variant="secondary" className="text-[10px]">
-                  High Match
+                  {t("dashboard.visitor.recommended.highMatch")}
                 </Badge>
               )}
             </div>
@@ -55,7 +60,7 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
           </CardContent>
           <CardFooter className="p-4 pt-0 flex justify-end">
             <Button asChild size="sm" variant="ghost">
-              <Link href={`/events/${rec.id}`}>View details</Link>
+              <Link href={`/events/${rec.id}`}>{t("dashboard.visitor.recommended.viewDetails")}</Link>
             </Button>
           </CardFooter>
         </Card>

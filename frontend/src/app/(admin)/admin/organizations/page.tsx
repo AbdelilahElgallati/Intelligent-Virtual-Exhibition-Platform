@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { adminService } from '@/services/admin.service';
 import { AdminOrganization } from '@/types/admin';
 import {
@@ -13,10 +14,11 @@ import { PartnerDashboardRead } from '@/types/admin';
 import { formatInUserTZ } from '@/lib/timezone';
 
 function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
+    const { t } = useTranslation();
     const badges = [];
-    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Verified</span>);
-    if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Flagged</span>);
-    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Suspended</span>);
+    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{t('admin.organizations.detail.verified')}</span>);
+    if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{t('admin.organizations.detail.flagged')}</span>);
+    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">{t('admin.organizations.detail.suspended')}</span>);
     return badges.length ? <div className="flex flex-wrap gap-1.5">{badges}</div> : <span className="text-xs text-zinc-400">—</span>;
 }
 
@@ -64,6 +66,7 @@ function OrgPanel({
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
+    const { t } = useTranslation();
     const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
@@ -91,17 +94,17 @@ function OrgPanel({
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
                     {/* Performance Stats */}
-                    <Section icon={TrendingUp} title="Performance Overview">
+                    <Section icon={TrendingUp} title={t('admin.organizations.detail.performanceOverview')}>
                         <div className="grid grid-cols-3 gap-3">
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <Users className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">{(org.stats?.total_visitors || 0).toLocaleString()}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Visitors</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">{t('admin.organizations.detail.visitors')}</div>
                             </div>
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <Calendar className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">{org.stats?.total_events || 0}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Events</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">{t('admin.organizations.detail.events')}</div>
                             </div>
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <DollarSign className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
@@ -110,7 +113,7 @@ function OrgPanel({
                                     {(org.stats?.total_revenue || 0).toLocaleString()}
                                 </div>
                                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
-                                    Revenue
+                                    {t('admin.organizations.detail.revenue')}
                                 </div>
                                 {org.stats && (org.stats as any).revenue_by_currency && Object.keys((org.stats as any).revenue_by_currency || {}).length > 1 && (
                                     <div className="mt-1 text-[10px] text-zinc-400">
@@ -123,36 +126,36 @@ function OrgPanel({
                         </div>
                     </Section>
 
-                    <Section icon={Building2} title="Organization Identity">
+                    <Section icon={Building2} title={t('admin.organizations.detail.organizationIdentity')}>
                         <div className="grid grid-cols-1 gap-y-3">
-                            <InfoRow label="Registered Name" value={org.name} />
-                            <InfoRow label="Onboarding Date" value={fmt(org.created_at)} />
-                            <InfoRow label="Industry / Sector" value={org.industry} />
-                            <InfoRow label="Business Website" value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
-                            <InfoRow label="Contact Email" value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
+                            <InfoRow label={t('admin.organizations.detail.registeredName')} value={org.name} />
+                            <InfoRow label={t('admin.organizations.detail.onboardingDate')} value={fmt(org.created_at)} />
+                            <InfoRow label={t('admin.organizations.detail.industrySector')} value={org.industry} />
+                            <InfoRow label={t('admin.organizations.detail.businessWebsite')} value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
+                            <InfoRow label={t('admin.organizations.detail.contactEmail')} value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
                         </div>
                     </Section>
 
-                    <Section icon={User} title="Primary Contact (Owner)">
+                    <Section icon={User} title={t('admin.organizations.detail.primaryContact')}>
                         <div className="grid grid-cols-1 gap-y-3">
-                            <InfoRow label="Owner Name" value={org.owner_name} />
-                            <InfoRow label="Owner Email" value={org.owner_email} href={org.owner_email ? `mailto:${org.owner_email}` : undefined} />
+                            <InfoRow label={t('admin.organizations.detail.ownerName')} value={org.owner_name} />
+                            <InfoRow label={t('admin.organizations.detail.ownerEmail')} value={org.owner_email} href={org.owner_email ? `mailto:${org.owner_email}` : undefined} />
                         </div>
                     </Section>
 
                     {org.description && (
-                        <Section icon={Hash} title="Organization Profile">
+                        <Section icon={Hash} title={t('admin.organizations.detail.organizationProfile')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{org.description}</p>
                         </Section>
                     )}
 
                     {/* Moderation status */}
-                    <Section icon={ShieldCheck} title="Administrative Governance">
+                    <Section icon={ShieldCheck} title={t('admin.organizations.detail.administrativeGovernance')}>
                         <div className="bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
                             {[
-                                { label: 'Verification Status', value: org.is_verified, on: 'Verified Partner', off: 'Pending Review', onCls: 'text-emerald-600', offCls: 'text-zinc-500' },
-                                { label: 'Flagged Content', value: org.is_flagged, on: 'Restricted', off: 'Clear', onCls: 'text-amber-600', offCls: 'text-emerald-600' },
-                                { label: 'Operational Status', value: org.is_suspended, on: 'Suspended', off: 'Operational', onCls: 'text-rose-600', offCls: 'text-emerald-600' },
+                                { label: t('admin.organizations.detail.verificationStatus'), value: org.is_verified, on: t('admin.organizations.detail.verifiedPartner'), off: t('admin.organizations.detail.pendingReview'), onCls: 'text-emerald-600', offCls: 'text-zinc-500' },
+                                { label: t('admin.organizations.detail.flaggedContent'), value: org.is_flagged, on: t('admin.organizations.detail.restricted'), off: t('admin.organizations.detail.clear'), onCls: 'text-amber-600', offCls: 'text-emerald-600' },
+                                { label: t('admin.organizations.detail.operationalStatus'), value: org.is_suspended, on: t('admin.organizations.detail.suspended'), off: t('admin.organizations.detail.operational'), onCls: 'text-rose-600', offCls: 'text-emerald-600' },
                             ].map(({ label, value, on, off, onCls, offCls }) => (
                                 <div key={label} className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-100 last:border-0 bg-white">
                                     <span className="text-xs font-medium text-zinc-500">{label}</span>
@@ -171,7 +174,7 @@ function OrgPanel({
                             disabled={busy}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                         >
-                            <ShieldCheck className="w-4 h-4" /> Verify Enterprise Account
+                            <ShieldCheck className="w-4 h-4" /> {t('admin.organizations.detail.verifyAccount')}
                         </button>
                     )}
                     <div className="flex gap-3">
@@ -183,7 +186,7 @@ function OrgPanel({
                                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                                 }`}
                         >
-                            <Flag className="w-4 h-4" /> {org.is_flagged ? 'Unflag' : 'Flag'}
+                            <Flag className="w-4 h-4" /> {org.is_flagged ? t('admin.organizations.detail.unflag') : t('admin.organizations.detail.flag')}
                         </button>
                         <button
                             onClick={() => onSuspend(org._id)}
@@ -193,7 +196,7 @@ function OrgPanel({
                                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
                                 }`}
                         >
-                            <Ban className="w-4 h-4" /> {org.is_suspended ? 'Unsuspend' : 'Suspend'}
+                            <Ban className="w-4 h-4" /> {org.is_suspended ? t('admin.organizations.detail.unsuspend') : t('admin.organizations.detail.suspend')}
                         </button>
                     </div>
                 </div>
@@ -204,6 +207,7 @@ function OrgPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminOrganizationsPage() {
+    const { t } = useTranslation();
     const [orgs, setOrgs] = useState<PartnerDashboardRead[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -221,9 +225,9 @@ export default function AdminOrganizationsPage() {
     const fetchOrgs = useCallback(async () => {
         setLoading(true); setError(null);
         try { setOrgs(await adminService.getDetailedOrganizations()); }
-        catch (e: any) { setError(e.message ?? 'Failed to load organizations'); }
+        catch (e: any) { setError(e.message ?? t('admin.organizations.failedToLoad')); }
         finally { setLoading(false); }
-    }, []);
+    }, [t]);
 
     useEffect(() => { fetchOrgs(); }, [fetchOrgs]);
 
@@ -232,7 +236,7 @@ export default function AdminOrganizationsPage() {
     const act = async (id: string, fn: () => Promise<any>, label: string) => {
         setActionId(id);
         try { await fn(); showSuccess(label); setSelected(null); fetchOrgs(); }
-        catch (e: any) { setError(e.message ?? 'Action failed'); }
+        catch (e: any) { setError(e.message ?? t('admin.users.error.actionFailed')); }
         finally { setActionId(null); }
     };
 
@@ -247,8 +251,8 @@ export default function AdminOrganizationsPage() {
                         <Building2 className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Organization Review</h1>
-                        <p className="text-xs text-zinc-500">Corporate partners and enterprise identities</p>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.organizations.title')}</h1>
+                        <p className="text-xs text-zinc-500">{t('admin.organizations.description')}</p>
                     </div>
                 </div>
                 <button
@@ -276,20 +280,20 @@ export default function AdminOrganizationsPage() {
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 {loading ? (
                     <div className="p-12 text-center text-zinc-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> Loading registry…
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> {t('admin.organizations.loadingRegistry')}
                     </div>
                 ) : orgs.length === 0 ? (
                     <div className="p-12 text-center">
                         <Building2 className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                        <p className="text-zinc-500 font-medium">No organizations found</p>
+                        <p className="text-zinc-500 font-medium">{t('admin.organizations.noOrganizations')}</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-zinc-100">
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Organization</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Onboarding</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.organizations.table.organization')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">{t('admin.organizations.table.onboarding')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.organizations.table.status')}</th>
                                 <th className="px-4 py-3.5" />
                             </tr>
                         </thead>
@@ -303,7 +307,7 @@ export default function AdminOrganizationsPage() {
                                             </div>
                                             <div>
                                                 <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{org.name}</div>
-                                                <div className="text-xs text-zinc-400 truncate max-w-[200px]">{org.description || 'No description provided'}</div>
+                                                <div className="text-xs text-zinc-400 truncate max-w-[200px]">{org.description || t('admin.organizations.noDescription')}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -322,7 +326,12 @@ export default function AdminOrganizationsPage() {
                 {!loading && orgs.length > 0 && (
                     <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
                         <span className="text-xs text-zinc-500">
-                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, orgs.length)} of {orgs.length} organization{orgs.length !== 1 ? 's' : ''}
+                            {t('common.ui.pagination.showingRange', {
+                                from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                                to: Math.min(currentPage * ITEMS_PER_PAGE, orgs.length),
+                                total: orgs.length,
+                                entity: t('common.ui.pagination.entities.organizations')
+                            })}
                         </span>
                         {totalPages > 1 && (
                             <div className="flex items-center gap-2">
@@ -331,17 +340,17 @@ export default function AdminOrganizationsPage() {
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Previous
+                                    {t('common.ui.pagination.previous')}
                                 </button>
                                 <span className="text-xs font-medium text-zinc-600">
-                                    Page {currentPage} of {totalPages}
+                                    {t('common.ui.pagination.pageInfo', { current: currentPage, total: totalPages })}
                                 </span>
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Next
+                                    {t('common.ui.pagination.next')}
                                 </button>
                             </div>
                         )}
@@ -353,9 +362,9 @@ export default function AdminOrganizationsPage() {
                 <OrgPanel
                     org={selected}
                     onClose={() => setSelected(null)}
-                    onVerify={id => act(id, () => adminService.verifyOrganization(id), `${selected.name} verified.`)}
-                    onFlag={id => act(id, () => adminService.flagOrganization(id), `${selected.name} flag toggled.`)}
-                    onSuspend={id => act(id, () => adminService.suspendOrganization(id), `${selected.name} suspension toggled.`)}
+                    onVerify={id => act(id, () => adminService.verifyOrganization(id), t('admin.organizations.toast.verified', { name: selected.name }))}
+                    onFlag={id => act(id, () => adminService.flagOrganization(id), t('admin.organizations.toast.flagToggled', { name: selected.name }))}
+                    onSuspend={id => act(id, () => adminService.suspendOrganization(id), t('admin.organizations.toast.suspensionToggled', { name: selected.name }))}
                     busy={!!actionId}
                 />
             )}

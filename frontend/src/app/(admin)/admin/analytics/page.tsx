@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import {
     BarChart3, Users, CalendarCheck, TrendingUp,
@@ -46,6 +47,7 @@ const STATE_BADGE: Record<string, string> = {
 };
 
 export default function AdminAnalyticsPage() {
+    const { t } = useTranslation();
     const [data, setData] = useState<DashboardData | null>(null);
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -125,8 +127,8 @@ export default function AdminAnalyticsPage() {
                         <BarChart3 className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900">Analytics Dashboard</h1>
-                        <p className="text-zinc-500 text-sm mt-0.5">Platform-level metrics and engagement trends.</p>
+                        <h1 className="text-2xl font-bold text-zinc-900">{t("admin.analytics.title")}</h1>
+                        <p className="text-zinc-500 text-sm mt-0.5">{t("admin.analytics.description")}</p>
                     </div>
                 </div>
                 <div className="flex gap-2 flex-wrap justify-end">
@@ -137,7 +139,7 @@ export default function AdminAnalyticsPage() {
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-zinc-900 border border-zinc-900 text-white hover:bg-black transition-colors disabled:opacity-50"
                     >
                         <Download className="w-3.5 h-3.5" />
-                        {exportLoading ? 'Generating…' : 'Export PDF'}
+                        {exportLoading ? t("admin.analytics.export.generating") : t("admin.analytics.export.exportPdf")}
                     </button>
                     <button
                         type="button"
@@ -146,14 +148,14 @@ export default function AdminAnalyticsPage() {
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-800 hover:bg-zinc-50 transition-colors disabled:opacity-50"
                     >
                         <FileText className="w-3.5 h-3.5" />
-                        {exportCsvLoading ? 'Exporting…' : 'Export CSV'}
+                        {exportCsvLoading ? t("admin.analytics.export.exporting") : t("admin.analytics.export.exportCsv")}
                     </button>
                     <button
                         type="button"
                         onClick={load}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
                     >
-                        <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                        <RefreshCw className="w-3.5 h-3.5" /> {t("admin.analytics.refresh")}
                     </button>
                 </div>
             </div>
@@ -167,19 +169,19 @@ export default function AdminAnalyticsPage() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                <StatCard label="Total Users" value={kpi('Total Users')} icon={Users} accent="bg-indigo-50 text-indigo-600" />
-                <StatCard label="Active Events" value={kpi('Active Events')} icon={CalendarCheck} accent="bg-green-50 text-green-600" />
-                <StatCard label="Total Stands" value={kpi('Total Stands')} icon={BarChart3} accent="bg-sky-50 text-sky-600" />
-                <StatCard label="Total Events" value={kpi('Total Events')} icon={CalendarCheck} accent="bg-violet-50 text-violet-600" />
-                <StatCard label="Organizations" value={kpi('Organizations')} icon={Users} accent="bg-amber-50 text-amber-600" />
-                <StatCard label="Pending" value={kpi('Pending Approval')} icon={TrendingUp} accent="bg-orange-50 text-orange-600" />
+                <StatCard label={t("admin.analytics.kpi.totalUsers")} value={kpi('Total Users')} icon={Users} accent="bg-indigo-50 text-indigo-600" />
+                <StatCard label={t("admin.analytics.kpi.activeEvents")} value={kpi('Active Events')} icon={CalendarCheck} accent="bg-green-50 text-green-600" />
+                <StatCard label={t("admin.analytics.kpi.totalStands")} value={kpi('Total Stands')} icon={BarChart3} accent="bg-sky-50 text-sky-600" />
+                <StatCard label={t("admin.analytics.kpi.totalEvents")} value={kpi('Total Events')} icon={CalendarCheck} accent="bg-violet-50 text-violet-600" />
+                <StatCard label={t("admin.analytics.kpi.organizations")} value={kpi('Organizations')} icon={Users} accent="bg-amber-50 text-amber-600" />
+                <StatCard label={t("admin.analytics.kpi.pendingApproval")} value={kpi('Pending Approval')} icon={TrendingUp} accent="bg-orange-50 text-orange-600" />
             </div>
 
             {/* Charts row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 30-day trend */}
                 <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">30-Day Event Creation Trend</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t("admin.analytics.charts.thirtyDayTrend")}</h2>
                     <ResponsiveContainer width="100%" height={220}>
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -189,14 +191,14 @@ export default function AdminAnalyticsPage() {
                                 contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}
                                 labelStyle={{ color: '#475569' }}
                             />
-                            <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={false} name="Events Created" />
+                            <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={false} name={t("admin.analytics.charts.eventsCreated")} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Distribution pie */}
                 <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">Event Distribution</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t("admin.analytics.charts.eventDistribution")}</h2>
                     <ResponsiveContainer width="100%" height={220}>
                         <PieChart>
                             <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
@@ -213,11 +215,11 @@ export default function AdminAnalyticsPage() {
             {/* Events table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100">
-                    <h2 className="text-sm font-semibold text-zinc-700">Recent Events — click for Business Intelligence report</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700">{t("admin.analytics.eventsTable.title")}</h2>
                 </div>
                 <div className="divide-y divide-zinc-100">
                     {events.length === 0 ? (
-                        <p className="text-sm text-zinc-400 text-center py-10">No events found.</p>
+                        <p className="text-sm text-zinc-400 text-center py-10">{t("admin.analytics.eventsTable.noEvents")}</p>
                     ) : events.map(ev => (
                         <Link
                             key={ev.id}
@@ -230,7 +232,7 @@ export default function AdminAnalyticsPage() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATE_BADGE[ev.state] ?? 'bg-zinc-100 text-zinc-500'}`}>
-                                    {ev.state.replace(/_/g, ' ')}
+                                    {t(`admin.events.states.${ev.state}`, { defaultValue: ev.state.replace(/_/g, ' ') })}
                                 </span>
                                 <ArrowRight className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-x-1 transition-transform" />
                             </div>

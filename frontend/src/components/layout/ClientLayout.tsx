@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { FloatingAssistant } from '@/components/assistant/FloatingAssistant';
+import '@/lib/i18n';
 
 // Routes that should NOT show the global Navbar/Footer
 const SHELL_FREE_PREFIXES = ['/admin', '/organizer', '/enterprise'];
