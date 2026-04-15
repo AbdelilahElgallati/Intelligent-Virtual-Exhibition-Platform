@@ -83,6 +83,10 @@ async def get_recommended_events(
     
     events = await list_events(state=EventState.APPROVED)
     
+    # Fallback to any events if none are specifically approved yet (for development/demo)
+    if not events:
+        events = await list_events()
+    
     # Transform to RecommendationItem
     recommendations = []
     for event in events[:top_k]:
@@ -92,7 +96,7 @@ async def get_recommended_events(
             description=event["description"],
             type="event",
             score=0.9, # Mock score
-            reason="Based on your interests"
+            reason="Featured Event" if event.get('state') == EventState.APPROVED else "New Event"
         ))
         
     return recommendations
@@ -148,18 +152,19 @@ async def get_personalized_recommendations(
     
     return recommendations
 
-
-@router.get("/events/{event_id}", response_model=List[RecommendationItem])
+@router.get("/event/{event_id}", response_model=List[RecommendationItem])
 async def get_event_recommendations(
     event_id: str,
     top_k: int = 5,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Get recommended stands and resources for an event.
-    Based on event themes and visitor interests.
+    Get recommended stands/resources for a specific event context.
     """
     # Use event as context for recommendations
+    from ..events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     event_context = [item for item in SAMPLE_EVENTS if item["id"] == event_id]
     
     if not event_context:

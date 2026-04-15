@@ -6,13 +6,17 @@ import { AdminOrganization } from '@/types/admin';
 import {
     Building2, RefreshCw, CheckCircle2, AlertCircle, X, ChevronRight,
     ShieldCheck, Flag, Ban, Calendar, User, Hash,
+    TrendingUp, Users, DollarSign, Mail, Globe,
 } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { PartnerDashboardRead } from '@/types/admin';
+import { formatInUserTZ } from '@/lib/timezone';
 
-function StatusBadges({ org }: { org: AdminOrganization }) {
+function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
     const badges = [];
-    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Verified</span>);
+    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Verified</span>);
     if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Flagged</span>);
-    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">Suspended</span>);
+    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Suspended</span>);
     return badges.length ? <div className="flex flex-wrap gap-1.5">{badges}</div> : <span className="text-xs text-zinc-400">—</span>;
 }
 
@@ -28,6 +32,22 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
     );
 }
 
+function InfoRow({ label, value, href }: { label: string; value?: string | null; href?: string }) {
+    if (!value) return null;
+    return (
+        <div className="flex items-start gap-3">
+            <span className="text-xs text-zinc-400 w-32 flex-shrink-0 pt-0.5">{label}</span>
+            {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 font-medium hover:underline break-all">
+                    {value}
+                </a>
+            ) : (
+                <span className="text-sm text-zinc-800 font-medium break-words">{value}</span>
+            )}
+        </div>
+    );
+}
+
 // ── Organization detail slide-over ──────────────────────────────────────────
 function OrgPanel({
     org,
@@ -37,33 +57,32 @@ function OrgPanel({
     onSuspend,
     busy,
 }: {
-    org: AdminOrganization;
+    org: PartnerDashboardRead;
     onClose: () => void;
     onVerify: (id: string) => Promise<void>;
     onFlag: (id: string) => Promise<void>;
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-    const initials = (org.name || 'O').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-            <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-zinc-200 flex flex-col shadow-xl overflow-hidden">
+            <div className="fixed inset-0 bg-black/20 z-40 transition-opacity" onClick={onClose} />
+            <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white border-l border-zinc-200 flex flex-col shadow-xl overflow-hidden animate-in slide-in-from-right duration-300">
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-zinc-100 flex-shrink-0">
+                <div className="px-6 py-5 border-b border-zinc-100 flex-shrink-0 bg-white">
                     <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-700 text-sm font-bold flex-shrink-0">
-                                {initials}
-                            </div>
-                            <div>
-                                <h2 className="text-base font-bold text-zinc-900">{org.name}</h2>
-                                <div className="mt-1.5"><StatusBadges org={org} /></div>
+                        <div className="space-y-2">
+                            <h2 className="text-lg font-bold text-zinc-900 leading-tight">{org.name}</h2>
+                            <div className="flex items-center flex-wrap gap-2">
+                                <StatusBadges org={org} />
+                                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${org.owner_role === 'organizer' ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'}`}>
+                                    {org.owner_role} Partner
+                                </span>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100">
+                        <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
@@ -71,44 +90,73 @@ function OrgPanel({
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
-                    <Section icon={Building2} title="Organization Info">
-                        <div className="space-y-3 text-sm">
-                            <div className="flex items-start gap-3">
-                                <span className="text-xs text-zinc-400 w-28 flex-shrink-0 pt-0.5">Name</span>
-                                <span className="text-zinc-800 font-medium">{org.name}</span>
+                    {/* Performance Stats */}
+                    <Section icon={TrendingUp} title="Performance Overview">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
+                                <Users className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
+                                <div className="text-lg font-bold text-zinc-900">{(org.stats?.total_visitors || 0).toLocaleString()}</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Visitors</div>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <span className="text-xs text-zinc-400 w-28 flex-shrink-0 pt-0.5">Created</span>
-                                <span className="text-zinc-800 font-medium">{fmt(org.created_at)}</span>
+                            <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
+                                <Calendar className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
+                                <div className="text-lg font-bold text-zinc-900">{org.stats?.total_events || 0}</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Events</div>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <span className="text-xs text-zinc-400 w-28 flex-shrink-0 pt-0.5">Owner ID</span>
-                                <span className="text-zinc-800 font-mono text-xs break-all">{org.owner_id}</span>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <span className="text-xs text-zinc-400 w-28 flex-shrink-0 pt-0.5">Org ID</span>
-                                <span className="text-zinc-800 font-mono text-xs break-all">{org._id}</span>
+                            <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
+                                <DollarSign className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
+                                <div className="text-lg font-bold text-zinc-900">
+                                    {(org.stats?.primary_currency || 'MAD')}&nbsp;
+                                    {(org.stats?.total_revenue || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
+                                    Revenue
+                                </div>
+                                {org.stats && (org.stats as any).revenue_by_currency && Object.keys((org.stats as any).revenue_by_currency || {}).length > 1 && (
+                                    <div className="mt-1 text-[10px] text-zinc-400">
+                                        {Object.entries((org.stats as any).revenue_by_currency as Record<string, number>)
+                                            .map(([cur, amt]) => `${cur} ${Number(amt || 0).toLocaleString()}`)
+                                            .join(' · ')}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Section>
 
+                    <Section icon={Building2} title="Organization Identity">
+                        <div className="grid grid-cols-1 gap-y-3">
+                            <InfoRow label="Registered Name" value={org.name} />
+                            <InfoRow label="Onboarding Date" value={fmt(org.created_at)} />
+                            <InfoRow label="Industry / Sector" value={org.industry} />
+                            <InfoRow label="Business Website" value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
+                            <InfoRow label="Contact Email" value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
+                        </div>
+                    </Section>
+
+                    <Section icon={User} title="Primary Contact (Owner)">
+                        <div className="grid grid-cols-1 gap-y-3">
+                            <InfoRow label="Owner Name" value={org.owner_name} />
+                            <InfoRow label="Owner Email" value={org.owner_email} href={org.owner_email ? `mailto:${org.owner_email}` : undefined} />
+                        </div>
+                    </Section>
+
                     {org.description && (
-                        <Section icon={Building2} title="Description">
-                            <p className="text-sm text-zinc-700 leading-relaxed">{org.description}</p>
+                        <Section icon={Hash} title="Organization Profile">
+                            <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{org.description}</p>
                         </Section>
                     )}
 
                     {/* Moderation status */}
-                    <Section icon={ShieldCheck} title="Moderation Status">
-                        <div className="space-y-2">
+                    <Section icon={ShieldCheck} title="Administrative Governance">
+                        <div className="bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
                             {[
-                                { label: 'Verification', value: org.is_verified, on: 'Verified', off: 'Not verified', onCls: 'text-green-600', offCls: 'text-zinc-400' },
-                                { label: 'Flag', value: org.is_flagged, on: 'Flagged', off: 'Not flagged', onCls: 'text-amber-600', offCls: 'text-zinc-400' },
-                                { label: 'Suspension', value: org.is_suspended, on: 'Suspended', off: 'Active', onCls: 'text-red-600', offCls: 'text-emerald-600' },
+                                { label: 'Verification Status', value: org.is_verified, on: 'Verified Partner', off: 'Pending Review', onCls: 'text-emerald-600', offCls: 'text-zinc-500' },
+                                { label: 'Flagged Content', value: org.is_flagged, on: 'Restricted', off: 'Clear', onCls: 'text-amber-600', offCls: 'text-emerald-600' },
+                                { label: 'Operational Status', value: org.is_suspended, on: 'Suspended', off: 'Operational', onCls: 'text-rose-600', offCls: 'text-emerald-600' },
                             ].map(({ label, value, on, off, onCls, offCls }) => (
-                                <div key={label} className="flex items-center justify-between py-1.5 border-b border-zinc-50 last:border-0">
-                                    <span className="text-sm text-zinc-600">{label}</span>
-                                    <span className={`text-xs font-semibold ${value ? onCls : offCls}`}>{value ? on : off}</span>
+                                <div key={label} className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-100 last:border-0 bg-white">
+                                    <span className="text-xs font-medium text-zinc-500">{label}</span>
+                                    <span className={`text-xs font-semibold uppercase tracking-wide ${value ? onCls : offCls}`}>{value ? on : off}</span>
                                 </div>
                             ))}
                         </div>
@@ -116,23 +164,23 @@ function OrgPanel({
                 </div>
 
                 {/* Footer actions */}
-                <div className="border-t border-zinc-100 px-6 py-4 flex-shrink-0 bg-zinc-50 space-y-2">
+                <div className="border-t border-zinc-100 px-6 py-5 flex-shrink-0 bg-zinc-50 space-y-4">
                     {!org.is_verified && (
                         <button
                             onClick={() => onVerify(org._id)}
                             disabled={busy}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                         >
-                            <ShieldCheck className="w-4 h-4" /> Verify Organization
+                            <ShieldCheck className="w-4 h-4" /> Verify Enterprise Account
                         </button>
                     )}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex gap-3">
                         <button
                             onClick={() => onFlag(org._id)}
                             disabled={busy}
-                            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50 ${org.is_flagged
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                    : 'bg-white text-zinc-600 border-zinc-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all disabled:opacity-50 ${org.is_flagged
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                : 'bg-white text-zinc-600 border-zinc-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                                 }`}
                         >
                             <Flag className="w-4 h-4" /> {org.is_flagged ? 'Unflag' : 'Flag'}
@@ -140,9 +188,9 @@ function OrgPanel({
                         <button
                             onClick={() => onSuspend(org._id)}
                             disabled={busy}
-                            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50 ${org.is_suspended
-                                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                    : 'bg-white text-zinc-600 border-zinc-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold border transition-all disabled:opacity-50 ${org.is_suspended
+                                ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                                : 'bg-white text-zinc-600 border-zinc-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
                                 }`}
                         >
                             <Ban className="w-4 h-4" /> {org.is_suspended ? 'Unsuspend' : 'Suspend'}
@@ -156,16 +204,23 @@ function OrgPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminOrganizationsPage() {
-    const [orgs, setOrgs] = useState<AdminOrganization[]>([]);
+    const [orgs, setOrgs] = useState<PartnerDashboardRead[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
-    const [selected, setSelected] = useState<AdminOrganization | null>(null);
+    const [selected, setSelected] = useState<PartnerDashboardRead | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    // Pagination
+    const ITEMS_PER_PAGE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const paginatedOrgs = orgs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(orgs.length / ITEMS_PER_PAGE);
+
     const fetchOrgs = useCallback(async () => {
         setLoading(true); setError(null);
-        try { setOrgs(await adminService.getOrganizations()); }
+        try { setOrgs(await adminService.getDetailedOrganizations()); }
         catch (e: any) { setError(e.message ?? 'Failed to load organizations'); }
         finally { setLoading(false); }
     }, []);
@@ -181,42 +236,47 @@ export default function AdminOrganizationsPage() {
         finally { setActionId(null); }
     };
 
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
+
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center">
-                        <Building2 className="w-4 h-4 text-sky-600" />
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                        <Building2 className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Organization Management</h1>
-                        <p className="text-xs text-zinc-500">Click any row to view details and take action</p>
+                        <h1 className="text-xl font-bold text-zinc-900">Organization Review</h1>
+                        <p className="text-xs text-zinc-500">Corporate partners and enterprise identities</p>
                     </div>
                 </div>
-                <button onClick={fetchOrgs} className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
+                <button
+                    onClick={fetchOrgs}
+                    className="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+                >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
 
             {/* Alerts */}
             {success && (
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 animate-in fade-in slide-in-from-top-4">
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> {success}
                 </div>
             )}
             {error && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-700 animate-in fade-in slide-in-from-top-4">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
                     <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
-            {/* Table */}
+            {/* Registry Card */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 {loading ? (
                     <div className="p-12 text-center text-zinc-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-sky-400" /> Loading organizations…
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> Loading registry…
                     </div>
                 ) : orgs.length === 0 ? (
                     <div className="p-12 text-center">
@@ -228,24 +288,31 @@ export default function AdminOrganizationsPage() {
                         <thead>
                             <tr className="border-b border-zinc-100">
                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Organization</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Owner ID</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Onboarding</th>
                                 <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
-                                <th className="px-6 py-3.5" />
+                                <th className="px-4 py-3.5" />
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
-                            {orgs.map((org) => (
+                            {paginatedOrgs.map((org) => (
                                 <tr key={org._id} onClick={() => setSelected(org)} className="hover:bg-zinc-50 transition-colors cursor-pointer group">
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{org.name}</div>
-                                        {org.description && <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-xs">{org.description}</div>}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 transition-colors">
+                                                {(org.name || 'O').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 1)}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{org.name}</div>
+                                                <div className="text-xs text-zinc-400 truncate max-w-[200px]">{org.description || 'No description provided'}</div>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td className="px-4 py-4 hidden lg:table-cell">
-                                        <span className="text-xs text-zinc-400 font-mono">{org.owner_id.slice(0, 12)}…</span>
+                                    <td className="px-4 py-4 hidden lg:table-cell text-xs text-zinc-500">
+                                        {fmt(org.created_at)}
                                     </td>
                                     <td className="px-4 py-4"><StatusBadges org={org} /></td>
-                                    <td className="px-4 py-4">
-                                        <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-indigo-400 transition-colors" />
+                                    <td className="px-6 py-4 text-right">
+                                        <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-indigo-400 transition-colors ml-auto" />
                                     </td>
                                 </tr>
                             ))}
@@ -253,8 +320,31 @@ export default function AdminOrganizationsPage() {
                     </table>
                 )}
                 {!loading && orgs.length > 0 && (
-                    <div className="px-6 py-3 border-t border-zinc-100 text-xs text-zinc-400">
-                        {orgs.length} organization{orgs.length !== 1 ? 's' : ''}
+                    <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
+                        <span className="text-xs text-zinc-500">
+                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, orgs.length)} of {orgs.length} organization{orgs.length !== 1 ? 's' : ''}
+                        </span>
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-xs font-medium text-zinc-600">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

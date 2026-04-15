@@ -1,0 +1,198 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in, headheight=14.5pt}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{lastpage}
+\usepackage{colortbl}
+\usepackage{enumitem}
+
+% Color Palette
+\definecolor{primary}{HTML}{6D28D9}
+\definecolor{secondary}{HTML}{4F46E5}
+\definecolor{accent}{HTML}{059669}
+\definecolor{graybg}{HTML}{F9FAFB}
+\definecolor{bordergray}{HTML}{E5E7EB}
+
+\tcbset{
+    kpicard/.style={
+        colback=graybg,
+        colframe=bordergray,
+        boxrule=0.5pt,
+        sharp corners,
+        fontupper=\small,
+        width=0.3\textwidth,
+        nobeforeafter,
+        boxsep=2pt,
+        left=4pt,
+        right=4pt,
+        top=4pt,
+        bottom=4pt,
+        equal height group=kpis
+    }
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\color{gray}\small IVEP — Organizer report}
+\rhead{\color{gray}\small {{ event_title }}}
+\lfoot{\color{gray}\small Ref.: {{ event_id }} \textbullet{} Generated {{ generated_at }}}
+\rfoot{\color{gray}\small Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\titleformat{\section}{\color{primary}\normalfont\Large\bfseries}{\thesection}{1em}{}[\titlerule]
+\titleformat{\subsection}{\color{accent}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\setlist[itemize]{leftmargin=*,nosep,itemsep=0.35em}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge \color{primary} \bfseries Event Performance Report \par}
+    \vspace{1cm}
+    {\Large \color{secondary} {{ report_title }} \par}
+    \vspace{2cm}
+    \begin{tcolorbox}[colback=primary, colframe=primary, fontupper=\color{white}, center, width=0.85\textwidth, arc=5pt]
+        \centering
+        \vspace{0.5cm}
+        \textbf{\large Organizer Intelligence Suite} \\
+        Engagement, pipeline, revenue ({{ currency_label }}), and governance view
+        \vspace{0.5cm}
+    \end{tcolorbox}
+    \vfill
+    \begin{tabularx}{0.85\textwidth}{l X}
+        \textbf{Event:} & {{ event_title }} \\
+        \textbf{Event Ref.:} & {{ event_id }} \\
+        \textbf{Category:} & {{ category }} \\
+        \textbf{Location:} & {{ location }} \\
+        \textbf{Report Generated:} & {{ generated_at }} \\
+    \end{tabularx}
+    \vspace{1cm}
+    {\small \color{gray} Prepared by the IVEP Intelligent Virtual Exhibition Platform for organizer use. \par}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+{% if key_insights %}
+\section{Executive highlights}
+\begin{itemize}
+{% for line in key_insights %}
+\item {{ line }}
+{% endfor %}
+\end{itemize}
+\vspace{0.75cm}
+{% endif %}
+
+\section{Event performance overview}
+\noindent {{ overview_description }}
+
+\vspace{1cm}
+
+\subsection{Key success metrics}
+\begin{center}
+    {% for kpi in kpis %}
+    \begin{tcolorbox}[kpicard]
+        \textbf{ {{ kpi.label }} } \\
+        \LARGE \color{primary} {{ kpi.value }}\ \small {{ kpi.unit }}
+    \end{tcolorbox}
+    {% if loop.index % 3 == 0 %}\\[0.5cm]{% else %}\hspace{0.2cm}{% endif %}
+    {% endfor %}
+\end{center}
+
+\section{Revenue \& monetization}
+\noindent Amounts follow platform records for paid tickets and recorded stand contributions, expressed in {{ currency_label }}.
+
+\vspace{0.5cm}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.45}
+    \begin{tabularx}{\textwidth}{X r}
+        \rowcolor{primary!10}
+        \textbf{Stream} & \textbf{Amount ({{ currency_label }})} \\
+        \midrule
+        Visitor ticket sales (paid) & {{ revenue.ticket_display }} \\
+        Enterprise stand placements & {{ revenue.stand_display }} \\
+        \midrule
+        \rowcolor{accent!10}
+        \textbf{Total recognized revenue} & \textbf{ {{ revenue.total_display }} } \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+{% if enterprises %}
+\section{Participating enterprises}
+\noindent Organizations with approved stand participation for this event.
+
+\vspace{0.5cm}
+\begin{table}[h]
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.35}
+    \begin{tabularx}{\textwidth}{X X}
+        \rowcolor{primary!10}
+        \textbf{Organization} & \textbf{Industry / sector} \\
+        \midrule
+        {% for ent in enterprises %}
+        {{ ent.name }} & {{ ent.industry }} \\
+        {% endfor %}
+    \end{tabularx}
+\end{table}
+{% endif %}
+
+{% if trend_visitors %}
+\section{Visitor reach trend}
+\noindent Distinct visitors per day from analytics telemetry (most recent window).
+
+\vspace{0.5cm}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.35}
+    \begin{tabular}{l r}
+        \toprule
+        \textbf{Date} & \textbf{Visitors} \\
+        \midrule
+        {% for row in trend_visitors %}
+        {{ row.date }} & {{ row.value }} \\
+        {% endfor %}
+        \bottomrule
+    \end{tabular}
+\end{table}
+{% endif %}
+
+\section{Safety, quality \& moderation}
+\begin{tcolorbox}[colback=graybg, colframe=bordergray, title=\textbf{Incident management summary}]
+    \begin{itemize}
+        \item \textbf{Items flagged for review}: {{ safety.total_flags }}
+        \item \textbf{Resolved}: {{ safety.resolved_flags }}
+        \item \textbf{Resolution rate}: \color{accent}\bfseries {{ safety.resolution_rate }}\%
+    \end{itemize}
+\end{tcolorbox}
+
+\section{Methodology \& data scope}
+\begin{itemize}
+    \item \textbf{Visitors}: distinct user identifiers with analytics activity tied to this event.
+    \item \textbf{Engagement score}: composite of stand visits, downloads, chat volume, and meetings (normalized 0--100).
+    \item \textbf{Revenue}: sums from successful ticket payments and enterprise stand fees recorded as paid in IVEP.
+    \item \textbf{Export}: generated automatically; validate critical figures against finance operations if required for auditing.
+\end{itemize}
+
+\vspace{1.5cm}
+\begin{center}
+    \small \color{gray} --- End of report ---
+\end{center}
+
+\end{document}

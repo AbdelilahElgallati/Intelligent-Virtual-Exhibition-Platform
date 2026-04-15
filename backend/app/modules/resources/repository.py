@@ -1,6 +1,6 @@
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ...db.mongo import get_database
 from .schemas import ResourceCreate, ResourceSchema
 
@@ -15,7 +15,7 @@ class ResourceRepository:
 
     async def create_resource(self, resource_data: ResourceCreate) -> dict:
         doc = resource_data.model_dump()
-        doc["upload_date"] = datetime.utcnow()
+        doc["upload_date"] = datetime.now(timezone.utc)
         doc["downloads"] = 0
         result = await self.collection.insert_one(doc)
         doc["_id"] = str(result.inserted_id)

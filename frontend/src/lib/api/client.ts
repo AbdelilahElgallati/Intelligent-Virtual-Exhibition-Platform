@@ -53,8 +53,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const buildHeaders = (token?: string | null): Headers => {
         const headers = new Headers(options.headers);
         const isFormData = options.body instanceof FormData;
-        if (!isFormData && !headers.has('Content-Type')) {
+        const methodUpper = (options.method || 'GET').toUpperCase();
+        const shouldSendJsonContentType = !isFormData && methodUpper !== 'GET' && methodUpper !== 'HEAD';
+        if (shouldSendJsonContentType && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
+        } else if (isFormData && headers.has('Content-Type')) {
+            headers.delete('Content-Type');
         }
         const t = token ?? getStoredTokens()?.access_token;
         if (t) headers.set('Authorization', `Bearer ${t}`);
@@ -110,12 +114,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const apiClient = {
     get: <T>(endpoint: string, options?: RequestInit) =>
         request<T>(endpoint, { ...options, method: 'GET' }),
-    post: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-        request<T>(endpoint, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
-    put: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-        request<T>(endpoint, { ...options, method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
-    patch: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-        request<T>(endpoint, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+    post: <T>(endpoint: string, body?: unknown, options?: RequestInit) => {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        return request<T>(endpoint, { ...options, method: 'POST', body: isFormData ? body as BodyInit : (body ? JSON.stringify(body) : undefined) });
+    },
+    put: <T>(endpoint: string, body?: unknown, options?: RequestInit) => {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        return request<T>(endpoint, { ...options, method: 'PUT', body: isFormData ? body as BodyInit : (body ? JSON.stringify(body) : undefined) });
+    },
+    patch: <T>(endpoint: string, body?: unknown, options?: RequestInit) => {
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        return request<T>(endpoint, { ...options, method: 'PATCH', body: isFormData ? body as BodyInit : (body ? JSON.stringify(body) : undefined) });
+    },
     delete: <T>(endpoint: string, options?: RequestInit) =>
         request<T>(endpoint, { ...options, method: 'DELETE' }),
 };

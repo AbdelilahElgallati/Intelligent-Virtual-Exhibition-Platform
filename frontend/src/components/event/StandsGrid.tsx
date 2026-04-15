@@ -2,13 +2,18 @@
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Stand, StandsListResponse } from '@/types/stand';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StandFilterModal, FilterValues } from '@/components/event/StandFilterModal';
-import { Search, SlidersHorizontal, X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark } from 'lucide-react';
+import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark, Heart } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
+import { favoritesService } from '@/services/favorites.service';
+import { useAuth } from '@/hooks/useAuth';
+
+const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
 /* Lazy-load the 3D hall to keep initial bundle light */
 const HallScene = lazy(() => import('@/components/hall3d/HallScene').then(m => ({ default: m.HallScene })));
@@ -45,6 +50,8 @@ interface StandsGridProps {
     showPagination?: boolean;
     /** Event title displayed inside the 3D hall */
     eventTitle?: string;
+    /** Event banner image URL for wall display in 3D hall */
+    eventBannerUrl?: string;
 }
 
 export function StandsGrid({
@@ -53,15 +60,22 @@ export function StandsGrid({
     initialFilters,
     pageSize = DEFAULT_PAGE_SIZE,
     showPagination = true,
-    eventTitle
+    eventTitle,
+    eventBannerUrl
 }: StandsGridProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { isAuthenticated } = useAuth();
     const [stands, setStands] = useState<Stand[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [standFavoriteMap, setStandFavoriteMap] = useState<Map<string, string>>(new Map());
+    const [favoriteAnimatingStandId, setFavoriteAnimatingStandId] = useState<string | null>(null);
 
     /* ── view mode: 'grid' or 'hall' ── */
-    const [viewMode, setViewMode] = useState<'grid' | 'hall'>('hall');
+    const [viewMode, setViewMode] = useState<'grid' | 'hall'>(
+        searchParams.get('view') === 'grid' ? 'grid' : 'hall'
+    );
 
     /* ── filter state ── */
     const [category, setCategory] = useState<string>(initialFilters?.category || '');
@@ -113,6 +127,33 @@ export function StandsGrid({
         return () => clearTimeout(timer);
     }, [category, search, currentPage, fetchStands]);
 
+    useEffect(() => {
+        const fetchStandFavorites = async () => {
+            if (!isAuthenticated) {
+                setStandFavoriteMap(new Map());
+                return;
+            }
+            try {
+                const favorites = await favoritesService.list();
+                const nextMap = new Map<string, string>();
+                favorites
+                    .filter((fav) => fav.target_type === 'stand' && typeof fav.target_id === 'string')
+                    .forEach((fav) => {
+                        const favoriteDocId = resolveFavoriteDocId(fav);
+                        if (favoriteDocId) {
+                            nextMap.set(String(fav.target_id), favoriteDocId);
+                        }
+                    });
+                setStandFavoriteMap(nextMap);
+            } catch {
+                // keep stand list functional even if favorites fail
+                setStandFavoriteMap(new Map());
+            }
+        };
+
+        fetchStandFavorites();
+    }, [isAuthenticated]);
+
     /* Reset to page 1 if filters change */
     useEffect(() => {
         setCurrentPage(1);
@@ -122,6 +163,49 @@ export function StandsGrid({
         setCategory('');
         setSearch('');
         setCurrentPage(1);
+    };
+
+    const toggleStandFavorite = async (
+        event: React.MouseEvent<HTMLButtonElement>,
+        standId: string
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!isAuthenticated) {
+            localStorage.setItem('redirectAfterLogin', `/events/${eventId}/live?tab=stands&view=grid`);
+            window.location.href = '/auth/login';
+            return;
+        }
+
+        try {
+            setFavoriteAnimatingStandId(standId);
+            const existingFavoriteId = standFavoriteMap.get(standId);
+            if (existingFavoriteId) {
+                await favoritesService.remove(existingFavoriteId);
+                setStandFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    next.delete(standId);
+                    return next;
+                });
+            } else {
+                const created = await favoritesService.add('stand', standId);
+                const favoriteDocId = resolveFavoriteDocId(created);
+                setStandFavoriteMap((prev) => {
+                    const next = new Map(prev);
+                    if (favoriteDocId) {
+                        next.set(standId, favoriteDocId);
+                    }
+                    return next;
+                });
+            }
+        } catch (err) {
+            console.error('Failed to toggle stand favorite', err);
+        } finally {
+            window.setTimeout(() => {
+                setFavoriteAnimatingStandId((current) => (current === standId ? null : current));
+            }, 250);
+        }
     };
 
     /* ── Pagination handlers ── */
@@ -144,58 +228,36 @@ export function StandsGrid({
         <div className="space-y-6">
             {/* ── Persistent Filter Bar ── */}
             {showFilters && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                        {/* Search input */}
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search stands by name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            />
-                            {search && (
-                                <button
-                                    onClick={() => setSearch('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Category dropdown */}
-                        <div className="relative min-w-[180px]">
-                            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="w-full appearance-none pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition cursor-pointer"
-                            >
-                                <option value="">All Categories</option>
-                                {STAND_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Reset button */}
-                        {hasActiveFilters && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    {/* Category chips */}
+                    <div className="flex gap-2 items-center overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+                        <span className="text-xs font-medium text-gray-500 mr-1 shrink-0">Category:</span>
+                        <button
+                            onClick={() => setCategory('')}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition shrink-0 ${category === ''
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                                }`}
+                        >
+                            All
+                        </button>
+                        {STAND_CATEGORIES.map((cat) => (
                             <button
-                                onClick={resetFilters}
-                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition whitespace-nowrap"
+                                key={cat}
+                                onClick={() => setCategory(category === cat ? '' : cat)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition shrink-0 ${category === cat
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
+                                    }`}
                             >
-                                <X className="h-3.5 w-3.5" />
-                                Reset
+                                {cat}
                             </button>
-                        )}
+                        ))}
                     </div>
 
-                    {/* Active filter pills */}
+                    {/* Active filter summary + reset */}
                     {hasActiveFilters && (
-                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
                             <span className="text-xs text-gray-500 font-medium">Active:</span>
                             {category && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
@@ -207,12 +269,19 @@ export function StandsGrid({
                             )}
                             {search && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                    &quot;{search}&quot;
+                                    {search}
                                     <button onClick={() => setSearch('')} className="hover:text-amber-900">
                                         <X className="h-3 w-3" />
                                     </button>
                                 </span>
                             )}
+                            <button
+                                onClick={resetFilters}
+                                className="sm:ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
+                            >
+                                <X className="h-3 w-3" />
+                                Reset
+                            </button>
                         </div>
                     )}
                 </div>
@@ -220,35 +289,33 @@ export function StandsGrid({
 
             {/* ── Results count + View Toggle ── */}
             {!loading && stands.length > 0 && (
-                <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <p className="text-xs sm:text-sm text-gray-500">
                         Showing {stands.length} of {total} stand{total !== 1 ? 's' : ''}
                         {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
                     </p>
                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                         <button
                             onClick={() => setViewMode('hall')}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                                viewMode === 'hall'
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition ${viewMode === 'hall'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                                }`}
                             title="3D Exhibition Hall"
                         >
                             <Landmark className="h-3.5 w-3.5" />
-                            Hall View
+                            <span className="xs:inline">3D Hall View</span>
                         </button>
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                                viewMode === 'grid'
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition ${viewMode === 'grid'
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                                }`}
                             title="Grid View"
                         >
                             <LayoutGrid className="h-3.5 w-3.5" />
-                            Grid View
+                            <span className="xs:inline">Grid View</span>
                         </button>
                     </div>
                 </div>
@@ -276,7 +343,7 @@ export function StandsGrid({
                 ) : viewMode === 'hall' ? (
                     /* ── 3D Isometric Hall View ── */
                     <Suspense fallback={
-                        <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center" style={{ height: '85vh', minHeight: 600 }}>
+                        <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center h-[45vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]" style={{ minHeight: 320 }}>
                             <div className="text-center">
                                 <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                                 <p className="text-gray-400 text-sm">Loading Exhibition Hall...</p>
@@ -285,8 +352,16 @@ export function StandsGrid({
                     }>
                         <HallScene
                             stands={stands}
-                            onStandClick={(standId) => router.push(`/events/${eventId}/stands/${standId}`)}
+                            onStandClick={(standId) => {
+                                // Prefer slug for clicked stand if available
+                                const clickedStand = stands.find(s => ((s as any).id || (s as any)._id) === standId);
+                                const standRef = (clickedStand as any)?.slug || standId;
+                                const eventRef = (clickedStand as any)?.event_slug || eventId;
+                                router.push(`/events/${eventRef}/stands/${standRef}`);
+                            }}
                             eventTitle={eventTitle}
+                            eventBannerUrl={eventBannerUrl}
+                            onViewAllStands={() => router.push(`/events/${eventId}/live?tab=stands&view=grid`)}
                         />
                     </Suspense>
                 ) : (
@@ -294,20 +369,43 @@ export function StandsGrid({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {stands.map((stand) => {
                             const standId = (stand as any).id || (stand as any)._id;
+                            const standIdStr = String(standId || '');
+                            // Use slugs when available; fall back to raw IDs for pre-existing data
+                            const standRef  = (stand as any).slug  || standIdStr;
+                            const eventRef  = (stand as any).event_slug || stand.event_id;
+                            const favoriteId = standIdStr ? (standFavoriteMap.get(standIdStr) ?? null) : null;
                             const bgImage = stand.stand_background_url || stand.logo_url;
+                            const resolvedBgImage = resolveMediaUrl(bgImage);
+                            const resolvedLogo = resolveMediaUrl(stand.logo_url);
                             const themeColor = stand.theme_color || '#6366f1';
 
                             return (
                                 <Link
                                     key={standId}
-                                    href={`/events/${stand.event_id}/stands/${standId}`}
+                                    href={`/events/${eventRef}/stands/${standRef}`}
                                     className="group relative rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                     style={{ aspectRatio: '4 / 3' }}
                                 >
+                                    {standIdStr && (
+                                        <button
+                                            type="button"
+                                            onClick={(event) => toggleStandFavorite(event, standIdStr)}
+                                            className={`absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-sm transition-all ${
+                                                favoriteId
+                                                    ? 'border-amber-300 bg-amber-50/90 text-amber-700'
+                                                    : 'border-white/70 bg-white/85 text-zinc-700 hover:border-amber-300 hover:text-amber-700'
+                                            }`}
+                                            aria-label={favoriteId ? 'Remove stand from favorites' : 'Add stand to favorites'}
+                                        >
+                                            <Heart className={`h-3.5 w-3.5 transition-transform ${favoriteAnimatingStandId === standIdStr ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
+                                            {favoriteId ? 'Favorited' : 'Favorite'}
+                                        </button>
+                                    )}
+
                                     {/* Background image or gradient fallback */}
-                                    {bgImage ? (
+                                    {resolvedBgImage ? (
                                         <img
-                                            src={bgImage}
+                                            src={resolvedBgImage}
                                             alt={stand.name}
                                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
@@ -340,11 +438,11 @@ export function StandsGrid({
                                     </div>
 
                                     {/* Top-left logo pill */}
-                                    {stand.logo_url && stand.stand_background_url && (
-                                        <div className="absolute top-3 left-3 z-10">
+                                    {resolvedLogo && stand.stand_background_url && (
+                                        <div className="absolute top-14 left-3 z-10">
                                             <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow overflow-hidden flex items-center justify-center">
                                                 <img
-                                                    src={stand.logo_url}
+                                                    src={resolvedLogo}
                                                     alt=""
                                                     className="w-full h-full object-cover"
                                                 />
@@ -389,11 +487,11 @@ export function StandsGrid({
 
                 {/* ── Pagination Controls ── */}
                 {showPagination && totalPages > 1 && !loading && (
-                    <div className="flex items-center justify-center gap-4 pt-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-6">
                         <button
                             onClick={handlePrevPage}
                             disabled={currentPage <= 1}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition w-full sm:w-auto justify-center"
                         >
                             <ChevronLeft className="h-4 w-4" />
                             Previous
@@ -415,9 +513,9 @@ export function StandsGrid({
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-9 h-9 rounded-lg text-sm font-medium transition ${currentPage === pageNum
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs sm:text-sm font-medium transition ${currentPage === pageNum
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
                                         {pageNum}
@@ -429,7 +527,7 @@ export function StandsGrid({
                         <button
                             onClick={handleNextPage}
                             disabled={currentPage >= totalPages}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition w-full sm:w-auto justify-center"
                         >
                             Next
                             <ChevronRight className="h-4 w-4" />

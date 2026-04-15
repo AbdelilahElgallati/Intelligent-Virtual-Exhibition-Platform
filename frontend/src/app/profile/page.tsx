@@ -9,6 +9,7 @@ import { Container } from '@/components/common/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import ChangePassword from '@/components/common/ChangePassword';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -17,6 +18,20 @@ const EVENT_TYPE_OPTIONS = ['Webinar', 'Exhibition', 'Networking', 'Workshop'];
 const LANGUAGE_OPTIONS = ['English', 'French', 'Arabic', 'Spanish', 'German', 'Chinese', 'Japanese'];
 const NETWORKING_OPTIONS = ['Partnerships', 'Investors', 'Clients', 'Knowledge', 'Jobs'];
 const EXPERIENCE_LEVELS = ['Junior', 'Mid', 'Senior', 'Executive'];
+const FALLBACK_TIMEZONES = [
+    'UTC',
+    'Africa/Casablanca',
+    'Europe/Paris',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+];
+const TIMEZONE_OPTIONS =
+    typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+        ? (Intl.supportedValuesOf('timeZone') as string[])
+        : FALLBACK_TIMEZONES;
 
 // ── Helper: Multi-select chip component ─────────────────────────────
 
@@ -158,7 +173,7 @@ function ProfileSection({
 // ── Main Profile Page ────────────────────────────────────────────────
 
 export default function ProfilePage() {
-    const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { user: authUser, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
     const [profile, setProfile] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -169,6 +184,7 @@ export default function ProfilePage() {
     const [fullName, setFullName] = useState('');
     const [bio, setBio] = useState('');
     const [language, setLanguage] = useState('');
+    const [timezone, setTimezone] = useState('UTC');
     const [jobTitle, setJobTitle] = useState('');
     const [industry, setIndustry] = useState('');
     const [company, setCompany] = useState('');
@@ -185,6 +201,7 @@ export default function ProfilePage() {
         setFullName(user.full_name || '');
         setBio(user.bio || '');
         setLanguage(user.language || '');
+        setTimezone(user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
         setJobTitle(user.professional_info?.job_title || '');
         setIndustry(user.professional_info?.industry || '');
         setCompany(user.professional_info?.company || '');
@@ -224,6 +241,7 @@ export default function ProfilePage() {
             full_name: fullName || undefined,
             bio: bio || undefined,
             language: language || undefined,
+            timezone: timezone || undefined,
             professional_info: {
                 job_title: jobTitle || undefined,
                 industry: industry || undefined,
@@ -248,6 +266,33 @@ export default function ProfilePage() {
             setProfile(updated);
             populateForm(updated);
             setSaveMessage({ type: 'success', text: 'Your profile has been saved successfully!' });
+            // Ensure the user's timezone preference is immediately applied across the app.
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('auth_user', JSON.stringify({ ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}), timezone }));
+                }
+            } catch {
+                // Best-effort only.
+            }
+            await refreshUser?.();
+            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
+            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(
+                        'auth_user',
+                        JSON.stringify({
+                            ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}),
+                            timezone,
+                        })
+                    );
+                }
+            } catch {
+                // Best-effort only.
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('ivep:auth-user-updated'));
+            }
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(() => setSaveMessage(null), 5000);
         } catch (err: any) {
@@ -375,6 +420,19 @@ export default function ProfilePage() {
                                     ))}
                                 </select>
                             </div>
+                            <div className="flex flex-col gap-1.5 w-full">
+                                <label htmlFor="timezone" className="text-sm font-medium text-zinc-700">Timezone</label>
+                                <select
+                                    id="timezone"
+                                    value={timezone}
+                                    onChange={(e) => setTimezone(e.target.value)}
+                                    className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                >
+                                    {TIMEZONE_OPTIONS.map((tz) => (
+                                        <option key={tz} value={tz}>{tz}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="sm:col-span-2">
                                 <div className="flex flex-col gap-1.5 w-full">
                                     <label htmlFor="bio" className="text-sm font-medium text-zinc-700">Short Bio</label>
@@ -456,10 +514,13 @@ export default function ProfilePage() {
                     </ProfileSection>
 
                     {/* ── Save button ─────────────────────────────────────── */}
-                    <div className="flex justify-end pt-2">
-                        <Button size="lg" onClick={handleSave} isLoading={saving} className="px-10">
-                            {saving ? 'Saving…' : 'Save Profile'}
-                        </Button>
+                    <div className="space-y-6">
+                        <ChangePassword />
+                        <div className="flex justify-end pt-2">
+                            <Button size="lg" onClick={handleSave} isLoading={saving} className="px-10">
+                                {saving ? 'Saving…' : 'Save Profile'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Container>

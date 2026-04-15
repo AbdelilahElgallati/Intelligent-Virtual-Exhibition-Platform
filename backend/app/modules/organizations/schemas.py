@@ -35,6 +35,7 @@ class OrganizationCreate(BaseModel):
     """Schema for creating a new organization."""
     
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = None
     
     model_config = {"from_attributes": True}
@@ -45,6 +46,7 @@ class OrganizationRead(BaseModel):
     
     id: str = Field(alias="_id")
     name: str
+    slug: str
     description: Optional[str] = None
     owner_id: str
     created_at: datetime
@@ -53,6 +55,11 @@ class OrganizationRead(BaseModel):
     is_verified: bool = False
     is_flagged: bool = False
     is_suspended: bool = False
+    # Additional details
+    industry: Optional[str] = "General"
+    website: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
     
     model_config = {"from_attributes": True, "populate_by_name": True}
 
@@ -61,6 +68,7 @@ class OrganizationUpdate(BaseModel):
     """Schema for updating organization data."""
     
     name: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     
     model_config = {"from_attributes": True}

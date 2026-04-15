@@ -1,8 +1,12 @@
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ...db.mongo import get_database
 from .schemas import MeetingCreate, MeetingUpdate, MeetingSchema
+from ..auth.enums import Role
+from ..leads.service import lead_service
+from ..leads.schemas import LeadInteraction
+
 
 class MeetingRepository:
     @property
@@ -16,25 +20,172 @@ class MeetingRepository:
     async def create_meeting(self, meeting_data: MeetingCreate) -> dict:
         doc = meeting_data.model_dump()
         doc["status"] = "pending"
-        doc["created_at"] = datetime.utcnow()
-        doc["updated_at"] = datetime.utcnow()
+        doc["session_status"] = "scheduled"
+        doc["created_at"] = datetime.now(timezone.utc)
+        doc["updated_at"] = datetime.now(timezone.utc)
         result = await self.collection.insert_one(doc)
         doc["_id"] = str(result.inserted_id)
+
+        # Auto-assign livekit_room_name based on new _id
+        room_name = f"meeting-{doc['_id']}"
+        await self.collection.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"livekit_room_name": room_name}}
+        )
+        doc["livekit_room_name"] = room_name
+
+        # Log lead interaction
+        try:
+            await lead_service.log_interaction(LeadInteraction(
+                visitor_id=doc["visitor_id"],
+                stand_id=doc["stand_id"],
+                interaction_type="meeting",
+                metadata={"purpose": doc.get("purpose")}
+            ))
+        except Exception:
+            pass
+
         return doc
 
+    async def get_meeting_by_id(self, meeting_id: str) -> Optional[dict]:
+        """Fetch a single meeting by _id."""
+        if not ObjectId.is_valid(meeting_id):
+            return None
+        doc = await self.collection.find_one({"_id": ObjectId(meeting_id)})
+        if doc:
+            doc["_id"] = str(doc["_id"])
+        return doc
+
+    async def start_session(self, meeting_id: str) -> Optional[dict]:
+        """Mark meeting as live."""
+        result = await self.collection.find_one_and_update(
+            {"_id": ObjectId(meeting_id)},
+            {"$set": {"session_status": "live", "updated_at": datetime.now(timezone.utc)}},
+            return_document=True
+        )
+        if result:
+            result["_id"] = str(result["_id"])
+        return result
+
+    async def end_session(self, meeting_id: str) -> Optional[dict]:
+        """Mark meeting as ended."""
+        result = await self.collection.find_one_and_update(
+            {"_id": ObjectId(meeting_id)},
+            {"$set": {"session_status": "ended", "status": "completed", "updated_at": datetime.now(timezone.utc)}},
+            return_document=True
+        )
+        if result:
+            result["_id"] = str(result["_id"])
+        return result
+
+    async def auto_expire_past_meetings(self):
+        """Auto-cancel pending meetings whose time window has passed."""
+        now = datetime.now(timezone.utc)
+        await self.collection.update_many(
+            {
+                "status": "pending",
+                "end_time": {"$lt": now},
+            },
+            {"$set": {"status": "canceled", "updated_at": now}}
+        )
+
     async def get_visitor_meetings(self, visitor_id: str) -> List[dict]:
-        cursor = self.collection.find({"visitor_id": visitor_id})
+        await self.auto_expire_past_meetings()
+        # Query by both string and ObjectId variants to handle legacy stored data
+        visitor_variants: list = [visitor_id]
+        if ObjectId.is_valid(visitor_id):
+            visitor_variants.append(ObjectId(visitor_id))
+        cursor = self.collection.find({"visitor_id": {"$in": visitor_variants}})
         meetings = await cursor.to_list(length=100)
-        for m in meetings:
-            m["_id"] = str(m["_id"])
-        return meetings
+
+        # Also fetch meetings where the user's org owns the stand (recipient)
+        user = await self.db.users.find_one({"_id": ObjectId(visitor_id) if ObjectId.is_valid(visitor_id) else visitor_id})
+        org_stand_meetings = []
+        my_stand_ids = set()
+        if user and user.get("role") == "enterprise":
+            member = await self.db.organization_members.find_one({"user_id": str(visitor_id)})
+            if member:
+                org_id = member["organization_id"]
+                stands = await self.db.stands.find({"organization_id": org_id}).to_list(length=100)
+                my_stand_ids = {str(s["_id"]) for s in stands}
+                if my_stand_ids:
+                    cursor2 = self.collection.find({"stand_id": {"$in": list(my_stand_ids)}})
+                    org_stand_meetings = await cursor2.to_list(length=100)
+
+        all_meetings = meetings + org_stand_meetings
+        # De-duplicate by _id
+        seen = set()
+        enriched = []
+        for m in all_meetings:
+            mid = str(m["_id"])
+            if mid in seen:
+                continue
+            seen.add(mid)
+            m["_id"] = mid
+            
+            # Determine direction relative to this visitor_id
+            stand_id = str(m.get("stand_id", ""))
+            if stand_id in my_stand_ids:
+                m["type"] = "inbound"
+            else:
+                m["type"] = "outbound"
+
+            if stand_id:
+                stand = await self.db.stands.find_one({"_id": ObjectId(stand_id) if ObjectId.is_valid(stand_id) else stand_id})
+                if stand:
+                    org = await self.db.organizations.find_one({"_id": ObjectId(stand["organization_id"]) if ObjectId.is_valid(stand["organization_id"]) else stand["organization_id"]})
+                    if org:
+                        m["receiver_org_name"] = org.get("name")
+                        m["receiver_enterprise_id"] = str(org.get("_id"))
+            
+            # Also find requester org info for B2B meetings
+            visitor_user_id = m.get("visitor_id")
+            if visitor_user_id:
+                user_doc = await self.db.users.find_one({"_id": ObjectId(visitor_user_id) if ObjectId.is_valid(visitor_user_id) else visitor_user_id})
+                if user_doc and user_doc.get("role") == "enterprise":
+                    member_doc = await self.db.organization_members.find_one({"user_id": str(visitor_user_id)})
+                    if member_doc:
+                        req_org = await self.db.organizations.find_one({"_id": ObjectId(member_doc["organization_id"]) if ObjectId.is_valid(member_doc["organization_id"]) else member_doc["organization_id"]})
+                        if req_org:
+                            m["requester_org_name"] = req_org.get("name")
+                            m["sender_enterprise_id"] = str(req_org.get("_id"))
+
+            enriched.append(m)
+        return enriched
 
     async def get_stand_meetings(self, stand_id: str) -> List[dict]:
-        cursor = self.collection.find({"stand_id": stand_id})
+        await self.auto_expire_past_meetings()
+        
+        # Resolve slug to _id if needed
+        from ..stands.service import get_stand_by_id
+        stand = await get_stand_by_id(stand_id)
+        internal_id = str(stand["_id"]) if stand else stand_id
+
+        cursor = self.collection.find({"stand_id": str(internal_id)})
         meetings = await cursor.to_list(length=100)
+
+        enriched = []
         for m in meetings:
             m["_id"] = str(m["_id"])
-        return meetings
+            m["type"] = "inbound" # Meetings at this stand are always inbound for the stand owner
+
+            user_id = m.get("visitor_id")
+            if user_id:
+                user = await self.db.users.find_one({"_id": ObjectId(user_id) if ObjectId.is_valid(user_id) else user_id})
+                if user:
+                    m["requester_name"] = user.get("full_name") or user.get("email")
+                    m["requester_role"] = user.get("role")
+
+                    if str(m.get("requester_role")).lower() == Role.ENTERPRISE.value:
+                        member = await self.db.organization_members.find_one({"user_id": str(user_id)})
+                        if member:
+                            org = await self.db.organizations.find_one({"_id": ObjectId(member["organization_id"]) if ObjectId.is_valid(member["organization_id"]) else member["organization_id"]})
+                            if org:
+                                m["requester_org_name"] = org.get("name")
+                                m["sender_enterprise_id"] = str(org.get("_id"))
+
+            enriched.append(m)
+        return enriched
 
     async def update_meeting_status(self, meeting_id: str, update: MeetingUpdate) -> Optional[dict]:
         result = await self.collection.find_one_and_update(
@@ -42,12 +193,130 @@ class MeetingRepository:
             {"$set": {
                 "status": update.status,
                 "notes": update.notes,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }},
             return_document=True
         )
         if result:
             result["_id"] = str(result["_id"])
         return result
+
+
+    async def get_busy_slots(
+        self,
+        event_id: str,
+        user_id: str,
+        stand_id: str | None = None,
+        statuses: list[str] | None = None,
+        stand_statuses: list[str] | None = None,
+    ) -> list[dict]:
+        """
+        Return busy time slots for a user and optionally their stand.
+
+        - `statuses` controls which meeting statuses count for the user's OWN
+          outgoing requests (as requester).  Defaults to [pending, approved].
+        - `stand_statuses` controls which statuses count for inbound meetings ON
+          the user's stand.  Defaults to `statuses` when not provided, but
+          callers should pass ["approved"] here so that a visitor's un-accepted
+          pending request does not block the stand owner's outgoing schedule.
+        """
+        allowed_statuses = statuses or ["pending", "approved"]
+        allowed_stand_statuses = stand_statuses if stand_statuses is not None else allowed_statuses
+
+        # Resolve slugs to internal IDs if needed
+        from ..events.service import resolve_event_id
+        from ..stands.service import get_stand_by_id
+        event_id = await resolve_event_id(event_id)
+        if stand_id:
+            s_doc = await get_stand_by_id(stand_id)
+            if s_doc:
+                stand_id = str(s_doc["_id"])
+
+        seen_ids: set = set()
+        slots: list[dict] = []
+
+        # ── Requester side: meetings where this user is the visitor ──────────
+        req_cursor = self.collection.find({
+            "visitor_id": user_id,
+            "event_id": event_id,
+            "status": {"$in": allowed_statuses},
+        })
+        for m in await req_cursor.to_list(length=500):
+            mid = str(m["_id"])
+            if mid not in seen_ids:
+                seen_ids.add(mid)
+                slots.append({
+                    "start_time": m["start_time"],
+                    "end_time": m["end_time"],
+                    "type": "meeting",
+                    "label": m.get("purpose") or "Meeting",
+                })
+
+        # ── Stand side: inbound meetings on this user's own stand ────────────
+        # Uses `stand_statuses` so callers can limit to approved-only, preventing
+        # another visitor's pending request from polluting the stand owner's
+        # outgoing availability calendar.
+        if stand_id:
+            stand_cursor = self.collection.find({
+                "stand_id": stand_id,
+                "event_id": event_id,
+                "status": {"$in": allowed_stand_statuses},
+            })
+            for m in await stand_cursor.to_list(length=500):
+                mid = str(m["_id"])
+                if mid not in seen_ids:
+                    seen_ids.add(mid)
+                    slots.append({
+                        "start_time": m["start_time"],
+                        "end_time": m["end_time"],
+                        "type": "meeting",
+                        "label": m.get("purpose") or "Meeting",
+                    })
+
+        return slots
+
+    async def check_conflict(self, event_id: str, user_id: str, stand_id: str,
+                             start_time: datetime, end_time: datetime) -> str | None:
+        """
+        Check if either participant has an overlapping meeting.
+        Returns a conflict description string, or None if free.
+        """
+        # Resolve slugs
+        from ..events.service import resolve_event_id
+        from ..stands.service import get_stand_by_id
+        event_id = await resolve_event_id(event_id)
+        s_doc = await get_stand_by_id(stand_id)
+        if s_doc:
+            stand_id = str(s_doc["_id"])
+
+        # Check requester's meetings
+        requester_conflict = await self.collection.find_one({
+            "event_id": event_id,
+            "visitor_id": user_id,
+            "status": {"$in": ["pending", "approved"]},
+            "start_time": {"$lt": end_time},
+            "end_time": {"$gt": start_time},
+        })
+        if requester_conflict:
+            return "You already have a meeting at this time"
+
+        # Check target stand's meetings.
+        # Only APPROVED meetings definitively block a stand slot.
+        # Pending requests are not yet accepted; blocking everyone else because
+        # of one pending request (which may be rejected) creates a poor UX where
+        # a single visitor can accidentally lock an entire time window for all
+        # other visitors before the enterprise has decided anything.
+        stand_conflict = await self.collection.find_one({
+            "event_id": event_id,
+            "stand_id": stand_id,
+            "status": {"$in": ["approved"]},
+            "start_time": {"$lt": end_time},
+            "end_time": {"$gt": start_time},
+        })
+        if stand_conflict:
+            return "The partner already has a meeting at this time"
+
+        return None
+
 
 meeting_repo = MeetingRepository()

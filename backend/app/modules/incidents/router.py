@@ -20,6 +20,7 @@ from app.modules.audit.service import log_audit
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
 
+@router.post("", response_model=IncidentRead, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 @router.post("/", response_model=IncidentRead, status_code=status.HTTP_201_CREATED)
 async def new_incident(
     data: IncidentCreate,
@@ -41,6 +42,7 @@ async def new_incident(
     return IncidentRead(**incident)
 
 
+@router.get("", response_model=List[IncidentRead], include_in_schema=False)
 @router.get("/", response_model=List[IncidentRead])
 async def get_incidents(
     status: Optional[str] = Query(None),

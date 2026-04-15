@@ -19,15 +19,16 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { Session, SessionStatus, CreateSessionPayload } from '@/types/sessions';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmtTime(iso: string) {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatInUserTZ(iso, { hour: '2-digit', minute: '2-digit' });
 }
 
 function fmtDate(iso: string) {
-    return new Date(iso).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return formatInUserTZ(iso, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function fmtDateKey(iso: string) {
@@ -261,10 +262,10 @@ function SessionCard({
 }) {
     return (
         <div className={`rounded-xl border p-4 transition-all ${session.status === 'live'
-                ? 'border-emerald-200 bg-emerald-50/50 shadow-sm'
-                : session.status === 'ended'
-                    ? 'border-blue-100 bg-blue-50/30'
-                    : 'border-zinc-200 bg-white'
+            ? 'border-emerald-200 bg-emerald-50/50 shadow-sm'
+            : session.status === 'ended'
+                ? 'border-blue-100 bg-blue-50/30'
+                : 'border-zinc-200 bg-white'
             }`}>
             <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="space-y-1 min-w-0">
@@ -328,10 +329,12 @@ function SessionCard({
 
 function CreateSessionForm({
     eventId,
+    event,
     onCreated,
     onSynced,
 }: {
     eventId: string;
+    event?: any;
     onCreated: (s: Session) => void;
     onSynced: (sessions: Session[]) => void;
 }) {
@@ -464,6 +467,8 @@ function CreateSessionForm({
                             <input
                                 required
                                 type="datetime-local"
+                                min={event ? new Date(event.start_date).toISOString().slice(0, 16) : undefined}
+                                max={event ? new Date(event.end_date).toISOString().slice(0, 16) : undefined}
                                 value={form.start_time}
                                 onChange={(e) => handleChange('start_time', e.target.value)}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
@@ -474,6 +479,8 @@ function CreateSessionForm({
                             <input
                                 required
                                 type="datetime-local"
+                                min={event ? new Date(event.start_date).toISOString().slice(0, 16) : undefined}
+                                max={event ? new Date(event.end_date).toISOString().slice(0, 16) : undefined}
                                 value={form.end_time}
                                 onChange={(e) => handleChange('end_time', e.target.value)}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
@@ -520,6 +527,7 @@ export default function AdminSessionsPage() {
     const router = useRouter();
 
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [event, setEvent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [mutatingId, setMutatingId] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -535,6 +543,7 @@ export default function AdminSessionsPage() {
         try {
             const data = await adminService.getSessions(eventId);
             setSessions(data);
+            adminService.getEventById(eventId).then(setEvent).catch(() => { });
         } catch {
             // silent — first load error handled below
         } finally {
@@ -641,7 +650,7 @@ export default function AdminSessionsPage() {
             </div>
 
             {/* Session management panel */}
-            <CreateSessionForm eventId={eventId} onCreated={handleCreated} onSynced={handleSynced} />
+            <CreateSessionForm eventId={eventId} event={event} onCreated={handleCreated} onSynced={handleSynced} />
 
             {/* Loading */}
             {loading && (

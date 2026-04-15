@@ -1,10 +1,23 @@
+from fastapi import Depends
+# Optional get_current_user for routes that allow unauthenticated access
+from typing import Optional
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+async def optional_get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+) -> Optional[dict]:
+    if not credentials:
+        return None
+    try:
+        return await verify_jwt_token(credentials.credentials)
+    except Exception:
+        return None
 """
 Dependency injection module for IVEP backend.
 Provides authentication and authorization dependencies for FastAPI routes.
 """
 
-from typing import Callable
-
+from typing import Callable, Optional
 from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -22,6 +35,19 @@ from app.db.mongo import get_database
 
 # Security scheme
 security = HTTPBearer()
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
+) -> Optional[dict]:
+    """Bearer token optional; returns None when missing or invalid (no redirect)."""
+    if credentials is None:
+        return None
+    try:
+        return await verify_jwt_token(credentials.credentials)
+    except HTTPException:
+        return None
 
 
 # Get current authenticated user
@@ -51,16 +77,6 @@ async def verify_jwt_token(token: str) -> dict:
     """
     Verify JWT token and return user.
     """
-    # Allow test token (useful for development)
-    if token == "test-token":
-        return {
-            "_id": "visitor-456",
-            "id": "visitor-456",
-            "full_name": "Test User",
-            "role": Role.VISITOR,
-            "is_active": True,
-        }
-
     # First try advanced token verification (new architecture)
     payload = verify_token_type(token, "access")
 
@@ -92,22 +108,11 @@ async def verify_jwt_token(token: str) -> dict:
     user = await get_user_by_id(user_id)
 
     if user is None:
-        # Synthetic fallback from token payload (development convenience)
-        try:
-            role_val = payload.get("role")
-            role_enum = Role(role_val) if role_val in [r.value for r in Role] else Role.VISITOR
-            user = {
-                "_id": user_id,
-                "full_name": "Authenticated User",
-                "role": role_enum,
-                "is_active": True,
-            }
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found for token subject. Please sign in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Normalize role if coming from Mongo
     if isinstance(user.get("role"), str):

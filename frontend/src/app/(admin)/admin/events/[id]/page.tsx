@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { OrganizerEvent } from '@/types/event';
+import { resolveMediaUrl } from '@/lib/media';
+import { formatInUserTZ } from '@/lib/timezone';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -101,9 +104,43 @@ const STATE_CONFIG: Record<
 
 // ── State Badge ──────────────────────────────────────────────────────────────
 
-function StateBadge({ state }: { state: string }) {
-    const cfg = STATE_CONFIG[state] ?? {
-        label: state,
+function StateBadge({ event }: { event: OrganizerEvent }) {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state === 'live') {
+        const live = getLiveWorkflowLabel(event);
+        if (live) {
+            if (live.kind === 'closed') {
+                const cfg = STATE_CONFIG.closed;
+                return (
+                    <span
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.bg} ${cfg.text}`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                        {cfg.icon}
+                        {cfg.label}
+                    </span>
+                );
+            }
+            const pulse = live.kind === 'session_live';
+            const liveCfg =
+                live.kind === 'upcoming'
+                    ? { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400', icon: <Clock className="w-3.5 h-3.5" /> }
+                    : live.kind === 'between_slots'
+                        ? { bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-400', icon: <Activity className="w-3.5 h-3.5" /> }
+                        : { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', icon: <Activity className="w-3.5 h-3.5" /> };
+            return (
+                <span
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${liveCfg.bg} ${liveCfg.text}`}
+                >
+                    <span className={`w-2 h-2 rounded-full ${liveCfg.dot} ${pulse ? 'animate-pulse' : ''}`} />
+                    {liveCfg.icon}
+                    {live.label}
+                </span>
+            );
+        }
+    }
+    const cfg = STATE_CONFIG[effective] ?? {
+        label: effective,
         bg: 'bg-zinc-100',
         text: 'text-zinc-600',
         dot: 'bg-zinc-400',
@@ -113,7 +150,7 @@ function StateBadge({ state }: { state: string }) {
         <span
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.bg} ${cfg.text}`}
         >
-            <span className={`w-2 h-2 rounded-full ${cfg.dot} ${state === 'live' ? 'animate-pulse' : ''}`} />
+            <span className={`w-2 h-2 rounded-full ${cfg.dot} ${effective === 'live' ? 'animate-pulse' : ''}`} />
             {cfg.icon}
             {cfg.label}
         </span>
@@ -259,7 +296,7 @@ function EventTimeline({ event }: { event: OrganizerEvent }) {
                                 </span>
                                 {date && (node.key === 'live' || node.key === 'closed') && (
                                     <span className="text-xs text-zinc-400">
-                                        {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        {formatInUserTZ(date, { month: 'short', day: 'numeric' })}
                                     </span>
                                 )}
                             </div>
@@ -480,19 +517,19 @@ export default function AdminEventDetailPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div className="space-y-2 min-w-0">
                             <h1 className="text-2xl font-bold text-zinc-900 leading-tight">{event.title}</h1>
-                            <StateBadge state={state} />
+                            <StateBadge event={event} />
                         </div>
 
                         {/* Action buttons */}
                         <div className="flex gap-2 flex-shrink-0">
-                            {/* Sessions button — always visible */}
+                            {/* Sessions button — always visible 
                             <button
                                 onClick={() => router.push(`/admin/events/${id}/sessions`)}
                                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                             >
                                 <Calendar className="w-4 h-4" />
                                 Sessions
-                            </button>
+                            </button>*/}
                             {/* Organizer Report button */}
                             <button
                                 onClick={() => router.push(`/admin/events/${id}/organizer-report`)}
@@ -573,19 +610,13 @@ export default function AdminEventDetailPage() {
                             <Calendar className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                             <span>
                                 {event.start_date
-                                    ? new Date(event.start_date).toLocaleString(undefined, {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short',
-                                    })
+                                    ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' })
                                     : '—'}
                             </span>
                             <span className="text-zinc-300">→</span>
                             <span>
                                 {event.end_date
-                                    ? new Date(event.end_date).toLocaleString(undefined, {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short',
-                                    })
+                                    ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' })
                                     : '—'}
                             </span>
                         </div>
@@ -617,7 +648,7 @@ export default function AdminEventDetailPage() {
                         {event.payment_amount != null && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-600">
                                 <DollarSign className="w-4 h-4 text-zinc-400" />
-                                Payment: <span className="font-semibold text-zinc-800">${event.payment_amount.toFixed(2)}</span>
+                                Payment: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} MAD</span>
                             </div>
                         )}
                         {event.payment_proof_url && (
@@ -626,7 +657,7 @@ export default function AdminEventDetailPage() {
                                     Payment Proof
                                 </div>
                                 <a
-                                    href={event.payment_proof_url}
+                                    href={resolveMediaUrl(event.payment_proof_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900 font-medium transition-colors"
@@ -646,11 +677,7 @@ export default function AdminEventDetailPage() {
                             <div className="flex items-center gap-2.5 text-sm text-zinc-500">
                                 <Clock className="w-4 h-4 text-zinc-400" />
                                 Created{' '}
-                                {new Date(event.created_at).toLocaleDateString(undefined, {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                })}
+                                {formatInUserTZ(event.created_at, { year: 'numeric', month: 'short', day: 'numeric' })}
                             </div>
                         )}
                         {state === 'payment_done' && (
@@ -658,12 +685,7 @@ export default function AdminEventDetailPage() {
                                 <p className="text-xs text-indigo-700 font-medium">
                                     ⏰ Auto-start is scheduled when{' '}
                                     <span className="font-bold">
-                                        {event.start_date
-                                            ? new Date(event.start_date).toLocaleString(undefined, {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            })
-                                            : 'start date'}
+                                        {event.start_date ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'start date'}
                                     </span>{' '}
                                     is reached.
                                 </p>
@@ -674,12 +696,7 @@ export default function AdminEventDetailPage() {
                                 <p className="text-xs text-emerald-700 font-medium">
                                     🟢 Event is live. Auto-close scheduled when{' '}
                                     <span className="font-bold">
-                                        {event.end_date
-                                            ? new Date(event.end_date).toLocaleString(undefined, {
-                                                dateStyle: 'medium',
-                                                timeStyle: 'short',
-                                            })
-                                            : 'end date'}
+                                        {event.end_date ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'end date'}
                                     </span>{' '}
                                     passes.
                                 </p>

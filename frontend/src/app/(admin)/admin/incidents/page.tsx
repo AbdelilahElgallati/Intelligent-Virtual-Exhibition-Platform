@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { AlertTriangle, RefreshCw, Plus, ChevronRight } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { Incident, IncidentCreate, IncidentUpdate, IncidentSeverity, IncidentStatus } from '@/types/incident';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const SEVERITY_BADGE: Record<string, string> = {
@@ -130,7 +131,7 @@ function IncidentPanel({ incident, onUpdate, onClose }: {
                     <div className="flex gap-2 flex-wrap">
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${SEVERITY_BADGE[incident.severity]}`}>{incident.severity}</span>
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${STATUS_BADGE[incident.status]}`}>{incident.status}</span>
-                        <span className="text-[11px] text-zinc-400">{new Date(incident.created_at).toLocaleString()}</span>
+                        <span className="text-[11px] text-zinc-400">{formatInUserTZ(incident.created_at, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     </div>
                     {incident.description && <p className="text-sm text-zinc-600 mt-2">{incident.description}</p>}
                 </div>
@@ -278,7 +279,7 @@ export default function IncidentsPage() {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors">{inc.title}</p>
                                     {inc.description && <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{inc.description}</p>}
-                                    <p className="text-xs text-zinc-300 mt-0.5">{new Date(inc.created_at).toLocaleString()}</p>
+                                    <p className="text-xs text-zinc-300 mt-0.5">{formatInUserTZ(inc.created_at, { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                 </div>
                                 <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${SEVERITY_BADGE[inc.severity] ?? ''}`}>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     BarChart3, Users, CalendarCheck, TrendingUp,
-    ArrowRight, RefreshCw,
+    ArrowRight, RefreshCw, Download, FileText,
 } from 'lucide-react';
 import {
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -20,7 +20,7 @@ const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, accent }: {
-    label: string; value: string | number; icon: React.ElementType; accent: string;
+    label: string; value: string | number; icon: any; accent: string;
 }) {
     return (
         <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4">
@@ -49,6 +49,9 @@ export default function AdminAnalyticsPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exportLoading, setExportLoading] = useState(false);
+    const [exportCsvLoading, setExportCsvLoading] = useState(false);
+    const [exportError, setExportError] = useState('');
     const [error, setError] = useState('');
 
     const load = async () => {
@@ -69,6 +72,30 @@ export default function AdminAnalyticsPage() {
     };
 
     useEffect(() => { load(); }, []);
+
+    const handleExportPdf = async () => {
+        setExportError('');
+        setExportLoading(true);
+        try {
+            await adminService.exportPlatformReportPDF();
+        } catch (e: unknown) {
+            setExportError(e instanceof Error ? e.message : 'Platform report export failed.');
+        } finally {
+            setExportLoading(false);
+        }
+    };
+
+    const handleExportCsv = async () => {
+        setExportError('');
+        setExportCsvLoading(true);
+        try {
+            await adminService.exportPlatformReportCSV();
+        } catch (e: unknown) {
+            setExportError(e instanceof Error ? e.message : 'CSV export failed.');
+        } finally {
+            setExportCsvLoading(false);
+        }
+    };
 
     // KPI lookup helpers
     const kpi = (label: string) => data?.kpis.find(k => k.label === label)?.value ?? 0;
@@ -102,16 +129,40 @@ export default function AdminAnalyticsPage() {
                         <p className="text-zinc-500 text-sm mt-0.5">Platform-level metrics and engagement trends.</p>
                     </div>
                 </div>
-                <button
-                    onClick={load}
-                    className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
-                >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                </button>
+                <div className="flex gap-2 flex-wrap justify-end">
+                    <button
+                        type="button"
+                        onClick={handleExportPdf}
+                        disabled={exportLoading || exportCsvLoading}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-zinc-900 border border-zinc-900 text-white hover:bg-black transition-colors disabled:opacity-50"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        {exportLoading ? 'Generating…' : 'Export PDF'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleExportCsv}
+                        disabled={exportLoading || exportCsvLoading}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-800 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        {exportCsvLoading ? 'Exporting…' : 'Export CSV'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={load}
+                        className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                    </button>
+                </div>
             </div>
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
+            )}
+            {exportError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{exportError}</div>
             )}
 
             {/* KPI Cards */}
@@ -148,7 +199,7 @@ export default function AdminAnalyticsPage() {
                     <h2 className="text-sm font-semibold text-zinc-700 mb-4">Event Distribution</h2>
                     <ResponsiveContainer width="100%" height={220}>
                         <PieChart>
-                            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                                 {pieData.map((_, i) => (
                                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                                 ))}
@@ -162,7 +213,7 @@ export default function AdminAnalyticsPage() {
             {/* Events table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100">
-                    <h2 className="text-sm font-semibold text-zinc-700">Recent Events — click for deep metrics</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700">Recent Events — click for Business Intelligence report</h2>
                 </div>
                 <div className="divide-y divide-zinc-100">
                     {events.length === 0 ? (
@@ -170,7 +221,7 @@ export default function AdminAnalyticsPage() {
                     ) : events.map(ev => (
                         <Link
                             key={ev.id}
-                            href={`/admin/analytics/${ev.id}`}
+                            href={`/admin/events/${ev.id}/organizer-report`}
                             className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-50 transition-colors group"
                         >
                             <div>

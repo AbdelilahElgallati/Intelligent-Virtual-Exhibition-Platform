@@ -6,9 +6,10 @@ Defines data models for user operations including profile and preferences.
 
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.modules.auth.enums import Role
 
@@ -42,7 +43,8 @@ class UserBase(BaseModel):
     """Base schema for user data."""
     
     id: str = Field(alias="_id")
-    email: EmailStr
+    # Keep string to support local/dev seeded accounts (e.g. *.test).
+    email: str
     username: str
     full_name: str
     role: Role
@@ -68,16 +70,19 @@ class UserRead(BaseModel):
     """Schema for reading user data (no password)."""
     
     id: str = Field(alias="_id")
-    email: EmailStr
+    # Keep string to support local/dev seeded accounts (e.g. *.test).
+    email: str
     username: Optional[str] = None  # Made optional for backward compatibility
     full_name: str
     role: Role
     is_active: bool
+    approval_status: Optional[str] = None  # PENDING_APPROVAL | APPROVED | REJECTED
     created_at: datetime
 
     # Profile fields (optional – backward compatible)
     bio: Optional[str] = None
     language: Optional[str] = None
+    timezone: Optional[str] = None
     avatar_url: Optional[str] = None
     professional_info: Optional[ProfessionalInfo] = None
     interests: Optional[list[str]] = None
@@ -86,6 +91,17 @@ class UserRead(BaseModel):
     engagement_settings: Optional[EngagementSettings] = None
     
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
 
 
 class UserUpdate(BaseModel):
@@ -106,11 +122,32 @@ class ProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
     language: Optional[str] = None
+    timezone: Optional[str] = None
     avatar_url: Optional[str] = None
     professional_info: Optional[ProfessionalInfo] = None
     interests: Optional[list[str]] = None
     event_preferences: Optional[EventPreferences] = None
     networking_goals: Optional[list[str]] = None
     engagement_settings: Optional[EngagementSettings] = None
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            ZoneInfo(value)
+        except Exception as exc:
+            raise ValueError("Invalid IANA timezone") from exc
+        return value
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing user password."""
+
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6)
 
     model_config = {"from_attributes": True}

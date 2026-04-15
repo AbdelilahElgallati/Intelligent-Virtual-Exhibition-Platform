@@ -4,9 +4,11 @@ Event service for IVEP.
 Provides MongoDB-backed event storage and CRUD operations.
 """
 
+import re
 import secrets
 from datetime import datetime, timezone
-from typing import Optional
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Optional, Sequence
 
 from bson import ObjectId
 
@@ -14,9 +16,19 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.db.mongo import get_database
 from app.modules.events.schemas import EventCreate, EventState, EventUpdate
 from app.db.utils import stringify_object_ids
+from app.core.storage import delete_managed_upload_by_url
 
 # Price per enterprise per event day (configurable)
 PRICE_PER_ENTERPRISE_PER_DAY: float = 50.0
+
+
+def _slugify(text: str) -> str:
+    """Convert any string into a URL-safe kebab-case slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)   # strip non-word chars
+    text = re.sub(r"[\s_]+", "-", text)     # spaces/underscores → hyphens
+    text = re.sub(r"-+", "-", text)          # collapse multiple hyphens
+    return text[:60].strip("-")
 
 
 def _id_query(eid) -> dict:
@@ -38,6 +50,12 @@ def _calculate_payment(num_enterprises: int, start_date: datetime, end_date: dat
     return round(num_enterprises * days * PRICE_PER_ENTERPRISE_PER_DAY, 2)
 
 
+def _normalize_money(value: Optional[float]) -> Optional[float]:
+    if value is None:
+        return None
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
 async def create_event(data: EventCreate, organizer_id) -> dict:
     """
     Submit a new event request — goes directly to PENDING_APPROVAL state.
@@ -53,6 +71,7 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "category": data.category or "Exhibition",
         "start_date": data.start_date or now,
         "end_date": data.end_date or now,
+        "event_timezone": data.event_timezone or "UTC",
         "location": data.location or "Virtual Platform",
         "tags": data.tags or [],
         "organizer_name": data.organizer_name,
@@ -63,16 +82,17 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
         "extended_details": data.extended_details,
         "additional_info": data.additional_info,
         # Pricing fields (set by organizer)
-        "stand_price": data.stand_price,
+        "stand_price": _normalize_money(data.stand_price),
         "is_paid": data.is_paid,
-        "ticket_price": data.ticket_price if data.is_paid else None,
+        "ticket_price": _normalize_money(data.ticket_price) if data.is_paid else None,
         # Payment & links (set later)
         "payment_amount": None,
         "enterprise_link": None,
         "visitor_link": None,
+        "publicity_link": None,
+        "enterprise_invite_token": None,
+        "visitor_invite_token": None,
         "rejection_reason": None,
-        # Organizer bank details
-        "payment_details": data.payment_details if hasattr(data, "payment_details") else None,
         # Structured schedule
         "schedule_days": [d.model_dump() for d in data.schedule_days] if data.schedule_days else None,
     }
@@ -80,21 +100,53 @@ async def create_event(data: EventCreate, organizer_id) -> dict:
     collection = get_events_collection()
     result = await collection.insert_one(event)
     event["_id"] = result.inserted_id
+
+    # Auto-generate a URL-safe slug: title-slug + 4-char hex from the new _id
+    # The suffix guarantees uniqueness even when two events share the same title.
+    base_slug = _slugify(data.title)
+    short_suffix = str(result.inserted_id)[-4:]
+    slug = f"{base_slug}-{short_suffix}" if base_slug else short_suffix
+    await collection.update_one({"_id": result.inserted_id}, {"$set": {"slug": slug}})
+    event["slug"] = slug
+
     return stringify_object_ids(event)
 
 
 async def get_event_by_id(event_id) -> Optional[dict]:
     """
-    Get event by ID (_id).
+    Get event by ID (_id) **or slug**.
+
+    Accepts a MongoDB ObjectId string OR a human-readable slug so that
+    all existing callers automatically support slug-based resolution
+    without any further changes.
     """
     collection = get_events_collection()
-    doc = await collection.find_one(_id_query(event_id))
+    # 1. Try ObjectId lookup first (fastest path for internal callers)
+    if ObjectId.is_valid(str(event_id)):
+        doc = await collection.find_one({"_id": ObjectId(str(event_id))})
+        if doc:
+            return stringify_object_ids(doc)
+    # 2. Fall back to slug lookup (public URL path, e.g. "tech-summit-2025-ab3f")
+    doc = await collection.find_one({"slug": str(event_id)})
     return stringify_object_ids(doc) if doc else None
+
+
+async def resolve_event_id(slug_or_id: str) -> str:
+    """Helper for sub-routers: resolve an event slug to its true ObjectId string."""
+    if not slug_or_id:
+        return ""
+    if ObjectId.is_valid(str(slug_or_id)):
+        return str(slug_or_id)
+    collection = get_events_collection()
+    doc = await collection.find_one({"slug": str(slug_or_id)}, {"_id": 1})
+    if not doc:
+        return str(slug_or_id)  # let it fail downstream
+    return str(doc["_id"])
 
 
 async def list_events(
     organizer_id: Optional[str] = None,
-    state: Optional[EventState] = None,
+    state: Optional[EventState | Sequence[EventState]] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
 ) -> list[dict]:
@@ -108,7 +160,10 @@ async def list_events(
         query["organizer_id"] = str(organizer_id)
     
     if state:
-        query["state"] = state
+        if isinstance(state, (list, tuple, set)):
+            query["state"] = {"$in": [getattr(s, "value", s) for s in state]}
+        else:
+            query["state"] = getattr(state, "value", state)
 
     if category:
         query["category"] = category
@@ -130,26 +185,59 @@ async def update_event(event_id, data: EventUpdate) -> Optional[dict]:
     Only non-None values from the payload are applied.
     """
     collection = get_events_collection()
-    update_data = {k: v for k, v in data.model_dump(exclude_none=True).items()}
+    update_data = dict(data.model_dump(exclude_none=True).items())
+
+    if "stand_price" in update_data:
+        update_data["stand_price"] = _normalize_money(update_data.get("stand_price"))
+    if "ticket_price" in update_data:
+        update_data["ticket_price"] = _normalize_money(update_data.get("ticket_price"))
     
     if not update_data:
         return await get_event_by_id(event_id)
+
+    existing = await collection.find_one(_id_query(event_id))
+    if not existing:
+        return None
+
+    previous_banner_url = existing.get("banner_url")
+    banner_changed = "banner_url" in update_data and update_data.get("banner_url") != previous_banner_url
     
     result = await collection.find_one_and_update(
         _id_query(event_id),
         {"$set": update_data},
         return_document=True,
     )
-    return stringify_object_ids(result) if result else None
+    updated = stringify_object_ids(result) if result else None
+
+    if updated and banner_changed and previous_banner_url:
+        delete_managed_upload_by_url(previous_banner_url)
+
+    return updated
 
 
 async def delete_event(event_id) -> bool:
     """
-    Delete an event.
+    Delete an event and all associated data (cascade).
     """
-    collection = get_events_collection()
+    db = get_database()
+    collection = db["events"]
+    
+    # 1. Delete the event document
     result = await collection.delete_one(_id_query(event_id))
-    return result.deleted_count > 0
+    if result.deleted_count == 0:
+        return False
+
+    # 2. Cascade delete associated data
+    eid_str = str(event_id)
+    
+    # Collection names based on project audit
+    await db["stands"].delete_many({"event_id": eid_str})
+    await db["participants"].delete_many({"event_id": eid_str})
+    await db["meetings"].delete_many({"event_id": eid_str})
+    await db["leads"].delete_many({"event_id": eid_str})
+    await db["notifications"].delete_many({"event_id": eid_str})
+    
+    return True
 
 
 async def update_event_state(event_id, state: EventState) -> Optional[dict]:
@@ -190,7 +278,7 @@ async def atomic_transition(
     return stringify_object_ids(updated) if updated else None
 
 
-async def approve_event(event_id, payment_amount: Optional[float] = None) -> Optional[dict]:
+async def approve_event(event_id, payment_amount: float) -> Optional[dict]:
     """
     Approve event request → WAITING_FOR_PAYMENT.
     Auto-calculates payment if not provided.
@@ -199,13 +287,6 @@ async def approve_event(event_id, payment_amount: Optional[float] = None) -> Opt
     event = await collection.find_one(_id_query(event_id))
     if not event:
         return None
-
-    if payment_amount is None:
-        payment_amount = _calculate_payment(
-            event.get("num_enterprises", 1),
-            event.get("start_date", datetime.now(timezone.utc)),
-            event.get("end_date", datetime.now(timezone.utc)),
-        )
 
     # Fixed RIB for the platform (per request)
     rib_code = "007 999 000123456789 01"
@@ -264,13 +345,20 @@ async def confirm_event_payment(event_id) -> Optional[dict]:
     enterprise_token = secrets.token_urlsafe(24)
     visitor_token = secrets.token_urlsafe(24)
 
+    # Resolve the event's slug for use in public-facing links
+    existing = await collection.find_one(_id_query(event_id))
+    public_ref = existing.get("slug") or str(event_id) if existing else str(event_id)
+
     updated = await collection.find_one_and_update(
         _id_query(event_id),
         {
             "$set": {
                 "state": EventState.PAYMENT_DONE,
-                "enterprise_link": f"/join/enterprise/{event_id}?token={enterprise_token}",
-                "visitor_link": f"/join/visitor/{event_id}?token={visitor_token}",
+                "enterprise_link": f"/join/enterprise/{public_ref}?token={enterprise_token}",
+                "visitor_link": f"/join/visitor/{public_ref}?token={visitor_token}",
+                "publicity_link": f"/events/{public_ref}",
+                "enterprise_invite_token": enterprise_token,
+                "visitor_invite_token": visitor_token,
             }
         },
         return_document=True,
@@ -286,10 +374,10 @@ async def get_joined_events(user_id) -> list[dict]:
     participants_collection = db["participants"]
     events_collection = db["events"]
     
-    # Find approved participations for this user
+    # Find accepted participations for this user
     participations = await participants_collection.find({
         "user_id": str(user_id),
-        "status": "approved"
+        "status": {"$in": ["approved", "guest_approved"]}
     }).to_list(length=100)
     
     # event_id stored are now stringified _id values

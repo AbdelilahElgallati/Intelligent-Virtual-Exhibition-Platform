@@ -85,14 +85,9 @@ async def create_session(
     ev_start = _aware(event_start)
     ev_end = _aware(event_end)
 
-    # Grace window of 1 day on each boundary to absorb browser ↔ UTC timezone
-    # offset differences (±14 h worst case).  Strict intra-event scheduling is
-    # left to the administrator; we only block obviously wrong years/dates.
-    GRACE = timedelta(days=1)
-
-    if ev_start and session_start < ev_start - GRACE:
+    if ev_start and session_start < ev_start:
         raise ValueError("session start_time is before event start_date")
-    if ev_end and session_end > ev_end + GRACE:
+    if ev_end and session_end > ev_end:
         raise ValueError("session end_time is after event end_date")
 
     now = _now()
@@ -144,8 +139,11 @@ async def get_session_by_id(session_id: str) -> Optional[dict]:
 
 async def list_sessions(event_id: str) -> list[SessionRead]:
     """Return all sessions for an event, sorted by start_time."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     db = get_database()
-    cursor = db.event_sessions.find({"event_id": event_id}).sort("start_time", 1)
+    cursor = db.event_sessions.find({"event_id": str(event_id)}).sort("start_time", 1)
     docs = await cursor.to_list(length=500)
     return [_to_read(d) for d in docs]
 
@@ -313,9 +311,11 @@ async def sync_sessions_from_schedule(
                 logger.warning("Skipping malformed slot '%s': %s", label, exc)
                 continue
 
-            if slot_start >= slot_end:
-                logger.warning("Skipping slot '%s' — start >= end", label)
+            if slot_start == slot_end:
+                logger.warning("Skipping slot '%s' — start == end", label)
                 continue
+            if slot_end < slot_start:
+                slot_end = slot_end + timedelta(days=1)
 
             # Idempotency check: skip if a session already exists for this time
             existing = await db.event_sessions.find_one({

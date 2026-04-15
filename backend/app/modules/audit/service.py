@@ -10,6 +10,9 @@ from ...db.mongo import get_database
 
 def _normalize(doc: dict) -> dict:
     doc["id"] = str(doc.pop("_id", ""))
+    ts = doc.get("timestamp")
+    if isinstance(ts, datetime) and ts.tzinfo is None:
+        doc["timestamp"] = ts.replace(tzinfo=timezone.utc)
     return doc
 
 

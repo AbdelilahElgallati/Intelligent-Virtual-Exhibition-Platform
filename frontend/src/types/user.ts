@@ -24,25 +24,34 @@ export interface User {
     email: string;
     full_name?: string;
     username: string;
-    role: 'admin' | 'organizer' | 'visitor';
+    role: 'admin' | 'organizer' | 'visitor' | 'enterprise';
     created_at?: string;
     is_active?: boolean;
+    approval_status?: string; // PENDING_APPROVAL | APPROVED | REJECTED
     avatar_url?: string;
 
     // Profile fields
     bio?: string;
     language?: string;
+    timezone?: string;
     professional_info?: ProfessionalInfo;
     interests?: string[];
     event_preferences?: EventPreferences;
     networking_goals?: string[];
     engagement_settings?: EngagementSettings;
+
+    // Enterprise/Organizer specific fields
+    org_name?: string;
+    org_city?: string;
+    org_country?: string;
+    org_type?: string;
 }
 
 export interface ProfileUpdatePayload {
     full_name?: string;
     bio?: string;
     language?: string;
+    timezone?: string;
     avatar_url?: string;
     professional_info?: ProfessionalInfo;
     interests?: string[];

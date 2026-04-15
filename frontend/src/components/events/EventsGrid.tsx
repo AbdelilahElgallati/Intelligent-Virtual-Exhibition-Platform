@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Event } from '@/lib/api/types';
 import { EventCard } from './EventCard';
@@ -5,25 +7,25 @@ import { EventCard } from './EventCard';
 interface EventsGridProps {
     events: Event[];
     isLoading?: boolean;
+    favoriteMap?: Map<string, string>;
+    registeredEventIds?: Set<string>;
+    favoriteAnimatingEventId?: string | null;
+    onToggleFavorite?: (eventId: string, currentFavoriteId: string | null) => Promise<void>;
 }
 
-export const EventsGrid: React.FC<EventsGridProps> = ({ events, isLoading }) => {
-    if (isLoading) {
-        return (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[...Array(8)].map((_, i) => (
-                    <div key={i} className="h-[400px] w-full animate-pulse rounded-xl bg-zinc-100"></div>
-                ))}
-            </div>
-        );
-    }
-
+export const EventsGrid: React.FC<EventsGridProps> = ({
+    events,
+    favoriteMap,
+    registeredEventIds,
+    favoriteAnimatingEventId,
+    onToggleFavorite,
+}) => {
     if (events.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-bold text-zinc-900">No events found</h3>
-                <p className="text-zinc-500">Try adjusting your filters or search query.</p>
+                <div className="text-4xl mb-4">📅</div>
+                <h3 className="text-lg font-bold text-zinc-900">No events found</h3>
+                <p className="text-zinc-500">Check back later for new exhibition opportunities.</p>
             </div>
         );
     }
@@ -32,7 +34,12 @@ export const EventsGrid: React.FC<EventsGridProps> = ({ events, isLoading }) => 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {events.map((event, index) => {
                 const key = event.id || (event as any)._id || `${event.title}-${index}`;
-                return <EventCard key={key} event={event} />;
+                return (
+                    <EventCard
+                        key={key}
+                        event={event}
+                    />
+                );
             })}
         </div>
     );

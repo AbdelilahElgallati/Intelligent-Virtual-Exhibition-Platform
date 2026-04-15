@@ -1,17 +1,18 @@
-'use client';
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Plus, Trash2, Clock, GripVertical, CalendarDays } from 'lucide-react';
+import { formatSlotRangeLabel } from '@/lib/schedule';
+import { useAuth } from '@/context/AuthContext';
+import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
 
 // ── Default slot ─────────────────────────────────────────────────────────────
 const emptySlot = (): EventScheduleSlot => ({ start_time: '09:00', end_time: '17:00', label: '' });
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 /** "2026-02-24" → "Mon 24 Feb" */
-function formatDateLabel(dateStr: string): string {
-    const d = new Date(dateStr + 'T00:00:00'); // force local time, no UTC shift
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+function formatDateLabel(dateStr: string, timeZone: string): string {
+    const d = new Date(dateStr + 'T12:00:00Z'); // force midday UTC to avoid shift
+    return formatInUserTZ(d, { weekday: 'short', day: 'numeric', month: 'short' }, 'en-GB', timeZone);
 }
 
 /** Build array of YYYY-MM-DD strings between start and end (inclusive) */
@@ -19,8 +20,17 @@ function buildDateRange(start: string, end: string): string[] {
     const dates: string[] = [];
     const cur = new Date(start + 'T00:00:00');
     const last = new Date(end + 'T00:00:00');
+
+    const toLocalYmd = (d: Date): string => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     while (cur <= last) {
-        dates.push(cur.toISOString().slice(0, 10));
+        // Keep local calendar date instead of UTC ISO date to avoid timezone day drift.
+        dates.push(toLocalYmd(cur));
         cur.setDate(cur.getDate() + 1);
     }
     return dates;
@@ -32,13 +42,17 @@ function SlotRow({
     onChange,
     onRemove,
     canRemove,
+    minStartTime,
 }: {
     slot: EventScheduleSlot;
     onChange: (updated: EventScheduleSlot) => void;
     onRemove: () => void;
     canRemove: boolean;
+    minStartTime?: string;
 }) {
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
+    const startMin = minStartTime;
+    const isCrossDay = slot.start_time && slot.end_time && slot.end_time < slot.start_time;
 
     return (
         <div className="flex items-center gap-2 p-3 rounded-xl border border-zinc-200 bg-zinc-50 group hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
@@ -52,20 +66,38 @@ function SlotRow({
                     <input
                         type="time"
                         value={slot.start_time}
-                        onChange={e => set({ start_time: e.target.value })}
+                        onChange={e => {
+                            const selected = e.target.value;
+                            const clamped = startMin && selected < startMin ? startMin : selected;
+                            set({ start_time: clamped });
+                        }}
+                        min={startMin}
+                        lang="en-GB"
+                        step={60}
+                        title="Use 24-hour format (HH:mm)"
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
                 <span className="text-xs text-zinc-400 font-medium">→</span>
-                <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg px-2 py-1.5">
+                <div className={`flex items-center gap-1 bg-white border ${isCrossDay ? 'border-indigo-300' : 'border-zinc-200'} rounded-lg px-2 py-1.5`}>
                     <Clock className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
                     <input
                         type="time"
                         value={slot.end_time}
-                        onChange={e => set({ end_time: e.target.value })}
+                        onChange={e => {
+                            set({ end_time: e.target.value });
+                        }}
+                        lang="en-GB"
+                        step={60}
+                        title="Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day."
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
+                {isCrossDay && (
+                    <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                        +1 day
+                    </span>
+                )}
             </div>
 
             {/* Activity label */}
@@ -96,16 +128,21 @@ function SlotRow({
 function DayCard({
     day,
     onUpdate,
+    minStartTime,
 }: {
     day: EventScheduleDay;
     onUpdate: (updated: EventScheduleDay) => void;
+    minStartTime?: string;
 }) {
     const addSlot = () => {
         const last = day.slots[day.slots.length - 1];
-        const start = last?.end_time ?? '09:00';
+        const startSeed = last?.end_time ?? '09:00';
+        const start = minStartTime ? maxTime(startSeed, minStartTime) : startSeed;
         const [h, m] = start.split(':').map(Number);
-        const endH = Math.min(h + 1, 23);
-        const end = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const endTotalMinutes = ((h * 60 + m + 60) % (24 * 60));
+        const endH = Math.floor(endTotalMinutes / 60);
+        const endM = endTotalMinutes % 60;
+        const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
         onUpdate({ ...day, slots: [...day.slots, { start_time: start, end_time: end, label: '' }] });
     };
 
@@ -121,7 +158,7 @@ function DayCard({
 
     const summary =
         day.slots.length > 0
-            ? `${day.slots[0].start_time} → ${day.slots[day.slots.length - 1].end_time} · ${day.slots.length} slot${day.slots.length !== 1 ? 's' : ''}`
+            ? `${formatSlotRangeLabel(day.slots[0].start_time, day.slots[day.slots.length - 1].end_time)} · ${day.slots.length} slot${day.slots.length !== 1 ? 's' : ''}`
             : null;
 
     return (
@@ -162,6 +199,7 @@ function DayCard({
                         onChange={updated => updateSlot(idx, updated)}
                         onRemove={() => removeSlot(idx)}
                         canRemove={day.slots.length > 1}
+                        minStartTime={minStartTime}
                     />
                 ))}
 
@@ -185,9 +223,16 @@ interface ScheduleBuilderProps {
     /** YYYY-MM-DD — when provided together, auto-generates one day per calendar date */
     startDate?: string;
     endDate?: string;
+    /** HH:mm minimum time for day 1 when start date is today in event timezone */
+    minStartTimeForDay1?: string;
 }
 
-export function ScheduleBuilder({ days, onChange, startDate, endDate }: ScheduleBuilderProps) {
+export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTimeForDay1 }: ScheduleBuilderProps) {
+    const { user } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const userTimezone = mounted ? (user?.timezone || getUserTimezone()) : 'UTC';
+
     // Auto-regenerate day cards whenever the date range changes
     useEffect(() => {
         if (!startDate || !endDate || startDate > endDate) return;
@@ -199,14 +244,14 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate }: Schedule
             const existing = days[i];
             return {
                 day_number: i + 1,
-                date_label: formatDateLabel(dateStr),
+                date_label: formatDateLabel(dateStr, userTimezone),
                 slots: existing?.slots?.length ? existing.slots : [emptySlot()],
             };
         });
 
         onChange(newDays);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [startDate, endDate]);
+    }, [startDate, endDate, userTimezone]);
 
     const updateDay = (idx: number, updated: EventScheduleDay) => {
         const next = [...days];
@@ -233,8 +278,13 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate }: Schedule
                     key={idx}
                     day={day}
                     onUpdate={updated => updateDay(idx, updated)}
+                    minStartTime={day.day_number === 1 ? minStartTimeForDay1 : undefined}
                 />
             ))}
         </div>
     );
+}
+
+function maxTime(a: string, b: string): string {
+    return a >= b ? a : b;
 }

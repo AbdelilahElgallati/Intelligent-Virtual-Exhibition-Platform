@@ -7,13 +7,13 @@ from app.modules.favorites.service import create_favorite, delete_favorite, list
 router = APIRouter(prefix="/favorites", tags=["Favorites"])
 
 
-@router.get("/", response_model=list[FavoriteRead])
+@router.get("", response_model=list[FavoriteRead])
 async def get_my_favorites(current_user: dict = Depends(get_current_user)) -> list[FavoriteRead]:
     favorites = await list_favorites(current_user["_id"])
     return [FavoriteRead(**fav) for fav in favorites]
 
 
-@router.post("/", response_model=FavoriteRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FavoriteRead, status_code=status.HTTP_201_CREATED)
 async def add_favorite(data: FavoriteCreate, current_user: dict = Depends(get_current_user)) -> FavoriteRead:
     fav = await create_favorite(current_user["_id"], data)
     return FavoriteRead(**fav)

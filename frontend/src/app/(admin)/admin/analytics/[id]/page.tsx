@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     BarChart3, ArrowLeft, Eye, Store, MessageSquare, Users, RefreshCw,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
@@ -15,7 +16,7 @@ import { DashboardData } from '@/types/analytics';
 const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981'];
 
 function MetricCard({ label, value, icon: Icon, accent }: {
-    label: string; value: string | number; icon: React.ElementType; accent: string;
+    label: string; value: string | number; icon: LucideIcon; accent: string;
 }) {
     return (
         <div className="bg-white border border-zinc-200 rounded-2xl p-5 flex items-start gap-4">
@@ -36,7 +37,7 @@ export default function EventAnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
@@ -47,9 +48,9 @@ export default function EventAnalyticsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
 
-    useEffect(() => { if (id) load(); }, [id]);
+    useEffect(() => { if (id) load(); }, [id, load]);
 
     const kpi = (label: string) => data?.kpis.find(k => k.label === label)?.value ?? 0;
 
@@ -129,7 +130,7 @@ export default function EventAnalyticsPage() {
                     <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                             <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                 labelLine={false} fontSize={10}>
                                 {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                             </Pie>

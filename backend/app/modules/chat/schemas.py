@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from bson import ObjectId
 
@@ -35,7 +35,7 @@ class MessageSchema(BaseModel):
     sender_name: str
     content: str
     type: str = "text" # text, image, file
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         populate_by_name = True
@@ -45,9 +45,12 @@ class ChatRoomSchema(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: Optional[str] = None
     type: str = "direct" # direct, group, stand
+    room_category: Optional[str] = None  # "visitor" or "b2b"
+    event_id: Optional[str] = None
     members: List[str] # List of user_ids
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_message: Optional[dict] = None
+    last_read_by: dict[str, datetime] = Field(default_factory=dict)
 
     class Config:
         populate_by_name = True

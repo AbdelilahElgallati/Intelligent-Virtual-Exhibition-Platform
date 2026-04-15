@@ -8,12 +8,15 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging
-from app.db.mongo import connect_to_mongo, close_mongo_connection
+from app.core.ratelimit import RateLimitMiddleware
+from app.db.mongo import connect_to_mongo, close_mongo_connection, check_mongo_health
 from app.db.indexes import ensure_indexes
 from app.workers.lifecycle import lifecycle_loop
 
@@ -37,19 +40,38 @@ from app.modules.monitoring.router import router as monitoring_router
 from app.modules.sessions.router import router as sessions_router
 # Week 6 additions
 from app.modules.organizer_report.router import router as organizer_report_router
+# Week 7 additions
+from app.modules.enterprise.router import router as enterprise_router
+# Conferences & Meetings video system
+from app.modules.conferences.router import router as conferences_router
 
 # Routers (legacy/extra modules)
 from app.modules.chat.router import router as chat_router
-from app.modules.ai_rag.router import router as rag_router
-from app.modules.ai_translation.router import router as translation_router
-from app.modules.transcripts.router import router as transcripts_router
+try:
+    from app.modules.ai_rag.router import router as rag_router
+except Exception:
+    rag_router = None
+
+try:
+    from app.modules.ai_translation.router import router as translation_router
+except Exception:
+    translation_router = None
+
+try:
+    from app.modules.transcripts.router import router as transcripts_router
+except Exception:
+    transcripts_router = None
 from app.modules.meetings.router import router as meetings_router
 from app.modules.resources.router import router as resources_router
 from app.modules.leads.router import router as leads_router
-from app.modules.recommendations.router import router as recommendations_router
+try:
+    from app.modules.recommendations.router import router as recommendations_router
+except Exception:
+    recommendations_router = None
 from app.modules.favorites.router import router as favorites_router
 from app.modules.payments.router import router as payments_router
 from app.modules.marketplace.router import router as marketplace_router
+from app.modules.finance.router import router as finance_router
 
 
 @asynccontextmanager
@@ -109,21 +131,41 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(payments_router, prefix=api_prefix)
     # Stand Marketplace (isolated from event payments)
     app.include_router(marketplace_router, prefix=api_prefix)
+    app.include_router(finance_router, prefix=api_prefix)
     # Week 3: Live Monitoring
     app.include_router(monitoring_router, prefix=api_prefix)
     # Week 5: Conference Session Orchestration
     app.include_router(sessions_router, prefix=api_prefix)
     # Week 6: Organizer Value Dashboard
     app.include_router(organizer_report_router, prefix=api_prefix)
+    # Week 7: Enterprise Ecosystem
+    app.include_router(enterprise_router, prefix=api_prefix)
+    # Conferences & Meetings video system
+    app.include_router(conferences_router, prefix=api_prefix)
     # Legacy/extra routers (mounted with tags)
     app.include_router(chat_router, prefix=f"{api_prefix}/chat", tags=["chat"])
-    app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])
-    app.include_router(translation_router, prefix=f"{api_prefix}/translation", tags=["translation"])
-    app.include_router(transcripts_router, prefix=f"{api_prefix}/transcripts", tags=["transcripts"])
+    logger = logging.getLogger(__name__)
+    if rag_router is not None:
+        app.include_router(rag_router, prefix=f"{api_prefix}/assistant", tags=["assistant"])
+    else:
+        logger.warning("assistant router disabled: optional AI dependencies failed to import")
+
+    if translation_router is not None:
+        app.include_router(translation_router, prefix=f"{api_prefix}/translation", tags=["translation"])
+    else:
+        logger.warning("translation router disabled: optional AI dependencies failed to import")
+
+    if transcripts_router is not None:
+        app.include_router(transcripts_router, prefix=f"{api_prefix}/transcripts", tags=["transcripts"])
+    else:
+        logger.warning("transcripts router disabled: optional AI dependencies failed to import")
     app.include_router(meetings_router, prefix=f"{api_prefix}/meetings", tags=["meetings"])
     app.include_router(resources_router, prefix=f"{api_prefix}/resources", tags=["resources"])
     app.include_router(leads_router, prefix=f"{api_prefix}/leads", tags=["leads"])
-    app.include_router(recommendations_router, prefix=f"{api_prefix}/recommendations", tags=["recommendations"])
+    if recommendations_router is not None:
+        app.include_router(recommendations_router, prefix=f"{api_prefix}/recommendations", tags=["recommendations"])
+    else:
+        logger.warning("recommendations router disabled: optional ML dependencies failed to import")
     
     # Dev / Seeding
     if settings.ENV == "dev" or settings.DEBUG:
@@ -141,27 +183,42 @@ def create_application() -> FastAPI:
         description="Backend API for the Intelligent Virtual Exhibition Platform",
         version="0.1.0",
         debug=settings.DEBUG,
-        openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json",
+        openapi_url=f"{getattr(settings, 'API_V1_STR', '/api/v1')}/openapi.json" if settings.ENV == "dev" else None,
         lifespan=lifespan,
+        redirect_slashes=False,
     )
 
-    # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[
+    # Add rate limiting middleware
+    app.add_middleware(RateLimitMiddleware)
+
+    # Configure CORS from environment - CORSMiddleware should be LAST added to be OUTERMOST
+    cors_origins = settings.CORS_ORIGINS
+    if settings.ENV == "dev":
+        # Include localhost variants in development
+        cors_origins = list(set(cors_origins + [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "http://localhost:3001",
             "http://127.0.0.1:3001",
-        ],
+        ]))
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
         allow_headers=["*"],
     )
 
     # Register routers
     register_routers(app)
 
+    # Serve uploaded files (product images, resources, etc.)
+    # __file__ is backend/app/main.py → go 2 levels up to reach backend/
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    uploads_dir = os.path.join(backend_dir, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
     return app
 
 
@@ -180,6 +237,12 @@ async def read_root() -> dict[str, str]:
 @app.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
     """
-    Health check endpoint.
+    Health check endpoint - verifies API and database connectivity.
     """
-    return {"status": "healthy"}
+    health_status = await check_mongo_health()
+    if health_status["status"] == "unhealthy":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection failed"
+        )
+    return health_status

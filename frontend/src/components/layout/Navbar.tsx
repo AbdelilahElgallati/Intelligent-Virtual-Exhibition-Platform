@@ -20,6 +20,7 @@ const VISITOR_NAV: NavLink[] = [
     { label: 'Home', href: '/' },
     { label: 'Events', href: '/events' },
     // { label: 'Webinars', href: '/webinars' },
+    { label: 'Orders', href: '/dashboard/orders' },
     { label: 'Favorites', href: '/favorites' },
 ];
 
@@ -33,6 +34,14 @@ const ADMIN_NAV: NavLink[] = [
     { label: 'Home', href: '/' },
     { label: 'Events', href: '/events' },
     { label: 'Admin Panel', href: '/admin' },
+];
+
+const ENTERPRISE_NAV: NavLink[] = [
+    { label: 'Dashboard', href: '/enterprise' },
+    { label: 'My Events', href: '/enterprise/events' },
+    { label: 'Products', href: '/enterprise/products' },
+    { label: 'Requests', href: '/enterprise/product-requests' },
+    { label: 'Leads', href: '/enterprise/leads' },
 ];
 
 // ── Per-role dropdown menu items ──────────────────────────────────────────────
@@ -54,6 +63,11 @@ const FavIcon = (
         <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.499-.866 1.756a1 1 0 0 1-.753.547l-1.94.282a1 1 0 0 0-.554 1.706l1.404 1.369a1 1 0 0 1 .287.885l-.331 1.929a1 1 0 0 0 1.452 1.054l1.732-.91a1 1 0 0 1 .931 0l1.732.91a1 1 0 0 0 1.452-1.054l-.331-1.93a1 1 0 0 1 .287-.884l1.404-1.368a1 1 0 0 0-.554-1.706l-1.94-.282a1 1 0 0 1-.753-.547l-.866-1.756a1 1 0 0 0-1.793 0Z" />
     </svg>
 );
+const ReceiptIcon = (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25h6m-6 3h6M9 8.25h6M7.5 3.75h9A2.25 2.25 0 0 1 18.75 6v14.25l-2.625-1.5-2.625 1.5-2.625-1.5-2.625 1.5V6A2.25 2.25 0 0 1 7.5 3.75Z" />
+    </svg>
+);
 const CalendarIcon = (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
@@ -70,7 +84,16 @@ function getDropdownItems(role?: string): DropdownItem[] {
         return [
             { label: 'My Profile', href: '/profile', icon: ProfileIcon },
             { label: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
+            { label: 'My Orders', href: '/dashboard/orders', icon: ReceiptIcon },
             { label: 'Favorites', href: '/favorites', icon: FavIcon },
+        ];
+    }
+    if (role === 'enterprise') {
+        return [
+            { label: 'My Profile', href: '/enterprise/profile', icon: ProfileIcon },
+            { label: 'Dashboard', href: '/enterprise', icon: DashboardIcon },
+            { label: 'Manage Products', href: '/enterprise/products', icon: ReceiptIcon },
+            { label: 'All Requests', href: '/enterprise/product-requests', icon: FavIcon },
         ];
     }
     if (role === 'organizer') {
@@ -90,6 +113,7 @@ function getDropdownItems(role?: string): DropdownItem[] {
 
 function getNavLinks(role?: string): NavLink[] {
     if (role === 'visitor') return VISITOR_NAV;
+    if (role === 'enterprise') return ENTERPRISE_NAV;
     if (role === 'organizer') return ORGANIZER_NAV;
     if (role === 'admin') return ADMIN_NAV;
     return GUEST_NAV;
@@ -99,6 +123,7 @@ function getNavLinks(role?: string): NavLink[] {
 
 const roleBadge: Record<string, string> = {
     visitor: 'bg-sky-50 text-sky-700',
+    enterprise: 'bg-amber-50 text-amber-700',
     organizer: 'bg-indigo-50 text-indigo-700',
     admin: 'bg-rose-50 text-rose-700',
 };
@@ -109,6 +134,7 @@ export const Navbar: React.FC = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -149,11 +175,10 @@ export const Navbar: React.FC = () => {
                                     <Link
                                         key={link.href}
                                         href={link.href}
-                                        className={`text-sm font-medium transition-colors ${
-                                            isActive
+                                        className={`text-sm font-medium transition-colors ${isActive
                                                 ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5'
                                                 : 'text-zinc-600 hover:text-indigo-600'
-                                        }`}
+                                            }`}
                                     >
                                         {link.label}
                                     </Link>
@@ -242,8 +267,47 @@ export const Navbar: React.FC = () => {
                                 </Link>
                             </div>
                         )}
+                        {/* Mobile menu toggle */}
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
+                            aria-expanded={mobileMenuOpen}
+                        >
+                            <span className="sr-only">Open main menu</span>
+                            {mobileMenuOpen ? (
+                                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Menu Expansion */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden border-t border-zinc-100 py-3 space-y-1">
+                        {navLinks.map((link) => {
+                            const isActive = pathname === link.href;
+                            return (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive
+                                            ? 'bg-indigo-50 text-indigo-700'
+                                            : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
+                                        }`}
+                                >
+                                    {link.label}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </Container>
         </nav>
     );

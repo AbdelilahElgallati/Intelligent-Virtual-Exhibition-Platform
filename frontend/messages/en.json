@@ -1,0 +1,3339 @@
+{
+  "auth": {
+    "login": {
+      "title": "Login",
+      "subtitle": "Welcome back to IVEP",
+      "email": {
+        "label": "Email",
+        "placeholder": "Enter your email"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register here",
+      "error": {
+        "allFields": "Please fill in all fields.",
+        "invalidEmail": "Please enter a valid email address.",
+        "incorrectPassword": "The password you entered is incorrect. Please try again.",
+        "noAccountFound": "No account found with this email address.",
+        "pendingApproval": "Your account is pending admin approval. You will be notified by email once it is activated.",
+        "rejected": "Your account registration was rejected. Please contact support.",
+        "suspended": "Your account has been suspended. Please contact support for assistance.",
+        "notActive": "Your account is not active. Please contact support.",
+        "unauthorized": "Invalid email or password. Please check your credentials and try again.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Join the IVEP platform",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "John Doe"
+      },
+      "username": {
+        "label": "Username *",
+        "placeholder": "johndoe"
+      },
+      "email": {
+        "label": "Email *",
+        "placeholder": "john@example.com"
+      },
+      "password": {
+        "label": "Password *",
+        "placeholder": "••••••••"
+      },
+      "confirmPassword": {
+        "label": "Confirm password *",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "roleLabel": "I am a:",
+      "roles": {
+        "visitor": "visitor",
+        "organizer": "organizer",
+        "enterprise": "enterprise"
+      },
+      "organizer": {
+        "title": "Organisation Details",
+        "approvalNote": "Your account will be reviewed by an admin before activation.",
+        "orgName": {
+          "label": "Organisation Name *",
+          "placeholder": "Event Masters Inc."
+        },
+        "orgType": {
+          "label": "Organisation Type *",
+          "placeholder": "Select type…"
+        },
+        "orgTypes": {
+          "company": "Company",
+          "ngo": "NGO",
+          "university": "University",
+          "government": "Government",
+          "startup": "Startup",
+          "association": "Association",
+          "other": "Other"
+        },
+        "professionalEmail": {
+          "label": "Professional Email *",
+          "placeholder": "contact@eventmasters.com"
+        },
+        "country": {
+          "label": "Country *",
+          "placeholder": "France"
+        },
+        "city": {
+          "label": "City *",
+          "placeholder": "Paris"
+        },
+        "phone": {
+          "label": "Phone",
+          "placeholder": "+33 6 12 34 56 78"
+        },
+        "website": {
+          "label": "Website",
+          "placeholder": "https://eventmasters.com"
+        }
+      },
+      "enterprise": {
+        "title": "Company Details",
+        "approvalNote": "Your account will be reviewed by an admin before activation.",
+        "companyName": {
+          "label": "Company Name *",
+          "placeholder": "Acme Corp"
+        },
+        "professionalEmail": {
+          "label": "Professional Email *",
+          "placeholder": "contact@acme.com"
+        },
+        "industry": {
+          "label": "Industry *",
+          "placeholder": "Tech"
+        },
+        "country": {
+          "label": "Country *",
+          "placeholder": "France"
+        },
+        "city": {
+          "label": "City *",
+          "placeholder": "Paris"
+        },
+        "companySize": {
+          "label": "Company Size *",
+          "placeholder": "10-50"
+        }
+      },
+      "submit": "Create Account",
+      "submitting": "Creating account...",
+      "approvalNotice": "{role} accounts require admin approval before you can log in.",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign In",
+      "error": {
+        "allFields": "Please fill in all required fields.",
+        "passwordMinLength": "Password must be at least 8 characters long.",
+        "passwordMismatch": "Passwords do not match. Please check and try again.",
+        "companyNameRequired": "Company name is required for enterprise accounts.",
+        "orgNameRequired": "Organisation name is required for organizer accounts.",
+        "emailExists": "An account with this email already exists. Try logging in instead.",
+        "invalidEmail": "Please enter a valid email address.",
+        "registrationFailed": "Registration failed during organization creation. Please try again.",
+        "generic": "Registration failed. Please check your information and try again."
+      },
+      "success": {
+        "title": "Registration successful!",
+        "message": "Your account is pending admin approval. You will receive an email notification once it is activated.",
+        "goToLogin": "Go to Login"
+      }
+    },
+    "changePassword": {
+      "button": "Change Password",
+      "hideButton": "Hide Change Password",
+      "title": "Change Password",
+      "currentPassword": {
+        "label": "Current Password",
+        "placeholder": "Enter your current password"
+      },
+      "newPassword": {
+        "label": "New Password",
+        "placeholder": "Enter new password (min 6 characters)"
+      },
+      "confirmPassword": {
+        "label": "Confirm New Password",
+        "placeholder": "Confirm your new password"
+      },
+      "cancel": "Cancel",
+      "submit": "Update Password",
+      "error": {
+        "mismatch": "New passwords do not match.",
+        "minLength": "New password must be at least 6 characters.",
+        "generic": "Failed to change password."
+      },
+      "success": "Password changed successfully!"
+    }
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "loading": "Loading profile…",
+    "organizer": {
+      "subtitle": "Manage your identity and organization presence on IVEP.",
+      "basicInfo": "Basic Information",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)",
+        "note": "Email changes require support verification."
+      },
+      "shortBio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about your professional background..."
+      },
+      "preferredLanguage": "Preferred Language",
+      "timezone": "Timezone",
+      "updateProfile": "Update Profile",
+      "accountVerified": "Account Verified",
+      "joinedYear": "Joined {year}",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "needHelp": {
+        "title": "Need Help?",
+        "message": "For organization-level changes or role migrations, please contact our support team."
+      },
+      "fallbackOrg": "IVEP Organizer",
+      "notifications": "Notifications"
+    },
+    "admin": {
+      "subtitle": "Manage your administrator account settings.",
+      "accountInfo": "Account Information",
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)"
+      },
+      "shortBio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about yourself..."
+      },
+      "preferredLanguage": "Preferred Language",
+      "timezone": "Timezone",
+      "updateProfile": "Update Profile",
+      "administratorAccount": "Administrator Account",
+      "joinedYear": "Joined {year}",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "needHelp": {
+        "title": "Need Help?",
+        "message": "For platform-level support, please contact the system administrator."
+      }
+    },
+    "enterprise": {
+      "updateCoverPhoto": "Update Cover Photo",
+      "updateLogo": "Update Logo",
+      "accountVerified": "Account Verified",
+      "primaryContact": "Primary Contact",
+      "accountEmail": "Account Email",
+      "registeredEntity": "Registered Entity",
+      "baseLocation": "Base Location",
+      "globalLocation": "Global",
+      "sector": "Sector",
+      "memberSince": "Member since {year}",
+      "completionStatus": {
+        "title": "Completion Status",
+        "message": "Complete your profile to increase your visibility in virtual exhibitions."
+      },
+      "aboutCompany": "About Company",
+      "companyName": {
+        "label": "Company Name",
+        "placeholder": "Acme Corporation"
+      },
+      "industry": {
+        "label": "Industry",
+        "placeholder": "Technology"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "Morocco"
+      },
+      "city": {
+        "label": "City",
+        "placeholder": "Casablanca"
+      },
+      "companySize": {
+        "label": "Company Size",
+        "placeholder": "51-200"
+      },
+      "professionalEmail": {
+        "label": "Professional Email",
+        "placeholder": "business@acme.com"
+      },
+      "companyBio": {
+        "label": "Company Bio",
+        "note": "Displayed on your booth",
+        "placeholder": "Tell visitors about your company value proposition..."
+      },
+      "category": {
+        "label": "Category",
+        "placeholder": "Select a category"
+      },
+      "businessTags": {
+        "label": "Business Tags",
+        "placeholder": "AI, Blockchain, SaaS, Green Energy (comma separated)"
+      },
+      "accountTimezone": {
+        "label": "Account Timezone",
+        "note": "Used as your personal display timezone across the platform."
+      },
+      "contactPresence": "Contact & Presence",
+      "publicBusinessEmail": {
+        "label": "Public Business Email",
+        "placeholder": "contact@acme.com"
+      },
+      "phoneNumber": {
+        "label": "Phone Number",
+        "placeholder": "+212 600-000000"
+      },
+      "corporateWebsite": {
+        "label": "Corporate Website",
+        "placeholder": "https://acme.com"
+      },
+      "linkedinProfile": {
+        "label": "LinkedIn Profile",
+        "placeholder": "https://linkedin.com/company/acme"
+      },
+      "saveChanges": "Save All Changes",
+      "success": "Profile updated successfully!",
+      "error": "Failed to update profile.",
+      "logoUploaded": "Logo uploaded!",
+      "bannerUploaded": "Banner uploaded!",
+      "uploadFailed": "Failed to upload {type}.",
+      "categoryOptions": {
+        "technology": "Technology",
+        "healthcare": "Healthcare",
+        "finance": "Finance",
+        "education": "Education",
+        "manufacturing": "Manufacturing",
+        "retail": "Retail",
+        "logistics": "Logistics",
+        "energy": "Energy",
+        "telecommunications": "Telecommunications",
+        "consulting": "Consulting",
+        "mediaMarketing": "Media & Marketing",
+        "tourismHospitality": "Tourism & Hospitality",
+        "governmentPublicServices": "Government & Public Services",
+        "nonProfit": "Non-Profit",
+        "other": "Other"
+      },
+      "pageSubtitle": "Manage your company profile, products, and presence on IVEP."
+    },
+    "visitor": {
+      "subtitle": "Manage your personal details, preferences, and discovery settings.",
+      "basicInfo": {
+        "title": "Basic Information",
+        "description": "Your personal details visible to event organizers.",
+        "fullName": {
+          "label": "Full Name",
+          "placeholder": "John Doe"
+        },
+        "email": "Email",
+        "language": {
+          "label": "Language Preference",
+          "placeholder": "Select language…"
+        },
+        "timezone": {
+          "label": "Timezone"
+        },
+        "bio": {
+          "label": "Short Bio",
+          "placeholder": "Tell us a little about yourself…"
+        }
+      },
+      "professionalInfo": {
+        "title": "Professional Information",
+        "description": "Helps us match you with relevant exhibitions and opportunities.",
+        "jobTitle": {
+          "label": "Job Title",
+          "placeholder": "e.g. Software Engineer"
+        },
+        "industry": {
+          "label": "Industry",
+          "placeholder": "e.g. Technology"
+        },
+        "company": {
+          "label": "Company",
+          "placeholder": "e.g. Google"
+        },
+        "experienceLevel": {
+          "label": "Experience Level",
+          "placeholder": "Select level…"
+        }
+      },
+      "interests": {
+        "title": "Interests",
+        "description": "Select topics you're interested in — these power our recommendation engine.",
+        "addCustom": "Add custom…",
+        "addButton": "Add"
+      },
+      "eventPreferences": {
+        "title": "Event Preferences",
+        "description": "Tell us what kind of events you prefer to attend.",
+        "types": "Preferred Event Types",
+        "languages": "Preferred Languages",
+        "regions": "Preferred Regions (Optional)"
+      },
+      "networking": {
+        "title": "Networking Preferences",
+        "description": "What are you looking for at events?",
+        "goals": {
+          "label": "Networking Goals",
+          "placeholder": "Select your networking goals…"
+        },
+        "experienceLevel": {
+          "label": "Experience Level",
+          "placeholder": "Select your level…"
+        }
+      },
+      "notifications": {
+        "title": "Notifications & Recommendations",
+        "description": "Control how and when we reach out.",
+        "recommendations": "Receive personalized recommendations",
+        "emailNotifications": "Receive email notifications"
+      },
+      "save": "Save Profile",
+      "saving": "Saving…",
+      "success": {
+        "title": "Profile Updated",
+        "message": "Your profile has been saved successfully!"
+      },
+      "error": {
+        "title": "Save Failed",
+        "message": "Something went wrong. Please try again."
+      },
+      "authRequired": {
+        "title": "Sign in required",
+        "message": "Please log in to view your profile."
+      },
+      "engagement": {
+        "title": "Engagement Settings",
+        "description": "Control how we communicate with you."
+      }
+    },
+    "common": {
+      "languages": {
+        "english": "English",
+        "spanish": "Spanish",
+        "french": "French",
+        "arabic": "Arabic",
+        "german": "German",
+        "chinese": "Chinese",
+        "japanese": "Japanese"
+      },
+      "experienceLevels": {
+        "junior": "Junior",
+        "mid": "Mid",
+        "senior": "Senior",
+        "executive": "Executive"
+      },
+      "interests": {
+        "ai": "AI",
+        "tech": "Tech",
+        "education": "Education",
+        "healthcare": "Healthcare",
+        "sustainability": "Sustainability",
+        "finance": "Finance",
+        "startups": "Startups"
+      },
+      "eventTypes": {
+        "webinar": "Webinar",
+        "exhibition": "Exhibition",
+        "networking": "Networking",
+        "workshop": "Workshop"
+      },
+      "regions": {
+        "northAmerica": "North America",
+        "europe": "Europe",
+        "asia": "Asia",
+        "middleEast": "Middle East",
+        "africa": "Africa",
+        "latinAmerica": "Latin America",
+        "southAmerica": "South America",
+        "oceania": "Oceania"
+      },
+      "networkingGoals": {
+        "partnerships": "Partnerships",
+        "investors": "Investors",
+        "clients": "Clients",
+        "knowledge": "Knowledge",
+        "jobs": "Jobs"
+      }
+    }
+  },
+  "common": {
+    "brand": "IVEP",
+    "buttons": {
+      "submit": "Submit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "login": "Login",
+      "register": "Register",
+      "signIn": "Sign In",
+      "signOut": "Sign Out",
+      "createAccount": "Create Account",
+      "goToLogin": "Go to Login"
+    },
+    "navigation": {
+      "home": "Home",
+      "events": "Events",
+      "orders": "Orders",
+      "favorites": "Favorites",
+      "adminPanel": "Admin Panel",
+      "dashboard": "Dashboard",
+      "myEvents": "My Events",
+      "products": "Products",
+      "requests": "Requests",
+      "leads": "Leads",
+      "myProfile": "My Profile",
+      "myOrders": "My Orders",
+      "manageProducts": "Manage Products",
+      "allRequests": "All Requests",
+      "organizerPanel": "Organizer Panel",
+      "openMenu": "Open main menu"
+    },
+    "footer": {
+      "tagline": "Intelligent Virtual Exhibition Platform for immersive events, networking, and commerce.",
+      "platform": "Platform",
+      "eventsDirectory": "Events Directory",
+      "globalMarketplace": "Global Marketplace",
+      "aiAssistant": "AI Event Assistant",
+      "account": "Account",
+      "signIn": "Sign In",
+      "createAccount": "Create Account",
+      "myFavorites": "My Favorites",
+      "connectWithUs": "Connect With Us",
+      "allRightsReserved": "All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "copyright": "© {year} IVEP. All rights reserved."
+    },
+    "messages": {
+      "loading": "Loading…",
+      "checkingAuth": "Checking authorization...",
+      "noResults": "No results found.",
+      "error": "An error occurred.",
+      "success": "Operation completed successfully.",
+      "unauthorized": "Unauthorized",
+      "notFound": "Not found."
+    },
+    "roles": {
+      "admin": "admin",
+      "organizer": "organizer",
+      "enterprise": "enterprise",
+      "visitor": "visitor"
+    },
+    "ui": {
+      "dataTable": {
+        "noData": "No data available"
+      },
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {current} of {total}",
+        "showingRange": "Showing {from} to {to} of {total} {entity}",
+        "entities": {
+          "users": "accounts",
+          "organizations": "organizations",
+          "enterprises": "enterprises",
+          "entries": "entries",
+          "subscriptions": "subscriptions",
+          "requests": "requests",
+          "incidents": "incidents",
+          "events": "events",
+          "sessions": "sessions",
+          "transactions": "transactions",
+          "records": "records"
+        }
+      },
+      "scheduleBuilder": {
+        "startTimeTooltip": "Use 24-hour format (HH:mm)",
+        "endTimeTooltip": "Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day.",
+        "nextDayBadge": "+1 day",
+        "slotPlaceholder": "Activity / description...",
+        "removeSlotTooltip": "Remove slot",
+        "dayLabel": "Day {day_number}",
+        "emptySlots": "No time slots yet -- click + Add Slot below",
+        "addSlot": "+ Add Time Slot",
+        "noDatesPlaceholder": "Select a start & end date above",
+        "noDatesHelper": "Schedule days will be generated automatically from the date range."
+      }
+    }
+  },
+  "dashboard": {
+    "visitor": {
+      "joinedEvents": {
+        "title": "My Joined Events",
+        "subtitle": "Events you are participating in"
+      },
+      "recommended": {
+        "title": "Recommended for You",
+        "subtitle": "Events based on your interests"
+      }
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Intelligent Virtual Exhibition Platform",
+      "heading": "Build immersive exhibitions that convert visitors into business.",
+      "subtitle": "IVEP gives organizers, enterprises, and attendees one premium digital venue for events, stands, networking, and marketplace outcomes.",
+      "exploreEvents": "Explore Events",
+      "createEvent": "Create Event",
+      "visitorWarning": "Creating events requires an organizer account. Please contact an administrator to upgrade your account, or sign out and register as an organizer if your organisation is not yet on the platform.",
+      "badges": {
+        "secureAccess": "Secure Access",
+        "liveInteractions": "Live Interactions",
+        "aiPowered": "AI-Powered",
+        "b2bReady": "B2B Ready"
+      },
+      "preview": {
+        "label": "Live Platform Preview",
+        "heading": "Immersive event control center",
+        "stats": {
+          "activeStands": {
+            "label": "Active Stands",
+            "value": "120+"
+          },
+          "liveAttendees": {
+            "label": "Live Attendees",
+            "value": "8.4K"
+          },
+          "meetingsScheduled": {
+            "label": "Meetings Scheduled",
+            "value": "2.1K"
+          },
+          "conversionRate": {
+            "label": "Conversion Rate",
+            "value": "37%"
+          }
+        }
+      }
+    },
+    "features": {
+      "title": "Core Platform Features",
+      "subtitle": "A complete toolkit to launch, manage, and scale world-class virtual exhibitions.",
+      "items": {
+        "virtualStands": {
+          "title": "Virtual Stands",
+          "description": "Immersive branded stands where enterprises showcase products, media, and live interactions."
+        },
+        "aiAssistant": {
+          "title": "AI Assistant",
+          "description": "Guide visitors instantly with smart event Q&A, recommendations, and multilingual support."
+        },
+        "networking": {
+          "title": "Networking",
+          "description": "Create real business opportunities through chat, reach-out requests, and meeting flows."
+        },
+        "liveEvents": {
+          "title": "Live Events",
+          "description": "Run conferences, keynotes, and product sessions with real-time attendee engagement."
+        },
+        "marketplace": {
+          "title": "Marketplace",
+          "description": "Enable direct purchases from stands with secure checkout and transparent order tracking."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Measure booth performance, lead quality, and attendee behavior with actionable insights."
+        }
+      }
+    },
+    "experience": {
+      "title": "Platform Experience",
+      "subtitle": "Designed for immersive discovery, seamless communication, and measurable outcomes.",
+      "items": {
+        "hallNavigation": {
+          "title": "2D/3D Hall Navigation",
+          "description": "Visitors move naturally through your event using fluid hall exploration and stand discovery."
+        },
+        "standExperience": {
+          "title": "Interactive Stand Experience",
+          "description": "Show products, media, resources, and business profiles in a polished digital booth environment."
+        },
+        "chatInteraction": {
+          "title": "Chat and Live Interaction",
+          "description": "Connect visitors and exhibitors through instant messaging and contextual communication tools."
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "A simple journey from event entry to high-value business interaction.",
+      "steps": {
+        "joinEvent": {
+          "title": "Join Event",
+          "description": "Sign in as a visitor or enterprise and enter your selected event in seconds."
+        },
+        "exploreStands": {
+          "title": "Explore Stands",
+          "description": "Discover powerful exhibitors, products, and live sessions from an intuitive hall view."
+        },
+        "interact": {
+          "title": "Interact",
+          "description": "Start meaningful chats, request meetings, and engage directly with brands."
+        },
+        "buyConnect": {
+          "title": "Buy / Connect",
+          "description": "Complete purchases seamlessly or capture leads to convert engagement into outcomes."
+        }
+      }
+    },
+    "socialProof": {
+      "title": "Trusted by Modern Event Teams",
+      "subtitle": "Built for organizers and enterprises that care about premium attendee experiences.",
+      "stats": {
+        "eventsHosted": {
+          "label": "Events Hosted",
+          "value": "1,200+"
+        },
+        "registeredUsers": {
+          "label": "Registered Users",
+          "value": "95K+"
+        },
+        "enterpriseExhibitors": {
+          "label": "Enterprise Exhibitors",
+          "value": "3,400+"
+        }
+      }
+    },
+    "cta": {
+      "title": "Start your virtual exhibition today",
+      "subtitle": "Launch a premium event experience for visitors, exhibitors, and partners with one unified platform.",
+      "joinVisitor": "Join as Visitor",
+      "hostEvent": "Host an Event"
+    }
+  },
+  "layout": {
+    "organizer": {
+      "sidebar": {
+        "brand": "IVEP",
+        "suffix": "ORG",
+        "dashboard": "Dashboard",
+        "myEvents": "My Events",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Organizer",
+      "workspace": "Organizer Workspace",
+      "checkingAuth": "Checking authorization...",
+      "notifications": "Notifications"
+    },
+    "enterprise": {
+      "sidebar": {
+        "title": "Enterprise Panel",
+        "subtitle": "Business Journey",
+        "dashboard": "Dashboard",
+        "events": "Events",
+        "requests": "Requests",
+        "analytics": "Analytics",
+        "products": "Products",
+        "profile": "Profile",
+        "notifications": "Notifications",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Enterprise",
+      "workspace": "Enterprise Workspace",
+      "loading": "Loading...",
+      "fallbackUser": "Enterprise User"
+    },
+    "admin": {
+      "sidebar": {
+        "title": "Admin Panel",
+        "dashboard": "Dashboard",
+        "events": "Events",
+        "users": "Users",
+        "organizations": "Organizations",
+        "enterprises": "Enterprises",
+        "organizerApprovals": "Organizer Approvals",
+        "enterpriseApprovals": "Enterprise Approvals",
+        "finance": "Finance",
+        "monitoring": "Monitoring",
+        "auditLogs": "Audit Logs",
+        "incidents": "Incidents",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      },
+      "breadcrumb": "Admin",
+      "workspace": "Admin Workspace",
+      "checkingAuth": "Checking authorization...",
+      "fallbackUser": "Administrator"
+    }
+  },
+  "events": {
+    "listing": {
+      "title": "Events",
+      "subtitle": "Track upcoming, live, and ended exhibitions with timeline-aware access.",
+      "timelineLabel": "Timeline",
+      "timelineFilters": {
+        "all": "All",
+        "live": "Live",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "timelineTbd": "Timeline TBD"
+      },
+      "errorLoad": "Could not load events."
+    },
+    "detail": {
+      "loading": "Loading event details...",
+      "notFound": "Event not found",
+      "tryAgain": "Try again",
+      "liveAccessClosed": {
+        "title": "Live Access Closed",
+        "message": "This event has ended, so you were moved out of the live area."
+      },
+      "aboutThisEvent": "About this Event",
+      "downloadReceipt": "Download Receipt",
+      "favorited": "Favorited",
+      "addToFavorites": "Add to favorites",
+      "insights": {
+        "title": "Event Insights",
+        "attendingEnterprises": {
+          "label": "Attending Enterprises",
+          "description": "Companies ready to connect during the event."
+        },
+        "scheduleSessions": {
+          "label": "Schedule Sessions",
+          "description": "Planned activities across the event timeline."
+        },
+        "experienceFocus": {
+          "label": "Experience Focus",
+          "description": "Networking, showcases, and live knowledge sessions",
+          "subtitle": "Designed for discovery and real business conversations."
+        }
+      },
+      "whoYouCanMeet": {
+        "title": "Who You Can Meet",
+        "lineupFinalized": "Enterprise lineup is being finalized. Check again soon for participating companies and stands.",
+        "unlockFullList": "Register to unlock the full participant list and direct live access."
+      },
+      "scheduleHighlights": {
+        "title": "Schedule Highlights",
+        "dayLabel": "Day {day_number}",
+        "nextDayBadge": "+1 day",
+        "noSchedule": "Full schedule details will appear here as soon as timeline slots are published.",
+        "unlockFullSchedule": "Register to unlock the complete schedule and all live sections."
+      },
+      "joinCard": {
+        "title": "Participation",
+        "footer": "By joining, you agree to the code of conduct.",
+        "approved": {
+          "noTimeline": {
+            "message": "Your registration is approved, but the event timeline is not published yet.",
+            "action": "Access will open when schedule slots are published.",
+            "button": "Waiting for Timeline"
+          },
+          "accessOpen": {
+            "message": "Your registration is approved. You can access the live event now.",
+            "button": "Enter Event"
+          },
+          "closedBeforeEvent": {
+            "message": "You are approved. Event access opens when the timeline goes live.",
+            "button": "Access Opens Soon"
+          },
+          "closedBetweenSlots": {
+            "message": "Event is in progress. Live access opens at the next active slot.",
+            "button": "Next Slot Soon"
+          },
+          "ended": {
+            "message": "This event timeline has ended. Live access is now closed.",
+            "button": "Event Ended"
+          }
+        },
+        "paymentRequired": {
+          "ended": {
+            "message": "This event has ended. New paid access is closed.",
+            "button": "Event Ended"
+          },
+          "active": {
+            "message": "This event requires payment.",
+            "ticketPrice": "Ticket Price: {price} {currency}",
+            "button": "Pay Now"
+          }
+        },
+        "paymentPending": {
+          "message": "Your payment is being processed. You'll be granted access shortly.",
+          "button": "Check Status"
+        },
+        "pending": {
+          "message": "Your request is pending approval. You'll be notified once it's reviewed.",
+          "button": "Pending Approval"
+        },
+        "rejected": {
+          "message": "Your request was not approved."
+        },
+        "notJoined": {
+          "description": "Join this event to access stands, schedule, and resources.",
+          "buttonPaid": "Register & Pay",
+          "buttonFree": "Register Now"
+        },
+        "badges": {
+          "ended": "ENDED",
+          "timelinePending": "TIMELINE PENDING",
+          "liveAccess": "LIVE ACCESS",
+          "inProgress": "IN PROGRESS",
+          "upcoming": "UPCOMING",
+          "approved": "APPROVED",
+          "paymentRequired": "PAYMENT REQUIRED",
+          "paymentPending": "PAYMENT PENDING",
+          "pending": "PENDING",
+          "rejected": "REJECTED",
+          "notJoined": "NOT JOINED"
+        }
+      },
+      "receiptDownload": {
+        "payerDefault": "Visitor",
+        "paymentMethod": "Stripe (Online Card Payment)",
+        "error": "Could not download receipt. You might not have a paid receipt for this event."
+      },
+      "joinAlert": {
+        "failed": "Failed to join event. Please try again.",
+        "notFound": "Event not found."
+      }
+    }
+  },
+  "admin": {
+    "navigation": {
+      "dashboard": "Dashboard",
+      "events": "Events",
+      "users": "Users",
+      "organizations": "Organizations",
+      "enterprises": "Enterprises",
+      "organizerApprovals": "Organizer Approvals",
+      "enterpriseApprovals": "Enterprise Approvals",
+      "finance": "Finance",
+      "monitoring": "Monitoring",
+      "auditLogs": "Audit Logs",
+      "incidents": "Incidents",
+      "profile": "Profile"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance."
+    },
+    "analytics": {
+      "title": "Analytics Dashboard",
+      "description": "Platform-level metrics and engagement trends.",
+      "kpi": {
+        "totalUsers": "Total Users",
+        "activeEvents": "Active Events",
+        "totalStands": "Total Stands",
+        "totalEvents": "Total Events",
+        "organizations": "Organizations",
+        "pendingApproval": "Pending"
+      },
+      "charts": {
+        "thirtyDayTrend": "30-Day Event Creation Trend",
+        "eventDistribution": "Event Distribution",
+        "eventsCreated": "Events Created"
+      },
+      "eventsTable": {
+        "title": "Recent Events — click for deep metrics",
+        "noEvents": "No events found."
+      },
+      "export": {
+        "exportPdf": "Export PDF",
+        "exportCsv": "Export CSV",
+        "generating": "Generating…",
+        "exporting": "Exporting…"
+      },
+      "refresh": "Refresh",
+      "deepMetrics": {
+        "title": "Event Deep Metrics",
+        "breadcrumb": "Analytics",
+        "kpi": {
+          "eventViews": "Event Views",
+          "standVisits": "Stand Visits",
+          "chatsOpened": "Chats Opened",
+          "leadsGenerated": "Leads Generated",
+          "participants": "Participants",
+          "activeStands": "Active Stands"
+        },
+        "charts": {
+          "activityTrend": "14-Day Activity Trend",
+          "interactionBreakdown": "Interaction Breakdown",
+          "activity": "Activity"
+        }
+      }
+    },
+    "events": {
+      "title": "Event Review",
+      "description": "Approve or reject pending event submissions from organisers.",
+      "allEvents": "All Events",
+      "refresh": "Refresh",
+      "report": "Report",
+      "manage": "Manage",
+      "viewEventPage": "View Full Event Page",
+      "viewOrganizerReport": "View Organizer Report",
+      "inProgress": "In progress",
+      "upcoming": "Upcoming",
+      "table": {
+        "title": "Event",
+        "organizer": "Organizer",
+        "date": "Date",
+        "location": "Location",
+        "category": "Category",
+        "state": "State",
+        "payment": "Payment"
+      },
+      "detail": {
+        "backToEvents": "All Events",
+        "refresh": "Refresh",
+        "timelineTitle": "Event Timeline",
+        "timelineNodes": {
+          "pending": "Pending",
+          "paymentDue": "Payment Due",
+          "verifying": "Verifying",
+          "paymentDone": "Payment Done",
+          "live": "Live",
+          "closed": "Closed"
+        },
+        "countdown": {
+          "startsIn": "Event starts in",
+          "endsIn": "Event ends in",
+          "startPassed": "Scheduled start has passed — auto-start pending",
+          "endPassed": "Scheduled end has passed — auto-close pending"
+        },
+        "actions": {
+          "forceStart": "Force Start",
+          "forceClose": "Force Close",
+          "verifyPayment": "Verify Payment",
+          "organizerReport": "Organizer Report",
+          "liveMonitor": "Live Monitor"
+        },
+        "confirm": {
+          "startTitle": "Force Start Event",
+          "startMessage": "Are you sure you want to force start this event? This will make it live immediately.",
+          "startLabel": "Force Start",
+          "closeTitle": "Force Close Event",
+          "closeMessage": "Are you sure you want to force close this event? This will end it immediately.",
+          "closeLabel": "Force Close",
+          "paymentTitle": "Confirm Payment",
+          "paymentMessage": "Are you sure you want to confirm this payment and activate the event?",
+          "paymentLabel": "Confirm Payment"
+        },
+        "toast": {
+          "startSuccess": "Event started successfully",
+          "closeSuccess": "Event closed successfully",
+          "paymentSuccess": "Payment confirmed and event activated",
+          "startFailed": "Failed to start event",
+          "closeFailed": "Failed to close event",
+          "paymentFailed": "Failed to confirm payment"
+        },
+        "eventNotFound": "Event not found",
+        "failedToLoad": "Failed to load event. Please try again."
+      },
+      "states": {
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "waitingForPayment": "Waiting for Payment",
+        "paymentProofSubmitted": "Payment Reviewing",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed",
+        "upcoming": "Upcoming",
+        "inProgress": "In progress"
+      },
+      "panel": {
+        "eventDetails": "Event Details",
+        "timezoneLabel": "Displayed in timezone",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "location": "Location",
+        "category": "Category",
+        "enterprises": "Enterprises",
+        "payment": "Payment",
+        "autoCalc": "Auto-calc",
+        "paymentProof": "Payment Proof",
+        "paymentProofMessage": "Organizer has submitted a proof of payment.",
+        "viewProof": "View Proof / Receipt",
+        "pricing": "Pricing",
+        "standPrice": "Stand price",
+        "visitorAccess": "Visitor access",
+        "paid": "Paid",
+        "free": "Free",
+        "perTicket": "/ ticket",
+        "perEnterprise": "/ enterprise",
+        "description": "Description",
+        "extendedDetails": "Extended Details",
+        "schedule": "Event Schedule",
+        "additionalInfo": "Additional Information",
+        "tags": "Tags",
+        "enterpriseLink": "Enterprise Link",
+        "visitorLink": "Visitor Link",
+        "rejectionReason": "Rejection reason",
+        "approveQuestion": "Approve this event?",
+        "rejectQuestion": "Reject this event?",
+        "paymentAmount": "Payment amount (required)",
+        "paymentRequiredError": "Payment required. Please enter an amount.",
+        "paymentInvalidError": "Payment amount is required and must be 0 or greater.",
+        "rejectReasonPlaceholder": "Reason for rejection (recommended)…",
+        "confirmApprove": "Confirm Approve",
+        "confirmReject": "Confirm Reject",
+        "approveLoading": "Approving…",
+        "rejectLoading": "Rejecting…",
+        "startQuestion": "Start this event immediately?",
+        "closeQuestion": "Close this event now?",
+        "confirmStart": "Confirm Start",
+        "confirmClose": "Confirm Close",
+        "startLoading": "Starting…",
+        "closeLoading": "Closing…",
+        "confirmPaymentQuestion": "Confirm this payment?",
+        "verifyAndActivate": "Verify & Activate",
+        "verifyingLoading": "Verifying…",
+        "noSchedule": "No schedule provided",
+        "noSlots": "No slots defined",
+        "noDescription": "No description",
+        "dayLabel": "Day"
+      }
+    },
+    "users": {
+      "title": "User Governance",
+      "description": "Access control and global registry",
+      "anonymousUser": "Anonymous User",
+      "failedToLoad": "Failed to load user registry",
+      "addAdministrator": "Add Administrator",
+      "searchPlaceholder": "Search by name or email…",
+      "filters": {
+        "allRoles": "All Roles",
+        "administrators": "Administrators",
+        "organizers": "Organizers",
+        "visitors": "Visitors",
+        "enterprise": "Enterprise"
+      },
+      "table": {
+        "identity": "Identity",
+        "role": "Role",
+        "status": "Status",
+        "active": "Active",
+        "blocked": "Blocked",
+        "noAccounts": "No accounts matched your search"
+      },
+      "detail": {
+        "identityGovernance": "Identity & Governance",
+        "emailAddress": "Email Address",
+        "usernameHandle": "Username handle",
+        "affiliationDate": "Affiliation Date",
+        "professionalProfile": "Professional Profile",
+        "corporateCredentials": "Corporate Credentials",
+        "jobTitle": "Job Title",
+        "organization": "Organization",
+        "industry": "Industry",
+        "experience": "Experience",
+        "ecosystemEngagement": "Ecosystem Engagement",
+        "networkingObjectives": "Networking Objectives",
+        "activeAccount": "Active Account",
+        "suspended": "Suspended",
+        "revokePermissions": "Revoke Permissions",
+        "restoreAccess": "Restore Access"
+      },
+      "createModal": {
+        "title": "New Administrator",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "John Doe",
+        "emailAddress": "Email Address",
+        "emailPlaceholder": "admin@ivep.platform",
+        "username": "Username",
+        "usernamePlaceholder": "jdoe_admin",
+        "password": "Password",
+        "passwordPlaceholder": "••••••••",
+        "create": "Create",
+        "errorMessage": "Failed to create administrator account"
+      },
+      "toast": {
+        "suspended": "User privileges revoked.",
+        "activated": "User privileges restored.",
+        "actionFailed": "Action failed"
+      }
+    },
+    "organizations": {
+      "title": "Organization Review",
+      "description": "Corporate partners and enterprise identities",
+      "loadingRegistry": "Loading registry…",
+      "noOrganizations": "No organizations found",
+      "noDescription": "No description provided",
+      "table": {
+        "organization": "Organization",
+        "onboarding": "Onboarding",
+        "status": "Status"
+      },
+      "detail": {
+        "performanceOverview": "Performance Overview",
+        "visitors": "Visitors",
+        "events": "Events",
+        "revenue": "Revenue",
+        "organizationIdentity": "Organization Identity",
+        "registeredName": "Registered Name",
+        "onboardingDate": "Onboarding Date",
+        "industrySector": "Industry / Sector",
+        "businessWebsite": "Business Website",
+        "contactEmail": "Contact Email",
+        "primaryContact": "Primary Contact (Owner)",
+        "ownerName": "Owner Name",
+        "ownerEmail": "Owner Email",
+        "organizationProfile": "Organization Profile",
+        "administrativeGovernance": "Administrative Governance",
+        "verificationStatus": "Verification Status",
+        "verifiedPartner": "Verified Partner",
+        "pendingReview": "Pending Review",
+        "flaggedContent": "Flagged Content",
+        "restricted": "Restricted",
+        "clear": "Clear",
+        "operationalStatus": "Operational Status",
+        "operational": "Operational",
+        "verifyAccount": "Verify Enterprise Account",
+        "flag": "Flag",
+        "unflag": "Unflag",
+        "suspend": "Suspend",
+        "unsuspend": "Unsuspend",
+        "verified": "Verified",
+        "flagged": "Flagged",
+        "suspended": "Suspended"
+      },
+      "toast": {
+        "verified": "{name} verified.",
+        "flagToggled": "{name} flag toggled.",
+        "suspensionToggled": "{name} suspension toggled."
+      }
+    },
+    "enterprises": {
+      "title": "Enterprise Registry",
+      "description": "Exhibitors and corporate participants",
+      "loadingRegistry": "Loading registry…",
+      "noEnterprises": "No enterprises found",
+      "exhibition": "Exhibition",
+      "table": {
+        "company": "Company",
+        "industry": "Industry",
+        "status": "Status"
+      },
+      "detail": {
+        "engagementOverview": "Engagement Overview",
+        "stands": "Stands",
+        "leads": "Leads",
+        "meetings": "Meetings",
+        "exhibitorProfile": "Exhibitor Profile",
+        "companyName": "Company Name",
+        "joinDate": "Join Date",
+        "brandWebsite": "Brand Website",
+        "businessEmail": "Business Email",
+        "authorizedRepresentative": "Authorized Representative",
+        "fullName": "Full Name",
+        "directEmail": "Direct Email",
+        "aboutEnterprise": "About Enterprise",
+        "administrativeGovernance": "Administrative Governance",
+        "verificationStatus": "Verification Status",
+        "verifiedPartner": "Verified partner",
+        "pendingReview": "Pending Review",
+        "flaggedContent": "Flagged Content",
+        "restricted": "Restricted",
+        "clear": "Clear",
+        "operationalStatus": "Operational Status",
+        "active": "Active",
+        "verifyAccount": "Verify Enterprise Account",
+        "flag": "Flag",
+        "unflag": "Unflag",
+        "suspend": "Suspend",
+        "unsuspend": "Unsuspend",
+        "verified": "Verified",
+        "flagged": "Flagged",
+        "suspended": "Suspended",
+        "enterprisePartner": "Enterprise Partner"
+      }
+    },
+    "organizerRegistrations": {
+      "title": "Organizer Registrations",
+      "description": "Review and approve organizer account applications.",
+      "loading": "Loading…",
+      "tabs": {
+        "all": "All",
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "total": "{total} total",
+      "noData": "No organizer registrations found for this status.",
+      "fields": {
+        "organisation": "Organisation",
+        "type": "Type",
+        "location": "Location",
+        "phone": "Phone",
+        "proEmail": "Pro Email",
+        "website": "Website"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectPrompt": "Rejection reason (optional):",
+      "approveFailed": "Approval failed",
+      "rejectFailed": "Rejection failed",
+      "failedToLoad": "Failed to load registrations"
+    },
+    "enterpriseRegistrations": {
+      "title": "Enterprise Registrations",
+      "description": "Review and approve enterprise account applications.",
+      "loading": "Loading…",
+      "contactLabel": "Contact:",
+      "tabs": {
+        "all": "All",
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "total": "{total} total",
+      "noData": "No enterprise registrations found for this status.",
+      "contact": "Contact",
+      "employees": "{count} employees",
+      "founded": "Founded {year}",
+      "linkedin": "LinkedIn",
+      "registered": "Registered",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectPrompt": "Rejection reason (optional):",
+      "approveFailed": "Approval failed",
+      "rejectFailed": "Rejection failed",
+      "failedToLoad": "Failed to load registrations"
+    },
+    "enterpriseJoinRequests": {
+      "title": "Enterprise Join Requests",
+      "tabs": {
+        "awaitingApproval": "Awaiting Approval",
+        "pendingPayment": "Pending Payment",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "searchPlaceholder": "Search by org name or email…",
+      "requestsFound": "{total} requests found",
+      "noRequests": "No {status} requests found",
+      "table": {
+        "enterprise": "Enterprise",
+        "contact": "Contact",
+        "industry": "Industry",
+        "history": "History",
+        "status": "Status",
+        "actions": "Actions",
+        "approvedCount": "{count} approved",
+        "suspended": "suspended"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "approvedToast": "{name} approved",
+      "rejectedToast": "{name} rejected",
+      "approveFailed": "Approve failed",
+      "rejectFailed": "Reject failed",
+      "failedToLoad": "Failed to load requests",
+      "rejectModal": {
+        "title": "Reject Request",
+        "description": "Reject {name}'s join request",
+        "reasonLabel": "Reason",
+        "reasonOptional": "(optional)",
+        "reasonPlaceholder": "Explain why the request is being rejected…",
+        "reject": "Reject"
+      },
+      "statusBadges": {
+        "pendingPayment": "Pending Payment",
+        "pendingAdminApproval": "Awaiting Approval",
+        "requested": "Requested",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "finance": {
+      "title": "Financial Dashboard",
+      "description": "Unified transactions, payout settlement, and payout audit history.",
+      "summary": {
+        "totalVolume": "Total Volume",
+        "settled": "Settled",
+        "unpaid": "Unpaid"
+      },
+      "filters": {
+        "sourceType": "Source Type",
+        "payoutStatus": "Payout Status",
+        "receiverType": "Receiver Type",
+        "all": "All",
+        "eventTicket": "Event Ticket",
+        "marketplace": "Marketplace",
+        "standFee": "Stand Fee",
+        "unpaid": "Unpaid",
+        "processing": "Processing",
+        "paid": "Paid",
+        "organizer": "Organizer",
+        "enterprise": "Enterprise",
+        "platform": "Platform"
+      },
+      "transactionsTable": {
+        "type": "Type",
+        "amount": "Amount",
+        "payer": "Payer",
+        "receiver": "Receiver",
+        "status": "Status",
+        "payoutStatus": "Payout Status",
+        "date": "Date",
+        "actions": "Actions",
+        "markAsPaid": "Mark as Paid",
+        "noAction": "No action",
+        "noTransactions": "No transactions found for the selected filters."
+      },
+      "payoutHistory": {
+        "title": "Payout History",
+        "receiver": "Receiver",
+        "amount": "Amount",
+        "admin": "Admin",
+        "date": "Date",
+        "note": "Note",
+        "actions": "Actions",
+        "noRecords": "No payout records yet.",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleteConfirm": "Delete this payout history record? This action cannot be undone.",
+        "deleteSuccess": "Payout history deleted successfully",
+        "deleteFailed": "Failed to delete payout history",
+        "editSuccess": "Payout history updated successfully",
+        "editFailed": "Failed to update payout history",
+        "invalidId": "Invalid payout id"
+      },
+      "confirmModal": {
+        "title": "Confirm Payout Settlement",
+        "description": "You are settling {source} for {amount}.",
+        "noteLabel": "Optional note",
+        "notePlaceholder": "Settlement note (optional)",
+        "confirm": "Confirm",
+        "processing": "Processing...",
+        "failed": "Failed to mark payout"
+      },
+      "editModal": {
+        "title": "Edit Payout History",
+        "statusLabel": "Status",
+        "completed": "Completed",
+        "pending": "Pending",
+        "noteLabel": "Note",
+        "notePlaceholder": "Edit note"
+      }
+    },
+    "subscriptions": {
+      "title": "Subscriptions",
+      "description": "View and override billing plans for any organization",
+      "stats": {
+        "totalOrganizations": "Total Organizations",
+        "proPlans": "PRO Plans",
+        "freePlans": "FREE Plans"
+      },
+      "table": {
+        "organization": "Organization",
+        "plan": "Plan",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "loading": "Loading subscriptions…",
+      "noSubscriptions": "No subscriptions found",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "cancel": "Cancel",
+      "alreadyFree": "Already on FREE plan",
+      "cancelToFree": "Cancel to FREE",
+      "failedToLoad": "Failed to load subscriptions",
+      "actionFailed": "Action failed",
+      "toast": {
+        "switched": "{name} switched to {plan}.",
+        "cancelled": "{name} subscription cancelled."
+      }
+    },
+    "monitoring": {
+      "title": "Platform Monitoring",
+      "description": "Server health, database status, and incidents.",
+      "lastRefresh": "Last refresh: {time}",
+      "degradedAlert": {
+        "title": "Platform degraded",
+        "message": "one or more services are reporting issues. Consider creating an incident."
+      },
+      "health": {
+        "overall": "Overall",
+        "mongodb": "MongoDB",
+        "redis": "Redis",
+        "apiProcess": "API Process",
+        "uptime": "Uptime",
+        "latency": "Latency",
+        "notConfigured": "Not configured"
+      },
+      "incidents": {
+        "title": "Recent Incidents",
+        "count": "{count} incidents",
+        "noIncidents": "No incidents recorded."
+      },
+      "createIncident": {
+        "title": "Create Incident",
+        "titleLabel": "Title",
+        "titleRequired": "Title is required",
+        "titlePlaceholder": "Brief incident title",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What happened?",
+        "severityLabel": "Severity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical",
+        "create": "Create Incident",
+        "creating": "Creating…",
+        "failed": "Failed to create incident"
+      },
+      "failedToLoad": "Failed to load monitoring data"
+    },
+    "audit": {
+      "title": "Audit Logs",
+      "description": "Full governance trail — every admin action, timestamped.",
+      "filters": {
+        "action": "Action",
+        "entityType": "Entity type",
+        "actorId": "Actor ID",
+        "actorPlaceholder": "User ID…",
+        "from": "From",
+        "to": "To",
+        "allActions": "All actions",
+        "allEntities": "All entities",
+        "event": "Event",
+        "user": "User",
+        "organization": "Organization",
+        "subscription": "Subscription",
+        "incident": "Incident",
+        "apply": "Apply"
+      },
+      "table": {
+        "title": "Log Entries",
+        "entriesCount": "{count} entries",
+        "timestamp": "Timestamp",
+        "action": "Action",
+        "entity": "Entity",
+        "actorId": "Actor ID",
+        "details": "Details",
+        "noEntries": "No audit log entries found."
+      },
+      "failedToLoad": "Failed to load audit logs"
+    },
+    "incidents": {
+      "title": "Incident Management",
+      "description": "Investigate, mitigate, and resolve platform incidents.",
+      "loading": "Loading…",
+      "genericError": "Error",
+      "tabs": {
+        "all": "All",
+        "open": "Open",
+        "investigating": "Investigating",
+        "mitigating": "Mitigating",
+        "resolved": "Resolved"
+      },
+      "list": {
+        "title": "Incidents",
+        "total": "{count} total",
+        "noIncidents": "No incidents found."
+      },
+      "create": {
+        "newIncident": "New Incident",
+        "titleLabel": "Title",
+        "titleRequired": "Title required",
+        "titlePlaceholder": "e.g. Database connection timeout",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What's happening?",
+        "severityLabel": "Severity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical",
+        "create": "Create",
+        "creating": "Creating…"
+      },
+      "detail": {
+        "adminNotes": "Admin Notes",
+        "notesPlaceholder": "Add investigation notes, mitigation steps…",
+        "saveNotes": "Save Notes",
+        "investigate": "Investigate",
+        "mitigate": "Mitigate",
+        "markResolved": "Mark Resolved",
+        "resolved": "Resolved ✓",
+        "saving": "…"
+      },
+      "failedToLoad": "Failed to load incidents"
+    },
+    "payments": {
+      "title": "Payment Reviews",
+      "disabledMessage": "This page is temporarily disabled while the payment moderation flow is being stabilized."
+    },
+    "sessions": {
+      "managementTitle": "Session Management",
+      "description": "Import from your event schedule or create manually — then hit Start on any scheduled session to go live.",
+      "importFromSchedule": "Import from Schedule",
+      "newSession": "New Session",
+      "form": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Opening Keynote",
+        "speakerLabel": "Speaker",
+        "speakerPlaceholder": "Dr. Jane Smith",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Optional description...",
+        "createSession": "Create Session",
+        "creating": "Creating…",
+        "syncing": "Syncing…"
+      },
+      "validation": {
+        "requiredFields": "Title, start time, and end time are required.",
+        "timeOrder": "Start time must be before end time.",
+        "createFailed": "Failed to create session. Check dates are within event range."
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "live": "LIVE",
+        "ended": "Ended",
+        "transcriptActive": "Transcript Active"
+      },
+      "actions": {
+        "start": "Start",
+        "end": "End"
+      },
+      "timeline": {
+        "legend": {
+          "scheduled": "Scheduled",
+          "live": "Live",
+          "ended": "Ended"
+        }
+      },
+      "confirm": {
+        "startTitle": "Start Session",
+        "startMessage": "Start session \"{name}\" now? Viewers will be notified.",
+        "startLabel": "Start Now",
+        "endTitle": "End Session",
+        "endMessage": "End session \"{name}\" now? This cannot be undone.",
+        "endLabel": "End Now"
+      },
+      "toast": {
+        "startSuccess": "Session \"{name}\" started",
+        "endSuccess": "Session \"{name}\" ended",
+        "startFailed": "Failed to start session",
+        "endFailed": "Failed to end session",
+        "syncSuccess": "{count} session(s) imported from schedule",
+        "syncFailed": "No schedule found for this event. Please add conference slots in the event schedule builder first."
+      },
+      "noSessions": "No sessions yet."
+    },
+    "organizerReport": {
+      "title": "Organizer Report",
+      "description": "Business intelligence & event performance · Updated {time}",
+      "keyMetrics": "Key Metrics",
+      "kpi": {
+        "totalVisitors": "Total Visitors",
+        "enterpriseRate": "Enterprise Rate",
+        "engagementScore": "Engagement Score",
+        "leadsGenerated": "Leads Generated",
+        "meetingsBooked": "Meetings Booked",
+        "chatInteractions": "Chat Interactions"
+      },
+      "revenue": {
+        "title": "Revenue Performance",
+        "ticketRevenue": "Ticket Revenue",
+        "standRevenue": "Stand Revenue",
+        "totalGross": "Total Gross Revenue",
+        "verifiedIncome": "Verified Income",
+        "revenueMix": "Revenue Mix",
+        "donutCenter": {
+          "share": "Share",
+          "mixPercent": "Mix%"
+        },
+        "stand": "Stand",
+        "ticket": "Ticket",
+        "noRevenueData": "No revenue data available yet.",
+        "vsEventAvg": "+12% vs Event Avg"
+      },
+      "trends": {
+        "title": "Performance Trends",
+        "visitorsOverTime": "Visitors Over Time",
+        "engagementOverTime": "Engagement Over Time",
+        "leadGeneration": "Lead Generation Performance",
+        "noVisitorData": "No visitor data yet.",
+        "noEngagementData": "No engagement data yet.",
+        "noLeadData": "No lead data yet."
+      },
+      "safety": {
+        "title": "Safety & Moderation",
+        "totalFlags": "Total Flags",
+        "resolved": "Resolved",
+        "resolutionRate": "Resolution Rate",
+        "greatModeration": "Great moderation rate",
+        "needsAttention": "Some flags need attention"
+      },
+      "export": {
+        "exporting": "Exporting…",
+        "retry": "Retry",
+        "exportFailed": "PDF export failed."
+      }
+    },
+    "eventLiveMonitoring": {
+      "title": "Live Monitor",
+      "backToEvent": "Back to Event",
+      "eventFallback": "Event",
+      "live": "LIVE",
+      "updated": "Updated {time}",
+      "kpis": {
+        "activeUsers": "Active Users",
+        "messagesPerMin": "Messages / Min",
+        "standVisits": "Stand Visits",
+        "chatSessions": "Chat Sessions",
+        "safetyFlags": "Safety Flags"
+      },
+      "charts": {
+        "messagesPerMin": "Messages / min (last 15 min)",
+        "collectingData": "Collecting data…",
+        "topActiveStands": "Top Active Stands",
+        "userDistribution": "User Distribution",
+        "noActivity": "No activity",
+        "noActiveUsers": "No active users"
+      },
+      "activeUsers": {
+        "title": "Active Users ({count})",
+        "online": "Online",
+        "noUsers": "No active users",
+        "since": "Since {time}"
+      },
+      "safetyFlags": {
+        "title": "Safety Flags ({count} recent)",
+        "attention": "Attention",
+        "allClear": "No open flags — all clear",
+        "highPriority": "High priority",
+        "investigate": "Investigate"
+      },
+      "error": {
+        "failedToFetch": "Failed to fetch metrics",
+        "back": "Back"
+      }
+    }
+  },
+  "organizer": {
+    "dashboard": {
+      "welcome": "Welcome back, {name}",
+      "subtitle": "Here's what's happening with your events today.",
+      "lastSynced": "Last synced: {time}",
+      "waitingSync": "Waiting for first sync...",
+      "refresh": "Refresh",
+      "exportPdf": "Export Overall Performance (PDF)",
+      "errorRefresh": "Unable to refresh dashboard data right now.",
+      "errorExport": "Failed to export overall report.",
+      "exportSuccess": "Overall performance report exported successfully!",
+      "stats": {
+        "totalEvents": "Total Events",
+        "activeEvents": "Active Events",
+        "pendingApproval": "Pending Approval",
+        "totalVisitors": "Total Visitors"
+      },
+      "engagementScore": "Engagement Score",
+      "leadsGenerated": "Leads Generated",
+      "safetyResolution": "Safety Resolution",
+      "recentEvents": {
+        "title": "Recent Events",
+        "searchPlaceholder": "Search event",
+        "filters": {
+          "all": "All",
+          "active": "Active",
+          "pending": "Pending",
+          "closed": "Closed"
+        },
+        "loading": "Loading events...",
+        "empty": "No events found. Start by creating one!",
+        "noMatch": "No events match your filter."
+      },
+      "performanceSpotlight": {
+        "title": "Performance Spotlight",
+        "tip": "Add detailed schedules and complete stand profiles to increase conversion from visitors to leads.",
+        "enterpriseParticipation": "Enterprise Participation",
+        "chatInteractions": "Chat Interactions",
+        "improveEvents": "Improve Events"
+      }
+    },
+    "events": {
+      "title": "My Events",
+      "subtitle": "Manage and track your event requests.",
+      "newEvent": "New Event Request",
+      "searchPlaceholder": "Search by title or status…",
+      "empty": "You haven't submitted any event requests yet.",
+      "noMatch": "No events match your search.",
+      "table": {
+        "event": "Event",
+        "dates": "Dates",
+        "enterprises": "Enterprises",
+        "payment": "Payment",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "payNow": "Pay Now",
+        "start": "Start",
+        "analytics": "Analytics"
+      },
+      "states": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed",
+        "inProgress": "In progress",
+        "upcoming": "Upcoming",
+        "pendingApproval": "Pending Approval",
+        "waitingForPayment": "Waiting for Payment",
+        "paymentProofSubmitted": "Payment Reviewing"
+      },
+      "confirm": {
+        "closeTitle": "Close Event",
+        "closeMessage": "Are you sure you want to close this event?"
+      },
+      "toast": {
+        "startFailed": "Failed to start event",
+        "closeFailed": "Failed to close event"
+      }
+    },
+    "newEvent": {
+      "title": "Submit Event Request",
+      "subtitle": "Fill in the details below. Your request will be reviewed by an administrator.",
+      "infoBanner": "Once submitted, an admin will review your request. If approved, you will receive a payment invoice. After payment is confirmed, enterprise and visitor access links will be generated automatically.",
+      "sections": {
+        "basicInfo": "Basic Information",
+        "participationDetails": "Participation Details",
+        "pricing": "Pricing",
+        "schedule": "Event Schedule *",
+        "additionalInfo": "Additional Information",
+        "additionalInfoOptional": "(optional)"
+      },
+      "labels": {
+        "eventTitle": "Event Title *",
+        "description": "Description",
+        "category": "Category",
+        "startDate": "Start Date *",
+        "endDate": "End Date *",
+        "timezone": "Event Timezone",
+        "location": "Location",
+        "tags": "Tags (comma-separated)",
+        "bannerImage": "Banner Image URL",
+        "uploadBanner": "Upload Banner Image",
+        "selectedFile": "Selected: {filename} (will upload on submit)",
+        "fileHint": "You can upload a file or paste an external URL.",
+        "scheduleHint": "Schedule slots use 24-hour format (HH:mm). If a slot ends earlier than it starts, it continues into the next day.",
+        "daysGenerated": "{count} day(s) · add time slots in the schedule section below",
+        "numEnterprises": "Number of Participating Enterprises *",
+        "extendedDetails": "Extended Event Details *",
+        "standPrice": "Stand Price per Enterprise (MAD) *",
+        "standPriceHint": "The amount each enterprise pays to host a stand at this event.",
+        "eventType": "Event Type for Visitors *",
+        "eventTypeFree": "Free — visitors attend at no cost",
+        "eventTypePaid": "Paid — visitors purchase a ticket",
+        "visitorPrice": "Visitor Ticket Price (MAD) *",
+        "visitorPriceHint": "Price visitors pay to access the event.",
+        "scheduleDescription": "Days are generated automatically from your start & end dates. Add time slots for each day.",
+        "additionalInfoPlaceholder": "Any other relevant information for the administrator...",
+        "scheduleAutoGenerated": "Schedule days will be generated automatically from the date range."
+      },
+      "placeholders": {
+        "eventTitle": "e.g. Tech Innovation Expo 2026",
+        "description": "Describe what attendees can expect...",
+        "category": "Virtual Platform",
+        "tags": "e.g. AI, Tech, Startup",
+        "bannerUrl": "https://example.com/banner.jpg or /uploads/event_banners/...",
+        "numEnterprises": "e.g. 20",
+        "extendedDetails": "Provide detailed information: objectives, target audience, special features, etc."
+      },
+      "buttons": {
+        "submit": "Submit Request",
+        "submitting": "Submitting…",
+        "back": "Back"
+      },
+      "validation": {
+        "titleRequired": "Event title is required.",
+        "enterprisesMin": "Number of participating enterprises must be at least 1.",
+        "standPriceRequired": "Stand price is required and must be ≥ 0.",
+        "ticketPriceRequired": "Ticket price is required for paid events and must be ≥ 0.",
+        "endDateInvalid": "End date must be on or after start date.",
+        "startDatePast": "Start date cannot be in the past for the selected event timezone.",
+        "dateRequired": "Please select a start and end date.",
+        "scheduleEmpty": "The event schedule is empty.",
+        "daySlotsRequired": "Day {N} must have at least one time slot.",
+        "daySlotsTimeMissing": "Day {N}: every slot needs a start and end time.",
+        "daySlotsFormatInvalid": "Day {N}: use 24-hour time format (HH:mm) for all slots.",
+        "daySlotsIdentical": "Day {N}: start and end time cannot be identical.",
+        "dayOneSlotPast": "Day 1: {time} is in the past. Please choose a future time for today's schedule.",
+        "daySlotDescriptionMissing": "Day {N}: please describe the activity for the {start}–{end} slot.",
+        "extendedDetailsRequired": "Extended event details are required (at least 10 characters).",
+        "submitFailed": "Failed to submit event request. Please try again."
+      },
+      "categories": {
+        "exhibition": "Exhibition",
+        "conference": "Conference",
+        "webinar": "Webinar",
+        "networking": "Networking",
+        "workshop": "Workshop",
+        "hackathon": "Hackathon"
+      }
+    },
+    "eventDetail": {
+      "states": {
+        "pendingReview": "Pending Review",
+        "approvedPendingPayment": "Approved & Pending Payment",
+        "rejected": "Rejected",
+        "approvedWaitingPayment": "Approved - Waiting Payment",
+        "proofUnderReview": "Payment proof under review",
+        "paymentConfirmed": "Payment Confirmed",
+        "eventLive": "Event is Live",
+        "eventEnded": "Event Ended"
+      },
+      "editEvent": "Edit Event Information",
+      "form": {
+        "eventTitle": "Event Title",
+        "urlSlug": "URL Slug (Friendly ID)",
+        "timezone": "Event Timezone",
+        "registrationDeadline": "Registration Deadline",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "category": "Category",
+        "description": "Description",
+        "location": "Location",
+        "tags": "Tags (comma-separated)",
+        "standPrice": "Stand Price (MAD)",
+        "paidEvent": "Paid Event for Visitors",
+        "ticketPrice": "Ticket Price",
+        "currency": "MAD",
+        "extendedDetails": "Extended Details",
+        "additionalInfo": "Additional Info"
+      },
+      "buttons": {
+        "save": "Save Changes",
+        "cancel": "Cancel",
+        "editInfo": "Edit Info",
+        "analytics": "Analytics",
+        "report": "Report",
+        "start": "Start Event",
+        "close": "Close Event"
+      },
+      "toast": {
+        "updateFailed": "Failed to update event",
+        "startFailed": "Failed to start event.",
+        "closeFailed": "Failed to close event.",
+        "proofFailed": "Payment proof submission failed.",
+        "reportFailed": "Failed to download report."
+      },
+      "tabs": {
+        "overview": "Overview",
+        "schedule": "Schedule",
+        "conferences": "Conferences",
+        "links": "Links"
+      },
+      "approvalWorkflow": {
+        "title": "Approval Workflow",
+        "steps": {
+          "requestSubmitted": {
+            "label": "Request Submitted",
+            "description": "Awaiting admin review"
+          },
+          "adminApproved": {
+            "label": "Admin Approved",
+            "description": "Payment required: {amount} MAD",
+            "descriptionNoAmount": "Payment required"
+          },
+          "paymentConfirmed": {
+            "label": "Payment Confirmed",
+            "description": "Access links generated"
+          },
+          "eventLive": {
+            "label": "Event Live",
+            "description": "Event is currently running"
+          },
+          "eventClosed": {
+            "label": "Event Closed",
+            "description": "Event has ended"
+          }
+        }
+      },
+      "payment": {
+        "actionRequired": "Action Required",
+        "finalizePayment": "Finalize Payment",
+        "instruction": "To activate your event and generate guest links, please send {amount} MAD to the Platform RIB below.",
+        "ribLabel": "Platform RIB",
+        "uploadProof": "Upload Proof (Image/PDF)",
+        "chooseFile": "Choose file or drag here",
+        "fileHint": "PDF, JPG, PNG up to 10MB",
+        "urlPlaceholder": "...or paste proof URL here",
+        "submitProof": "Submit Payment Proof",
+        "confirmMessage": "Confirm that you have sent the payment to the displayed RIB and wish to submit this proof?"
+      },
+      "banners": {
+        "proofUnderReview": {
+          "title": "Payment Proof Under Review",
+          "message": "Your payment proof has been received and is being reviewed by an administrator. You'll be notified once it's confirmed."
+        },
+        "paymentConfirmed": {
+          "title": "Payment Confirmed",
+          "message": "Your payment has been confirmed. You can now start your event."
+        },
+        "rejected": {
+          "title": "Event Request Rejected",
+          "message": "Your event request was not approved. Please contact an administrator for more information."
+        }
+      },
+      "confirm": {
+        "startTitle": "Start Event",
+        "startMessage": "Are you sure you want to start this event? It will go LIVE and be visible to visitors.",
+        "closeTitle": "Close Event",
+        "closeMessage": "Are you sure you want to close this event? This action is permanent."
+      },
+      "notFound": "Event not found.",
+      "backToEvents": "Back to events",
+      "loadFailed": "Could not load event details.",
+      "overview": {
+        "eventInformation": "Event Information",
+        "pricing": "Pricing",
+        "inviteLinks": "Invite Links",
+        "enterpriseInvite": "Enterprise Invite Link",
+        "visitorInvite": "Visitor Invite Link",
+        "publicPage": "Public Event Page",
+        "copy": "Copy",
+        "copied": "Copied!"
+      },
+      "schedule": {
+        "title": "Event Schedule",
+        "editSchedule": "Edit Schedule",
+        "save": "Save Schedule",
+        "cancel": "Cancel",
+        "noSchedule": "No schedule provided",
+        "noDescription": "No description",
+        "noSlots": "No slots defined for this day.",
+        "past": "Past",
+        "crossDay": "Cross-day",
+        "nextDayBadge": "+1d",
+        "conferenceRoom": "Conference Room",
+        "beforeStart": "Before Start",
+        "overlapSpillover": "Overlap spill-over from Day {N}"
+      },
+      "conferences": {
+        "title": "Conference Sessions",
+        "empty": "No conference sessions configured.",
+        "subtitle": "Manage conference rooms and assignments for this event."
+      },
+      "links": {
+        "title": "Event Links",
+        "subtitle": "Access and sharing links for your event.",
+        "enterpriseAccess": "Enterprise Access",
+        "visitorAccess": "Visitor Access",
+        "noEnterpriseLink": "No enterprise link generated yet.",
+        "noVisitorLink": "No visitor link generated yet.",
+        "linkNotAvailable": "Link not available"
+      },
+      "eventEnded": "Event ended"
+    },
+    "eventAnalytics": {
+      "backToDetail": "Back to Event Details",
+      "title": "Performance Metrics & Analysis",
+      "lastRefresh": "Last refresh: {time}",
+      "waitingRefresh": "Waiting for first data refresh...",
+      "coverage": "Coverage: {count} metrics · {count} funnel stages",
+      "export": "Export Data",
+      "exporting": "Generating...",
+      "exportSuccess": "Report exported successfully! Your download should start shortly.",
+      "errorLoad": "Could not load analytics data.",
+      "errorExport": "Failed to export report. Please check your connection.",
+      "loading": "Analysing event data...",
+      "notFound": "Event not found",
+      "backToEvents": "Back to events list",
+      "insightNotReached": {
+        "title": "Insight Horizon Not Reached",
+        "message": "Analytics will materialize once the event transition to live state and participants begin engagement."
+      },
+      "viewTabs": {
+        "overview": "Overview",
+        "engagement": "Engagement",
+        "enterprises": "Enterprises"
+      },
+      "kpi": {
+        "participatingEnterprises": "Participating Enterprises",
+        "uniqueVisitors": "Unique Visitors",
+        "engagementEvents": "Engagement Events",
+        "engagementRate": "Engagement Rate",
+        "leadsCaptured": "Leads Captured",
+        "meetingsInitiated": "Meetings Initiated"
+      },
+      "keyPerformanceIndicators": "Key Performance Indicators",
+      "searchMetrics": "Search metrics…",
+      "funnel": {
+        "title": "Funnel Distribution",
+        "absolute": "Absolute",
+        "percentage": "Percentage"
+      },
+      "enterpriseRoster": {
+        "title": "Enterprise Roster",
+        "searchPlaceholder": "Search enterprises…",
+        "showingCount": "{count} of {total} enterprises",
+        "viewProfile": "View Profile"
+      },
+      "enterpriseModal": {
+        "loading": "Fetching profile...",
+        "verified": "Verified",
+        "description": "Description",
+        "contactEmail": "Contact Email",
+        "website": "Website",
+        "notAvailable": "Not available",
+        "noDescription": "This enterprise has not provided a description yet.",
+        "close": "Close Profile",
+        "loadFailed": "Failed to load organization profile."
+      },
+      "unnamedEnterprise": "Unnamed enterprise"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{count} unread",
+      "allCaughtUp": "All caught up!",
+      "markAllRead": "Mark all read",
+      "empty": "No notifications yet.",
+      "markRead": "Mark read",
+      "timeLabels": {
+        "daysAgo": "{X}d ago",
+        "hoursAgo": "{X}h ago",
+        "minutesAgo": "{X}m ago",
+        "justNow": "just now"
+      },
+      "types": {
+        "paymentRequired": "Payment Required",
+        "paymentConfirmed": "Payment Confirmed",
+        "linksGenerated": "Links Generated",
+        "eventApproved": "Event Approved",
+        "eventRejected": "Event Rejected",
+        "invitationSent": "Invitation Sent"
+      }
+    },
+    "subscription": {
+      "title": "Subscription Plans",
+      "subtitle": "Choose the best plan for your organizing needs.",
+      "plans": {
+        "basic": {
+          "name": "Basic",
+          "price": "$0/month",
+          "features": {
+            "events": "1 Event",
+            "visitors": "Up to 50 visitors",
+            "publicEvents": "Public events only"
+          },
+          "currentPlan": "Current Plan"
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$49/month",
+          "features": {
+            "events": "Unlimited Events",
+            "visitors": "Up to 500 visitors",
+            "privateEvents": "Private events",
+            "analytics": "Basic analytics"
+          },
+          "upgrade": "Upgrade to Pro",
+          "recommended": "Recommended"
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "price": "Custom",
+          "features": {
+            "customLimits": "Custom visitor limits",
+            "whiteLabeling": "White-labeling",
+            "support": "Dedicated support",
+            "apiAccess": "API access"
+          },
+          "contactSales": "Contact Sales"
+        }
+      },
+      "perMonth": "/month"
+    }
+  },
+  "enterprise": {
+    "dashboard": {
+      "workspaceLabel": "Enterprise Workspace",
+      "welcome": "Welcome back, {name}",
+      "summary": "You have {count} active stand(s), {count} catalog items, and {count} pending request(s) awaiting your attention.",
+      "pills": {
+        "live": "{count} Live",
+        "upcoming": "{count} Upcoming"
+      },
+      "kpi": {
+        "catalogItems": "Catalog Items",
+        "catalogSub": "{products} products · {services} services",
+        "activeStands": "Active Stands",
+        "activeStandsSub": "across {count} event(s)",
+        "pendingRequests": "Pending Requests",
+        "pendingRequestsSub": "{count} total inquiries",
+        "totalInquiries": "Total Inquiries",
+        "totalInquiriesSub": "{count} handled"
+      },
+      "eventParticipations": {
+        "title": "My Event Participations",
+        "viewAll": "View all",
+        "empty": "No event participations yet",
+        "emptyAction": "Browse events"
+      },
+      "eventStatus": {
+        "approved": "Approved",
+        "payFee": "Pay Fee",
+        "awaiting": "Awaiting",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "tooltips": {
+        "configureStand": "Configure Stand",
+        "analytics": "Analytics"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "browseEvents": {
+          "title": "Browse Events",
+          "subtitle": "Join new events & manage stands"
+        },
+        "manageCatalog": {
+          "title": "Manage Catalog",
+          "subtitle": "Add products & services"
+        },
+        "viewAnalytics": {
+          "title": "View Analytics",
+          "subtitle": "Stand performance & visitor data"
+        },
+        "communications": {
+          "title": "Communications",
+          "subtitle": "B2B chat & follow-ups"
+        },
+        "leadsContacts": {
+          "title": "Leads & Contacts",
+          "subtitle": "Visitor interactions & leads"
+        }
+      },
+      "requestsAwaiting": {
+        "title": "{count} Request(s) Awaiting Response",
+        "subtitle": "Visitors are enquiring about your products. Respond promptly to convert leads.",
+        "action": "Handle now"
+      },
+      "allCaughtUp": {
+        "title": "All caught up!",
+        "subtitle": "{count} inquir(ies/y) handled. Great work."
+      },
+      "catalogHealth": {
+        "title": "Catalog Health",
+        "manage": "Manage",
+        "products": "Products",
+        "services": "Services",
+        "activeStands": "Active Stands",
+        "inquiries": "Inquiries"
+      }
+    },
+    "events": {
+      "title": "Browse & Manage Events",
+      "subtitle": "Discover exhibitions, join as an exhibitor, and manage your stand.",
+      "searchPlaceholder": "Search events…",
+      "loading": "Loading events…",
+      "empty": "No events found.",
+      "emptyAction": "Browse public events",
+      "table": {
+        "event": "Event",
+        "date": "Date",
+        "enterprises": "Enterprises",
+        "standFee": "Stand Fee",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "payStandFee": "Pay Stand Fee",
+        "awaitingApproval": "Awaiting Approval",
+        "standApproved": "Stand Approved",
+        "guestApproved": "Guest Approved",
+        "standRejected": "Stand Rejected"
+      },
+      "actions": {
+        "requestToJoin": "Request to Join",
+        "configureStand": "Configure Stand",
+        "manage": "Manage",
+        "viewAnalytics": "View Analytics",
+        "payNow": "Pay Now",
+        "viewDetails": "View Details",
+        "downloadReceipt": "Download Receipt"
+      },
+      "detail": {
+        "liveNow": "Live Now",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "schedule": "Schedule",
+        "detailedSchedule": "Detailed Schedule",
+        "noSlots": "No slots defined for this day.",
+        "activityFallback": "Activity",
+        "overnight": "Overnight",
+        "organizer": "Organizer",
+        "category": "Category",
+        "date": "Date",
+        "location": "Location",
+        "enterprises": "Enterprises",
+        "standFee": "Stand Fee",
+        "free": "Free",
+        "description": "Description",
+        "participationStatus": "Participation Status",
+        "payment": {
+          "actionRequired": "Action Required",
+          "title": "Pay Stand Fee",
+          "instruction": "To secure your stand, please pay {amount} {currency}.",
+          "payNow": "Pay Now"
+        },
+        "approved": {
+          "title": "Stand Approved",
+          "message": "Your stand has been approved. Configure it before the event goes live.",
+          "action": "Configure Stand"
+        },
+        "rejected": {
+          "title": "Stand Rejected",
+          "message": "Your stand request was not accepted. Contact the organizer for more details."
+        },
+        "registrationOpens": "Registration Opens",
+        "registrationDeadline": "Registration Deadline",
+        "eventStarts": "Event Starts",
+        "eventEnds": "Event Ends",
+        "past": "Past",
+        "nextSlot": "Next slot: {time}",
+        "countdown": "{time}"
+      },
+      "modal": {
+        "configureStand": "Configure Stand",
+        "manageEvent": "Manage Event",
+        "viewAnalytics": "View Analytics",
+        "receiptError": "Could not generate receipt."
+      }
+    },
+    "stand": {
+      "title": "Configure Your Stand",
+      "subtitle": "Customize your virtual exhibition space for {eventTitle}.",
+      "tabs": {
+        "branding": "Branding",
+        "products": "Products",
+        "resources": "Resources",
+        "aiAssistant": "AI Assistant"
+      },
+      "save": "Save Changes",
+      "saving": "Saving…",
+      "savedSuccess": "Your stand has been saved.",
+      "saveFailed": "Failed to save stand.",
+      "branding": {
+        "title": "Stand Appearance",
+        "standName": {
+          "label": "Stand Name",
+          "help": "Stand name visible to visitors"
+        },
+        "tagline": {
+          "label": "Tagline",
+          "help": "Short tagline shown under your stand name"
+        },
+        "companyBio": {
+          "label": "Company Bio",
+          "placeholder": "Tell visitors about your company…"
+        },
+        "coverPhoto": {
+          "label": "Cover Photo",
+          "upload": "Upload Cover",
+          "remove": "Remove",
+          "change": "Change"
+        },
+        "logo": {
+          "label": "Logo",
+          "upload": "Upload Logo",
+          "current": "Current Logo",
+          "remove": "Remove Logo"
+        }
+      },
+      "products": {
+        "title": "Featured Products",
+        "subtitle": "Select products from your catalog to showcase on your stand.",
+        "empty": "No products found. Add products first.",
+        "addProduct": "Add Product",
+        "selected": "Selected Products",
+        "remove": "Remove from stand"
+      },
+      "resources": {
+        "title": "Stand Resources",
+        "subtitle": "Upload documents visitors can download (brochures, catalogs, etc.).",
+        "resourceName": "Resource Name",
+        "file": "File",
+        "upload": "Upload Resource",
+        "empty": "No resources uploaded yet.",
+        "download": "Download",
+        "delete": "Delete"
+      },
+      "aiAssistant": {
+        "title": "AI Stand Assistant",
+        "subtitle": "Configure an AI agent to answer visitor questions about your stand.",
+        "enable": "Enable AI Assistant",
+        "description": "AI assistant will respond to visitor questions about your stand, products, and services.",
+        "instructions": {
+          "title": "AI Agent Instructions",
+          "subtitle": "Provide context for the AI. This shapes how it responds to visitors.",
+          "placeholder": "Example: We are a leading provider of cloud analytics. Our flagship product is DataVision Pro. We serve enterprises in healthcare and finance."
+        },
+        "save": "Save AI Configuration"
+      }
+    },
+    "eventManagement": {
+      "title": "Event Management Hub",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "chats": "Chats",
+        "meetings": "Meetings",
+        "conferences": "Conferences",
+        "partners": "Partners"
+      },
+      "chats": {
+        "empty": "No active chats.",
+        "selectConversation": "Select a conversation",
+        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation."
+      },
+      "meetings": {
+        "title": "Meeting Requests",
+        "empty": "No meetings scheduled",
+        "subtitle": "When visitors request meetings with your stands, they will appear here.",
+        "approve": "Approve",
+        "decline": "Decline",
+        "ended": "Meeting ended",
+        "approvedStarts": "Approved · starts {time}",
+        "join": "Join"
+      },
+      "conferences": {
+        "title": "Assigned Conferences",
+        "empty": "No conference sessions assigned.",
+        "subtitle": "When organizers assign you to a conference, it will appear here.",
+        "goLive": "Go Live",
+        "enterStudio": "Enter Studio"
+      },
+      "partners": {
+        "title": "Partner Enterprises",
+        "empty": "No partner enterprises yet.",
+        "subtitle": "Connect with other enterprises participating in this event."
+      }
+    },
+    "eventRequests": {
+      "title": "Product & Service Requests",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "products": "Products",
+        "services": "Services"
+      },
+      "timeFilters": {
+        "all": "All dates",
+        "today": "Today",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days"
+      },
+      "filters": {
+        "byEvent": {
+          "label": "Filter by Event",
+          "all": "All Events"
+        },
+        "orderFulfillment": "Order Fulfillment",
+        "allStatuses": "All Statuses",
+        "requestStatus": "Request Status",
+        "pending": "Pending",
+        "contacted": "Contacted",
+        "closed": "Closed",
+        "timePeriod": "Time Period"
+      },
+      "checkoutOrders": {
+        "title": "Checkout Orders",
+        "count": "{count}",
+        "empty": "No checkout orders match your current filters."
+      },
+      "directInquiries": {
+        "title": "Direct Inquiries",
+        "count": "{count}",
+        "empty": "No direct inquiries match your current filters."
+      },
+      "orderStatus": {
+        "requested": "Requested",
+        "processing": "Processing",
+        "packed": "Packed",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "order": {
+        "label": "Order #{id}",
+        "qty": "Qty: {count}",
+        "total": "Total",
+        "advance": "Advance to next stage",
+        "addNote": "Add note",
+        "cancel": "Cancel order",
+        "cancelConfirm": "Cancel order for \"{product}\"? This will mark the order as cancelled and restore stock for product items.",
+        "cancelNote": "Optional cancellation note"
+      },
+      "refresh": "Refresh Data",
+      "syncing": "Synchronizing records...",
+      "kpi": {
+        "eventsActive": "Events Active",
+        "totalOrders": "Total Orders",
+        "directRequests": "Direct Requests"
+      },
+      "refineView": "Refine View"
+    },
+    "eventAnalytics": {
+      "title": "Stand Analytics",
+      "eventLabel": "{eventTitle}",
+      "backToManagement": "Back to Management",
+      "performance": "Stand Performance",
+      "kpi": {
+        "totalVisits": "Total Stand Visits",
+        "uniqueVisitors": "Unique Visitors",
+        "totalInteractions": "Total Interactions"
+      },
+      "engagementRate": "Engagement Rate",
+      "interactionBreakdown": "Interaction Breakdown",
+      "noData": "No interaction data available yet",
+      "activityTrend": "Activity Trend (Last 30 Days)",
+      "insufficientData": "Insufficient data for trend analysis",
+      "peakDay": "Peak Day",
+      "dailyAvg": "Daily Avg",
+      "views": "views",
+      "noStand": "No approved stand for this event yet.",
+      "noStandHint": "Configure your stand to unlock analytics.",
+      "loading": "Loading analytics..."
+    },
+    "eventConferences": {
+      "title": "My Conferences",
+      "eventLabel": "{eventTitle}",
+      "speakingSessions": "Speaking Sessions",
+      "empty": "No conference sessions assigned to your stand.",
+      "subtitle": "When organizers assign you as a speaker for a conference, it will appear here.",
+      "live": "Live",
+      "scheduled": "Scheduled",
+      "goLive": "Go Live",
+      "enterStudio": "Enter Studio"
+    },
+    "liveConference": {
+      "title": "Speaker Studio",
+      "joining": "Joining your session…",
+      "connecting": "Connecting to the conference room…",
+      "failedConnect": "Failed to connect to the session.",
+      "reconnect": "Reconnect",
+      "leave": "Leave Session",
+      "liveNow": "You are live now.",
+      "sessionEnded": "Session ended."
+    },
+    "paymentSuccess": {
+      "title": "Payment Successful",
+      "subtitle": "Your stand fee has been processed.",
+      "paymentLabel": "Stand Fee Payment",
+      "paymentStatus": "Payment Status: Confirmed",
+      "amountPaid": "Amount Paid",
+      "amount": "{amount} {currency}",
+      "paymentReference": "Payment Reference",
+      "transactionDate": "Transaction Date",
+      "viewReceipt": "View Receipt",
+      "generatingPdf": "Generating PDF…",
+      "backToEvents": "Back to Events",
+      "processing": "Your payment is being processed.",
+      "confirmed": "Your payment has been confirmed. Access will be granted once the organizer activates the event."
+    },
+    "leads": {
+      "title": "Leads & Contacts",
+      "subtitle": "Track visitor interactions and captured leads across all your stands.",
+      "kpi": {
+        "totalLeads": "Total Leads",
+        "visits": "Visits",
+        "chatInquiries": "Chat Inquiries",
+        "actionRate": "Action Rate"
+      },
+      "searchPlaceholder": "Search leads...",
+      "allStands": "All Stands",
+      "exportCsv": "Export CSV",
+      "table": {
+        "visitor": "Visitor",
+        "interaction": "Interaction",
+        "standEvent": "Stand / Event",
+        "time": "Time",
+        "actions": "Actions"
+      },
+      "empty": "No leads found matching your criteria.",
+      "visitorLabel": "Visitor #{id}",
+      "noEmail": "No email provided",
+      "unknownStand": "Unknown Stand",
+      "viewDetails": "View Details",
+      "loading": "Loading leads...",
+      "interactionTypes": {
+        "standVisit": "stand_visit",
+        "chatMessage": "chat_message",
+        "productRequest": "product_request",
+        "eventView": "event_view"
+      }
+    },
+    "productRequests": {
+      "title": "All Inquiries & Orders",
+      "subtitle": "A unified view of all visitor requests and marketplace checkouts across every event you participate in.",
+      "kpi": {
+        "eventsActive": "Events Active",
+        "totalOrders": "Total Orders",
+        "directRequests": "Direct Requests"
+      },
+      "tabs": {
+        "products": "Products",
+        "services": "Services"
+      },
+      "refineView": "Refine View",
+      "filters": {
+        "byEvent": {
+          "label": "Filter by Event",
+          "all": "All Events"
+        },
+        "orderFulfillment": "Order Fulfillment",
+        "allStatuses": "All Statuses",
+        "orderStatuses": {
+          "requested": "requested",
+          "processing": "processing",
+          "packed": "packed",
+          "shipped": "shipped",
+          "delivered": "delivered",
+          "completed": "completed",
+          "cancelled": "cancelled"
+        },
+        "requestStatus": "Request Status",
+        "requestStatuses": {
+          "all": "All Statuses",
+          "pending": "Pending",
+          "contacted": "Contacted",
+          "closed": "Closed"
+        },
+        "timePeriod": "Time Period",
+        "timeOptions": {
+          "all": "All dates",
+          "today": "Today",
+          "last7Days": "Last 7 days",
+          "last30Days": "Last 30 days"
+        }
+      },
+      "checkoutOrders": {
+        "title": "Checkout Orders",
+        "empty": "No checkout orders match your current filters."
+      },
+      "directInquiries": {
+        "title": "Direct Inquiries",
+        "empty": "No direct inquiries match your current filters."
+      },
+      "syncing": "Synchronizing records...",
+      "retry": "Retry Loading",
+      "order": {
+        "label": "Order #{id}",
+        "qty": "Qty: {count}",
+        "amount": "{amount} {currency}",
+        "advance": "Advance to next stage",
+        "addNote": "Add a note",
+        "notePlaceholder": "Note (optional)",
+        "cancelConfirm": "Cancel order for \"{product}\"? This will mark the order as cancelled and restore stock for product items.",
+        "cancelNote": "Optional cancellation note",
+        "cancelledNote": "Cancelled by enterprise: false order"
+      },
+      "inquiry": {
+        "visitorInfo": "Visitor Information",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "location": "Location",
+        "message": "Message",
+        "markContacted": "Mark as Contacted",
+        "markClosed": "Mark as Closed"
+      }
+    },
+    "products": {
+      "subtitle": "Manage your catalog of products and services.",
+      "addButton": "Add Product / Service",
+      "form": {
+        "addProduct": "Add New Product",
+        "addService": "Add New Service",
+        "editProduct": "Edit Product",
+        "editService": "Edit Service",
+        "name": {
+          "label": "Product / Service Name *",
+          "placeholder": "e.g. Cloud Analytics Suite"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Briefly describe what this is..."
+        },
+        "price": {
+          "label": "Price *",
+          "placeholder": "99.99"
+        },
+        "currency": {
+          "label": "Currency",
+          "mad": "MAD"
+        },
+        "stock": {
+          "label": "Stock (quantity available)",
+          "placeholder": "100",
+          "note": "Not applicable for services"
+        },
+        "type": {
+          "label": "Type *",
+          "product": "Product",
+          "service": "Service"
+        },
+        "image": {
+          "label": "Image",
+          "uploadHint": "Click to upload a product image (JPG, PNG, WebP)",
+          "selected": "Image selected — click to replace",
+          "current": "Current"
+        },
+        "cancel": "Cancel",
+        "createProduct": "Create Product",
+        "createService": "Create Service",
+        "updateProduct": "Update Product",
+        "updateService": "Update Service"
+      },
+      "empty": {
+        "title": "No products yet",
+        "subtitle": "Start by adding your first product or service.",
+        "action": "Add First Product"
+      },
+      "badges": {
+        "inStock": "in stock",
+        "noPrice": "No price",
+        "service": "Service",
+        "product": "Product"
+      },
+      "deleteConfirm": "Are you sure you want to delete this product?",
+      "loading": "Loading catalog..."
+    },
+    "analytics": {
+      "title": "Stand Performance",
+      "subtitle": "Real-time insights across your virtual exhibition presence.",
+      "standSelector": {
+        "combined": "📊 Combined Overview ({count} stands)",
+        "stand": "🗂 {eventTitle} — {standName}"
+      },
+      "showing": "Showing: {eventTitle} · {standName}",
+      "kpi": {
+        "impressions": "Impressions",
+        "impressionsSub": "Total Views",
+        "engagement": "Engagement",
+        "engagementSub": "Interactions",
+        "uniqueLeads": "Unique Leads",
+        "uniqueLeadsSub": "Visitors"
+      },
+      "interactionBreakdown": "Interaction Breakdown",
+      "noData": "No interaction data available yet",
+      "totalInteractions": "Total interactions",
+      "activityTrend": "Activity Trend (Last 30 Days)",
+      "insufficientData": "Insufficient data for trend analysis",
+      "peakDay": "Peak Day",
+      "dailyAvg": "Daily Avg",
+      "views": "{count} views",
+      "empty": {
+        "title": "No approved event participations yet",
+        "subtitle": "Once your stand is approved for an event, analytics will appear here."
+      },
+      "loading": "Loading analytics..."
+    },
+    "conferences": {
+      "title": "Speaking Sessions",
+      "subtitle": "Manage your webinars and live conferences across all events.",
+      "live": "Live",
+      "scheduled": "Scheduled",
+      "enterStudio": "Enter Studio",
+      "goLive": "Go Live",
+      "empty": {
+        "title": "No Sessions Assigned",
+        "subtitle": "When event organizers assign you as a speaker for a conference or webinar, it will appear here."
+      },
+      "fetchFailed": "Failed to fetch conferences"
+    },
+    "communications": {
+      "tabs": {
+        "chats": "Chats",
+        "chatsUnread": "{unread}",
+        "chatsCount": "{count}",
+        "meetings": "Meetings",
+        "meetingsPending": "{count} pending"
+      },
+      "searchPlaceholder": "Find conversation...",
+      "chats": {
+        "empty": "No active chats yet.",
+        "selectTitle": "Select a Conversation",
+        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation.",
+        "conversation": "Conversation",
+        "member": "Member",
+        "noMessages": "No messages yet"
+      },
+      "meetings": {
+        "requestLabel": "Visitor Request #{id}",
+        "submitted": "Submitted {date}",
+        "duration": "Duration: 30 min",
+        "status": {
+          "pending": "pending",
+          "approved": "approved",
+          "rejected": "rejected",
+          "canceled": "canceled",
+          "completed": "completed"
+        },
+        "approve": "Approve",
+        "decline": "Decline",
+        "join": "Join",
+        "ended": "Meeting ended",
+        "approvedStarts": "Approved · starts {time}",
+        "declined": "Declined",
+        "empty": {
+          "title": "No meetings scheduled",
+          "subtitle": "When visitors request meetings with your stands, they will appear here."
+        }
+      },
+      "loading": "Loading communications..."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{count} unread",
+      "allCaughtUp": "All caught up!",
+      "markAllRead": "Mark all read",
+      "markRead": "Mark read",
+      "empty": "No notifications yet.",
+      "timeLabels": {
+        "daysAgo": "{X}d ago",
+        "hoursAgo": "{X}h ago",
+        "minutesAgo": "{X}m ago",
+        "justNow": "just now"
+      },
+      "types": {
+        "paymentRequired": "payment_required",
+        "paymentConfirmed": "payment_confirmed",
+        "standApproved": "stand_approved",
+        "standRejected": "stand_rejected",
+        "eventApproved": "event_approved",
+        "eventRejected": "event_rejected",
+        "productRequest": "product_request",
+        "joinApproved": "join_approved",
+        "joinRejected": "join_rejected",
+        "invitationSent": "invitation_sent",
+        "linksGenerated": "links_generated"
+      }
+    },
+    "joinAcceptance": {
+      "title": "Join Event as Enterprise",
+      "subtitle": "You've been invited to participate in {eventTitle}.",
+      "eventDetails": "Event Details",
+      "acceptButton": "Accept Invitation",
+      "accepting": "Accepting invitation…",
+      "success": {
+        "title": "Your invitation has been accepted! You can now configure your stand.",
+        "action": "Configure Stand"
+      },
+      "error": "Failed to accept invitation.",
+      "enterpriseOnly": {
+        "title": "This invite is for enterprise accounts only.",
+        "subtitle": "Please sign in with an enterprise account.",
+        "action": "Sign In as Enterprise"
+      },
+      "invalidInvite": {
+        "title": "Invalid or expired invitation.",
+        "subtitle": "This invitation link is no longer valid.",
+        "action": "Return to Home"
+      }
+    }
+  },
+  "visitor": {
+    "orders": {
+      "title": "My Orders",
+      "subtitle": "Track all your stand purchases in unified orders. Product and service items from the same checkout are grouped together.",
+      "loading": "Loading your orders…",
+      "empty": {
+        "title": "No orders yet.",
+        "subtitle": "Visit event stands and use the marketplace to place your first order."
+      },
+      "enterpriseFallback": "Enterprise Stand",
+      "orderRef": "Order Ref:",
+      "status": {
+        "paid": "paid",
+        "pending": "pending",
+        "cancelled": "cancelled"
+      },
+      "paymentMethod": {
+        "cod": "COD",
+        "stripe": "Stripe"
+      },
+      "fulfillment": {
+        "requested": "requested",
+        "processing": "processing",
+        "packed": "packed",
+        "shipped": "shipped",
+        "delivered": "delivered",
+        "completed": "completed",
+        "cancelled": "cancelled",
+        "approved": "approved"
+      },
+      "itemType": {
+        "product": "Product",
+        "service": "Service"
+      },
+      "labels": {
+        "total": "Total:",
+        "shipping": "Shipping:",
+        "notes": "Notes:"
+      },
+      "actions": {
+        "receipt": "Receipt",
+        "revisitStand": "Revisit Stand"
+      },
+      "summary": "You have {count} paid order(s). Each card groups products and services from the same checkout.",
+      "paymentLabels": {
+        "cashOnReception": "Cash on Reception",
+        "stripePayment": "Stripe Payment"
+      }
+    },
+    "favorites": {
+      "title": "Your Collection",
+      "sectionTitle": "Saved Favorites",
+      "countLabel": "{count} Item(s) Found",
+      "empty": {
+        "unauthenticated": {
+          "title": "Login to view favorites",
+          "subtitle": "Sign in to see events, stands, and resources you've carefully saved for later.",
+          "login": "Login",
+          "createAccount": "Create Account"
+        },
+        "authenticated": {
+          "title": "Your collection is empty",
+          "subtitle": "Start exploring Events, Booths, and Organizations to build your personalized directory.",
+          "action": "Browse Live Events"
+        }
+      },
+      "sections": {
+        "events": "Events",
+        "stands": "Stands & Booths",
+        "organizations": "Organizations"
+      },
+      "badge": "Favorited",
+      "removeTooltip": "Remove from favorites",
+      "viewDetails": "View Details",
+      "fallbacks": {
+        "unreachableRoute": "Unreachable Route",
+        "eventRemoved": "Event Identity Removed",
+        "standRemoved": "Stand Identity Removed",
+        "organizationRemoved": "Organization Identity Removed"
+      },
+      "errors": {
+        "loadFailed": "Failed to load favorites",
+        "removeFailed": "Failed to remove favorite"
+      }
+    },
+    "marketplace": {
+      "success": {
+        "title": "Payment Successful!",
+        "subtitle": "Thank you for your purchase. Your order has been confirmed.",
+        "paymentLabels": {
+          "cashOnReception": "Cash on Reception",
+          "stripePayment": "Stripe Payment"
+        },
+        "grandTotal": "Grand Total",
+        "downloadReceipt": "Download Receipt (PDF)",
+        "goBackToStand": "Go Back to Stand",
+        "browseEvents": "Browse Events",
+        "statusOverride": "CONFIRMED",
+        "statusLabels": {
+          "paid": "paid",
+          "pending": "pending"
+        }
+      },
+      "cancel": {
+        "title": "Payment Cancelled",
+        "subtitle": "Your payment was cancelled. No charges were made. You can return to the stand and try again.",
+        "goBackToStand": "Go Back to Stand",
+        "goToDashboard": "Go to Dashboard"
+      }
+    },
+    "liveEvent": {
+      "welcome": {
+        "title": "Welcome to the Live Event!",
+        "subtitle": "Explore the exhibition hall, visit stands, and network with other participants. Use the tabs above to navigate."
+      },
+      "recommended": "Recommended for You",
+      "exhibitionHall": "Exhibition Hall - All Stands",
+      "tabs": {
+        "recommended": "Recommended",
+        "allStands": "All Stands",
+        "schedule": "Schedule",
+        "conferences": "Conferences",
+        "networking": "Networking"
+      }
+    },
+    "standFilter": {
+      "title": "Personalize Your Experience",
+      "subtitle": "We'll recommend stands based on your interests.",
+      "interestLabel": "What are you interested in?",
+      "searchPlaceholder": "Search stands...",
+      "apply": "Apply Preferences",
+      "skip": "Skip for now"
+    },
+    "standsGrid": {
+      "searchPlaceholder": "Search stands…",
+      "filterButton": "Filter",
+      "allCategories": "All Categories",
+      "viewToggle": {
+        "grid": "Grid View",
+        "hall3d": "3D Hall"
+      },
+      "empty": {
+        "title": "No stands found",
+        "subtitle": "Try adjusting your filters or search terms."
+      },
+      "loading": "Loading stands…",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "showing": "Showing {from}-{to} of {total} stands"
+      },
+      "categoryLabel": "Category:",
+      "all": "All",
+      "activeLabel": "Active:",
+      "reset": "Reset",
+      "view3D": "3D Hall View",
+      "viewGrid": "Grid View",
+      "noMatching": "No matching stands",
+      "noStands": "No stands yet",
+      "adjustFilters": "Try adjusting your filters...",
+      "emptyHall": "The exhibition hall is currently empty. Check back later!",
+      "sponsor": "Sponsor",
+      "favorite": "Favorite",
+      "goToPage": "Go to page"
+    },
+    "conferencesTab": {
+      "title": "Conferences & Sessions",
+      "status": {
+        "live": "Live",
+        "upcoming": "Upcoming",
+        "ended": "Ended"
+      },
+      "actions": {
+        "join": "Join",
+        "startingSoon": "Starting Soon",
+        "ended": "Ended"
+      },
+      "empty": {
+        "title": "No conferences scheduled",
+        "subtitle": "Check back later for upcoming sessions."
+      }
+    },
+    "scheduleTab": {
+      "title": "Event Schedule",
+      "dayLabel": "Day {day}",
+      "status": {
+        "liveNow": "Live Now",
+        "upcoming": "Upcoming",
+        "ended": "Ended"
+      },
+      "startsIn": "Starts in {time}",
+      "empty": "No schedule available"
+    },
+    "networkingTab": {
+      "title": "Networking",
+      "subtitle": "Connect with other attendees",
+      "searchPlaceholder": "Search attendees...",
+      "empty": "No attendees found",
+      "reachOutModal": {
+        "title": "Send Reach-Out Request",
+        "messageLabel": "Add a message (optional)",
+        "submit": "Send Request",
+        "cancel": "Cancel"
+      },
+      "toast": {
+        "sent": "Reach-out sent!",
+        "alreadyConnected": "Already connected"
+      }
+    },
+    "virtualStand": {
+      "actionBar": {
+        "resources": "Resources",
+        "about": "About",
+        "shop": "Shop",
+        "chat": "Chat",
+        "meeting": "Meeting",
+        "assistant": "Assistant"
+      },
+      "messageLimit": "Message limit reached for this stand."
+    },
+    "standResources": {
+      "title": "Resources",
+      "empty": "No resources available",
+      "download": "Download"
+    },
+    "productsPanel": {
+      "shop": "Shop",
+      "cart": {
+        "label": "Cart",
+        "count": "({count} items)"
+      },
+      "actions": {
+        "addToCart": "Add to Cart",
+        "remove": "Remove",
+        "checkout": "Checkout",
+        "proceedToCheckout": "Proceed to Checkout"
+      },
+      "checkout": {
+        "shippingAddress": "Shipping Address",
+        "deliveryNotes": "Delivery Notes (optional)",
+        "paymentMethod": "Payment Method",
+        "payWithStripe": "Pay with Stripe",
+        "cashOnDelivery": "Cash on Delivery"
+      },
+      "cartEmpty": {
+        "title": "Cart is empty",
+        "subtitle": "Browse the catalog to add items."
+      },
+      "orderSummary": "Order Summary",
+      "total": "Total",
+      "placingOrder": "Placing Order...",
+      "orderPlaced": "Order placed successfully!",
+      "orderFailed": "Order failed. Please try again.",
+      "itemType": {
+        "product": "Product",
+        "service": "Service"
+      },
+      "columns": {
+        "price": "Price",
+        "quantity": "Quantity"
+      },
+      "empty": {
+        "title": "No products available",
+        "subtitle": "This stand has no products or services yet."
+      }
+    },
+    "chatPanel": {
+      "title": "Chat with {standName}",
+      "placeholder": "Type a message...",
+      "messageLimit": "Message limit reached ({count}/15). Request a meeting to continue the conversation.",
+      "empty": {
+        "title": "Start a conversation",
+        "subtitle": "Send a message to begin chatting with the stand representative."
+      },
+      "senderLabel": "You",
+      "requestMeeting": "Request Meeting",
+      "loginRequired": "Please log in to chat.",
+      "syncActive": "Sync Active",
+      "connecting": "Connecting...",
+      "limitedMessages": "Limited to {n} messages...",
+      "syncingService": "Connecting to sync service...",
+      "noMessages": "No messages yet",
+      "limitReached": "Limit Reached",
+      "limitMessage": "You've used all {n} messages. Request a formal meeting...",
+      "messagesRemaining": "{n} message(s) remaining",
+      "chatLimitReached": "Chat limit reached",
+      "requestMeetingInstead": "Request a meeting instead",
+      "typePlaceholder": "Type something...",
+      "reconnecting": "Reconnecting..."
+    },
+    "meetingRequestModal": {
+      "title": "Request a Meeting",
+      "purposeLabel": "Purpose (optional)",
+      "dateLabel": "Select a date",
+      "timeLabel": "Select a time",
+      "busySlots": "Busy Slots",
+      "submit": "Submit Request",
+      "success": "Meeting requested!",
+      "alreadyScheduled": "You already have a meeting scheduled.",
+      "error": "An error occurred. Please try again."
+    },
+    "audienceRoom": {
+      "title": "Conference Room",
+      "watching": "You are watching:",
+      "qa": "Q&A",
+      "askPlaceholder": "Ask a question...",
+      "submitQuestion": "Submit Question",
+      "chat": "Chat",
+      "leaveRoom": "Leave Room",
+      "waitingForSession": "Waiting for the session to start...",
+      "sessionEnded": "Session has ended.",
+      "noQuestions": "No questions yet."
+    },
+    "qaPanel": {
+      "title": "Questions & Answers",
+      "note": "Your question will be visible to the speaker.",
+      "submit": "Submit",
+      "empty": "No questions asked yet."
+    },
+    "meetingRoom": {
+      "title": "Meeting Room",
+      "connecting": "Connecting...",
+      "joinMeeting": "Join Meeting",
+      "leaveMeeting": "Leave Meeting",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "turnOnCamera": "Turn on camera",
+      "turnOffCamera": "Turn off camera",
+      "meetingEnded": "Meeting ended.",
+      "cannotJoin": "Cannot join this meeting",
+      "timeRestriction": "You can join only during the scheduled meeting time...",
+      "approvalRequired": "The meeting must be approved...",
+      "goBack": "Go Back",
+      "reconnecting": "Reconnecting",
+      "cameraOff": "Turn Camera Off",
+      "cameraOn": "Turn Camera On",
+      "screenShareOff": "Stop Sharing",
+      "screenShareOn": "Share Screen",
+      "endCall": "End Call",
+      "connectionFailed": "Connection Failed",
+      "returnToStand": "Return to Stand",
+      "establishing": "Establishing encrypted connection",
+      "rejoinPrompt": "Rejoin now",
+      "waitingParticipant": "Waiting for the other participant...",
+      "rejoin": "Rejoin",
+      "join": "Join Meeting"
+    },
+    "inviteAccept": {
+      "title": "Visitor Invite",
+      "processing": "Processing your invite...",
+      "missingEventId": "Missing event identifier in the invite link.",
+      "visitorOnly": "This invite is for visitor accounts. Please log in with a visitor account.",
+      "success": "You are now accepted as a guest visitor for this event.",
+      "error": "Could not accept the invite. It may be invalid or expired.",
+      "actions": {
+        "goToEvent": "Go to Event Page",
+        "enterLive": "Enter Live Experience",
+        "backToEvents": "Back to Events"
+      }
+    },
+    "aiAssistant": {
+      "title": "AI Assistant",
+      "placeholder": "Ask me anything about events, stands, or the platform.",
+      "inputPlaceholder": "Type your message...",
+      "greeting": "How can I help you today?",
+      "suggestions": "Suggested questions"
+    },
+    "eventDetail": {
+      "schedule": {
+        "title": "Event Schedule",
+        "dayLabel": "Day {day}",
+        "phases": {
+          "registrationOpens": "Registration Opens",
+          "registrationDeadline": "Registration Deadline",
+          "eventStarts": "Event Starts",
+          "eventEnds": "Event Ends"
+        },
+        "detailedSchedule": "Detailed Schedule",
+        "activityFallback": "Activity",
+        "overnightBadge": "Overnight",
+        "noSlots": "No slots defined for this day."
+      }
+    },
+    "liveStand": {
+      "title": "Stand Page",
+      "subtitle": "This dedicated stand route is being prepared...",
+      "backToLive": "Back to Live Event"
+    },
+    "webinars": {
+      "title": "Webinars",
+      "subtitle": "Watch sessions and upload recordings...",
+      "transcriptViewer": "Transcript Viewer",
+      "transcriptUpload": "Upload an audio recording to generate a transcript."
+    },
+    "eventPayment": {
+      "loading": "Loading payment details...",
+      "freeEvent": "This event is free",
+      "noPaymentRequired": "No payment is required...",
+      "backToEvent": "Back to Event",
+      "title": "Event Payment",
+      "securePaymentFor": "Secure payment for...",
+      "ticketPrice": "Ticket Price",
+      "verifying": "Verifying Payment...",
+      "verifyingMessage": "Please wait while we confirm...",
+      "confirmed": "Payment Confirmed!",
+      "confirmedMessage": "Your payment has been verified...",
+      "enterEvent": "Enter Event",
+      "downloadInvoice": "Download Invoice (PDF)",
+      "securePaymentTitle": "Secure Payment",
+      "securePaymentDesc": "Click the button below...",
+      "payNow": "Pay Now",
+      "redirecting": "Redirecting to Stripe...",
+      "poweredBy": "Powered by Stripe..."
+    },
+    "eventCard": {
+      "paidEvent": "PAID EVENT",
+      "enterprisesCount": "{n} Enterprises",
+      "enterLiveEvent": "Enter Live Event",
+      "viewDetails": "View Details",
+      "viewSummary": "View Summary",
+      "nextSlot": "Next slot:",
+      "currentSlot": "Current: {label}"
+    },
+    "eventsGrid": {
+      "noEvents": "No events found",
+      "checkBackLater": "Check back later for new exhibition opportunities."
+    },
+    "eventsFilters": {
+      "searchPlaceholder": "Search events by title or description...",
+      "categoryLabel": "Category",
+      "allCategories": "All Categories"
+    },
+    "eventDetailsHeader": {
+      "organizedBy": "Organized by {name}",
+      "virtualPlatform": "Virtual Platform"
+    },
+    "eventLiveLayout": {
+      "loading": "Loading event...",
+      "unavailable": "Event unavailable",
+      "liveNow": "Live Now",
+      "inProgress": "In Progress",
+      "upcoming": "Upcoming",
+      "closed": "Closed",
+      "registrationRequired": "Registration Required",
+      "registerNow": "Register Now",
+      "accessNextSlot": "Access opens at the next active slot.",
+      "eventConcluded": "This exhibition has concluded.",
+      "accessOpens": "Access opens when the event starts.",
+      "backToDetails": "Back to Details"
+    },
+    "standFilterModal": {
+      "title": "Personalize Your Experience",
+      "subtitle": "Select your interests to see the most relevant stands.",
+      "domainCategory": "Domain / Category",
+      "topicsLabel": "Topics you're interested in",
+      "exploreButton": "Explore Stands",
+      "skip": "Skip",
+      "topicsSelected": "{n} topic(s) selected"
+    },
+    "virtualStandLayout": {
+      "sponsorBadge": "SPONSOR",
+      "welcome": "Welcome",
+      "welcomeMessage": "Welcome to our virtual stand. Explore our resources...",
+      "visitWebsite": "Visit website",
+      "website": "Website",
+      "backToEvent": "Back to Event",
+      "favorite": "Favorite",
+      "resourcesTab": "Documents & Resources",
+      "aboutTab": "About Stand"
+    },
+    "floatingAssistant": {
+      "buttonLabel": "Assistant",
+      "title": "Virtual Assistant",
+      "suggestedPrompts": [
+        "What events are live now?",
+        "Show me stands I should visit.",
+        "What resources does this stand have?"
+      ]
+    }
+  }
+}

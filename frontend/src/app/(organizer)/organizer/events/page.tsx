@@ -6,6 +6,8 @@ import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent, EventStatus } from '@/types/event';
 import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { formatInUserTZ } from '@/lib/timezone';
+import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +16,7 @@ const STATE_LABELS: Record<EventStatus, string> = {
     approved: 'Approved',
     rejected: 'Rejected',
     waiting_for_payment: 'Waiting for Payment',
+    payment_proof_submitted: 'Proof Submitted',
     payment_done: 'Payment Done',
     live: 'Live',
     closed: 'Closed',
@@ -24,10 +27,33 @@ const STATE_COLORS: Record<EventStatus, string> = {
     approved: 'bg-blue-100 text-blue-700',
     rejected: 'bg-red-100 text-red-700',
     waiting_for_payment: 'bg-orange-100 text-orange-700',
+    payment_proof_submitted: 'bg-teal-100 text-teal-700',
     payment_done: 'bg-indigo-100 text-indigo-700',
     live: 'bg-green-100 text-green-700',
     closed: 'bg-gray-100 text-gray-600',
 };
+
+/** When backend state is `live`, badge reflects real-world timing (upcoming / in-session / live), not only the workflow flag. */
+function getOrganizerListStatusBadge(event: OrganizerEvent): { label: string; className: string } {
+    const effective = getEffectiveWorkflowState(event);
+    if (event.state !== 'live') {
+        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
+    }
+    const live = getLiveWorkflowLabel(event);
+    if (!live) {
+        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
+    }
+    if (live.kind === 'closed') {
+        return { label: STATE_LABELS.closed, className: STATE_COLORS.closed };
+    }
+    if (live.kind === 'session_live') {
+        return { label: 'Live', className: STATE_COLORS.live };
+    }
+    if (live.kind === 'between_slots') {
+        return { label: 'In progress', className: 'bg-sky-100 text-sky-700' };
+    }
+    return { label: 'Upcoming', className: 'bg-indigo-100 text-indigo-700' };
+}
 
 export default function OrganizerEvents() {
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
@@ -63,11 +89,11 @@ export default function OrganizerEvents() {
         finally { setActionLoading(null); }
     };
 
-    const filtered = events.filter(
-        (e) =>
-            e.title.toLowerCase().includes(search.toLowerCase()) ||
-            STATE_LABELS[e.state].toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = events.filter((e) => {
+        const q = search.toLowerCase();
+        const badge = getOrganizerListStatusBadge(e);
+        return e.title.toLowerCase().includes(q) || badge.label.toLowerCase().includes(q);
+    });
 
     if (loading) {
         return (
@@ -129,32 +155,36 @@ export default function OrganizerEvents() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filtered.map((event) => (
+                                (() => {
+                                    const effectiveState = getEffectiveWorkflowState(event);
+                                    const listBadge = getOrganizerListStatusBadge(event);
+                                    return (
                                 <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="font-medium text-gray-900 truncate max-w-[200px]">{event.title}</div>
                                         <div className="text-xs text-gray-400 mt-0.5">{event.category}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600 whitespace-nowrap">
-                                        <div>{new Date(event.start_date).toLocaleDateString()}</div>
-                                        <div className="text-xs text-gray-400">→ {new Date(event.end_date).toLocaleDateString()}</div>
+                                        <div>{formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                                        <div className="text-xs text-gray-400">→ {formatInUserTZ(event.end_date, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                                     </td>
                                     <td className="px-4 py-4 text-gray-600">
                                         {event.num_enterprises ?? '—'}
                                     </td>
                                     <td className="px-4 py-4 text-gray-600">
                                         {event.payment_amount != null
-                                            ? <span className="font-medium text-gray-900">${event.payment_amount.toFixed(2)}</span>
+                                            ? <span className="font-medium text-gray-900">{event.payment_amount.toFixed(2)} MAD</span>
                                             : <span className="text-gray-400">—</span>}
                                     </td>
                                     <td className="px-4 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATE_COLORS[event.state]}`}>
-                                            {STATE_LABELS[event.state]}
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${listBadge.className}`}>
+                                            {listBadge.label}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4">
                                         <div className="flex items-center justify-end gap-2 flex-wrap">
                                             {/* View details — always shown */}
-                                            <Link href={`/organizer/events/${event.id}`}>
+                                            <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                 <Button variant="outline" size="sm" className="gap-1">
                                                     <Eye className="w-3.5 h-3.5" />
                                                     View
@@ -163,7 +193,7 @@ export default function OrganizerEvents() {
 
                                             {/* Pay — when waiting_for_payment */}
                                             {event.state === 'waiting_for_payment' && (
-                                                <Link href={`/organizer/events/${event.id}`}>
+                                                <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600 gap-1">
                                                         <CreditCard className="w-3.5 h-3.5" />
                                                         Pay Now
@@ -185,7 +215,7 @@ export default function OrganizerEvents() {
                                             )}
 
                                             {/* Close — when live */}
-                                            {event.state === 'live' && (
+                                            {/* {event.state === 'live' && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -196,11 +226,11 @@ export default function OrganizerEvents() {
                                                     <XCircle className="w-3.5 h-3.5" />
                                                     Close
                                                 </Button>
-                                            )}
+                                            )} */}
 
                                             {/* Analytics — live or closed */}
-                                            {(event.state === 'live' || event.state === 'closed') && (
-                                                <Link href={`/organizer/events/${event.id}/analytics`}>
+                                            {(effectiveState === 'live' || effectiveState === 'closed') && (
+                                                <Link href={`/organizer/events/${event.slug || event.id}/analytics`}>
                                                     <Button variant="outline" size="sm" className="gap-1">
                                                         <BarChart2 className="w-3.5 h-3.5" />
                                                         Analytics
@@ -210,6 +240,8 @@ export default function OrganizerEvents() {
                                         </div>
                                     </td>
                                 </tr>
+                                    );
+                                })()
                             ))}
                         </tbody>
                     </table>

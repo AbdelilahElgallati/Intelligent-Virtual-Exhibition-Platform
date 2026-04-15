@@ -1,6 +1,6 @@
 import React from 'react';
-import { Event } from '@/lib/api/types';
-import { EventCard } from '@/components/cards/EventCard';
+import { Event } from '@/types/event';
+import { EventCard } from '@/components/events/EventCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';

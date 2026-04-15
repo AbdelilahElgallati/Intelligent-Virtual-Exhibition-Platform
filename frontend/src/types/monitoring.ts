@@ -24,10 +24,17 @@ export interface RecentFlag {
     created_at: string; // ISO string
 }
 
+export interface StandActivity {
+    id: string;
+    name: string;
+    active_count: number;
+}
+
 export interface LiveMetrics {
     kpis: KPIs;
     active_users: ActiveUser[];
     recent_flags: RecentFlag[];
+    top_active_stands: StandActivity[];
     timestamp: string; // ISO string
 }
 

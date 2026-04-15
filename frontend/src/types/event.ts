@@ -13,6 +13,12 @@ export interface EventScheduleSlot {
     start_time: string;    // "HH:MM" e.g. "09:00"
     end_time: string;    // "HH:MM" e.g. "17:00"
     label: string;    // Activity description
+    // Conference fields (optional)
+    is_conference?: boolean;
+    assigned_enterprise_id?: string;
+    assigned_enterprise_name?: string;
+    speaker_name?: string;
+    conference_id?: string;
 }
 
 export interface EventScheduleDay {
@@ -23,6 +29,7 @@ export interface EventScheduleDay {
 
 export interface OrganizerEvent {
     id: string;
+    slug?: string;           // URL-safe slug, e.g. "tech-summit-2025-ab3f"
     title: string;
     description?: string;
     organizer_id: string;
@@ -31,6 +38,8 @@ export interface OrganizerEvent {
     category?: string;
     start_date: string;
     end_date: string;
+    event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     tags: string[];
     created_at: string;
@@ -51,18 +60,18 @@ export interface OrganizerEvent {
     payment_proof_url?: string;
     enterprise_link?: string;
     visitor_link?: string;
+    publicity_link?: string;
     rejection_reason?: string;
-    // Organizer bank details for visitor payments
-    payment_details?: {
-        bank_name?: string;
-        account_holder?: string;
-        iban?: string;
-        swift?: string;
-        reference_note?: string;
-    } | null;
 }
 
 export type Event = OrganizerEvent;
+
+export interface EventsResponse {
+    items: Event[];
+    total: number;
+    limit?: number;
+    skip?: number;
+}
 
 export interface EventCreatePayload {
     title: string;
@@ -70,10 +79,11 @@ export interface EventCreatePayload {
     category?: string;
     start_date?: string;
     end_date?: string;
+    event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     banner_url?: string;
     tags?: string[];
-    organizer_name?: string;
     // Required request fields
     num_enterprises: number;
     event_timeline: string;           // JSON-serialised EventScheduleDay[]
@@ -92,24 +102,19 @@ export interface EventUpdatePayload {
     category?: string;
     start_date?: string;
     end_date?: string;
+    event_timezone?: string;
+    registration_deadline?: string;
     location?: string;
     banner_url?: string;
     tags?: string[];
-    organizer_name?: string;
     num_enterprises?: number;
     event_timeline?: string;
+    schedule_days?: EventScheduleDay[];
     extended_details?: string;
     additional_info?: string;
     stand_price?: number;
     is_paid?: boolean;
     ticket_price?: number;
-    payment_details?: {
-        bank_name?: string;
-        account_holder?: string;
-        iban?: string;
-        swift?: string;
-        reference_note?: string;
-    } | null;
 }
 
 export interface EventApprovePayload {

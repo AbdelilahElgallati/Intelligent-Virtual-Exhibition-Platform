@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_current_user, require_role
 from app.modules.auth.enums import Role
-from app.modules.events.service import get_event_by_id
+from app.modules.events.service import get_event_by_id, resolve_event_id
 from app.modules.sessions.schemas import SessionCreate, SessionRead
 from app.modules.sessions.service import (
     create_session,
@@ -47,6 +47,7 @@ async def create_session_endpoint(
     current_user: dict = Depends(require_role(Role.ADMIN)),
 ) -> SessionRead:
     """Create a new session for the event programme."""
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -75,6 +76,7 @@ async def sync_sessions_endpoint(
     and create corresponding sessions. Idempotent — existing sessions are skipped.
     Returns only the newly created sessions.
     """
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -97,6 +99,7 @@ async def list_sessions_admin(
     event_id: str,
     _: dict = Depends(require_role(Role.ADMIN)),
 ) -> List[SessionRead]:
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -159,6 +162,7 @@ async def list_sessions_public(
     _: dict = Depends(get_current_user),
 ) -> List[SessionRead]:
     """Return all sessions (any status) for an event. Used for visitor timeline."""
+    event_id = await resolve_event_id(event_id)
     event = await get_event_by_id(event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

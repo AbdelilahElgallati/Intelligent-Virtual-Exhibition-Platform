@@ -2,7 +2,7 @@
 Analytics repository — real MongoDB aggregations for IVEP.
 """
 from ...db.mongo import get_database
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 
 
@@ -12,7 +12,7 @@ def _date_range_chart(days: int = 30) -> list[dict]:
     """Generate a 30-day time-series filled with 0s (seed for real merging)."""
     return [
         {
-            "timestamp": (datetime.utcnow() - timedelta(days=i)).isoformat() + "Z",
+            "timestamp": (datetime.now(timezone.utc) - timedelta(days=i)).isoformat() + "Z",
             "value": 0,
         }
         for i in range(days, 0, -1)
@@ -38,7 +38,7 @@ class AnalyticsRepository:
         pending_events = await db["events"].count_documents({"state": "pending_approval"})
 
         # 30-day event creation trend (real)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         thirty_ago = now - timedelta(days=30)
 
         pipeline_trend = [
@@ -127,7 +127,7 @@ class AnalyticsRepository:
         )
 
         # Trend over last 14 days
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         fourteen_ago = now - timedelta(days=14)
         pipeline_trend = [
             {"$match": {"event_id": event_id, "created_at": {"$gte": fourteen_ago}}},
@@ -153,6 +153,24 @@ class AnalyticsRepository:
             for i in range(15)
         ]
 
+        # Fetch participating enterprises
+        stand_org_ids = await db["stands"].distinct("organization_id", {"event_id": event_id})
+        enterprises = []
+        if stand_org_ids:
+            from bson import ObjectId
+            org_query = {"_id": {"$in": [ObjectId(oid) if ObjectId.is_valid(oid) else oid for oid in stand_org_ids]}}
+            org_cursor = db["organizations"].find(
+                org_query,
+                {"name": 1, "logo_url": 1, "industry": 1}
+            )
+            async for org_doc in org_cursor:
+                enterprises.append({
+                    "id": str(org_doc["_id"]),
+                    "name": org_doc.get("name", "Unknown"),
+                    "logo_url": org_doc.get("logo_url"),
+                    "industry": org_doc.get("industry", "Exhibitor")
+                })
+
         return {
             "kpis": [
                 {"label": "Event Views", "value": float(visits or participants), "trend": None},
@@ -170,27 +188,116 @@ class AnalyticsRepository:
                 "Leads": float(leads or 1),
             },
             "recent_activity": [],
+            "enterprises": enterprises,
         }
 
     # ── Stand-level (keep for backward compat) ───────────────────────────────
 
     async def get_stand_analytics(self, stand_id: str, days: int = 30) -> Dict[str, Any]:
-        """Kept for backward compat; returns mocked data for stand-level."""
+        """Real MongoDB aggregations for stand-level KPIs."""
+        db = self.db
+        now = datetime.now(timezone.utc)
+        start_date = now - timedelta(days=days)
+        twenty_four_ago = now - timedelta(hours=24)
+
+        # 1. KPI Aggregations
+        total_visits = await db["analytics_events"].count_documents({
+            "stand_id": stand_id,
+            "type": "stand_visit",
+            "created_at": {"$gte": start_date}
+        })
+        
+        unique_visitors_pipeline = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": start_date}
+            }},
+            {"$group": {"_id": "$user_id"}},
+            {"$count": "total"}
+        ]
+        unique_visitors_res = await db["analytics_events"].aggregate(unique_visitors_pipeline).to_list(length=1)
+        unique_visitors = unique_visitors_res[0]["total"] if unique_visitors_res else 0
+
+        leads_generated = await db["leads"].count_documents({
+            "stand_id": stand_id,
+            "created_at": {"$gte": start_date}
+        })
+
+        # 2. Main Chart (Visits trend)
+        pipeline_trend = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": start_date}
+            }},
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        trend_docs = await db["analytics_events"].aggregate(pipeline_trend).to_list(length=100)
+        trend_map = {d["_id"]: d["count"] for d in trend_docs}
+        
+        main_chart = [
+            {
+                "timestamp": (start_date + timedelta(days=i)).strftime("%Y-%m-%d") + "T00:00:00Z",
+                "value": trend_map.get((start_date + timedelta(days=i)).strftime("%Y-%m-%d"), 0)
+            }
+            for i in range(days + 1)
+        ]
+
+        # 2b. Pulse Chart (Hourly for last 24h)
+        pipeline_pulse = [
+            {"$match": {
+                "stand_id": stand_id,
+                "type": "stand_visit",
+                "created_at": {"$gte": twenty_four_ago}
+            }},
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%H:00", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        pulse_docs = await db["analytics_events"].aggregate(pipeline_pulse).to_list(length=24)
+        pulse_map = {d["_id"]: d["count"] for d in pulse_docs}
+        pulse_chart = [
+            {
+                "hour": (twenty_four_ago + timedelta(hours=i)).strftime("%H:00"),
+                "value": pulse_map.get((twenty_four_ago + timedelta(hours=i)).strftime("%H:00"), 0)
+            }
+            for i in range(25)
+        ]
+
+        # 3. Distribution (Interaction types)
+        pipeline_dist = [
+            {"$match": {
+                "stand_id": stand_id,
+                "created_at": {"$gte": start_date}
+            }},
+            {"$group": {"_id": "$type", "count": {"$sum": 1}}}
+        ]
+        dist_docs = await db["analytics_events"].aggregate(pipeline_dist).to_list(length=50)
+        distribution = {d["_id"]: float(d["count"]) for d in dist_docs}
+        if not distribution:
+            distribution = {"Visits": float(total_visits or 1)}
+
         return {
             "kpis": [
-                {"label": "Total Visits", "value": 1240.0, "trend": 12.5},
-                {"label": "Unique Visitors", "value": 850.0, "trend": 8.2},
-                {"label": "Leads Generated", "value": 45.0, "trend": -2.4},
-                {"label": "Avg. Engagement", "value": 4.5, "unit": "min", "trend": 15.0},
+                {"label": "Total Visits", "value": float(total_visits), "trend": None},
+                {"label": "Unique Visitors", "value": float(unique_visitors), "trend": None},
+                {"label": "Leads Generated", "value": float(leads_generated), "trend": None},
+                {"label": "Avg. Engagement", "value": 0.0, "unit": "min", "trend": None}, # Placeholder
             ],
-            "main_chart": [
-                {
-                    "timestamp": (datetime.utcnow() - timedelta(days=i)).isoformat() + "Z",
-                    "value": 30 + i * 2,
-                }
-                for i in range(days, 0, -1)
-            ],
-            "distribution": {"Resources": 40.0, "Chat": 35.0, "Video": 25.0},
+            "main_chart": main_chart,
+            "pulse_chart": pulse_chart,
+            "distribution": distribution,
             "recent_activity": [],
         }
 

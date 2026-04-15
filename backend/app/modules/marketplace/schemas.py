@@ -1,5 +1,5 @@
 """
-Marketplace schemas — stand products & orders.
+Marketplace schemas — stand products, services & orders.
 Completely isolated from the event payment system.
 """
 
@@ -8,15 +8,27 @@ from typing import Optional, Literal
 from pydantic import BaseModel, Field
 
 
+FulfillmentStatus = Literal[
+    "requested",
+    "processing",
+    "packed",
+    "shipped",
+    "delivered",
+    "completed",
+    "cancelled",
+]
+
+
 # ── Product ─────────────────────────────────────────────────────────
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: str = Field("", max_length=2000)
     price: float = Field(..., gt=0)
-    currency: str = Field("usd", max_length=10)
+    currency: str = Field("MAD", max_length=10)
     image_url: str = Field("", max_length=1000)
     stock: int = Field(..., ge=0)
+    type: Literal["product", "service"] = Field("product")
 
 
 class ProductUpdate(BaseModel):
@@ -26,6 +38,7 @@ class ProductUpdate(BaseModel):
     currency: Optional[str] = Field(None, max_length=10)
     image_url: Optional[str] = Field(None, max_length=1000)
     stock: Optional[int] = Field(None, ge=0)
+    type: Optional[Literal["product", "service"]] = None
 
 
 class ProductOut(BaseModel):
@@ -34,9 +47,10 @@ class ProductOut(BaseModel):
     name: str
     description: str = ""
     price: float
-    currency: str = "usd"
+    currency: str = "MAD"
     image_url: str = ""
     stock: int = 0
+    type: str = "product"
     created_at: datetime
 
 
@@ -46,23 +60,107 @@ class OrderOut(BaseModel):
     id: str
     product_id: str
     stand_id: str
+    event_id: str = ""
     buyer_id: str
     product_name: str = ""
     quantity: int
+    unit_price: float = 0
     total_amount: float
+    currency: str = "MAD"
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
     stripe_session_id: str = ""
-    stripe_payment_intent: str = ""
+    stripe_payment_intent_id: str = ""
     status: Literal["pending", "paid", "cancelled"] = "pending"
+    fulfillment_status: FulfillmentStatus = "requested"
+    fulfillment_note: str = ""
+    fulfillment_updated_at: Optional[datetime] = None
+    fulfillment_history: list[dict] = Field(default_factory=list)
     created_at: datetime
     paid_at: Optional[datetime] = None
+    # Delivery / address info
+    shipping_address: str = ""
+    delivery_notes: str = ""
+    buyer_phone: str = ""
+    # Enriched display fields for stand owners
+    buyer_name: str = ""
+    buyer_email: str = ""
+    product_type: str = "product"
+
+
+class OrderFulfillmentUpdate(BaseModel):
+    fulfillment_status: FulfillmentStatus
+    note: Optional[str] = Field(None, max_length=500)
+
+
+class OrderCancelRequest(BaseModel):
+    note: Optional[str] = Field(None, max_length=500)
 
 
 # ── Checkout ────────────────────────────────────────────────────────
 
 class CheckoutRequest(BaseModel):
     quantity: int = Field(1, ge=1, le=100)
+    shipping_address: str = Field("", max_length=500)
+    delivery_notes: str = Field("", max_length=500)
+    buyer_phone: str = Field("", max_length=30)
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
+
+
+class CartItem(BaseModel):
+    product_id: str
+    quantity: int = Field(1, ge=1, le=100)
+
+
+class CartCheckoutRequest(BaseModel):
+    items: list[CartItem] = Field(..., min_length=1, max_length=50)
+    shipping_address: str = Field("", max_length=500)
+    delivery_notes: str = Field("", max_length=500)
+    buyer_phone: str = Field("", max_length=30)
+    payment_method: Literal["stripe", "cash_on_delivery"] = "stripe"
 
 
 class CheckoutResponse(BaseModel):
-    session_url: str
+    payment_url: Optional[str] = None
     order_id: str
+
+
+class CartCheckoutResponse(BaseModel):
+    payment_url: Optional[str] = None
+    order_ids: list[str]
+    checkout_group_id: Optional[str] = None
+
+
+class UnifiedOrderItemOut(BaseModel):
+    order_id: str
+    product_id: str
+    product_name: str = ""
+    product_type: str = "product"
+    quantity: int
+    unit_price: float = 0
+    total_amount: float
+    currency: str = "MAD"
+    status: str = "pending"
+    fulfillment_status: str = "requested"
+    created_at: datetime
+
+
+class UnifiedOrderOut(BaseModel):
+    group_id: str
+    stripe_session_id: str = ""
+    checkout_group_id: str = ""
+    stand_id: str
+    stand_name: str = ""
+    event_id: str = ""
+    buyer_id: str
+    payment_method: str = "stripe"
+    status: str = "pending"
+    currency: str = "MAD"
+    total_amount: float
+    order_count: int
+    shipping_address: str = ""
+    delivery_notes: str = ""
+    buyer_phone: str = ""
+    created_at: datetime
+    paid_at: Optional[datetime] = None
+    items: list[UnifiedOrderItemOut] = Field(default_factory=list)
+    order_ids: list[str] = Field(default_factory=list)

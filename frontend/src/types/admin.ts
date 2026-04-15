@@ -21,6 +21,10 @@ export interface AdminOrganization {
     is_verified: boolean;
     is_flagged: boolean;
     is_suspended: boolean;
+    industry?: string;
+    website?: string;
+    logo_url?: string;
+    contact_email?: string;
 }
 
 // ── Subscription management ───────────────────────────────────────────
@@ -39,4 +43,24 @@ export interface AdminSubscription {
 export interface AdminListResponse<T> {
     items: T[];
     total: number;
+}
+
+// ── Partner Dashboard (Detailed View) ───────────────────────────────────
+
+export interface PartnerStats {
+    total_events?: number;
+    total_visitors?: number;
+    total_revenue?: number;
+    primary_currency?: string;
+    revenue_by_currency?: Record<string, number>;
+    total_stands?: number;
+    total_leads?: number;
+    total_meetings?: number;
+}
+
+export interface PartnerDashboardRead extends AdminOrganization {
+    owner_name?: string;
+    owner_email?: string;
+    owner_role: 'organizer' | 'enterprise';
+    stats: PartnerStats;
 }

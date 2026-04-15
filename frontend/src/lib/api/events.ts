@@ -30,6 +30,13 @@ export const eventsApi = {
     createEvent: (data: EventCreatePayload) =>
         apiClient.post<OrganizerEvent>(ENDPOINTS.EVENTS.LIST, data),
 
+    /** Upload organizer event banner image and get a public URL path */
+    uploadEventBanner: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiClient.post<{ banner_url: string }>(ENDPOINTS.EVENTS.UPLOAD_BANNER, formData);
+    },
+
     /** Update event fields (only while PENDING_APPROVAL) */
     updateEvent: (id: string, data: EventUpdatePayload) =>
         apiClient.patch<OrganizerEvent>(ENDPOINTS.EVENTS.GET(id), data),
@@ -68,15 +75,4 @@ export const eventsApi = {
     getEventAnalytics: (id: string) =>
         apiClient.get<any>(ENDPOINTS.EVENTS.ANALYTICS(id)),
 
-    // ── Payment Details ────────────────────────────────────────────────────────
-
-    /** Update organizer bank info for visitor payments (for paid events) */
-    updatePaymentDetails: (id: string, details: {
-        bank_name?: string;
-        account_holder?: string;
-        iban?: string;
-        swift?: string;
-        reference_note?: string;
-    }) =>
-        apiClient.patch<OrganizerEvent>(ENDPOINTS.PAYMENTS.UPDATE_DETAILS(id), details),
 };

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowRight, Building2 } from 'lucide-react';
+import { resolveMediaUrl } from '@/lib/media';
 
 interface StandCardProps {
     stand: Stand;
@@ -13,6 +14,9 @@ interface StandCardProps {
 
 export function StandCard({ stand }: StandCardProps) {
     const standId = (stand as any).id || (stand as any)._id;
+    // Use slugs when available so the browser URL shows names, not ObjectIds
+    const standRef  = (stand as any).slug  || standId;
+    const eventRef  = (stand as any).event_slug || stand.event_id;
     return (
         <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group border-gray-200">
             <div className="p-6 flex-1 flex flex-col">
@@ -21,7 +25,7 @@ export function StandCard({ stand }: StandCardProps) {
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center border border-indigo-100 text-indigo-600 shadow-sm group-hover:shadow-md transition-shadow">
                         {stand.logo_url ? (
                             <img
-                                src={stand.logo_url}
+                                src={resolveMediaUrl(stand.logo_url)}
                                 alt={stand.name}
                                 className="w-full h-full object-cover rounded-lg"
                             />
@@ -69,7 +73,7 @@ export function StandCard({ stand }: StandCardProps) {
 
             {/* Footer / Action */}
             <div className="p-6 pt-0 mt-auto">
-                <Link href={`/events/${stand.event_id}/stands/${standId}`} passHref className="w-full">
+                <Link href={`/events/${eventRef}/stands/${standRef}`} passHref className="w-full">
                     <Button
                         variant="outline"
                         className="w-full group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all"

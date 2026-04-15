@@ -1,7 +1,7 @@
 """
 Payment service for IVEP.
 
-Provides MongoDB-backed event payment storage and operations.
+Provides MongoDB-backed event payment storage and operations (Payzone-based).
 """
 
 from datetime import datetime, timezone
@@ -30,20 +30,22 @@ async def create_payment(
     event_id: str,
     user_id: str,
     amount: float,
-    proof_file_path: str,
+    currency: str = "mad",
+    stripe_session_id: str = "",
 ) -> dict:
-    """Create a new pending payment proof record."""
+    """Create a new pending payment record for Payzone checkout."""
     now = datetime.now(timezone.utc)
 
     payment = {
         "event_id": str(event_id),
         "user_id": str(user_id),
         "amount": amount,
-        "proof_file_path": proof_file_path,
+        "currency": currency,
+        "stripe_session_id": stripe_session_id,
+        "stripe_payment_intent_id": None,
         "status": PaymentStatus.PENDING,
-        "admin_note": None,
         "created_at": now,
-        "reviewed_at": None,
+        "paid_at": None,
     }
 
     collection = get_payments_collection()
@@ -54,6 +56,9 @@ async def create_payment(
 
 async def get_user_payment(event_id: str, user_id: str) -> Optional[dict]:
     """Get the latest payment record for a user/event pair."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
+    
     collection = get_payments_collection()
     doc = await collection.find_one(
         {"event_id": str(event_id), "user_id": str(user_id)},
@@ -66,6 +71,8 @@ async def get_user_payment_by_status(
     event_id: str, user_id: str, status: PaymentStatus
 ) -> Optional[dict]:
     """Get a payment record with a specific status for a user/event pair."""
+    from app.modules.events.service import resolve_event_id
+    event_id = await resolve_event_id(event_id)
     collection = get_payments_collection()
     doc = await collection.find_one(
         {"event_id": str(event_id), "user_id": str(user_id), "status": status}
@@ -73,14 +80,51 @@ async def get_user_payment_by_status(
     return stringify_object_ids(doc) if doc else None
 
 
+async def get_payment_by_stripe_id(payment_id: str) -> Optional[dict]:
+    """Get a payment by Payzone payment ID."""
+    collection = get_payments_collection()
+    doc = await collection.find_one({"stripe_session_id": payment_id})
+    return stringify_object_ids(doc) if doc else None
+
+
+async def mark_payment_paid(
+    payment_id: str,
+    stripe_payment_intent_id: str = "",
+) -> Optional[dict]:
+    """Mark a payment as paid after Payzone confirmation."""
+    collection = get_payments_collection()
+    updated = await collection.find_one_and_update(
+        _id_query(payment_id),
+        {
+            "$set": {
+                "status": PaymentStatus.PAID,
+                "stripe_payment_intent_id": stripe_payment_intent_id,
+                "paid_at": datetime.now(timezone.utc),
+            }
+        },
+        return_document=True,
+    )
+    return stringify_object_ids(updated) if updated else None
+
+
+async def delete_payment(payment_id: str) -> bool:
+    """Delete a payment record (used for cleanup on failure)."""
+    collection = get_payments_collection()
+    result = await collection.delete_one(_id_query(payment_id))
+    return result.deleted_count > 0
+
+
 async def list_payments(
     status_filter: Optional[PaymentStatus] = None,
+    event_id: Optional[str] = None,
 ) -> List[dict]:
-    """List payments, optionally filtered by status."""
+    """List payments, optionally filtered by status and/or event."""
     collection = get_payments_collection()
-    query = {}
+    query: dict = {}
     if status_filter:
         query["status"] = status_filter
+    if event_id:
+        query["event_id"] = str(event_id)
 
     cursor = collection.find(query).sort("created_at", -1)
     docs = await cursor.to_list(length=200)
@@ -92,25 +136,3 @@ async def get_payment_by_id(payment_id: str) -> Optional[dict]:
     collection = get_payments_collection()
     doc = await collection.find_one(_id_query(payment_id))
     return stringify_object_ids(doc) if doc else None
-
-
-async def update_payment_status(
-    payment_id: str,
-    status: PaymentStatus,
-    admin_note: Optional[str] = None,
-) -> Optional[dict]:
-    """Update payment status and set reviewed_at timestamp."""
-    collection = get_payments_collection()
-    update_fields: dict = {
-        "status": status,
-        "reviewed_at": datetime.now(timezone.utc),
-    }
-    if admin_note is not None:
-        update_fields["admin_note"] = admin_note
-
-    updated = await collection.find_one_and_update(
-        _id_query(payment_id),
-        {"$set": update_fields},
-        return_document=True,
-    )
-    return stringify_object_ids(updated) if updated else None

@@ -2,11 +2,15 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
+from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from app.modules.favorites.schemas import FavoriteCreate
+from app.modules.events.service import resolve_event_id
+from app.modules.stands.service import resolve_stand_id
+from app.modules.organizations.service import resolve_organization_id
 
 
 def get_favorites_collection() -> AsyncIOMotorCollection:
@@ -23,10 +27,34 @@ async def list_favorites(user_id: str) -> List[dict]:
 
 async def create_favorite(user_id: str, data: FavoriteCreate) -> dict:
     col = get_favorites_collection()
+
+    db = get_database()
+    target_collection_name = {
+        "event": "events",
+        "stand": "stands",
+        "organization": "organizations",
+    }[data.target_type]
+    target_collection = db[target_collection_name]
+
+    resolved_target_id = data.target_id
+    if data.target_type == "event":
+        resolved_target_id = await resolve_event_id(data.target_id)
+    elif data.target_type == "stand":
+        resolved_target_id = await resolve_stand_id(data.target_id)
+    elif data.target_type == "organization":
+        resolved_target_id = await resolve_organization_id(data.target_id)
+
+    target_doc = await target_collection.find_one({"_id": ObjectId(resolved_target_id)}, {"_id": 1})
+    if not target_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{data.target_type.capitalize()} not found",
+        )
+
     existing = await col.find_one({
         "user_id": str(user_id),
         "target_type": data.target_type,
-        "target_id": data.target_id,
+        "target_id": resolved_target_id,
     })
     if existing:
         return stringify_object_ids(existing)
@@ -34,7 +62,7 @@ async def create_favorite(user_id: str, data: FavoriteCreate) -> dict:
     doc = {
         "user_id": str(user_id),
         "target_type": data.target_type,
-        "target_id": data.target_id,
+        "target_id": resolved_target_id,
         "created_at": datetime.now(timezone.utc),
     }
     result = await col.insert_one(doc)

@@ -17,7 +17,11 @@ class ParticipantStatus(str, Enum):
     INVITED = "invited"
     REQUESTED = "requested"
     APPROVED = "approved"
+    GUEST_APPROVED = "guest_approved"
     REJECTED = "rejected"
+    # Enterprise-specific statuses (Week 2)
+    PENDING_PAYMENT = "pending_payment"
+    PENDING_ADMIN_APPROVAL = "pending_admin_approval"
 
 
 class ParticipantBase(BaseModel):
@@ -39,10 +43,26 @@ class ParticipantRead(BaseModel):
     event_id: str
     user_id: str
     status: ParticipantStatus
+    role: Optional[str] = None
     created_at: datetime
     rejection_reason: Optional[str] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
+
+
+class EnrichedParticipantRead(ParticipantRead):
+    """Participant with organization name for B2B discovery."""
+    organization_id: Optional[str] = None
+    organization_name: Optional[str] = None
+    stand_id: Optional[str] = None
+    description: Optional[str] = None
+    industry: Optional[str] = None
+    website: Optional[str] = None
+    logo_url: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    location_city: Optional[str] = None
+    location_country: Optional[str] = None
 
 
 # ── Enterprise request enrichment schemas ────────────────────────────────────
@@ -103,3 +123,14 @@ class EnterpriseRequestsResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class EnterpriseJoinResponse(BaseModel):
+    """Response after enterprise joins an event."""
+    participant_id: str
+    event_id: str
+    organization_id: str
+    status: ParticipantStatus
+    stand_fee_paid: bool = False
+    payment_reference: Optional[str] = None
+    created_at: datetime

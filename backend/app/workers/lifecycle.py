@@ -12,8 +12,9 @@ without waiting for the scheduler loop.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from bson import ObjectId
 
@@ -24,6 +25,78 @@ from app.modules.audit.service import log_audit
 logger = logging.getLogger(__name__)
 
 TICK_INTERVAL_SECONDS = 60  # run every 60 s
+
+
+def _to_aware_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _parse_time(value: object) -> Optional[tuple[int, int]]:
+    if not isinstance(value, str) or ":" not in value:
+        return None
+    try:
+        hours_str, minutes_str = value.split(":", 1)
+        hours = int(hours_str)
+        minutes = int(minutes_str)
+    except (TypeError, ValueError):
+        return None
+    if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+        return None
+    return hours, minutes
+
+
+def _schedule_end_datetime(event: dict) -> Optional[datetime]:
+    """Compute latest schedule slot end datetime for an event, when schedule_days are present."""
+    schedule_days = event.get("schedule_days")
+    start_date = _to_aware_utc(event.get("start_date"))
+    if not isinstance(schedule_days, list) or not schedule_days or start_date is None:
+        return None
+
+    tz_name = str(event.get("event_timezone") or "UTC")
+    try:
+        event_tz = ZoneInfo(tz_name)
+    except Exception:
+        event_tz = timezone.utc
+
+    start_local_date = start_date.astimezone(event_tz).date()
+    latest: Optional[datetime] = None
+
+    for index, day in enumerate(schedule_days):
+        if not isinstance(day, dict):
+            continue
+        try:
+            day_number = int(day.get("day_number") or (index + 1))
+        except (TypeError, ValueError):
+            day_number = index + 1
+        day_offset = max(0, day_number - 1)
+        local_date = start_local_date + timedelta(days=day_offset)
+
+        slots = day.get("slots") or []
+        if not isinstance(slots, list):
+            continue
+        for slot in slots:
+            if not isinstance(slot, dict):
+                continue
+            start_parts = _parse_time(slot.get("start_time"))
+            end_parts = _parse_time(slot.get("end_time"))
+            if start_parts is None or end_parts is None:
+                continue
+            start_total = start_parts[0] * 60 + start_parts[1]
+            end_total = end_parts[0] * 60 + end_parts[1]
+            if start_total == end_total:
+                continue
+
+            end_date = local_date + timedelta(days=1) if end_total <= start_total else local_date
+            slot_end_local = datetime.combine(end_date, time(end_parts[0], end_parts[1]), tzinfo=event_tz)
+            slot_end = slot_end_local.astimezone(timezone.utc)
+            if latest is None or slot_end > latest:
+                latest = slot_end
+
+    return latest
 
 
 # ─── Core tick ────────────────────────────────────────────────────────────────
@@ -47,14 +120,25 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
     started_ids: list[str] = []
     closed_ids: list[str] = []
 
-    # ── Auto-start: payment_done AND start_date <= now ────────────────────────
-    async for event in col.find(
-        {"state": "payment_done", "start_date": {"$lte": now}}
-    ):
+    # ── Auto-start: (payment_done OR (approved AND free)) AND start_date <= now ──
+    start_query = {
+        "$or": [
+            {"state": "payment_done"},
+            {"state": "approved", "is_paid": False}
+        ],
+        "start_date": {"$lte": now}
+    }
+    async for event in col.find(start_query):
         event_id = str(event["_id"])
-        # Atomic: only update if still payment_done (idempotent)
+        # Atomic: only update if still in a startable state
         result = await col.find_one_and_update(
-            {"_id": event["_id"], "state": "payment_done"},
+            {
+                "_id": event["_id"], 
+                "$or": [
+                    {"state": "payment_done"},
+                    {"state": "approved", "is_paid": False}
+                ]
+            },
             {"$set": {"state": "live"}},
             return_document=True,
         )
@@ -63,7 +147,7 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
             continue
 
         started_ids.append(event_id)
-        logger.info("[lifecycle] auto-started event %s", event_id)
+        logger.info("[lifecycle] auto-started event %s (was %s)", event_id, event.get("state"))
 
         try:
             await log_audit(
@@ -72,7 +156,7 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
                 entity="event",
                 entity_id=event_id,
                 metadata={
-                    "previous_state": "payment_done",
+                    "previous_state": event.get("state"),
                     "new_state": "live",
                     "start_date": event.get("start_date").isoformat() if event.get("start_date") else None,
                     "triggered_at": now.isoformat(),
@@ -82,10 +166,14 @@ async def run_lifecycle_tick(now: Optional[datetime] = None) -> dict:
         except Exception as exc:
             logger.warning("[lifecycle] audit log failed for auto_start %s: %s", event_id, exc)
 
-    # ── Auto-close: live AND end_date < now ───────────────────────────────────
-    async for event in col.find(
-        {"state": "live", "end_date": {"$lt": now}}
-    ):
+    # ── Auto-close: live events whose effective end has passed ───────────────
+    async for event in col.find({"state": "live"}):
+        schedule_end = _schedule_end_datetime(event)
+        end_date = _to_aware_utc(event.get("end_date"))
+        effective_end = schedule_end or end_date
+        if effective_end is None or effective_end > now:
+            continue
+
         event_id = str(event["_id"])
         result = await col.find_one_and_update(
             {"_id": event["_id"], "state": "live"},

@@ -9,3 +9,11 @@ env/
 *.py[cod]
 *$py.class
 
+data/
+uploads/
+
+*.sqlite3
+*.bin
+*.jpg
+*.png
+*.pdf

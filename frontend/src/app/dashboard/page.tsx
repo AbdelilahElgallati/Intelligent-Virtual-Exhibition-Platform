@@ -6,7 +6,8 @@ import { RecommendedEvents } from '@/components/dashboard/RecommendedEvents';
 import { NotificationsPanel } from '@/components/dashboard/NotificationsPanel';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
-import { Event, Recommendation, Notification, EventsResponse } from '@/lib/api/types';
+import { Event, Recommendation, Notification } from '@/lib/api/types';
+import { EventsResponse } from '@/types/event';
 import { SectionTitle } from '@/components/common/SectionTitle';
 import { Container } from '@/components/common/Container';
 
@@ -23,7 +24,7 @@ export default function VisitorDashboard() {
   const fetchJoinedEvents = async () => {
     try {
       const data = await apiClient.get<EventsResponse>(ENDPOINTS.EVENTS.JOINED);
-      setJoinedEvents(data.events);
+      setJoinedEvents(data.items || (data as any).events || []);
     } catch (error) {
       console.error('Failed to fetch joined events:', error);
     } finally {
@@ -45,7 +46,7 @@ export default function VisitorDashboard() {
   const fetchNotifications = async () => {
     try {
       const data = await apiClient.get<Notification[]>(ENDPOINTS.NOTIFICATIONS.LIST);
-      setNotifications(data);
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     } finally {
@@ -54,10 +55,14 @@ export default function VisitorDashboard() {
   };
 
   const handleMarkRead = async (id: string) => {
+    if (!id) return;
     try {
       await apiClient.post(ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) => {
+          const notificationId = String((n as Notification & { _id?: string }).id || (n as Notification & { _id?: string })._id || '');
+          return notificationId === id ? { ...n, is_read: true } : n;
+        })
       );
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -77,6 +82,13 @@ export default function VisitorDashboard() {
     fetchJoinedEvents();
     fetchRecommendations();
     fetchNotifications();
+
+    // Poll notifications every 30 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (

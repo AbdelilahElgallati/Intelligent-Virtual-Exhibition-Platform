@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Activity, Database, Server, Clock, RefreshCw, Plus, AlertTriangle, CheckCircle, XCircle, Minus } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { PlatformHealth, Incident, IncidentCreate } from '@/types/incident';
+import { formatInUserTZ } from '@/lib/timezone';
 
 // ── Status helpers ─────────────────────────────────────────────────────────────
 const statusIcon = (s: string) => {
@@ -127,7 +128,7 @@ export default function MonitoringPage() {
             ]);
             setHealth(h);
             setIncidents(inc);
-            setLastRefresh(new Date().toLocaleTimeString());
+            setLastRefresh(formatInUserTZ(new Date(), { hour: '2-digit', minute: '2-digit' }));
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : 'Failed to load monitoring data');
         } finally {
@@ -285,7 +286,7 @@ export default function MonitoringPage() {
                                     {inc.description && (
                                         <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{inc.description}</p>
                                     )}
-                                    <p className="text-xs text-zinc-300 mt-0.5">{new Date(inc.created_at).toLocaleString()}</p>
+                                    <p className="text-xs text-zinc-300 mt-0.5">{formatInUserTZ(inc.created_at, { dateStyle: 'medium', timeStyle: 'short' })}</p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${severityBadge[inc.severity] ?? ''}`}>

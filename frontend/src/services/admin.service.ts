@@ -7,8 +7,27 @@ import { AuditLog } from '@/types/audit';
 import { PlatformHealth, Incident, IncidentCreate, IncidentUpdate, ContentFlag } from '@/types/incident';
 import { EnterpriseRequestsResponse, RejectBody } from '@/types/participant';
 import { LiveMetrics } from '@/types/monitoring';
+import { PartnerDashboardRead } from '@/types/admin';
 import { OrganizerSummary } from '@/types/organizer';
-import { getApiUrl } from '@/lib/config';
+import {
+    CreatePayoutResponse,
+    DeletePayoutResponse,
+    FinancialTransactionListResponse,
+    PayoutListResponse,
+    PayoutStatus,
+    ReceiverType,
+    SourceType,
+    UpdatePayoutPayload,
+} from '@/types/finance';
+import { getDirectApiUrl } from '@/lib/config';
+import { ENDPOINTS } from '@/lib/api/endpoints';
+
+type AdminAccountPayload = {
+    full_name: string;
+    email: string;
+    password: string;
+    [key: string]: unknown;
+};
 
 // ── Events (Day 2) ─────────────────────────────────────────────────────
 
@@ -20,7 +39,7 @@ export const adminService = {
      */
     async getEvents(state?: string): Promise<{ events: OrganizerEvent[]; total: number }> {
         const params = state ? `?state=${state}` : '';
-        return http.get(`/events${params}`);
+        return http.get(`/events/admin/all${params}`);
     },
 
     async approveEvent(id: string, payload: { payment_amount?: number } = {}): Promise<OrganizerEvent> {
@@ -67,6 +86,14 @@ export const adminService = {
         return http.patch(`/organizations/${id}/suspend`, {});
     },
 
+    async getDetailedOrganizations(): Promise<PartnerDashboardRead[]> {
+        return http.get('/admin/organizations/detailed');
+    },
+
+    async getDetailedEnterprises(): Promise<PartnerDashboardRead[]> {
+        return http.get('/admin/enterprises/detailed');
+    },
+
     // ── Subscriptions (Day 5) ─────────────────────────────────────────
 
     async getSubscriptions(): Promise<AdminSubscription[]> {
@@ -84,11 +111,17 @@ export const adminService = {
     // ── Analytics (Day 6–7) ───────────────────────────────────────────
 
     async getPlatformAnalytics(): Promise<DashboardData> {
-        return http.get('/analytics/platform');
+        try {
+            const live = await http.get<{ dashboard?: DashboardData }>('/metrics/live/platform');
+            if (live?.dashboard) return live.dashboard;
+        } catch {
+            // Fallback to non-live endpoint for backward compatibility.
+        }
+        return http.get('/metrics/platform');
     },
 
     async getEventAnalytics(eventId: string): Promise<DashboardData> {
-        return http.get(`/analytics/event/${eventId}`);
+        return http.get(`/metrics/event/${eventId}`);
     },
 
     // ── Health (Day 8) ────────────────────────────────────────────────
@@ -160,11 +193,11 @@ export const adminService = {
     },
 
     async approveEnterpriseRequest(eventId: string, participantId: string): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/approve`, {});
+        return http.post(ENDPOINTS.PARTICIPANTS.APPROVE(eventId, participantId), {});
     },
 
     async rejectEnterpriseRequest(eventId: string, participantId: string, body: RejectBody = {}): Promise<unknown> {
-        return http.post(`/events/${eventId}/participants/${participantId}/reject`, body);
+        return http.post(ENDPOINTS.PARTICIPANTS.REJECT(eventId, participantId), body);
     },
 
     // ── Event Lifecycle (Week 2) ──────────────────────────────────────────────
@@ -185,6 +218,39 @@ export const adminService = {
 
     async getLiveMetrics(eventId: string): Promise<LiveMetrics> {
         return http.get(`/admin/events/${eventId}/live-metrics`);
+    },
+
+    // ── Finance (Unified Transactions + Payouts) ─────────────────────────
+
+    async getFinanceTransactions(params: {
+        source_type?: SourceType;
+        payout_status?: PayoutStatus;
+        receiver_type?: ReceiverType;
+    } = {}): Promise<FinancialTransactionListResponse> {
+        const query = new URLSearchParams();
+        if (params.source_type) query.set('source_type', params.source_type);
+        if (params.payout_status) query.set('payout_status', params.payout_status);
+        if (params.receiver_type) query.set('receiver_type', params.receiver_type);
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        return http.get(`${ENDPOINTS.ADMIN.FINANCE_TRANSACTIONS}${qs}`);
+    },
+
+    async markFinancePayout(transactionId: string, note?: string): Promise<CreatePayoutResponse> {
+        return http.post(ENDPOINTS.ADMIN.MARK_FINANCE_PAYOUT(transactionId), {
+            note: note || null,
+        });
+    },
+
+    async getFinancePayouts(): Promise<PayoutListResponse> {
+        return http.get(ENDPOINTS.ADMIN.FINANCE_PAYOUTS);
+    },
+
+    async updateFinancePayout(payoutId: string, payload: UpdatePayoutPayload): Promise<import('@/types/finance').PayoutRecord> {
+        return http.patch(ENDPOINTS.ADMIN.UPDATE_FINANCE_PAYOUT(payoutId), payload);
+    },
+
+    async deleteFinancePayout(payoutId: string): Promise<DeletePayoutResponse> {
+        return http.delete(ENDPOINTS.ADMIN.DELETE_FINANCE_PAYOUT(payoutId));
     },
 
     // ── Sessions (Week 5) ──────────────────────────────────────────────
@@ -221,9 +287,10 @@ export const adminService = {
      * Opens the PDF URL in a new tab — the browser will prompt for download.
      */
     async exportOrganizerSummaryPDF(eventId: string): Promise<void> {
-        await this._downloadPDF(
+        await this._downloadBinary(
             `/admin/events/${eventId}/organizer-summary/pdf`,
-            `organizer_report_${eventId}.pdf`
+            `organizer_report_${eventId}.pdf`,
+            { accept: 'application/pdf', minBytes: 100 },
         );
     },
 
@@ -231,53 +298,56 @@ export const adminService = {
      * Trigger a PDF download of the platform-wide report.
      */
     async exportPlatformReportPDF(): Promise<void> {
-        await this._downloadPDF(
-            '/analytics/report/export?format=pdf',
-            `platform_report_${new Date().toISOString().split('T')[0]}.pdf`
+        await this._downloadBinary(
+            '/metrics/report/export?format=pdf',
+            `platform_report_${new Date().toISOString().split('T')[0]}.pdf`,
+            { accept: 'application/pdf', minBytes: 100 },
         );
     },
 
     /**
-     * Internal helper to handle PDF downloads with authentication consistently.
+     * Trigger a CSV download of the platform-wide report (tabular KPIs and revenue).
      */
-    async _downloadPDF(endpoint: string, filename: string): Promise<void> {
-        let token = null;
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem('auth_tokens');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    token = parsed.access_token;
-                }
-            } catch (e) {
-                console.error('Failed to extract token for PDF export', e);
-            }
-        }
+    async exportPlatformReportCSV(): Promise<void> {
+        await this._downloadBinary(
+            '/metrics/report/export?format=csv',
+            `platform_report_${new Date().toISOString().split('T')[0]}.csv`,
+            { accept: 'text/csv', minBytes: 8 },
+        );
+    },
 
-        const url = getApiUrl(endpoint);
-
+    /**
+     * Binary exports (PDF/CSV) via http.getBlob → same-origin proxy bypass as organizer exports.
+     */
+    async _downloadBinary(
+        endpoint: string,
+        filename: string,
+        opts: { accept: string; minBytes?: number },
+    ): Promise<void> {
+        const minBytes = opts.minBytes ?? 100;
         try {
-            const res = await fetch(url, {
-                method: 'GET',
-                credentials: 'omit',
-                headers: {
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                    'Accept': 'application/pdf',
-                },
-            });
+            const blob = await http.getBlob(endpoint, { accept: opts.accept });
 
-            if (!res.ok) {
-                let errorMsg = `Export failed (${res.status})`;
-                try {
-                    const errorData = await res.json();
-                    errorMsg = errorData.detail || errorData.message || errorMsg;
-                } catch { /* not json */ }
-                throw new Error(errorMsg);
+            if (blob.size < minBytes) {
+                throw new Error('Received an empty or invalid export file.');
             }
 
-            const blob = await res.blob();
-            if (blob.size < 100) {
-                throw new Error('Received an empty or invalid document.');
+            const ctype = (blob.type || '').toLowerCase();
+            if (opts.accept.includes('pdf') && ctype && !ctype.includes('pdf') && !ctype.includes('octet-stream')) {
+                let preview = '';
+                try {
+                    preview = (await blob.slice(0, 120).text()).trim();
+                } catch {
+                    /* ignore */
+                }
+                if (preview.toLowerCase().startsWith('<!doctype') || preview.toLowerCase().includes('<html')) {
+                    throw new Error('Server returned HTML instead of a PDF. Check the API URL and that the report endpoint is available.');
+                }
+                if (preview.toLowerCase().includes('error') || preview.toLowerCase().includes('traceback')) {
+                    throw new Error(
+                        preview.length < 300 ? preview : 'Server returned a non-PDF response. See backend logs for details.',
+                    );
+                }
             }
 
             const href = URL.createObjectURL(blob);
@@ -286,13 +356,23 @@ export const adminService = {
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(href), 1000);
-        } catch (error: any) {
-            console.error('PDF Export Error:', error);
-            throw new Error(error.message === 'Failed to fetch'
-                ? 'Network error: Cannot reach the server. Please check your connection or CORS settings.'
-                : error.message);
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(href), 15_000);
+        } catch (error: unknown) {
+            console.error('Export failed:', error);
+            const message = String((error as Error)?.message || 'Export failed');
+            const isFailedFetch =
+                error instanceof TypeError &&
+                (message === 'Failed to fetch' || message.toLowerCase().includes('failed to fetch'));
+            const isAbort = error instanceof DOMException && error.name === 'AbortError';
+
+            if (isFailedFetch || isAbort) {
+                throw new Error(
+                    `Unable to download the export from the API (${getDirectApiUrl(endpoint)}). Confirm the backend is reachable and CORS allows this origin. Details: ${message}`,
+                );
+            }
+
+            throw error instanceof Error ? error : new Error(message);
         }
     },
     /**
@@ -308,6 +388,10 @@ export const adminService = {
 
     async closeEvent(eventId: string): Promise<OrganizerEvent> {
         return http.post(`/events/${eventId}/close`, {});
+    },
+
+    async createAdminAccount(data: AdminAccountPayload): Promise<User> {
+        return http.post('/users/admin/create', data);
     },
 };
 

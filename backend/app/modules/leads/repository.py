@@ -1,6 +1,6 @@
 from bson import ObjectId
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ...db.mongo import get_database
 from .schemas import LeadInteraction, LeadSchema
 
@@ -18,18 +18,27 @@ class LeadRepository:
         return self.db.leads
 
     async def log_interaction(self, interaction: LeadInteraction):
-        await self.interactions.insert_one(interaction.model_dump())
+        data = interaction.model_dump()
+        # Ensure IDs are strings for consistent querying
+        v_id = str(data["visitor_id"])
+        s_id = str(data["stand_id"])
+        data["visitor_id"] = v_id
+        data["stand_id"] = s_id
+        
+        await self.interactions.insert_one(data)
         
         # Update or create lead entry
-        # In a real app, we'd fetch actual visitor info
         await self.leads.update_one(
-            {"visitor_id": interaction.visitor_id, "stand_id": interaction.stand_id},
+            {"visitor_id": v_id, "stand_id": s_id},
             {
                 "$inc": {"interactions_count": 1, "score": 10},
-                "$set": {"last_interaction": datetime.utcnow()},
+                "$set": {
+                    "last_interaction": datetime.now(timezone.utc),
+                    "last_interaction_type": data.get("interaction_type")
+                },
                 "$setOnInsert": {
-                    "visitor_name": f"Visitor {interaction.visitor_id[-4:]}",
-                    "email": f"user_{interaction.visitor_id[-4:]}@example.com",
+                    "visitor_name": f"Visitor {v_id[-4:]}",
+                    "email": f"user_{v_id[-4:]}@example.com",
                     "tags": []
                 }
             },

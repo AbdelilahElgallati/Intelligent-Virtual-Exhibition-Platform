@@ -3,7 +3,7 @@ Pydantic schemas for the Organizer Summary Report (Week 6).
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -37,13 +37,24 @@ class TrendPoint(BaseModel):
 
 
 class PerformanceTrends(BaseModel):
-    visitors_over_time: List[TrendPoint] = []
-    engagement_over_time: List[TrendPoint] = []
-    lead_generation_over_time: List[TrendPoint] = []
+    visitors_over_time: List[TrendPoint] = Field(default_factory=list)
+    engagement_over_time: List[TrendPoint] = Field(default_factory=list)
+    lead_generation_over_time: List[TrendPoint] = Field(default_factory=list)
+
+
+class EnterpriseSummary(BaseModel):
+    id: str
+    name: str
+    logo_url: Optional[str] = None
+    industry: Optional[str] = None
 
 
 class OrganizerSummaryResponse(BaseModel):
+    event_id: Optional[str] = None
+    event_slug: Optional[str] = None
+    event_title: Optional[str] = None
     overview: OverviewMetrics = Field(default_factory=OverviewMetrics)
     safety: SafetyMetrics = Field(default_factory=SafetyMetrics)
     performance_trends: PerformanceTrends = Field(default_factory=PerformanceTrends)
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    enterprises: List[EnterpriseSummary] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

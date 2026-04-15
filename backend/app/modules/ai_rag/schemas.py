@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from datetime import datetime, timezone
 from typing import List, Optional
-from datetime import datetime
+from pydantic import BaseModel, Field
 
 class QueryRequest(BaseModel):
     query: str
@@ -15,7 +15,7 @@ class IngestRequest(BaseModel):
 class AssistantMessage(BaseModel):
     role: str # user, assistant
     content: str
-    timestamp: datetime = datetime.utcnow()
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class SessionResponse(BaseModel):
     session_id: str

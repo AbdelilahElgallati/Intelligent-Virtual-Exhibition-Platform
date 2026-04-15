@@ -1,9 +1,24 @@
 'use client';
 
 import Link from 'next/link';
+<<<<<<< HEAD
 import { XCircle } from 'lucide-react';
 
 export default function MarketplaceCancelPage() {
+=======
+import { Suspense } from 'react';
+import { XCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+
+function MarketplaceCancelContent() {
+    const searchParams = useSearchParams();
+    const standIdFromUrl = searchParams.get('stand_id');
+    const eventIdFromUrl = searchParams.get('event_id');
+    const backToStandHref = (standIdFromUrl && eventIdFromUrl)
+        ? `/events/${eventIdFromUrl}/stands/${standIdFromUrl}`
+        : '/events';
+
+>>>>>>> eb6221363e02667d615fd22792910b75ec97f750
     return (
         <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center p-4">
             <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8 text-center">
@@ -18,10 +33,17 @@ export default function MarketplaceCancelPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Link
+<<<<<<< HEAD
                         href="/events"
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
                     >
                         Browse Events
+=======
+                        href={backToStandHref}
+                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                    >
+                        Go Back to Stand
+>>>>>>> eb6221363e02667d615fd22792910b75ec97f750
                     </Link>
                     <Link
                         href="/dashboard"
@@ -34,3 +56,14 @@ export default function MarketplaceCancelPage() {
         </div>
     );
 }
+<<<<<<< HEAD
+=======
+
+export default function MarketplaceCancelPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+            <MarketplaceCancelContent />
+        </Suspense>
+    );
+}
+>>>>>>> eb6221363e02667d615fd22792910b75ec97f750

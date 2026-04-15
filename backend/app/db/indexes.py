@@ -19,6 +19,14 @@ async def ensure_indexes() -> None:
     try:
         await db.organizations.create_index("owner_id")
         await db.organizations.create_index("created_at")
+        try:
+            await db.organizations.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -28,6 +36,14 @@ async def ensure_indexes() -> None:
         await db.events.create_index("state")
         await db.events.create_index("created_at")
         await db.events.create_index([("title", "text")])
+        try:
+            await db.events.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -42,6 +58,14 @@ async def ensure_indexes() -> None:
     try:
         await db.stands.create_index([("event_id", 1), ("organization_id", 1)], unique=True)
         await db.stands.create_index("name")
+        try:
+            await db.stands.create_index(
+                "slug",
+                unique=True,
+                partialFilterExpression={"slug": {"$exists": True}},
+            )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -68,6 +92,7 @@ async def ensure_indexes() -> None:
         await db.leads.create_index([("visitor_id", 1), ("stand_id", 1)], unique=True)
         await db.leads.create_index("score")
         await db.leads.create_index("last_interaction")
+        await db.leads.create_index([("stand_id", 1), ("created_at", 1)])
     except Exception:
         pass
 
@@ -119,6 +144,8 @@ async def ensure_indexes() -> None:
         await db.analytics_events.create_index("user_id")
         await db.analytics_events.create_index("type")
         await db.analytics_events.create_index("timestamp")
+        # Compound for stand-level performance
+        await db.analytics_events.create_index([("stand_id", 1), ("type", 1), ("created_at", 1)])
         # Compound for live-metrics download query
         await db.analytics_events.create_index([("event_id", 1), ("type", 1), ("timestamp", 1)])
     except Exception:
@@ -175,6 +202,27 @@ async def ensure_indexes() -> None:
     except Exception:
         pass
 
+    # Enterprise Module (Week 7)
+    try:
+        # Products
+        await db.products.create_index("enterprise_id")
+        await db.products.create_index("organization_id")
+        await db.products.create_index("is_active")
+        await db.products.create_index([("name", "text"), ("description", "text"), ("tags", "text")])
+        
+        # Product Requests
+        await db.product_requests.create_index("enterprise_id")
+        await db.product_requests.create_index("visitor_id")
+        await db.product_requests.create_index("product_id")
+        await db.product_requests.create_index("status")
+        await db.product_requests.create_index("created_at")
+
+        # Organizations - extra fields
+        await db.organizations.create_index("type")
+        await db.organizations.create_index("industry")
+    except Exception:
+        pass
+
     # Stand Marketplace — products & orders (isolated from event payments)
     try:
         await db.stand_products.create_index("stand_id")
@@ -185,7 +233,38 @@ async def ensure_indexes() -> None:
     try:
         await db.stand_orders.create_index("stand_id")
         await db.stand_orders.create_index("buyer_id")
-        await db.stand_orders.create_index("stripe_session_id", unique=True, sparse=True)
+        # Drop old unique indexes — cart orders share a stripe_session_id
+        for old_name in ("stripe_session_id_1", "stripe_session_id_unique_sparse"):
+            try:
+                await db.stand_orders.drop_index(old_name)
+            except Exception:
+                pass
+        # Non-unique sparse index for fast lookup by session id
+        await db.stand_orders.create_index(
+            "stripe_session_id", sparse=True,
+            name="stripe_session_id_sparse",
+        )
         await db.stand_orders.create_index([("stand_id", 1), ("created_at", -1)])
+    except Exception:
+        pass
+
+    # Conferences & Meetings (video sessions)
+    try:
+        # conferences
+        await db.conferences.create_index([("assigned_enterprise_id", 1), ("status", 1)])
+        await db.conferences.create_index([("event_id", 1), ("status", 1)])
+        await db.conferences.create_index([("start_time", 1), ("status", 1)])
+        await db.conferences.create_index("livekit_room_name", sparse=True)
+        await db.conferences.create_index([("title", "text"), ("description", "text")])
+        # conference registrations
+        await db.conference_registrations.create_index(
+            [("conference_id", 1), ("user_id", 1)], unique=True
+        )
+        # conference Q&A
+        await db.conference_qa.create_index("conference_id")
+        await db.conference_qa.create_index([("conference_id", 1), ("upvotes", -1)])
+        # meetings — session fields
+        await db.meetings.create_index("session_status")
+        await db.meetings.create_index("livekit_room_name", sparse=True)
     except Exception:
         pass
