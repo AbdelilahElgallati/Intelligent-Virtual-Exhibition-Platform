@@ -524,6 +524,14 @@
       "createAccount": "Create Account",
       "goToLogin": "Go to Login"
     },
+    "actions": {
+      "cancel": "Cancel",
+      "confirmSure": "Are you sure?",
+      "yesProceed": "Yes, proceed"
+    },
+    "errors": {
+      "actionFailed": "Action failed. Please try again."
+    },
     "navigation": {
       "home": "Home",
       "events": "Events",
@@ -1070,7 +1078,50 @@
     },
     "dashboard": {
       "title": "Admin Dashboard",
-      "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance."
+      "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance.",
+      "goTo": "Go to {{title}}",
+      "cards": {
+        "events": {
+          "description": "Review, approve, and manage all platform events.",
+          "tag": "Events"
+        },
+        "users": {
+          "description": "Manage user accounts, roles, and permissions.",
+          "tag": "Users"
+        },
+        "organizations": {
+          "description": "Review and manage organization accounts.",
+          "tag": "Organizations"
+        },
+        "enterprises": {
+          "description": "Manage enterprise participants and exhibitors.",
+          "tag": "Enterprises"
+        },
+        "organizerApprovals": {
+          "description": "Approve or reject organizer registration requests.",
+          "tag": "Approvals"
+        },
+        "enterpriseApprovals": {
+          "description": "Review enterprise join requests for events.",
+          "tag": "Join Requests"
+        },
+        "finance": {
+          "description": "Track transactions, payouts, and financial records.",
+          "tag": "Finance"
+        },
+        "monitoring": {
+          "description": "Monitor platform health, services, and incidents.",
+          "tag": "Monitoring"
+        },
+        "auditLogs": {
+          "description": "View the complete audit trail of admin actions.",
+          "tag": "Audit"
+        },
+        "incidents": {
+          "description": "Investigate, mitigate, and resolve platform incidents.",
+          "tag": "Incidents"
+        }
+      }
     },
     "analytics": {
       "title": "Analytics Dashboard",
@@ -1128,9 +1179,83 @@
       "viewOrganizerReport": "View Organizer Report",
       "inProgress": "In progress",
       "upcoming": "Upcoming",
+      "loading": "Loading events…",
+      "noEvents": "No events found.",
+      "searchPlaceholder": "Search by name, organizer, or status…",
+      "failedToLoad": "Failed to load events.",
+      "filters": {
+        "all": "All States"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "report": "Report",
+        "manage": "Manage",
+        "joinRequests": "Join Requests",
+        "forceStart": "Force Start",
+        "closeEvent": "Close Event",
+        "confirmActivate": "Confirm & Activate",
+        "approveConfirm": "Approve this event and set payment amount:",
+        "rejectConfirm": "Reject this event and provide a reason:",
+        "confirmApprove": "Confirm Approve",
+        "confirmReject": "Confirm Reject",
+        "approving": "Approving…",
+        "rejecting": "Rejecting…",
+        "paymentAmountPlaceholder": "Payment amount (MAD)",
+        "rejectReasonPlaceholder": "Reason for rejection (optional)…"
+      },
+      "errors": {
+        "paymentRequired": "Payment amount is required and must be 0 or greater.",
+        "paymentInvalid": "Payment amount must be a valid non-negative number."
+      },
+      "success": {
+        "paymentConfirmed": "Payment confirmed and event activated.",
+        "eventLive": "Event is now live.",
+        "eventClosed": "Event has been closed.",
+        "eventApproved": "Event approved successfully.",
+        "eventRejected": "Event rejected successfully."
+      },
+      "detail": {
+        "title": "Event Details",
+        "timezoneLabel": "Displayed in timezone",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "location": "Location",
+        "category": "Category",
+        "enterprises": "Enterprises",
+        "payment": "Payment",
+        "autoCalc": "Auto-calc",
+        "paymentProofTitle": "Payment Proof",
+        "paymentProofDescription": "Organizer has submitted a proof of payment.",
+        "viewProof": "View Proof / Receipt",
+        "pricingTitle": "Pricing",
+        "standPrice": "Stand price",
+        "visitorAccess": "Visitor access",
+        "paidTicket": "Paid ({{price}} MAD)",
+        "free": "Free",
+        "descriptionTitle": "Description",
+        "extendedDetailsTitle": "Extended Details",
+        "scheduleTitle": "Event Schedule",
+        "additionalInfoTitle": "Additional Information",
+        "tagsTitle": "Tags",
+        "linksTitle": "Links",
+        "enterpriseLink": "Enterprise Link",
+        "visitorLink": "Visitor Link",
+        "rejectionReasonTitle": "Rejection reason",
+        "bannerAlt": "Event banner",
+        "noDescription": "No description",
+        "noSlots": "No slots defined",
+        "noSchedule": "No schedule provided",
+        "timesDisplayedIn": "Times displayed in",
+        "dayNum": "Day {{num}}"
+      },
       "table": {
-        "title": "Event",
+        "event": "Event",
+        "dates": "Dates",
         "organizer": "Organizer",
+        "status": "Status",
+        "actions": "Actions",
+        "title": "Event",
         "date": "Date",
         "location": "Location",
         "category": "Category",
@@ -1185,15 +1310,20 @@
         "failedToLoad": "Failed to load event. Please try again."
       },
       "states": {
-        "pendingApproval": "Pending Approval",
+        "pending_approval": "Pending Approval",
         "approved": "Approved",
         "rejected": "Rejected",
-        "waitingForPayment": "Waiting for Payment",
-        "paymentProofSubmitted": "Payment Reviewing",
-        "paymentDone": "Payment Done",
+        "waiting_for_payment": "Waiting for Payment",
+        "payment_proof_submitted": "Payment Reviewing",
+        "payment_done": "Payment Done",
         "live": "Live",
         "closed": "Closed",
         "upcoming": "Upcoming",
+        "in_progress": "In progress",
+        "pendingApproval": "Pending Approval",
+        "waitingForPayment": "Waiting for Payment",
+        "paymentProofSubmitted": "Payment Reviewing",
+        "paymentDone": "Payment Done",
         "inProgress": "In progress"
       },
       "panel": {
@@ -1247,6 +1377,79 @@
         "noSlots": "No slots defined",
         "noDescription": "No description",
         "dayLabel": "Day"
+      }
+    },
+    "eventDetail": {
+      "states": {
+        "pendingApproval": "Pending Approval",
+        "approved": "Approved",
+        "waitingForPayment": "Waiting for Payment",
+        "reviewingPayment": "Reviewing Payment",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed",
+        "rejected": "Rejected",
+        "upcoming": "Upcoming",
+        "inProgress": "In progress"
+      },
+      "countdown": {
+        "startsIn": "Event starts in",
+        "endsIn": "Event ends in",
+        "startPassed": "Scheduled start has passed — auto-start pending",
+        "endPassed": "Scheduled end has passed — auto-close pending"
+      },
+      "timeline": {
+        "title": "Event Timeline",
+        "pending": "Pending",
+        "paymentDue": "Payment Due",
+        "verifying": "Verifying",
+        "paymentDone": "Payment Done",
+        "live": "Live",
+        "closed": "Closed"
+      },
+      "actions": {
+        "organizerReport": "Organizer Report",
+        "liveMonitor": "Live Monitor",
+        "verifyPayment": "Verify Payment",
+        "forceStart": "Force Start",
+        "forceClose": "Force Close",
+        "viewProof": "View Submitted Proof",
+        "tryAgain": "Try again",
+        "viewEnterpriseRequests": "View Enterprise Requests →"
+      },
+      "sections": {
+        "eventDetails": "Event Details",
+        "lifecycleInfo": "Lifecycle Info",
+        "paymentProof": "Payment Proof"
+      },
+      "info": {
+        "autoStartScheduled": "⏰ Auto-start is scheduled when {{date}} is reached.",
+        "autoCloseScheduled": "🟢 Event is live. Auto-close scheduled when {{date}} passes.",
+        "startDate": "start date",
+        "endDate": "end date"
+      },
+      "confirm": {
+        "paymentTitle": "Confirm Payment Proof",
+        "paymentMessage": "Are you sure you want to verify the payment proof for \"{{title}}\"? This will activate the event and generate access links.",
+        "paymentLabel": "Yes, Confirm Payment",
+        "startTitle": "Force Start Event",
+        "startMessage": "This will immediately transition \"{{title}}\" from Payment Done → Live, bypassing the scheduled start time. This action is logged.",
+        "startLabel": "Yes, Start Now",
+        "closeTitle": "Force Close Event",
+        "closeMessage": "This will immediately close \"{{title}}\" and transition it from Live → Closed. This action cannot be undone and is logged.",
+        "closeLabel": "Yes, Close Now"
+      },
+      "toast": {
+        "startSuccess": "Event started successfully",
+        "closeSuccess": "Event closed successfully",
+        "paymentSuccess": "Payment confirmed and event activated",
+        "startFailed": "Failed to start event",
+        "closeFailed": "Failed to close event",
+        "paymentFailed": "Failed to confirm payment"
+      },
+      "errors": {
+        "failedToLoad": "Failed to load event. Please try again.",
+        "eventNotFound": "Event not found"
       }
     },
     "users": {
