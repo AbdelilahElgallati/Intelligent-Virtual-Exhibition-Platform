@@ -3,6 +3,7 @@
 import React from 'react';
 import { Event } from '@/lib/api/types';
 import { EventCard } from './EventCard';
+import { useTranslation } from 'react-i18next';
 
 interface EventsGridProps {
     events: Event[];
@@ -20,12 +21,13 @@ export const EventsGrid: React.FC<EventsGridProps> = ({
     favoriteAnimatingEventId,
     onToggleFavorite,
 }) => {
+    const { t } = useTranslation();
     if (events.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="text-4xl mb-4">📅</div>
-                <h3 className="text-lg font-bold text-zinc-900">No events found</h3>
-                <p className="text-zinc-500">Check back later for new exhibition opportunities.</p>
+                <h3 className="text-lg font-bold text-zinc-900">{t('visitor.eventsGrid.noEvents')}</h3>
+                <p className="text-zinc-500">{t('visitor.eventsGrid.checkBackLater')}</p>
             </div>
         );
     }

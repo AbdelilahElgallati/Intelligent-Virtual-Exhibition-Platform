@@ -12,11 +12,13 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { getEventLifecycle, EventDisplayState } from '@/lib/eventLifecycle';
 import { favoritesService } from '@/services/favorites.service';
+import { useTranslation } from 'react-i18next';
 
 type TimelineFilter = 'all' | 'LIVE' | 'IN_PROGRESS' | 'UPCOMING' | 'ENDED' | 'timeline_tbd';
 const PUBLIC_VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
 
 export default function EventsPage() {
+    const { t } = useTranslation();
     const { isAuthenticated } = useAuth();
     const [events, setEvents] = useState<Event[]>([]);
     const [registeredEventIds, setRegisteredEventIds] = useState<Set<string>>(new Set());
@@ -67,7 +69,7 @@ export default function EventsPage() {
                     });
                     setFavoriteMap(nextMap);
                 }
-            } catch (err) { setError('Could not load events.'); } finally { setIsLoading(false); }
+            } catch (err) { setError(t('events.listing.errorLoad')); } finally { setIsLoading(false); }
         }
         fetchEvents();
     }, [isAuthenticated]);
@@ -103,11 +105,11 @@ export default function EventsPage() {
     return (
         <div className="py-12 bg-zinc-50 min-h-screen">
             <Container>
-                <SectionTitle title="Events" subtitle="Track upcoming, live, and ended exhibitions with timeline-aware access." align="left" />
+                <SectionTitle title={t('events.listing.title')} subtitle={t('events.listing.subtitle')} align="left" />
                 <EventsFilters onSearchChange={setSearch} onCategoryChange={setCategory} categories={categories} selectedCategory={category} />
                 <div className="mb-6 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mr-1">Timeline</span>
-                    {([ { id: 'all', label: 'All' }, { id: 'LIVE', label: 'Live' }, { id: 'IN_PROGRESS', label: 'In Progress' }, { id: 'UPCOMING', label: 'Upcoming' }, { id: 'ENDED', label: 'Ended' }, { id: 'timeline_tbd', label: 'Timeline TBD' } ] as Array<{ id: TimelineFilter; label: string }>).map((item) => (
+                    <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mr-1">{t('events.listing.timelineLabel')}</span>
+                    {([ { id: 'all', label: t('events.listing.timelineFilters.all') }, { id: 'LIVE', label: t('events.listing.timelineFilters.live') }, { id: 'IN_PROGRESS', label: t('events.listing.timelineFilters.inProgress') }, { id: 'UPCOMING', label: t('events.listing.timelineFilters.upcoming') }, { id: 'ENDED', label: t('events.listing.timelineFilters.ended') }, { id: 'timeline_tbd', label: t('events.listing.timelineFilters.timelineTbd') } ] as Array<{ id: TimelineFilter; label: string }>).map((item) => (
                         <button key={item.id} onClick={() => setTimelineFilter(item.id)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${timelineFilter === item.id ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-zinc-600 border-zinc-300 hover:border-indigo-400 hover:text-indigo-600'}`}>{item.label}</button>
                     ))}
                 </div>

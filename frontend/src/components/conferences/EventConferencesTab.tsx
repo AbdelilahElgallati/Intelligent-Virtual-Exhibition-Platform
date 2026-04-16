@@ -6,6 +6,7 @@ import { CalendarDays, Clock3, Timer, UserRound, Building2, Mic2 } from 'lucide-
 import { apiClient } from '@/lib/api/client';
 import { Conference } from '@/types/conference';
 import { Meeting } from '@/types/meeting';
+import { useTranslation } from 'react-i18next';
 
 import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
 import { Event } from '@/types/event';
@@ -79,54 +80,55 @@ function formatDateTime(iso: string, timeZone: string = 'UTC'): string {
     return formatInTZ(iso, timeZone, 'dd MMM HH:mm');
 }
 
-function formatDuration(startIso: string, endIso: string): string {
+function formatDuration(startIso: string, endIso: string, t: (key: string, options?: Record<string, unknown>) => string): string {
     const start = parseMs(startIso);
     const end = parseMs(endIso);
-    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 'N/A';
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return t('visitor.eventConferencesTab.na');
 
     const totalMin = Math.round((end - start) / 60000);
     const hours = Math.floor(totalMin / 60);
     const minutes = totalMin % 60;
 
-    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h`;
-    return `${minutes}m`;
+    if (hours > 0 && minutes > 0) return t('visitor.eventConferencesTab.durationHoursMinutes', { h: hours, m: minutes });
+    if (hours > 0) return t('visitor.eventConferencesTab.durationHours', { h: hours });
+    return t('visitor.eventConferencesTab.durationMinutes', { m: minutes });
 }
 
-function formatTimeLeft(startIso: string, nowMs: number): string {
+function formatTimeLeft(startIso: string, nowMs: number, t: (key: string, options?: Record<string, unknown>) => string): string {
     const start = parseMs(startIso);
     const diff = start - nowMs;
 
-    if (Number.isNaN(start)) return 'Invalid start time';
-    if (diff <= 0) return 'Starting now';
+    if (Number.isNaN(start)) return t('visitor.eventConferencesTab.invalidStartTime');
+    if (diff <= 0) return t('visitor.eventConferencesTab.startingNow');
 
     const totalMin = Math.floor(diff / 60000);
     const days = Math.floor(totalMin / (60 * 24));
     const hours = Math.floor((totalMin % (60 * 24)) / 60);
     const minutes = totalMin % 60;
 
-    if (days > 0) return `Starts in ${days}d ${hours}h`;
-    if (hours > 0) return `Starts in ${hours}h ${minutes}m`;
-    return `Starts in ${minutes}m`;
+    if (days > 0) return t('visitor.eventConferencesTab.startsInDaysHours', { d: days, h: hours });
+    if (hours > 0) return t('visitor.eventConferencesTab.startsInHoursMinutes', { h: hours, m: minutes });
+    return t('visitor.eventConferencesTab.startsInMinutes', { m: minutes });
 }
 
-function statusStyle(status: CardStatus): { label: string; text: string; bg: string; border: string } {
+function statusStyle(status: CardStatus, t: (key: string) => string): { label: string; text: string; bg: string; border: string } {
     if (status === 'live') {
-        return { label: 'Live', text: '#047857', bg: '#ecfdf5', border: '#a7f3d0' };
+        return { label: t('visitor.conferencesTab.status.live'), text: '#047857', bg: '#ecfdf5', border: '#a7f3d0' };
     }
     if (status === 'upcoming') {
-        return { label: 'Upcoming', text: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' };
+        return { label: t('visitor.conferencesTab.status.upcoming'), text: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' };
     }
     if (status === 'pending') {
-        return { label: 'Pending', text: '#b45309', bg: '#fffbeb', border: '#fde68a' };
+        return { label: t('visitor.eventConferencesTab.status.pending'), text: '#b45309', bg: '#fffbeb', border: '#fde68a' };
     }
     if (status === 'canceled') {
-        return { label: 'Canceled', text: '#b91c1c', bg: '#fef2f2', border: '#fecaca' };
+        return { label: t('visitor.eventConferencesTab.status.canceled'), text: '#b91c1c', bg: '#fef2f2', border: '#fecaca' };
     }
-    return { label: 'Ended', text: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+    return { label: t('visitor.conferencesTab.status.ended'), text: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
 }
 
 export default function EventConferencesTab({ eventId, event: initialEvent }: EventConferencesTabProps) {
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [event, setEvent] = useState<Event | null>(initialEvent || null);
@@ -243,7 +245,7 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                 setEvent(eventRes.value);
             }
         } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : 'Failed to load timeline';
+            const message = e instanceof Error ? e.message : t('visitor.eventConferencesTab.errors.loadFailed');
             setError(message);
             setConferences([]);
             setMeetings([]);
@@ -269,13 +271,13 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                     m.requester_name ||
                     m.receiver_org_name ||
                     m.requester_org_name ||
-                    'Enterprise representative';
+                    t('visitor.eventConferencesTab.enterpriseRepresentative');
                 const id = m.id || m._id;
 
                 return {
                     id,
                     withWho,
-                    purpose: m.purpose || 'Meeting session',
+                    purpose: m.purpose || t('visitor.eventConferencesTab.meetingSession'),
                     startTime: m.start_time,
                     endTime: m.end_time,
                     status,
@@ -294,9 +296,9 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                 if (!confId) return null;
                 return {
                     id: confId,
-                    title: c.title || 'Conference session',
-                    enterpriseHost: c.assigned_enterprise_name || 'Enterprise host',
-                    speakerName: c.speaker_name || 'Speaker not set',
+                    title: c.title || t('visitor.eventConferencesTab.conferenceSession'),
+                    enterpriseHost: c.assigned_enterprise_name || t('visitor.eventConferencesTab.enterpriseHost'),
+                    speakerName: c.speaker_name || t('visitor.eventConferencesTab.speakerNotSet'),
                     startTime: c.start_time,
                     endTime: c.end_time,
                     status,
@@ -316,10 +318,10 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
         <div style={{ fontFamily: 'Inter, sans-serif' }}>
             <div style={{ marginBottom: 24 }}>
                 <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1e293b', margin: '0 0 6px 0' }}>
-                    Sessions Timeline
+                    {t('visitor.eventConferencesTab.timelineTitle')}
                 </h2>
                 <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
-                    Separate views for your meetings and conferences, with clear live, upcoming, and ended states.
+                    {t('visitor.eventConferencesTab.timelineSubtitle')}
                 </p>
 
                 {liveCount > 0 && (
@@ -346,7 +348,7 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                             }}
                         />
                         <span style={{ color: '#10b981', fontWeight: 700, fontSize: 13 }}>
-                            {liveCount} live session{liveCount > 1 ? 's' : ''}
+                            {t('visitor.eventConferencesTab.liveSessionsCount', { n: liveCount })}
                         </span>
                     </div>
                 )}
@@ -388,14 +390,14 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                 <div style={{ display: 'grid', gap: 26 }}>
                     <section>
                         <div style={{ marginBottom: 10 }}>
-                            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>My Meetings</h3>
+                            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{t('visitor.eventConferencesTab.myMeetings')}</h3>
                             <p style={{ margin: '4px 0 0 0', fontSize: 13, color: '#64748b' }}>
-                                Includes who you will meet, start time, duration, countdown, and live join.
+                                {t('visitor.eventConferencesTab.myMeetingsSubtitle')}
                             </p>
                         </div>
 
                         {meetingCards.length === 0 ? (
-                            <EmptyState text="No meetings for this event yet." />
+                            <EmptyState text={t('visitor.eventConferencesTab.noMeetings')} />
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
                                 {meetingCards.map((m) => (
@@ -403,21 +405,21 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                                         key={`meeting-${m.id}`}
                                         title={m.purpose}
                                         details={[
-                                            { icon: <UserRound size={14} />, label: `With: ${m.withWho}` },
-                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(m.startTime, timeZone)}` },
-                                            { icon: <Clock3 size={14} />, label: `Duration: ${formatDuration(m.startTime, m.endTime)}` },
+                                            { icon: <UserRound size={14} />, label: `${t('visitor.eventConferencesTab.with')}: ${m.withWho}` },
+                                            { icon: <CalendarDays size={14} />, label: `${t('visitor.eventConferencesTab.start')}: ${formatDateTime(m.startTime, timeZone)}` },
+                                            { icon: <Clock3 size={14} />, label: `${t('visitor.eventConferencesTab.duration')}: ${formatDuration(m.startTime, m.endTime, t)}` },
                                             {
                                                 icon: <Timer size={14} />,
                                                 label:
                                                     m.status === 'upcoming'
-                                                        ? formatTimeLeft(m.startTime, nowMs)
+                                                        ? formatTimeLeft(m.startTime, nowMs, t)
                                                         : m.status === 'live'
-                                                          ? 'In progress now'
-                                                          : 'Time window closed',
+                                                          ? t('visitor.eventConferencesTab.inProgressNow')
+                                                          : t('visitor.eventConferencesTab.timeWindowClosed'),
                                             },
                                         ]}
                                         status={m.status}
-                                        buttonLabel={m.canJoin ? 'Join Meeting' : m.status === 'ended' ? 'Ended' : 'Wait'}
+                                        buttonLabel={m.canJoin ? t('visitor.eventConferencesTab.joinMeeting') : m.status === 'ended' ? t('visitor.conferencesTab.actions.ended') : t('visitor.eventConferencesTab.wait')}
                                         buttonEnabled={m.canJoin}
                                         onButtonClick={() => router.push(m.route)}
                                         frozen={m.status === 'ended' || m.status === 'canceled'}
@@ -429,14 +431,14 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
 
                     <section>
                         <div style={{ marginBottom: 10 }}>
-                            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>Conferences</h3>
+                            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{t('visitor.conferencesTab.title')}</h3>
                             <p style={{ margin: '4px 0 0 0', fontSize: 13, color: '#64748b' }}>
-                                Includes enterprise host, speaker, start time, duration, countdown, and live join.
+                                {t('visitor.eventConferencesTab.conferencesSubtitle')}
                             </p>
                         </div>
 
                         {conferenceCards.length === 0 ? (
-                            <EmptyState text="No conferences for this event yet." />
+                            <EmptyState text={t('visitor.eventConferencesTab.noConferences')} />
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
                                 {conferenceCards.map((c) => (
@@ -444,22 +446,22 @@ export default function EventConferencesTab({ eventId, event: initialEvent }: Ev
                                         key={`conference-${c.id}`}
                                         title={c.title}
                                         details={[
-                                            { icon: <Building2 size={14} />, label: `Host: ${c.enterpriseHost}` },
-                                            { icon: <Mic2 size={14} />, label: `Speaker: ${c.speakerName}` },
-                                            { icon: <CalendarDays size={14} />, label: `Start: ${formatDateTime(c.startTime, timeZone)}` },
-                                            { icon: <Clock3 size={14} />, label: `Duration: ${formatDuration(c.startTime, c.endTime)}` },
+                                            { icon: <Building2 size={14} />, label: `${t('visitor.eventConferencesTab.host')}: ${c.enterpriseHost}` },
+                                            { icon: <Mic2 size={14} />, label: `${t('visitor.eventConferencesTab.speaker')}: ${c.speakerName}` },
+                                            { icon: <CalendarDays size={14} />, label: `${t('visitor.eventConferencesTab.start')}: ${formatDateTime(c.startTime, timeZone)}` },
+                                            { icon: <Clock3 size={14} />, label: `${t('visitor.eventConferencesTab.duration')}: ${formatDuration(c.startTime, c.endTime, t)}` },
                                             {
                                                 icon: <Timer size={14} />,
                                                 label:
                                                     c.status === 'upcoming'
-                                                        ? formatTimeLeft(c.startTime, nowMs)
+                                                        ? formatTimeLeft(c.startTime, nowMs, t)
                                                         : c.status === 'live'
-                                                          ? 'Conference is live'
-                                                          : 'Time window closed',
+                                                          ? t('visitor.eventConferencesTab.conferenceIsLive')
+                                                          : t('visitor.eventConferencesTab.timeWindowClosed'),
                                             },
                                         ]}
                                         status={c.status}
-                                        buttonLabel={c.canJoin ? 'Join Conference' : c.status === 'ended' ? 'Ended' : 'Wait'}
+                                        buttonLabel={c.canJoin ? t('visitor.eventConferencesTab.joinConference') : c.status === 'ended' ? t('visitor.conferencesTab.actions.ended') : t('visitor.eventConferencesTab.wait')}
                                         buttonEnabled={c.canJoin}
                                         onButtonClick={() => router.push(c.route)}
                                         frozen={c.status === 'ended' || c.status === 'canceled'}
@@ -517,7 +519,8 @@ function SessionCard({
     onButtonClick: () => void;
     frozen: boolean;
 }) {
-    const style = statusStyle(status);
+    const { t } = useTranslation();
+    const style = statusStyle(status, t);
 
     return (
         <div

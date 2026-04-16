@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { ParticipantStatus } from '@/lib/api/types';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 import { http } from '@/lib/http';
 
@@ -20,6 +21,7 @@ interface Props {
 }
 
 function WatchContent({ eventId, confId }: { eventId: string; confId: string }) {
+    const { t } = useTranslation();
     const router = useRouter();
     const { user } = useAuth();
     const [conf, setConf] = useState<Conference | null>(null);
@@ -56,8 +58,8 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
 
                 if (cData.status !== 'live') {
                     setError(cData.status === 'scheduled'
-                        ? 'This conference has not started yet. Come back when it goes live!'
-                        : 'This conference has ended.');
+                        ? t('visitor.conferencesTab.actions.startingSoon')
+                        : t('visitor.conferencesTab.actions.ended'));
                     setLoading(false);
                     return;
                 }
@@ -68,7 +70,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                 if (e.status === 403 && e.message?.toLowerCase().includes('register')) {
                     setError('CONFERENCE_REGISTRATION_REQUIRED');
                 } else {
-                    setError(e.message || 'Failed to load conference');
+                    setError(e.message || t('visitor.audienceRoom.loadFailedConference'));
                 }
             } finally {
                 setLoading(false);
@@ -85,13 +87,13 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
         return () => window.clearInterval(timer);
     }, []);
 
-    if (loading) return <LoadingState message="Joining conference…" />;
+    if (loading) return <LoadingState message={t('visitor.conferencesTab.actions.join')} />;
 
     if (!isApprovedParticipant) {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🔒</div>
-                <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">Registration Required</h2>
+                <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">{t('visitor.eventLiveLayout.registrationRequired')}</h2>
                 <p className="text-zinc-500 text-sm text-center max-w-md">
                     You need approved participation to join conference sessions.
                 </p>
@@ -99,7 +101,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                     onClick={() => router.push(`/events/${eventId}`)}
                     className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                 >
-                    Go to Event
+                    {t('visitor.inviteAccept.actions.goToEvent')}
                 </button>
             </div>
         );
@@ -151,7 +153,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
             return (
                 <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-5">📝</div>
-                    <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">Registration Required</h2>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">{t('visitor.eventLiveLayout.registrationRequired')}</h2>
                     <p className="text-zinc-500 text-sm text-center max-w-md">
                         You are an approved participant of this event, but you haven't registered for this specific conference session yet.
                     </p>
@@ -159,7 +161,7 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                         onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
                         className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                     >
-                        Register Now
+                        {t('visitor.eventLiveLayout.registerNow')}
                     </button>
                 </div>
             );

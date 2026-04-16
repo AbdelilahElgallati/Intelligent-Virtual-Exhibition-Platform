@@ -10,12 +10,14 @@ import { Container } from '@/components/common/Container';
 import { useAuth } from '@/context/AuthContext';
 import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentPageProps {
     params: Promise<{ id?: string }> | { id?: string };
 }
 
 export default function PaymentPage({ params }: PaymentPageProps) {
+    const { t } = useTranslation();
     const resolvedParams = params instanceof Promise ? use(params) : params;
     const id = resolvedParams?.id;
     const router = useRouter();
@@ -64,7 +66,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                 })
                 .catch((err) => {
                     console.error('Payment verification failed:', err);
-                    setError('Payment verification failed. Please contact support.');
+                    setError(t('visitor.eventPayment.verificationFailed'));
                 })
                 .finally(() => setVerifying(false));
         }
@@ -102,19 +104,19 @@ export default function PaymentPage({ params }: PaymentPageProps) {
             window.location.href = res.payment_url;
         } catch (err: any) {
             console.error('Checkout failed:', err);
-            setError(err.message || 'Failed to start checkout. Please try again.');
+            setError(err.message || t('visitor.eventPayment.checkoutFailed'));
             setCheckoutLoading(false);
         }
     };
 
     if (loading || authLoading) {
-        return <LoadingState message="Loading payment details..." />;
+        return <LoadingState message={t('visitor.eventPayment.loading')} />;
     }
 
     if (!event) {
         return (
             <Container className="py-20 text-center">
-                <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+                <h2 className="text-2xl font-bold mb-4">{t('events.detail.notFound')}</h2>
             </Container>
         );
     }
@@ -122,13 +124,13 @@ export default function PaymentPage({ params }: PaymentPageProps) {
     if (!event.is_paid) {
         return (
             <Container className="py-20 text-center">
-                <h2 className="text-2xl font-bold mb-4">This event is free</h2>
-                <p className="text-muted-foreground mb-6">No payment is required for this event.</p>
+                <h2 className="text-2xl font-bold mb-4">{t('visitor.eventPayment.freeEvent')}</h2>
+                <p className="text-muted-foreground mb-6">{t('visitor.eventPayment.noPaymentRequired')}</p>
                 <button
                     onClick={() => router.push(`/events/${id}`)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
-                    &larr; Back to Event
+                    &larr; {t('visitor.eventPayment.backToEvent')}
                 </button>
             </Container>
         );
@@ -142,11 +144,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                     onClick={() => router.push(`/events/${id}`)}
                     className="text-sm text-muted-foreground hover:text-primary mb-4 inline-flex items-center gap-1"
                 >
-                    &larr; Back to Event
+                    &larr; {t('visitor.eventPayment.backToEvent')}
                 </button>
-                <h1 className="text-3xl font-bold mb-2">Event Payment</h1>
+                <h1 className="text-3xl font-bold mb-2">{t('visitor.eventPayment.title')}</h1>
                 <p className="text-muted-foreground">
-                    Secure payment for <strong>{event.title}</strong>
+                    {t('visitor.eventPayment.securePaymentFor')} <strong>{event.title}</strong>
                 </p>
             </div>
 
@@ -161,7 +163,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                         <div className="text-2xl font-bold text-indigo-600">
                             {event.ticket_price?.toFixed(2) ?? '0.00'} MAD
                         </div>
-                        <p className="text-xs text-muted-foreground">Ticket Price</p>
+                        <p className="text-xs text-muted-foreground">{t('visitor.eventPayment.ticketPrice')}</p>
                     </div>
                 </div>
             </div>
@@ -169,31 +171,31 @@ export default function PaymentPage({ params }: PaymentPageProps) {
             {/* Cancelled */}
             {isCancelled && paymentStatus !== 'paid' && (
                 <div className="rounded-xl p-4 mb-8 text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                    <p className="font-bold">Payment Cancelled</p>
-                    <p className="mt-1">Your payment was cancelled. You can try again below.</p>
+                    <p className="font-bold">{t('visitor.marketplace.cancel.title')}</p>
+                    <p className="mt-1">{t('visitor.marketplace.cancel.subtitle')}</p>
                 </div>
             )}
 
             {/* Verifying */}
             {verifying && (
                 <div className="rounded-xl p-4 mb-8 text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                    <p className="font-bold">Verifying Payment...</p>
-                    <p className="mt-1">Please wait while we confirm your payment.</p>
+                    <p className="font-bold">{t('visitor.eventPayment.verifying')}</p>
+                    <p className="mt-1">{t('visitor.eventPayment.verifyingMessage')}</p>
                 </div>
             )}
 
             {/* Payment Confirmed */}
             {paymentStatus === 'paid' && (
                 <div className="rounded-xl p-6 mb-8 bg-green-50 text-green-700 border border-green-200">
-                    <p className="font-bold text-lg">Payment Confirmed!</p>
-                    <p className="mt-2">Your payment has been verified. You now have full access to this event.</p>
+                    <p className="font-bold text-lg">{t('visitor.eventPayment.confirmed')}</p>
+                    <p className="mt-2">{t('visitor.eventPayment.confirmedMessage')}</p>
 
                     <div className="flex flex-wrap gap-3 mt-4">
                         <button
                             onClick={() => router.push(`/events/${id}/live`)}
                             className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
                         >
-                            Enter Event &rarr;
+                            {t('visitor.eventPayment.enterEvent')} &rarr;
                         </button>
                         {receiptData && (
                             <button
@@ -226,7 +228,7 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                                 }}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white border border-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
                             >
-                                Download Invoice (PDF)
+                                {t('visitor.eventPayment.downloadInvoice')}
                             </button>
                         )}
                     </div>
@@ -243,12 +245,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
             {/* Pay with Stripe (show when not yet paid and not verifying) */}
             {paymentStatus !== 'paid' && !verifying && (
                 <div className="border rounded-xl p-6">
-                    <h3 className="font-semibold text-lg mb-4">Secure Payment</h3>
+                    <h3 className="font-semibold text-lg mb-4">{t('visitor.eventPayment.securePaymentTitle')}</h3>
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
                         <p>
-                            Click the button below to securely pay <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong> via Stripe.
-                            You will be redirected to Stripe&apos;s secure checkout page.
+                            {t('visitor.eventPayment.securePaymentDesc')} <strong>{event.ticket_price?.toFixed(2) ?? '0.00'} MAD</strong>.
                         </p>
                     </div>
 
@@ -261,11 +262,11 @@ export default function PaymentPage({ params }: PaymentPageProps) {
                                 : 'bg-indigo-600 hover:bg-indigo-700'
                         }`}
                     >
-                        {checkoutLoading ? 'Redirecting to Stripe...' : 'Pay Now'}
+                        {checkoutLoading ? t('visitor.eventPayment.redirecting') : t('visitor.eventPayment.payNow')}
                     </button>
 
                     <p className="text-xs text-muted-foreground mt-3 text-center">
-                        Powered by Stripe. Your payment information is handled securely.
+                        {t('visitor.eventPayment.poweredBy')}
                     </p>
                 </div>
             )}

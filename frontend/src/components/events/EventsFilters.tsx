@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Input as CustomInput } from '@/components/ui/Input';
+import { useTranslation } from 'react-i18next';
 
 interface EventsFiltersProps {
     onSearchChange: (value: string) => void;
@@ -16,11 +17,12 @@ export const EventsFilters: React.FC<EventsFiltersProps> = ({
     categories,
     selectedCategory,
 }) => {
+    const { t } = useTranslation();
     return (
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-8">
             <div className="w-full md:max-w-md">
                 <CustomInput
-                    placeholder="Search events by title or description..."
+                    placeholder={t('visitor.eventsFilters.searchPlaceholder')}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
@@ -28,14 +30,14 @@ export const EventsFilters: React.FC<EventsFiltersProps> = ({
             <div className="flex items-center gap-4">
                 <div className="min-w-[200px]">
                     <label className="block text-xs font-medium text-zinc-500 mb-1 uppercase tracking-wider">
-                        Category
+                        {t('visitor.eventsFilters.categoryLabel')}
                     </label>
                     <select
                         className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         value={selectedCategory}
                         onChange={(e) => onCategoryChange(e.target.value)}
                     >
-                        <option value="">All Categories</option>
+                        <option value="">{t('visitor.eventsFilters.allCategories')}</option>
                         {categories.map((cat) => (
                             <option key={cat} value={cat}>
                                 {cat}

@@ -6,10 +6,12 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 type InviteState = "loading" | "success" | "error";
 
 export default function VisitorInviteAcceptPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,13 +21,13 @@ export default function VisitorInviteAcceptPage() {
   const token = searchParams.get("token") || "";
 
   const [state, setState] = useState<InviteState>("loading");
-  const [message, setMessage] = useState("Processing your invite...");
+  const [message, setMessage] = useState(t("visitor.inviteAccept.processing"));
 
   useEffect(() => {
     const acceptInvite = async () => {
       if (!eventId) {
         setState("error");
-        setMessage("Missing event identifier in the invite link.");
+        setMessage(t("visitor.inviteAccept.missingEventId"));
         return;
       }
 
@@ -45,17 +47,17 @@ export default function VisitorInviteAcceptPage() {
 
       if (user?.role && user.role !== "visitor") {
         setState("error");
-        setMessage("This invite is for visitor accounts. Please log in with a visitor account.");
+        setMessage(t("visitor.inviteAccept.visitorOnly"));
         return;
       }
 
       try {
         await apiClient.post(ENDPOINTS.EVENTS.ACCEPT_VISITOR_INVITE(eventId, token || undefined));
         setState("success");
-        setMessage("You are now accepted as a guest visitor for this event.");
+        setMessage(t("visitor.inviteAccept.success"));
       } catch (err: unknown) {
         setState("error");
-        const errorMessage = err instanceof Error ? err.message : "Could not accept the invite. It may be invalid or expired.";
+        const errorMessage = err instanceof Error ? err.message : t("visitor.inviteAccept.error");
         setMessage(errorMessage);
       }
     };
@@ -66,7 +68,7 @@ export default function VisitorInviteAcceptPage() {
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
       <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-zinc-900">Visitor Invite</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">{t("visitor.inviteAccept.title")}</h1>
         <p className="mt-2 text-sm text-zinc-600">{message}</p>
 
         {state === "loading" && (
@@ -81,13 +83,13 @@ export default function VisitorInviteAcceptPage() {
               href={`/events/${eventId}`}
               className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
             >
-              Go to Event Page
+              {t("visitor.inviteAccept.actions.goToEvent")}
             </Link>
             <Link
               href={`/events/${eventId}/live`}
               className="inline-flex items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
             >
-              Enter Live Experience
+              {t("visitor.inviteAccept.actions.enterLive")}
             </Link>
           </div>
         )}
@@ -98,7 +100,7 @@ export default function VisitorInviteAcceptPage() {
               href={eventId ? `/events/${eventId}` : "/events"}
               className="inline-flex items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
             >
-              Back to Events
+              {t("visitor.inviteAccept.actions.backToEvents")}
             </Link>
           </div>
         )}

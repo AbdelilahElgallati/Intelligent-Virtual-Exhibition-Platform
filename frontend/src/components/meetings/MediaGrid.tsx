@@ -6,6 +6,7 @@ import {
   MicOff, Maximize, Minimize, User,
   ScreenShare
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface MediaGridProps {
   participants: DailyParticipant[];
@@ -43,6 +44,7 @@ function MediaTile({
   objectFit,
   isPip,
 }: Readonly<MediaTileProps>) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -115,7 +117,7 @@ function MediaTile({
             <div className="flex flex-col items-center text-center px-4">
               <span className="text-zinc-100 font-semibold tracking-tight">{userName}</span>
               <span className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mt-1 font-medium opacity-70">
-                {isScreen ? 'Screen shared' : 'Stream Paused'}
+                {isScreen ? t('visitor.meetingRoom.screenShared') : t('visitor.meetingRoom.streamPaused')}
               </span>
             </div>
           )}
@@ -139,7 +141,7 @@ function MediaTile({
           {!isAudioOn && <MicOff size={isPip ? 10 : 13} className="text-red-400" />}
           {isScreen && <ScreenShare size={isPip ? 10 : 13} className="text-indigo-400" />}
           <span className={`${isPip ? 'text-[10px]' : 'text-xs'} font-semibold text-zinc-100 tracking-tight`}>
-            {userName} {isLocal && <span className="text-white/40 ml-1 font-normal">(You)</span>}
+            {userName} {isLocal && <span className="text-white/40 ml-1 font-normal">({t('visitor.chatPanel.senderLabel')})</span>}
           </span>
         </div>
       </div>
@@ -150,6 +152,7 @@ function MediaTile({
 // ── Main Grid ──────────────────────────────────────────────────────────────
 
 export default function MediaGrid({ participants, layout = 'meeting', prominentScreenShare = true }: Readonly<MediaGridProps>) {
+  const { t } = useTranslation();
   const items = useMemo(() => {
     const list: (MediaTileProps & { id: string })[] = [];
     participants.forEach((p) => {
@@ -204,8 +207,8 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
           <div className="absolute inset-0 rounded-full border border-indigo-500/20 animate-ping opacity-20" />
         </div>
         <div className="flex flex-col items-center gap-1">
-          <p className="text-sm font-semibold text-zinc-300">Room is currently quiet</p>
-          <p className="text-xs text-zinc-500 tracking-wide uppercase">Waiting for streams to begin</p>
+          <p className="text-sm font-semibold text-zinc-300">{t('visitor.meetingRoom.quietRoom')}</p>
+          <p className="text-xs text-zinc-500 tracking-wide uppercase">{t('visitor.meetingRoom.waitingStreams')}</p>
         </div>
       </div>
     );
@@ -230,7 +233,7 @@ export default function MediaGrid({ participants, layout = 'meeting', prominentS
           <button 
             onClick={() => setIsSwapped(!isSwapped)}
             className="absolute top-6 right-6 w-28 sm:w-44 aspect-[3/4] sm:aspect-video shadow-2xl transition-all hover:scale-105 active:scale-95 group/pip overflow-hidden rounded-2xl border-2 border-white/10 z-20"
-            aria-label="Switch main and picture-in-picture videos"
+            aria-label={t('visitor.meetingRoom.switchMainPip')}
           >
             <MediaTile {...pip} isPip={true} />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/pip:opacity-100 transition-opacity flex items-center justify-center">

@@ -18,6 +18,7 @@ import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc, getEventDayDate } from '@/lib/timezone';
 import { StandsListResponse } from '@/types/stand';
 import { isOvernightSlot } from '@/lib/schedule';
+import { useTranslation } from 'react-i18next';
 
 
 const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
@@ -51,6 +52,7 @@ interface EventPageProps {
 }
 
 export default function EventDetailsPage({ params }: EventPageProps) {
+  const { t } = useTranslation();
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const id = resolvedParams?.id;
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
   const fetchData = useCallback(async () => {
     if (!id) {
-      setError('Event not found');
+      setError(t('events.detail.notFound'));
       setLoading(false);
       return;
     }
@@ -354,23 +356,23 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       <Container className="py-12">
         {wasEjectedFromLive && (
           <div className="mb-6 rounded-xl p-4 text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300">
-            <p className="font-bold">Live Access Closed</p>
-            <p className="mt-1">This event has ended, so you were moved out of the live area.</p>
+            <p className="font-bold">{t('events.detail.liveAccessClosed.title')}</p>
+            <p className="mt-1">{t('events.detail.liveAccessClosed.message')}</p>
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <SectionTitle title="About this Event" align="left" className="mb-0" />
+              <SectionTitle title={t('events.detail.aboutThisEvent')} align="left" className="mb-0" />
               <div className="flex items-center gap-3">
                 {isApprovedVisitor && isPaidEvent && (
                   <Button size="sm" variant="outline" onClick={downloadReceipt} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                    <Download size={16} /> Download Receipt
+                    <Download size={16} /> {t('events.detail.downloadReceipt')}
                   </Button>
                 )}
                 <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite} className="gap-2">
                   <Heart className={`h-4 w-4 transition-all ${favoriteAnimating ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
-                  {favoriteId ? 'Favorited' : 'Add to favorites'}
+                  {favoriteId ? t('events.detail.favorited') : t('events.detail.addToFavorites')}
                 </Button>
               </div>
             </div>
@@ -381,26 +383,26 @@ export default function EventDetailsPage({ params }: EventPageProps) {
             </section>
 
             <section>
-              <SectionTitle title="Event Insights" align="left" className="mb-4" />
+              <SectionTitle title={t('events.detail.insights.title')} align="left" className="mb-4" />
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-5 border rounded-xl bg-cyan-50/60 border-cyan-200">
-                  <p className="text-xs uppercase tracking-wide text-cyan-700 font-semibold">Attending Enterprises</p>
+                  <p className="text-xs uppercase tracking-wide text-cyan-700 font-semibold">{t('events.detail.insights.attendingEnterprises.label')}</p>
                   <p className="text-2xl font-bold text-cyan-900 mt-1">{resolvedEnterpriseNames.length}</p>
-                  <p className="text-sm text-cyan-800 mt-1">Companies ready to connect during the event.</p>
+                  <p className="text-sm text-cyan-800 mt-1">{t('events.detail.insights.attendingEnterprises.description')}</p>
                 </div>
 
                 <div className="p-5 border rounded-xl bg-indigo-50/60 border-indigo-200">
-                  <p className="text-xs uppercase tracking-wide text-indigo-700 font-semibold">Schedule Sessions</p>
+                  <p className="text-xs uppercase tracking-wide text-indigo-700 font-semibold">{t('events.detail.insights.scheduleSessions.label')}</p>
                   <p className="text-2xl font-bold text-indigo-900 mt-1">{totalSlots}</p>
-                  <p className="text-sm text-indigo-800 mt-1">Planned activities across the event timeline.</p>
+                  <p className="text-sm text-indigo-800 mt-1">{t('events.detail.insights.scheduleSessions.description')}</p>
                 </div>
 
                 <div className="p-5 border rounded-xl bg-emerald-50/70 border-emerald-200">
-                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Experience Focus</p>
+                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">{t('events.detail.insights.experienceFocus.label')}</p>
                   <p className="text-base font-semibold text-emerald-900 mt-1">
-                    Networking, showcases, and live knowledge sessions
+                    {t('events.detail.insights.experienceFocus.description')}
                   </p>
-                  <p className="text-sm text-emerald-800 mt-1">Designed for discovery and real business conversations.</p>
+                  <p className="text-sm text-emerald-800 mt-1">{t('events.detail.insights.experienceFocus.subtitle')}</p>
                 </div>
               </div>
             </section>

@@ -6,12 +6,14 @@ import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { useAuth } from '@/context/AuthContext';
 import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface EventDetailsHeaderProps {
   event: Event;
 }
 
 export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -27,10 +29,10 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
   const lifecycle = getEventLifecycle(event);
 
   const statusConfig = {
-    UPCOMING: { class: 'bg-cyan-100 text-cyan-700 border-cyan-200', label: 'UPCOMING' },
-    LIVE: { class: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'LIVE' },
-    IN_PROGRESS: { class: 'bg-blue-100 text-blue-700 border-blue-200', label: 'IN PROGRESS' },
-    ENDED: { class: 'bg-slate-100 text-slate-700 border-slate-200', label: 'ENDED' },
+    UPCOMING: { class: 'bg-cyan-100 text-cyan-700 border-cyan-200', label: t('visitor.eventLiveLayout.upcoming') },
+    LIVE: { class: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: t('visitor.eventLiveLayout.liveNow') },
+    IN_PROGRESS: { class: 'bg-blue-100 text-blue-700 border-blue-200', label: t('visitor.eventLiveLayout.inProgress') },
+    ENDED: { class: 'bg-slate-100 text-slate-700 border-slate-200', label: t('visitor.eventLiveLayout.closed') },
   }[lifecycle.displayState];
 
   return (
@@ -51,7 +53,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
               <Badge className={`border ${statusConfig.class}`}>
                 {statusConfig.label}
               </Badge>
-              <Badge variant="outline">{event.category || 'Exhibition'}</Badge>
+              <Badge variant="outline">{event.category || t('events.detail.exhibitionFallback')}</Badge>
               {event.tags?.map((tag) => (
                 <Badge key={tag} variant="secondary">
                   {tag}
@@ -60,7 +62,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
             </div>
             {(lifecycle.displayState === 'UPCOMING' || lifecycle.displayState === 'IN_PROGRESS') && lifecycle.nextSlot && (
               <p className={lifecycle.displayState === 'IN_PROGRESS' ? "text-sm font-medium text-blue-700" : "text-sm font-medium text-cyan-700"}>
-                {lifecycle.displayState === 'IN_PROGRESS' ? 'Next slot: ' : ''}
+                {lifecycle.displayState === 'IN_PROGRESS' ? `${t('visitor.eventCard.nextSlot')} ` : ''}
                 {formatTimeToStart(lifecycle.nextSlot.start)}
               </p>
             )}
@@ -82,13 +84,13 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({ event })
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <span>{event.location || 'Virtual Platform'}</span>
+                <span>{event.location || t('visitor.eventDetailsHeader.virtualPlatform')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
-                <span>Organized by {event.organizer_name || 'IVEP Organizer'}</span>
+                <span>{t('visitor.eventDetailsHeader.organizedBy', { name: event.organizer_name || t('events.detail.organizerFallback') })}</span>
               </div>
             </div>
           </div>

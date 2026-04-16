@@ -7,12 +7,14 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Card } from '@/components/ui/Card';
 import { FileText, Film, Download, Play, ExternalLink } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/media';
+import { useTranslation } from 'react-i18next';
 
 interface StandResourcesProps {
     standId: string;
 }
 
 export function StandResources({ standId }: StandResourcesProps) {
+    const { t } = useTranslation();
     const [resources, setResources] = useState<Resource[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -35,7 +37,7 @@ export function StandResources({ standId }: StandResourcesProps) {
     if (resources.length === 0) {
         return (
             <Card className="p-6 text-center text-gray-500 bg-gray-50 border-dashed rounded-2xl">
-                <p>No resources available yet.</p>
+                <p>{t('visitor.standResources.empty')}</p>
             </Card>
         );
     }
@@ -66,7 +68,7 @@ export function StandResources({ standId }: StandResourcesProps) {
                                     {resource.title}
                                 </h4>
                                 <div className="text-[10px] font-medium text-gray-500 flex items-center gap-2">
-                                    <span className="px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200">{resource.type || 'file'}</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200">{resource.type || t('visitor.standResources.fileTypeFallback')}</span>
                                     {resource.file_size > 0 && <span>{Math.round(resource.file_size / 1024)} KB</span>}
                                 </div>
                             </div>
@@ -80,7 +82,7 @@ export function StandResources({ standId }: StandResourcesProps) {
 
                         <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
                             <span className="text-[10px] font-medium text-gray-500">
-                                {resource.downloads} {isExternal ? 'views' : 'downloads'}
+                                {resource.downloads} {isExternal ? t('visitor.standResources.views') : t('visitor.standResources.downloads')}
                             </span>
                             <a
                                 href={resolveMediaUrl(resource.file_path)}
@@ -95,7 +97,7 @@ export function StandResources({ standId }: StandResourcesProps) {
                                 ) : (
                                     <Download className="w-3.5 h-3.5" />
                                 )}
-                                {isVideo ? 'Watch' : isExternal ? 'Open' : 'Download'}
+                                {isVideo ? t('visitor.standResources.watch') : isExternal ? t('visitor.standResources.open') : t('visitor.standResources.download')}
                             </a>
                         </div>
                     </div>

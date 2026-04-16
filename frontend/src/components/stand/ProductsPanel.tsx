@@ -8,6 +8,7 @@ import { resolveMediaUrl } from '@/lib/media';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
 import type { Product, CartCheckoutResponse, UnifiedMarketplaceOrder } from '@/types/marketplace';
+import { useTranslation } from 'react-i18next';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -33,6 +34,7 @@ const isServiceProduct = (product: Product) => (product.type || 'product') === '
 /*  ProductsPanel (centered modal with cart)                           */
 /* ------------------------------------------------------------------ */
 export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onClose }: ProductsPanelProps) {
+    const { t } = useTranslation();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -64,7 +66,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 const data = await apiClient.get<Product[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(standId));
                 if (!cancelled) setProducts(data);
             } catch (err: any) {
-                if (!cancelled) setError(err?.message || 'Failed to load products');
+                if (!cancelled) setError(err?.message || t('visitor.productsPanel.loadFailed'));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -124,7 +126,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
         const notes = deliveryNotes.trim();
         if (!shipping || !phone || !notes) {
             setView('cart');
-            setValidationToast('Please fill all required delivery information fields.');
+            setValidationToast(t('visitor.productsPanel.errors.fillRequiredDeliveryInfo'));
             window.setTimeout(() => {
                 deliveryInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 50);
@@ -157,7 +159,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                 setOrderSuccess(true);
             }
         } catch (err: any) {
-            alert(err?.message || 'Checkout failed. Please try again.');
+            alert(err?.message || t('visitor.productsPanel.errors.checkoutFailed'));
         } finally {
             setCheckingOut(false);
         }
@@ -169,7 +171,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
     const downloadReceipt = async () => {
         if (!placedCheckoutGroupId && placedOrderIds.length === 0) {
-            alert('No order receipt available yet.');
+            alert(t('visitor.productsPanel.errors.noOrderReceipt'));
             return;
         }
 
@@ -186,7 +188,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
         const targetOrder = unifiedOrders[0];
         if (!targetOrder) {
-            alert('Unable to fetch receipt details. Please try again later.');
+            alert(t('visitor.productsPanel.errors.fetchReceiptFailed'));
             return;
         }
 
@@ -253,7 +255,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                         </div>
                         <div>
                             <h2 className="text-sm font-semibold text-gray-900 leading-none mb-1">
-                                {view === 'products' ? (activeTab === 'product' ? 'Store' : 'Specialized Services') : 'Checkout Cart'}
+                                {view === 'products' ? (activeTab === 'product' ? t('visitor.productsPanel.store') : t('visitor.productsPanel.specializedServices')) : t('visitor.productsPanel.checkoutCart')}
                             </h2>
                             <p className="text-[11px] font-medium text-gray-500 truncate max-w-[280px]">{standName}</p>
                         </div>
@@ -266,7 +268,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                             style={view === 'cart' ? { backgroundColor: themeColor, borderColor: themeColor, color: 'white' } : { backgroundColor: 'white/60' }}
                         >
                             <ShoppingCart className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">{view === 'products' ? 'My Cart' : 'Browse Store'}</span>
+                            <span className="hidden sm:inline">{view === 'products' ? t('visitor.productsPanel.myCart') : t('visitor.productsPanel.browseStore')}</span>
                             {cartCount > 0 && (
                                 <span
                                     className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[9px] font-semibold text-white px-1 shadow-md"
@@ -290,7 +292,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <Loader2 className="w-7 h-7 animate-spin mb-2" />
-                            <p className="text-sm">Loading products…</p>
+                            <p className="text-sm">{t('visitor.productsPanel.loading')}</p>
                         </div>
                     )}
 
@@ -314,7 +316,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         }`}
                                 >
                                     <Package className="w-3.5 h-3.5" />
-                                    Products
+                                    {t('visitor.productsPanel.itemType.product')}
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('service')}
@@ -324,14 +326,14 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         }`}
                                 >
                                     <Briefcase className="w-3.5 h-3.5" />
-                                    Services
+                                    {t('visitor.productsPanel.itemType.service')}
                                 </button>
                             </div>
 
                             {filteredProducts.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-24 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                                     {activeTab === 'service' ? <Briefcase className="w-12 h-12 mb-4 text-gray-200" /> : <Package className="w-12 h-12 mb-4 text-gray-200" />}
-                                    <p className="text-xs font-semibold text-gray-500">No {activeTab}s available</p>
+                                    <p className="text-xs font-semibold text-gray-500">{t('visitor.productsPanel.noTypeAvailable', { type: activeTab })}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -361,12 +363,12 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                             className="absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-semibold text-white shadow-md animate-in zoom-in"
                                                             style={{ backgroundColor: themeColor }}
                                                         >
-                                                            {inCart} IN CART
+                                                            {t('visitor.productsPanel.inCart', { n: inCart })}
                                                         </div>
                                                     )}
                                                     {isService && (
                                                         <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold shadow-md">
-                                                            Service
+                                                            {t('visitor.productsPanel.itemType.service')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -393,11 +395,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     <div className="mt-auto pt-4 flex flex-col gap-4 border-t border-black/5">
                                                         {!isService && (
                                                             <div className="flex items-center justify-between">
-                                                                <span className="text-[10px] font-medium text-gray-500">Availability</span>
+                                                                <span className="text-[10px] font-medium text-gray-500">{t('visitor.productsPanel.availability')}</span>
                                                                 {outOfStock ? (
-                                                                    <span className="text-[10px] font-semibold text-red-500">Sold Out</span>
+                                                                    <span className="text-[10px] font-semibold text-red-500">{t('visitor.productsPanel.soldOut')}</span>
                                                                 ) : (
-                                                                    <span className="text-[10px] font-semibold text-emerald-500">{product.stock} Units</span>
+                                                                    <span className="text-[10px] font-semibold text-emerald-500">{t('visitor.productsPanel.units', { n: product.stock })}</span>
                                                                 )}
                                                             </div>
                                                         )}
@@ -413,7 +415,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                                 }}
                                                             >
                                                                 <ShoppingCart className="w-4 h-4" />
-                                                                {inCart > 0 ? 'Add Another' : 'Add to Cart'}
+                                                                {inCart > 0 ? t('visitor.productsPanel.actions.addAnother') : t('visitor.productsPanel.actions.addToCart')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -434,15 +436,15 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                                         <Package className="w-8 h-8 text-emerald-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('visitor.productsPanel.orderPlacedTitle')}</h3>
                                     <p className="text-sm text-gray-500 text-center max-w-md">
-                                        Your order has been received. You will pay for it on reception.
+                                        {t('visitor.productsPanel.orderPlacedMessage')}
                                     </p>
                                     <button
                                         onClick={downloadReceipt}
                                         className="mt-4 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
                                     >
-                                        Download Receipt
+                                        {t('visitor.productsPanel.downloadReceipt')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -452,20 +454,20 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                         }}
                                         className="mt-6 px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors"
                                     >
-                                        Continue Shopping
+                                        {t('visitor.productsPanel.continueShopping')}
                                     </button>
                                 </div>
                             ) : cartItems.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                                     <ShoppingCart className="w-10 h-10 mb-3 text-gray-300" />
-                                    <p className="text-sm font-medium text-gray-500">Your cart is empty</p>
-                                    <p className="text-xs text-gray-400 mt-1">Browse products and add items to your cart.</p>
+                                    <p className="text-sm font-medium text-gray-500">{t('visitor.productsPanel.cartEmpty.title')}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{t('visitor.productsPanel.cartEmpty.subtitle')}</p>
                                     <button
                                         onClick={() => setView('products')}
                                         className="mt-4 px-4 py-2 text-sm font-medium rounded-xl text-white"
                                         style={{ backgroundColor: themeColor }}
                                     >
-                                        Browse Products
+                                        {t('visitor.productsPanel.browseProducts')}
                                     </button>
                                 </div>
                             ) : (
@@ -502,13 +504,13 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                         </button>
                                                     </div>
                                                     <p className="text-[10px] font-medium text-gray-500 mb-3">
-                                                        {fmt(product.price)} / Unit
+                                                        {t('visitor.productsPanel.pricePerUnit', { price: fmt(product.price) })}
                                                     </p>
                                                     {/* Quantity controls */}
                                                     <div className="flex flex-wrap items-center gap-4">
                                                         {isServiceProduct(product) ? (
                                                             <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-[10px] font-semibold border border-amber-500/20">
-                                                                Fixed Service
+                                                                {t('visitor.productsPanel.fixedService')}
                                                             </span>
                                                         ) : (
                                                             <div className="flex items-center bg-black/5 rounded-xl p-1 shrink-0 border border-black/5">
@@ -550,21 +552,21 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                                     {/* ---- Shipping / Delivery Info ---- */}
                                     <div ref={deliveryInfoRef} className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Delivery Information (required)</h4>
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">{t('visitor.productsPanel.deliveryInfoRequired')}</h4>
                                         <div className="space-y-3">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Shipping Address *</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('visitor.productsPanel.checkout.shippingAddress')} *</label>
                                                 <input
                                                     type="text"
                                                     value={shippingAddress}
                                                     onChange={(e) => setShippingAddress(e.target.value)}
-                                                    placeholder="Enter your full shipping address"
+                                                    placeholder={t('visitor.productsPanel.shippingAddressPlaceholder')}
                                                     required
                                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Phone Number *</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('visitor.productsPanel.phoneNumber')} *</label>
                                                 <input
                                                     type="tel"
                                                     value={buyerPhone}
@@ -575,11 +577,11 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Delivery Notes *</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('visitor.productsPanel.deliveryNotesRequired')} *</label>
                                                 <textarea
                                                     value={deliveryNotes}
                                                     onChange={(e) => setDeliveryNotes(e.target.value)}
-                                                    placeholder="Any special instructions for delivery..."
+                                                    placeholder={t('visitor.productsPanel.deliveryNotesPlaceholder')}
                                                     rows={2}
                                                     required
                                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent resize-none"
@@ -590,7 +592,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
 
                                     {/* ---- Payment Method ---- */}
                                     <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/40">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-3">Payment Method</h4>
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">{t('visitor.productsPanel.checkout.paymentMethod')}</h4>
                                         <div className="space-y-3">
                                             <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'stripe' ? 'border-indigo-500 bg-indigo-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
                                                 <input
@@ -602,8 +604,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
                                                 />
                                                 <div className="flex-1">
-                                                    <span className="block text-sm font-semibold text-gray-900">Pay Now (Credit Card)</span>
-                                                    <span className="block text-xs text-gray-500">Secure payment via Stripe</span>
+                                                    <span className="block text-sm font-semibold text-gray-900">{t('visitor.productsPanel.payNowCreditCard')}</span>
+                                                    <span className="block text-xs text-gray-500">{t('visitor.productsPanel.securePaymentStripe')}</span>
                                                 </div>
                                             </label>
                                             <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === 'cash_on_delivery' ? 'border-indigo-500 bg-indigo-50/30' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
@@ -616,8 +618,8 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                                     className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
                                                 />
                                                 <div className="flex-1">
-                                                    <span className="block text-sm font-semibold text-gray-900">Pay on Reception</span>
-                                                    <span className="block text-xs text-gray-500">Cash on delivery (COD)</span>
+                                                    <span className="block text-sm font-semibold text-gray-900">{t('visitor.productsPanel.payOnReception')}</span>
+                                                    <span className="block text-xs text-gray-500">{t('visitor.productsPanel.cashOnDeliveryCod')}</span>
                                                 </div>
                                             </label>
                                         </div>
@@ -634,7 +636,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div>
                                 <p className="text-[10px] font-medium text-gray-500 mb-1">
-                                    Total Summary ({cartCount} {cartCount === 1 ? 'Item' : 'Items'})
+                                    {t('visitor.productsPanel.totalSummary', { n: cartCount })}
                                 </p>
                                 <p className="text-2xl font-semibold text-gray-900 tracking-tight">
                                     {fmt(cartTotal)}
@@ -653,12 +655,12 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     {checkingOut ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Processing
+                                            {t('visitor.productsPanel.processing')}
                                         </>
                                     ) : (
                                         <>
                                             <ShoppingBag className="w-4 h-4" />
-                                            Complete Order
+                                            {t('visitor.productsPanel.completeOrder')}
                                         </>
                                     )}
                                 </button>
@@ -672,7 +674,7 @@ export function ProductsPanel({ standId, standName, themeColor = '#4f46e5', onCl
                                     }}
                                 >
                                     <ShoppingCart className="w-4 h-4" />
-                                    Review Cart
+                                    {t('visitor.productsPanel.reviewCart')}
                                 </button>
                             )}
                         </div>

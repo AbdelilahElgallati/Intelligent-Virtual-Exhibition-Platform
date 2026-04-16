@@ -4,16 +4,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { QAItem } from '@/types/conference';
 import { http } from '@/lib/http';
 import { parseISOUTC } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface QAPanelProps {
     conferenceId: string;
     isSpeaker?: boolean;
 }
 
-function formatRelativeTime(value?: string) {
-    if (!value) return 'just now';
+function formatRelativeTime(value: string | undefined, t: (key: string, options?: Record<string, unknown>) => string) {
+    if (!value) return t('visitor.qaPanel.time.justNow');
     const date = parseISOUTC(value);
-    if (Number.isNaN(date.getTime())) return 'just now';
+    if (Number.isNaN(date.getTime())) return t('visitor.qaPanel.time.justNow');
 
     const diffMs = Date.now() - date.getTime();
     const diffSeconds = Math.max(1, Math.floor(diffMs / 1000));
@@ -21,13 +22,14 @@ function formatRelativeTime(value?: string) {
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffDays > 0) return `${diffDays}d ago`;
-    if (diffHours > 0) return `${diffHours}h ago`;
-    if (diffMinutes > 0) return `${diffMinutes}m ago`;
-    return `${diffSeconds}s ago`;
+    if (diffDays > 0) return t('visitor.qaPanel.time.daysAgo', { n: diffDays });
+    if (diffHours > 0) return t('visitor.qaPanel.time.hoursAgo', { n: diffHours });
+    if (diffMinutes > 0) return t('visitor.qaPanel.time.minutesAgo', { n: diffMinutes });
+    return t('visitor.qaPanel.time.secondsAgo', { n: diffSeconds });
 }
 
 export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProps) {
+    const { t } = useTranslation();
     const [questions, setQuestions] = useState<QAItem[]>([]);
     const [newQuestion, setNewQuestion] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -72,7 +74,7 @@ export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProp
         <div className="flex flex-col h-full bg-transparent">
             {/* Minimal Header */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-white/5">
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Live Q&A</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('visitor.qaPanel.live')}</span>
                 <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">{questions.length}</span>
             </div>
 
@@ -80,7 +82,7 @@ export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProp
                 {questions.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-40 text-center space-y-2 opacity-40">
                         <div className="w-10 h-px bg-zinc-700" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">No questions yet</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('visitor.qaPanel.empty')}</p>
                         <div className="w-10 h-px bg-zinc-700" />
                     </div>
                 )}
@@ -103,13 +105,13 @@ export default function QAPanel({ conferenceId, isSpeaker = false }: QAPanelProp
                             rows={3}
                             value={newQuestion}
                             onChange={(e) => setNewQuestion(e.target.value)}
-                            placeholder="Type your question here..."
+                            placeholder={t('visitor.qaPanel.askPlaceholder')}
                         />
                         <button
                             className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:grayscale text-white text-xs font-black uppercase tracking-widest rounded-xl py-3.5 transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
                             disabled={submitting || !newQuestion.trim()}
                         >
-                            {submitting ? 'Sending...' : 'Post Question'}
+                            {submitting ? t('visitor.qaPanel.sending') : t('visitor.qaPanel.postQuestion')}
                         </button>
                     </form>
                 </div>
@@ -135,6 +137,7 @@ function SpeakerQAItem({
     onUpvote: () => void;
     onAnswer: (a: string) => void;
 }) {
+    const { t } = useTranslation();
     const [answerText, setAnswerText] = useState('');
     const [showing, setShowing] = useState(false);
 
@@ -150,7 +153,7 @@ function SpeakerQAItem({
                     <span className="text-[10px] text-zinc-500 font-bold tracking-tight">{item.user_name}</span>
                 </div>
                 
-                <span className="text-[10px] text-zinc-600 font-medium">{formatRelativeTime(item.created_at)}</span>
+                <span className="text-[10px] text-zinc-600 font-medium">{formatRelativeTime(item.created_at, t)}</span>
                 
                 <div className="flex-1" />
 
@@ -162,7 +165,7 @@ function SpeakerQAItem({
                 </button>
                 
                 {item.is_answered && (
-                    <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20 tracking-widest uppercase">Resolved</span>
+                    <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20 tracking-widest uppercase">{t('visitor.qaPanel.resolved')}</span>
                 )}
             </div>
 
@@ -170,7 +173,7 @@ function SpeakerQAItem({
                 <div className="mt-4 relative pl-4 border-l-2 border-emerald-500/30">
                     <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Speaker's Answer
+                        {t('visitor.qaPanel.speakerAnswer')}
                     </p>
                     <p className="text-[13px] text-zinc-400 font-medium leading-relaxed italic">
                         "{item.answer}"
@@ -185,7 +188,7 @@ function SpeakerQAItem({
                             onClick={() => setShowing(true)}
                             className="w-full text-[10px] font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-2.5 transition-all uppercase tracking-widest"
                         >
-                            Reply to Question
+                            {t('visitor.qaPanel.replyToQuestion')}
                         </button>
                     ) : (
                         <div className="flex gap-2">
@@ -194,13 +197,13 @@ function SpeakerQAItem({
                                 value={answerText}
                                 autoFocus
                                 onChange={(e) => setAnswerText(e.target.value)}
-                                placeholder="Type answer..."
+                                placeholder={t('visitor.qaPanel.typeAnswer')}
                             />
                             <button
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl px-5 py-2 transition-all active:scale-95"
                                 onClick={() => { if(answerText.trim()) onAnswer(answerText); setShowing(false); }}
                             >
-                                Send
+                                {t('visitor.qaPanel.send')}
                             </button>
                             <button
                                 className="text-zinc-500 hover:text-white px-2 transition-colors"

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Tag, ArrowRight, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /* ── Category list (mirrors StandsGrid) ── */
 const STAND_CATEGORIES = [
@@ -37,6 +38,7 @@ interface StandFilterModalProps {
 }
 
 export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
+    const { t } = useTranslation();
     const [category, setCategory] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -69,9 +71,9 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                         <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md shadow-inner ring-1 ring-white/20">
                             <Sparkles className="h-7 w-7 text-indigo-100" />
                         </div>
-                        <h2 className="text-2xl font-bold tracking-tight">Personalize Your Experience</h2>
+                        <h2 className="text-2xl font-bold tracking-tight">{t('visitor.standFilterModal.title')}</h2>
                         <p className="mt-1.5 text-indigo-100 max-w-sm mx-auto text-sm leading-relaxed">
-                            Select your interests to see the most relevant stands.
+                            {t('visitor.standFilterModal.subtitle')}
                         </p>
                     </div>
                 </div>
@@ -81,7 +83,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                     {/* Category chips */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Domain / Category
+                            {t('visitor.standFilterModal.domainCategory')}
                         </label>
                         <div className="flex flex-wrap gap-2">
                             <button
@@ -93,7 +95,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                                         : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                                 }`}
                             >
-                                All
+                                {t('visitor.standsGrid.all')}
                             </button>
                             {STAND_CATEGORIES.map((cat) => (
                                 <button
@@ -116,7 +118,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                     <div>
                         <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-2">
                             <Tag className="h-4 w-4 text-gray-400" />
-                            Topics you&apos;re interested in
+                            {t('visitor.standFilterModal.topicsLabel')}
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {INTEREST_TAGS.map((tag) => {
@@ -139,7 +141,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                         </div>
                         {selectedTags.length > 0 && (
                             <p className="mt-2 text-xs text-gray-500">
-                                {selectedTags.length} topic{selectedTags.length > 1 ? 's' : ''} selected
+                                {t('visitor.standFilterModal.topicsSelected', { n: selectedTags.length })}
                             </p>
                         )}
                     </div>
@@ -150,7 +152,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                             type="submit"
                             className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition"
                         >
-                            Explore Stands
+                            {t('visitor.standFilterModal.exploreButton')}
                             <ArrowRight className="h-4 w-4" />
                         </button>
                         <button
@@ -158,7 +160,7 @@ export function StandFilterModal({ onApply, onSkip }: StandFilterModalProps) {
                             onClick={onSkip}
                             className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
                         >
-                            Skip
+                            {t('visitor.standFilterModal.skip')}
                         </button>
                     </div>
                 </form>

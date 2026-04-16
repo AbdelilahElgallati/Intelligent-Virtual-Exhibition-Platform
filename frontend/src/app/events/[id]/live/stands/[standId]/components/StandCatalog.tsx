@@ -8,6 +8,7 @@ import {
     Package, Tag, ShoppingCart, X,
     CheckCircle2, Send, Hash, Wrench, Image as ImageIcon
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Product {
     id: string;
@@ -27,6 +28,7 @@ interface RequestModalProps {
 }
 
 function RequestModal({ product, eventId, onClose }: RequestModalProps) {
+    const { t } = useTranslation();
     const [message, setMessage] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
             await http.post(`/enterprise/public/products/${product.id}/request`, payload);
             setSuccess(true);
         } catch (err: any) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError(err.message || t('visitor.standCatalog.requestFailed'));
         } finally {
             setLoading(false);
         }
@@ -75,7 +77,7 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
                         <div>
                             <h3 className="font-bold text-zinc-900 text-sm">{product.name}</h3>
                             <span className={`text-[10px] font-bold ${product.is_service ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                {product.is_service ? 'Service' : 'Product'}
+                                {product.is_service ? t('visitor.productsPanel.itemType.service') : t('visitor.productsPanel.itemType.product')}
                             </span>
                         </div>
                     </div>
@@ -90,12 +92,12 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
                             <CheckCircle2 size={28} className="text-emerald-500" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-zinc-900 mb-1">Request Sent!</h4>
+                            <h4 className="font-bold text-zinc-900 mb-1">{t('visitor.standCatalog.requestSent')}</h4>
                             <p className="text-sm text-zinc-500">
-                                The enterprise will be notified of your inquiry and will contact you soon.
+                                {t('visitor.standCatalog.requestSentMessage')}
                             </p>
                         </div>
-                        <Button onClick={onClose} variant="outline" className="mt-2">Close</Button>
+                        <Button onClick={onClose} variant="outline" className="mt-2">{t('visitor.standCatalog.close')}</Button>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -103,7 +105,7 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
                         {!product.is_service && (
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700 flex items-center gap-1.5">
-                                    <Hash size={14} className="text-indigo-500" /> Quantity
+                                    <Hash size={14} className="text-indigo-500" /> {t('visitor.productsPanel.columns.quantity')}
                                 </label>
                                 <div className="flex items-center gap-3">
                                     <button
@@ -141,8 +143,8 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
                                 rows={4}
                                 placeholder={
                                     product.is_service
-                                        ? "Describe what you need from this service…"
-                                        : "Add any specific requirements or questions…"
+                                        ? t('visitor.standCatalog.servicePlaceholder')
+                                        : t('visitor.standCatalog.productPlaceholder')
                                 }
                                 className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
                             />
@@ -156,10 +158,10 @@ function RequestModal({ product, eventId, onClose }: RequestModalProps) {
 
                         <div className="flex gap-3 pt-1">
                             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-                                Cancel
+                                {t('common.actions.cancel')}
                             </Button>
                             <Button type="submit" isLoading={loading} className="flex-1 flex items-center gap-2">
-                                <Send size={15} /> Send Request
+                                <Send size={15} /> {t('visitor.networkingTab.reachOutModal.submit')}
                             </Button>
                         </div>
                     </form>
@@ -180,6 +182,7 @@ function formatMAD(amount: number): string {
 }
 
 export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCatalogProps) {
+    const { t } = useTranslation();
     const [requestingProduct, setRequestingProduct] = useState<Product | null>(null);
 
     if (!products || products.length === 0) return null;
@@ -218,7 +221,7 @@ export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCata
                                 <div>
                                     <h4 className="font-semibold text-zinc-900 text-sm leading-tight">{product.name}</h4>
                                     <span className={`text-[10px] font-bold ${product.is_service ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                        {product.is_service ? 'Service' : 'Product'}
+                                        {product.is_service ? t('visitor.productsPanel.itemType.service') : t('visitor.productsPanel.itemType.product')}
                                     </span>
                                 </div>
                                 {product.price !== undefined && product.price !== null && (
@@ -246,11 +249,11 @@ export function StandCatalog({ products, eventId, isLoggedIn = true }: StandCata
                                     onClick={() => setRequestingProduct(product)}
                                     disabled={!isLoggedIn}
                                     className="text-xs h-8 px-3 flex items-center gap-1.5"
-                                    title={!isLoggedIn ? 'Sign in to request' : undefined}
+                                    title={!isLoggedIn ? t('visitor.standCatalog.signInToRequest') : undefined}
                                 >
                                     {product.is_service
-                                        ? <><Wrench size={12} /> Request Service</>
-                                        : <><ShoppingCart size={12} /> Request Product</>}
+                                        ? <><Wrench size={12} /> {t('visitor.standCatalog.requestService')}</>
+                                        : <><ShoppingCart size={12} /> {t('visitor.standCatalog.requestProduct')}</>}
                                 </Button>
                             </div>
                         </div>

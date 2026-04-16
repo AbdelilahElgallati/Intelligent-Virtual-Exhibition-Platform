@@ -5,6 +5,7 @@ import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Calendar, Clock, Dot, Flame, Mic2, Sparkles } from 'lucide-react';
 import { formatInTZ, getUserTimezone, zonedToUtc } from '@/lib/timezone';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleTabProps {
     event: Event | null;
@@ -203,11 +204,12 @@ function compareTimelineSlots(a: TimelineSlot, b: TimelineSlot): number {
 }
 
 export function ScheduleTab({ event }: ScheduleTabProps) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     if (!event) {
         return (
             <div className="bg-white rounded-xl shadow p-12 text-center">
-                <p className="text-gray-500">Loading event details...</p>
+                <p className="text-gray-500">{t('events.detail.loading')}</p>
             </div>
         );
     }
@@ -238,16 +240,16 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide uppercase">
                                 <Sparkles className="h-3.5 w-3.5" />
-                                Visitor Timeline
+                                {t('visitor.scheduleTab.title')}
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-bold mt-3">Event Activity Schedule</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold mt-3">{t('visitor.eventDetail.schedule.title')}</h2>
                             <p className="text-white/80 mt-2 text-sm md:text-base">
                                 Follow each activity by timeline and track what is happening live.
                             </p>
                             <p className="text-white/75 mt-1 text-xs">Times shown in your timezone: {viewerTimeZone}</p>
                         </div>
                         <div className="rounded-xl bg-black/20 border border-white/20 px-4 py-3 min-w-[220px]">
-                            <p className="text-xs uppercase tracking-wide text-white/70">Schedule Days</p>
+                            <p className="text-xs uppercase tracking-wide text-white/70">{t('visitor.scheduleTab.daysLabel')}</p>
                             <p className="text-2xl font-bold mt-1">{days.length}</p>
                         </div>
                     </div>
@@ -352,7 +354,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
             <div className="max-w-6xl mx-auto py-8 space-y-8">
                 <div className="flex items-center gap-3 mb-6">
                     <Calendar className="h-6 w-6 text-indigo-600" />
-                    <h2 className="text-2xl font-bold text-gray-900">Event Schedule</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">{t('visitor.scheduleTab.title')}</h2>
                 </div>
 
                 <div className="bg-white rounded-xl shadow p-6">
@@ -372,7 +374,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
             <div className="bg-white rounded-xl shadow p-12 text-center">
                 <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No schedule available
+                    {t('visitor.scheduleTab.empty')}
                 </h3>
                 <p className="text-gray-500">
                     The event schedule has not been published yet. Check back later for updates.

@@ -12,6 +12,7 @@ import { X, Building2, ChevronLeft, ChevronRight, LayoutGrid, Landmark, Heart } 
 import { resolveMediaUrl } from '@/lib/media';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
 
@@ -63,6 +64,7 @@ export function StandsGrid({
     eventTitle,
     eventBannerUrl
 }: StandsGridProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { isAuthenticated } = useAuth();
@@ -109,7 +111,7 @@ export function StandsGrid({
             setError(null);
         } catch (err) {
             console.error('Failed to fetch stands', err);
-            setError('Failed to load stands. Please try again later.');
+            setError(t('visitor.standsGrid.loading'));
         } finally {
             setLoading(false);
         }
@@ -231,7 +233,7 @@ export function StandsGrid({
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
                     {/* Category chips */}
                     <div className="flex gap-2 items-center overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
-                        <span className="text-xs font-medium text-gray-500 mr-1 shrink-0">Category:</span>
+                        <span className="text-xs font-medium text-gray-500 mr-1 shrink-0">{t('visitor.standsGrid.categoryLabel')}</span>
                         <button
                             onClick={() => setCategory('')}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition shrink-0 ${category === ''
@@ -239,7 +241,7 @@ export function StandsGrid({
                                     : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400 hover:text-indigo-600'
                                 }`}
                         >
-                            All
+                            {t('visitor.standsGrid.all')}
                         </button>
                         {STAND_CATEGORIES.map((cat) => (
                             <button
@@ -258,7 +260,7 @@ export function StandsGrid({
                     {/* Active filter summary + reset */}
                     {hasActiveFilters && (
                         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
-                            <span className="text-xs text-gray-500 font-medium">Active:</span>
+                            <span className="text-xs text-gray-500 font-medium">{t('visitor.standsGrid.activeLabel')}</span>
                             {category && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
                                     {category}
@@ -280,7 +282,7 @@ export function StandsGrid({
                                 className="sm:ml-auto inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition"
                             >
                                 <X className="h-3 w-3" />
-                                Reset
+                                {t('visitor.standsGrid.reset')}
                             </button>
                         </div>
                     )}
@@ -301,10 +303,10 @@ export function StandsGrid({
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                 }`}
-                            title="3D Exhibition Hall"
+                            title={t('visitor.standsGrid.view3D')}
                         >
                             <Landmark className="h-3.5 w-3.5" />
-                            <span className="xs:inline">3D Hall View</span>
+                            <span className="xs:inline">{t('visitor.standsGrid.view3D')}</span>
                         </button>
                         <button
                             onClick={() => setViewMode('grid')}
@@ -312,10 +314,10 @@ export function StandsGrid({
                                     ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                 }`}
-                            title="Grid View"
+                            title={t('visitor.standsGrid.viewGrid')}
                         >
                             <LayoutGrid className="h-3.5 w-3.5" />
-                            <span className="xs:inline">Grid View</span>
+                            <span className="xs:inline">{t('visitor.standsGrid.viewGrid')}</span>
                         </button>
                     </div>
                 </div>
@@ -333,11 +335,11 @@ export function StandsGrid({
                     <div className="text-red-500 text-center py-10">{error}</div>
                 ) : stands.length === 0 ? (
                     <EmptyState
-                        title={hasActiveFilters ? 'No matching stands' : 'No stands yet'}
+                        title={hasActiveFilters ? t('visitor.standsGrid.noMatching') : t('visitor.standsGrid.noStands')}
                         message={
                             hasActiveFilters
-                                ? 'Try adjusting your filters or search to find what you\'re looking for.'
-                                : 'The exhibition hall is currently empty. Check back later!'
+                                ? t('visitor.standsGrid.adjustFilters')
+                                : t('visitor.standsGrid.emptyHall')
                         }
                     />
                 ) : viewMode === 'hall' ? (
@@ -346,7 +348,7 @@ export function StandsGrid({
                         <div className="w-full rounded-xl bg-gray-900 flex items-center justify-center h-[45vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh]" style={{ minHeight: 320 }}>
                             <div className="text-center">
                                 <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                                <p className="text-gray-400 text-sm">Loading Exhibition Hall...</p>
+                                <p className="text-gray-400 text-sm">{t('visitor.standsGrid.loading')}</p>
                             </div>
                         </div>
                     }>

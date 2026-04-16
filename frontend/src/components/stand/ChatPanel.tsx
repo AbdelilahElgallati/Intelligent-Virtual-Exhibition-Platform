@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { X, Send, User, Loader2, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 const MAX_VISITOR_MESSAGES = 15;
 
@@ -59,6 +60,7 @@ function mergeChatHistory(existing: any[], incoming: any[]) {
 }
 
 export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId, isEmbedded, themeColor = '#4f46e5', onMeetingOpen, disableMessageLimit = false, eventTimeZone = 'UTC' }: ChatPanelProps) {
+    const { t } = useTranslation();
     const { user, isAuthenticated } = useAuth();
     const [roomId, setRoomId] = useState<string | null>(initialRoomId || null);
     const [input, setInput] = useState('');
@@ -276,13 +278,13 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                         <MessageSquare className="w-4 h-4" style={{ color: themeColor }} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-bold leading-none mb-1 text-zinc-900">Chat with {standName}</h3>
+                        <h3 className="text-sm font-bold leading-none mb-1 text-zinc-900">{t('visitor.chatPanel.title', { standName })}</h3>
                         <div className="flex items-center gap-2 text-[11px] text-zinc-600">
                             <span className={clsx("w-2 h-2 rounded-full shadow-sm", isConnected ? "bg-emerald-500" : "bg-red-500")} />
-                            {isConnected ? 'Sync Active' : 'Connecting...'}
+                            {isConnected ? t('visitor.chatPanel.syncActive') : t('visitor.chatPanel.connecting')}
                             {!disableMessageLimit && !limitReached && myMessageCount > 0 && (
                                 <span className="ml-1 opacity-70">
-                                    · {remaining} left
+                                    · {t('visitor.chatPanel.remainingShort', { n: remaining })}
                                 </span>
                             )}
                         </div>
@@ -325,7 +327,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
             >
                 {error && !isConnected && (
                     <div className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-[11px] font-medium text-amber-700 text-center animate-pulse">
-                        Connecting to sync service...
+                        {t('visitor.chatPanel.syncingService')}
                     </div>
                 )}
                 {isLoading ? (
@@ -336,7 +338,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                     <div className="text-center text-gray-400 flex flex-col items-center justify-center py-16 bg-white/80 rounded-2xl border border-dashed"
                         style={{ borderColor: `rgba(${r},${g},${b},0.22)` }}>
                         <MessageSquare size={32} className="mb-4 opacity-20" />
-                        <p className="text-xs font-medium">No messages yet</p>
+                        <p className="text-xs font-medium">{t('visitor.chatPanel.noMessages')}</p>
                     </div>
                 ) : (
                     messages.map((msg, idx) => {
@@ -400,10 +402,9 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                         <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto mb-6">
                             <AlertCircle size={32} className="text-amber-500" />
                         </div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-2">Limit Reached</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('visitor.chatPanel.limitReached')}</h4>
                         <p className="text-xs text-gray-500 leading-relaxed mb-6 px-4">
-                            You&apos;ve used all {MAX_VISITOR_MESSAGES} messages.
-                            Request a formal meeting to continue the discussion with our team.
+                            {t('visitor.chatPanel.limitMessage', { n: MAX_VISITOR_MESSAGES })}
                         </p>
                         <button
                             className="w-full inline-flex items-center justify-center gap-3 px-6 py-3 rounded-xl text-white text-xs font-semibold shadow-lg transition-all duration-300 transform-gpu active:scale-95 hover:brightness-110"
@@ -414,7 +415,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                             onClick={handleMeetingRequest}
                         >
                             <Calendar size={14} />
-                            Request Meeting
+                            {t('visitor.chatPanel.requestMeeting')}
                         </button>
                     </div>
                 )}
@@ -430,7 +431,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                                 borderColor: `rgba(${r},${g},${b},0.22)`,
                             }}
                         >
-                            {remaining} message{remaining !== 1 ? 's' : ''} remaining
+                            {t('visitor.chatPanel.messagesRemaining', { n: remaining })}
                         </span>
                     </div>
                 )}
@@ -444,13 +445,13 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
         if (!disableMessageLimit && limitReached) {
             return (
                 <div className="p-5 border-t border-zinc-200 bg-white text-center">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Chat limit reached</p>
+                    <p className="text-xs font-medium text-gray-500 mb-1">{t('visitor.chatPanel.chatLimitReached')}</p>
                     <button
                         onClick={handleMeetingRequest}
                         className="text-xs font-semibold hover:underline underline-offset-4"
                         style={{ color: themeColor }}
                     >
-                        Request a meeting instead →
+                        {t('visitor.chatPanel.requestMeetingInstead')} →
                     </button>
                 </div>
             );
@@ -467,7 +468,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={isConnected ? 'Type something...' : 'Reconnecting...'}
+                            placeholder={isConnected ? t('visitor.chatPanel.typePlaceholder') : t('visitor.chatPanel.reconnecting')}
                             className="w-full bg-white border rounded-xl px-4 py-3 text-sm font-normal focus:outline-none focus:ring-4 transition-all"
                             style={{
                                 borderColor: `rgba(${r},${g},${b},0.22)`,
