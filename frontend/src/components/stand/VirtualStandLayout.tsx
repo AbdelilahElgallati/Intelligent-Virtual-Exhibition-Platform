@@ -32,6 +32,9 @@ interface VirtualStandLayoutProps {
     onShopOpen?: () => void;
     onFavoriteToggle: () => void;
     favoriteId: string | null;
+    /* marketplace */
+    onProductsOpen?: () => void;
+    hasProducts?: boolean;
     /* tab state (owned by parent) */
     activeTab: 'resources' | 'about';
     onTabChange: (tab: 'resources' | 'about') => void;
@@ -82,6 +85,8 @@ export function VirtualStandLayout({
     onShopOpen,
     onFavoriteToggle,
     favoriteId,
+    onProductsOpen,
+    hasProducts,
     activeTab,
     onTabChange,
     hasUnreadChat,
@@ -442,12 +447,11 @@ export function VirtualStandLayout({
                         label="About"
                     />
 
-                    {/* Shop */}
-                    {onShopOpen && (
+                    {/* Shop (only visible when stand has products) */}
+                    {hasProducts && onProductsOpen && (
                         <ActionBarBtn
-                            glow
                             themeColor={themeColor}
-                            onClick={onShopOpen}
+                            onClick={onProductsOpen}
                             icon={<ShoppingBag className="w-4 h-4" />}
                             label="Shop"
                         />

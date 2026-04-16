@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Package, Loader2, FileText, Briefcase } from 'lucide-react';
+import { CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { UnifiedMarketplaceOrder } from '@/types/marketplace';

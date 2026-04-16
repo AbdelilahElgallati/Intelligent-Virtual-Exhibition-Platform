@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { http } from "@/lib/http";
@@ -134,6 +135,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseGlobalRequestsPage() {
+    const { t } = useTranslation('enterprise');
     const [tab, setTab] = useState<"products" | "services">("products");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -257,7 +259,7 @@ export default function EnterpriseGlobalRequestsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">All Inquiries & Orders</h1>
+                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{t('enterprise.productRequests.allInquiriesTitle')}</h1>
                     <p className="text-zinc-500 mt-1 max-w-2xl">
                         A unified view of all visitor requests and marketplace checkouts across every event you participate in.
                     </p>
@@ -403,7 +405,7 @@ export default function EnterpriseGlobalRequestsPage() {
                     {loading ? (
                         <div className="py-32 text-center bg-white border border-zinc-200 rounded-3xl">
                             <Loader2 size={42} className="animate-spin text-indigo-600 mx-auto mb-4" />
-                            <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Synchronizing records...</p>
+                            <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">{t('enterprise.productRequests.syncing')}</p>
                         </div>
                     ) : error ? (
                         <Card className="border-red-200 bg-red-50 rounded-3xl">
@@ -418,7 +420,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between px-2">
                                     <h2 className="text-lg font-black text-zinc-900 inline-flex items-center gap-2">
-                                        <Receipt size={20} className="text-indigo-600" /> Checkout Orders
+                                        <Receipt size={20} className="text-indigo-600" /> {t('enterprise.productRequests.checkoutOrders.title')}
                                         <span className="text-xs bg-zinc-100 text-zinc-500 py-0.5 px-2 rounded-full font-bold">{filteredOrders.length}</span>
                                     </h2>
                                 </div>
@@ -533,7 +535,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between px-2">
                                     <h2 className="text-lg font-black text-zinc-900 inline-flex items-center gap-2">
-                                        <MessageSquare size={20} className="text-indigo-600" /> Direct Inquiries
+                                        <MessageSquare size={20} className="text-indigo-600" /> {t('enterprise.productRequests.directInquiries.title')}
                                         <span className="text-xs bg-zinc-100 text-zinc-500 py-0.5 px-2 rounded-full font-bold">{filteredRequests.length}</span>
                                     </h2>
                                 </div>

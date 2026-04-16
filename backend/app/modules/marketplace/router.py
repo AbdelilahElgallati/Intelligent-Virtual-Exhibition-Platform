@@ -1,20 +1,17 @@
 """
-Marketplace router — stand product/service CRUD, Stripe checkout, callback, orders, receipts.
+Marketplace router — stand product/service CRUD, Stripe checkout, orders, receipts.
 Completely isolated from the existing event payment system.
 """
 
 import logging
 import math
 import os
+import shutil
 import uuid
 
-import stripe
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 
-from app.core.config import settings
-from app.core.storage import store_upload
-from app.core.dependencies import get_current_user, require_role
-from app.modules.auth.enums import Role
+from app.core.dependencies import get_current_user
 from app.db.mongo import get_database
 from app.db.utils import stringify_object_ids
 from app.modules.marketplace import service as mkt_svc
@@ -23,27 +20,22 @@ from app.modules.marketplace.schemas import (
     CartCheckoutResponse,
     CheckoutRequest,
     CheckoutResponse,
-    OrderCancelRequest,
-    OrderFulfillmentUpdate,
     OrderOut,
-    UnifiedOrderOut,
     ProductCreate,
     ProductOut,
     ProductUpdate,
+    UnifiedOrderOut,
+    OrderFulfillmentUpdate,
+    OrderCancelRequest,
 )
-from app.modules.marketplace.stripe_service import create_payment_session, construct_event
-from app.modules.notifications.schemas import NotificationType
-from app.modules.notifications.service import create_notification
-from app.core.timezone import timezone_service
-from app.modules.participants.service import get_user_participation
-from app.modules.participants.schemas import ParticipantStatus
+from app.modules.marketplace.stripe_service import create_payment_session
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
 
-# ── Helpers ─────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────
 
 async def _get_stand(stand_id: str) -> dict:
     """Fetch a stand or 404."""
@@ -58,18 +50,12 @@ async def _get_stand(stand_id: str) -> dict:
 
 
 async def _require_stand_owner(stand_id: str, user: dict) -> dict:
-    """Return the stand if the current user owns the organization, is event organizer, or is admin."""
+    """Return the stand if the current user owns the organization or is admin."""
     stand = await _get_stand(stand_id)
     org_id = stand.get("organization_id")
 
     # Admin bypass
     if user.get("role") == "admin":
-        return stand
-
-    # Organizer bypass
-    from app.modules.events.service import get_event_by_id
-    event = await get_event_by_id(str(stand["event_id"]))
-    if event and str(event.get("organizer_id")) == str(user["_id"]):
         return stand
 
     # Check organization ownership
@@ -83,7 +69,7 @@ async def _require_stand_owner(stand_id: str, user: dict) -> dict:
     return stand
 
 
-# ── Products CRUD ───────────────────────────────────────────────────
+# ── Products CRUD ─────────────────────────────────────────────────────
 
 @router.get("/stands/{stand_id}/products", response_model=list[ProductOut])
 async def list_products(
@@ -91,14 +77,8 @@ async def list_products(
     type: str | None = Query(None, description="Filter by type: product or service"),
 ):
     """Public — list all products/services for a stand. Optionally filter by ?type=product or ?type=service."""
-    stand = await _get_stand(stand_id)  # validates stand exists
-    selected_links = stand.get("product_links") or []
-    source_product_ids = [str(link.get("product_id")) for link in selected_links if isinstance(link, dict) and link.get("product_id")]
-    products = await mkt_svc.list_products(
-        stand_id,
-        product_type=type,
-        source_product_ids=source_product_ids or None,
-    )
+    await _get_stand(stand_id)  # validates stand exists
+    products = await mkt_svc.list_products(stand_id, product_type=type)
     return products
 
 
@@ -128,7 +108,7 @@ async def update_product(
     product = await mkt_svc.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    await _require_stand_owner(product["stand_id"], user)
+    await _require_stand_owner(str(product["stand_id"]), user)
     updated = await mkt_svc.update_product(product_id, body.model_dump(exclude_unset=True))
     return updated
 
@@ -142,12 +122,12 @@ async def delete_product(
     product = await mkt_svc.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    await _require_stand_owner(product["stand_id"], user)
+    await _require_stand_owner(str(product["stand_id"]), user)
     await mkt_svc.delete_product(product_id)
     return None
 
 
-# ── Product Image Upload ────────────────────────────────────────────
+# ── Product Image Upload ──────────────────────────────────────────────
 
 PRODUCT_IMAGE_DIR = "uploads/product_images"
 os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
@@ -155,28 +135,24 @@ os.makedirs(PRODUCT_IMAGE_DIR, exist_ok=True)
 
 @router.post("/upload-product-image")
 async def upload_product_image(
-    stand_id: str = Form(...),
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
-    """Upload a single product image and return its URL path (Admin or Stand Owner only)."""
-    await _require_stand_owner(stand_id, user)
-    
+    """Upload a single product image and return its URL path."""
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
 
-    stored = await store_upload(
-        file=file,
-        local_dir=PRODUCT_IMAGE_DIR,
-        local_url_prefix="/uploads/product_images",
-        r2_folder="product_images",
-        filename_prefix="marketplace",
-    )
+    ext = os.path.splitext(file.filename or "image.jpg")[1] or ".jpg"
+    safe_name = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(PRODUCT_IMAGE_DIR, safe_name)
 
-    return {"image_url": stored["url"]}
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {"image_url": f"/uploads/product_images/{safe_name}"}
 
 
-# ── Stripe & COD Checkout ────────────────────────────────────────────────
+# ── Checkout ─────────────────────────────────────────────────────────
 
 @router.post(
     "/stands/{stand_id}/products/{product_id}/checkout",
@@ -190,104 +166,78 @@ async def checkout_product(
     user: dict = Depends(get_current_user),
 ):
     """
-    Authenticated visitor — create a Stripe payment session or process COD for a single product/service.
-    Returns the Stripe payment URL or successfully registers the order for COD.
+    Authenticated visitor — checkout a single product/service.
+    Supports 'stripe' (returns URL) or 'cash_on_delivery' (returns order_id).
     """
-    stand = await _get_stand(stand_id)
-    
-    # --- Fix H4: Live and Participation check ---
-    from app.modules.events.service import get_event_by_id
-    event = await get_event_by_id(str(stand["event_id"]))
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    
-    if not timezone_service.is_event_live(event):
-        raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
-    
-    part = await get_user_participation(str(event["_id"]), user["_id"])
-    if not part or part.get("status") not in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
-        raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
-
     product = await mkt_svc.get_product(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    if product["stand_id"] != stand_id:
+    if str(product["stand_id"]) != stand_id:
         raise HTTPException(status_code=400, detail="Product does not belong to this stand")
-    is_service = str(product.get("type") or "product") == "service"
-    effective_quantity = 1 if is_service else body.quantity
-
-    if not is_service and product["stock"] < effective_quantity:
+    
+    if str(product.get("type") or "product") != "service" and product["stock"] < body.quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
-    total = round(product["price"] * effective_quantity, 2)
+    total = round(product["price"] * body.quantity, 2)
 
-    if body.payment_method == "cash_on_delivery" and not is_service:
-        # Deduct stock immediately since it's a confirmed order type
-        await mkt_svc.decrement_stock(product["id"], effective_quantity)
-
-    # Create order
+    # Create pending order
     order = await mkt_svc.create_order(
         product_id=product_id,
         stand_id=stand_id,
         buyer_id=str(user["_id"]),
         product_name=product["name"],
-        quantity=effective_quantity,
+        quantity=body.quantity,
+        unit_price=product["price"],
         total_amount=total,
-        unit_price=float(product["price"]),
         currency=product.get("currency", "MAD"),
         payment_method=body.payment_method,
-        checkout_group_id=str(uuid.uuid4()),
         shipping_address=body.shipping_address,
         delivery_notes=body.delivery_notes,
         buyer_phone=body.buyer_phone,
     )
 
     if body.payment_method == "cash_on_delivery":
-        return CheckoutResponse(payment_url=None, order_id=order["id"])
+        # For COD, we don't return a payment URL.
+        # Note: stock is only decremented upon payment confirmation in our model,
+        # but for COD the stand owner might manage it manually or we'd need another flow.
+        return CheckoutResponse(order_id=order["id"])
 
-    # Stripe URL building
-    origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
+    # Stripe checkout logic
+    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
     origin = origin.rstrip("/")
-    success_url = (
-        f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
-        f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
-    )
-    cancel_url = f"{origin}/marketplace/cancel?stand_id={stand_id}&event_id={stand.get('event_id', '')}"
+    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/marketplace/cancel"
 
     try:
-        stripe_currency = 'mad'
-        display_name = f"Purchase: {product['name']}" if is_service else f"Purchase: {product['name']} x{effective_quantity}"
-        stripe_result = create_payment_session(
+        st_result = create_payment_session(
             order_id=order["id"],
             amount=total,
-            product_name=display_name,
-            buyer_email=user.get("email"),
+            product_name=product["name"],
+            buyer_email=user.get("email", ""),
             success_url=success_url,
             cancel_url=cancel_url,
+            metadata={"order_id": order["id"], "stand_id": stand_id, "source": "marketplace"},
             line_items=[{
-                'name': product['name'],
-                'description': (product.get('description') or '')[:200],
-                'unit_amount': int(product['price'] * 100),
-                'currency': stripe_currency,
-                'quantity': effective_quantity,
-            }],
+                "name": f"{product['name']} x{body.quantity}",
+                "unit_amount": int(math.ceil(product["price"] * 100)),
+                "currency": product.get("currency", "MAD").lower(),
+                "quantity": body.quantity,
+            }]
         )
     except Exception as exc:
         logger.error("Stripe checkout failed: %s", exc)
+        # Should we delete the pending order?
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
     # Update order with stripe session id
     from bson import ObjectId
-
     await get_database().stand_orders.update_one(
         {"_id": ObjectId(order["id"])},
-        {"$set": {"stripe_session_id": stripe_result["session_id"]}},
+        {"$set": {"stripe_session_id": st_result["session_id"]}},
     )
 
-    return CheckoutResponse(payment_url=stripe_result["url"], order_id=order["id"])
+    return CheckoutResponse(payment_url=st_result["url"], order_id=order["id"])
 
-
-# ── Cart Checkout (multiple products) ───────────────────────────────
 
 @router.post(
     "/stands/{stand_id}/cart/checkout",
@@ -301,53 +251,33 @@ async def cart_checkout(
 ):
     """
     Authenticated visitor — checkout multiple products/services from the same stand.
-    Creates one Stripe payment session for the total cart amount or processes COD.
     """
-    stand = await _get_stand(stand_id)  # validate stand exists
+    await _get_stand(stand_id)  # validate stand exists
 
-    # --- Fix H4: Live and Participation check ---
-    from app.modules.events.service import get_event_by_id
-    event = await get_event_by_id(str(stand["event_id"]))
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    
-    if not timezone_service.is_event_live(event):
-        raise HTTPException(status_code=403, detail="Marketplace checkout is only available during the live event")
-    
-    part = await get_user_participation(str(event["_id"]), user["_id"])
-    if not part or part.get("status") not in (ParticipantStatus.APPROVED.value, ParticipantStatus.GUEST_APPROVED.value):
-        raise HTTPException(status_code=403, detail="You must be an approved participant to purchase items")
-
+    checkout_group_id = uuid.uuid4().hex
     order_ids: list[str] = []
-    checkout_group_id = str(uuid.uuid4())
     total_cart_amount = 0.0
-    product_names: list[str] = []
+    line_items = []
 
     for cart_item in body.items:
         product = await mkt_svc.get_product(cart_item.product_id)
         if not product:
             raise HTTPException(status_code=404, detail=f"Product {cart_item.product_id} not found")
-        if product["stand_id"] != stand_id:
+        if str(product["stand_id"]) != stand_id:
             raise HTTPException(status_code=400, detail=f"Product {cart_item.product_id} does not belong to this stand")
-        is_service = str(product.get("type") or "product") == "service"
-        effective_quantity = 1 if is_service else cart_item.quantity
-
-        if not is_service and product["stock"] < effective_quantity:
+        
+        if str(product.get("type") or "product") != "service" and product["stock"] < cart_item.quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for {product['name']}")
 
-        total = round(product["price"] * effective_quantity, 2)
-        
-        if body.payment_method == "cash_on_delivery" and not is_service:
-            await mkt_svc.decrement_stock(product["id"], effective_quantity)
-
+        item_total = round(product["price"] * cart_item.quantity, 2)
         order = await mkt_svc.create_order(
             product_id=cart_item.product_id,
             stand_id=stand_id,
             buyer_id=str(user["_id"]),
             product_name=product["name"],
-            quantity=effective_quantity,
-            total_amount=total,
-            unit_price=float(product["price"]),
+            quantity=cart_item.quantity,
+            unit_price=product["price"],
+            total_amount=item_total,
             currency=product.get("currency", "MAD"),
             payment_method=body.payment_method,
             checkout_group_id=checkout_group_id,
@@ -356,104 +286,58 @@ async def cart_checkout(
             buyer_phone=body.buyer_phone,
         )
         order_ids.append(order["id"])
-        total_cart_amount += total
-        product_names.append(product["name"])
+        total_cart_amount += item_total
+        line_items.append({
+            "name": f"{product['name']} x{cart_item.quantity}",
+            "unit_amount": int(math.ceil(product["price"] * 100)),
+            "currency": product.get("currency", "MAD").lower(),
+            "quantity": cart_item.quantity,
+        })
 
     if body.payment_method == "cash_on_delivery":
-        return CartCheckoutResponse(payment_url=None, order_ids=order_ids, checkout_group_id=checkout_group_id)
+        return CartCheckoutResponse(order_ids=order_ids, checkout_group_id=checkout_group_id)
 
-    origin = request.headers.get("origin") or request.headers.get("referer") or settings.FRONTEND_URL
+    # Stripe checkout logic
+    origin = request.headers.get("origin") or request.headers.get("referer") or "http://localhost:3000"
     origin = origin.rstrip("/")
-    success_url = (
-        f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
-        f"&stand_id={stand_id}&event_id={stand.get('event_id', '')}"
-    )
-    cancel_url = f"{origin}/marketplace/cancel?stand_id={stand_id}&event_id={stand.get('event_id', '')}"
-
-    # Build detailed line items for Stripe
-    cart_line_items = []
-    for cart_item in body.items:
-        product = await mkt_svc.get_product(cart_item.product_id)
-        if product:
-            product_is_service = str(product.get("type") or "product") == "service"
-            cart_line_items.append({
-                'name': product['name'],
-                'description': (product.get('description') or '')[:200],
-                'unit_amount': int(product['price'] * 100),
-                'currency': 'mad',
-                'quantity': 1 if product_is_service else cart_item.quantity,
-            })
+    success_url = f"{origin}/marketplace/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/marketplace/cancel"
 
     try:
-        stripe_result = create_payment_session(
+        st_result = create_payment_session(
             order_id=",".join(order_ids),
             amount=total_cart_amount,
-            product_name=f"Cart: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
-            buyer_email=user.get("email"),
+            product_name=f"Cart checkout ({len(order_ids)} items)",
+            buyer_email=user.get("email", ""),
             success_url=success_url,
             cancel_url=cancel_url,
-            line_items=cart_line_items if cart_line_items else None,
+            metadata={
+                "order_id": ",".join(order_ids),
+                "stand_id": stand_id,
+                "source": "marketplace",
+                "checkout_group_id": checkout_group_id
+            },
+            line_items=line_items
         )
     except Exception as exc:
         logger.error("Stripe cart checkout failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Payment provider error: {exc}")
 
     # Update all orders with stripe session id
-    try:
-        from bson import ObjectId as _OID
-
-        for oid in order_ids:
-            await get_database().stand_orders.update_one(
-                {"_id": _OID(oid)},
-                {"$set": {"stripe_session_id": stripe_result["session_id"]}},
-            )
-    except Exception as exc:
-        logger.error("Failed to update orders with session id: %s", exc)
+    from bson import ObjectId
+    await get_database().stand_orders.update_many(
+        {"_id": {"$in": [ObjectId(oid) for oid in order_ids]}},
+        {"$set": {"stripe_session_id": st_result["session_id"]}}
+    )
 
     return CartCheckoutResponse(
-        payment_url=stripe_result["url"],
-        order_ids=order_ids,
-        checkout_group_id=checkout_group_id,
+        payment_url=st_result["url"], 
+        order_ids=order_ids, 
+        checkout_group_id=checkout_group_id
     )
 
 
-# ── Stripe Webhook (server-to-server notification) ────────────────
-
-@router.post("/webhook/stripe")
-async def stripe_webhook(request: Request, stripe_signature: str = Header(None)):
-    """
-    Stripe sends payment notifications here.
-    Verifies signature, handles completed payments.
-    """
-    payload = await request.body()
-    try:
-        event = construct_event(payload, stripe_signature)
-    except stripe.error.SignatureVerificationError as e:
-        logger.warning("Stripe webhook signature verification failed")
-        raise HTTPException(status_code=400, detail="Invalid signature")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        
-        # Payment is successful
-        order_id_str = session.get('client_reference_id', '')
-        payment_intent_id = session.get('payment_intent', '')
-
-        ids_to_process = [oid.strip() for oid in order_id_str.split(",") if oid.strip()]
-        for oid in ids_to_process:
-            order, changed = await mkt_svc.mark_order_paid_if_pending(oid, payment_intent_id)
-            if order and changed:
-                product = await mkt_svc.get_product(order["product_id"])
-                if product and str(product.get("type") or "product") != "service":
-                    await mkt_svc.decrement_stock(order["product_id"], order["quantity"])
-                logger.info("Order %s paid via Stripe intent %s", oid, payment_intent_id)
-
-    return {"status": "success"}
-
-
-# ── Orders ──────────────────────────────────────────────────────────
+# ── Orders ────────────────────────────────────────────────────────────
 
 @router.get("/stands/{stand_id}/orders", response_model=list[OrderOut])
 async def list_stand_orders(
@@ -465,155 +349,52 @@ async def list_stand_orders(
     return await mkt_svc.list_orders_for_stand(stand_id)
 
 
-@router.get("/orders", response_model=list[OrderOut])
-async def list_my_orders(
+@router.get("/orders", response_model=list[UnifiedOrderOut])
+async def list_my_unified_orders(
+    session_id: str | None = Query(None),
+    group_id: str | None = Query(None),
     user: dict = Depends(get_current_user),
 ):
-    """Authenticated user — list their own marketplace orders."""
-    return await mkt_svc.list_orders_for_buyer(str(user["_id"]))
+    """Authenticated user — list their own marketplace orders, grouped by checkout."""
+    return await mkt_svc.list_unified_orders_for_buyer(str(user["_id"]), session_id=session_id, group_id=group_id)
 
 
-@router.get("/enterprise/orders", response_model=list[OrderOut])
-async def list_enterprise_orders(
-    user: dict = Depends(require_role(Role.ENTERPRISE)),
-):
-    """Stand owner — list all orders across all their stands."""
-    return await mkt_svc.list_orders_for_enterprise(str(user["_id"]))
-
-
-@router.patch("/orders/{order_id}/fulfillment-status", response_model=OrderOut)
-async def update_order_fulfillment_status(
+@router.patch("/orders/{order_id}/fulfillment", response_model=OrderOut)
+async def update_order_fulfillment(
     order_id: str,
     body: OrderFulfillmentUpdate,
     user: dict = Depends(get_current_user),
 ):
-    """Stand owner / admin — update fulfillment workflow status for one order."""
+    """Stand owner / admin — update fulfillment status (processing, shipped, etc)."""
     order = await mkt_svc.get_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-
-    await _require_stand_owner(order["stand_id"], user)
-    updated = await mkt_svc.update_order_fulfillment_status(order_id, body.fulfillment_status, body.note)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Order not found")
-    try:
-        await create_notification(
-            user_id=updated["buyer_id"],
-            type=NotificationType.MARKETPLACE_ORDER_UPDATED,
-            message=f"Your order for {updated.get('product_name', 'a product')} is now {body.fulfillment_status.replace('_', ' ')}.",
-        )
-    except Exception:
-        logger.warning("Failed to create order update notification for order %s", order_id)
+    
+    await _require_stand_owner(str(order["stand_id"]), user)
+    
+    updated = await mkt_svc.update_order_fulfillment_status(
+        order_id, 
+        body.fulfillment_status, 
+        body.note
+    )
     return updated
 
 
-@router.patch("/orders/{order_id}/cancel", response_model=OrderOut)
-async def cancel_order(
+@router.post("/orders/{order_id}/cancel", response_model=OrderOut)
+async def cancel_marketplace_order(
     order_id: str,
     body: OrderCancelRequest,
     user: dict = Depends(get_current_user),
 ):
-    """Stand owner / admin / buyer — cancel an order and restore stock when applicable."""
+    """Stand owner / admin — cancel an order (e.g. out of stock). Restores stock if it was paid."""
     order = await mkt_svc.get_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-
-    is_buyer = str(order.get("buyer_id")) == str(user["_id"])
     
-    # Check authorization (buyer, stand owner, or admin)
-    if not is_buyer:
-        await _require_stand_owner(order["stand_id"], user)
-
-    current_status = str(order.get("fulfillment_status") or "requested")
-    if current_status != "requested":
-        raise HTTPException(status_code=400, detail="Cannot cancel a processed order.")
-
-    updated = await mkt_svc.cancel_order(order_id, body.note)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Order not found")
+    await _require_stand_owner(str(order["stand_id"]), user)
     
-    # If stand owner cancels -> notify buyer
-    if not is_buyer:
-        try:
-            await create_notification(
-                user_id=updated["buyer_id"],
-                type=NotificationType.MARKETPLACE_ORDER_CANCELLED,
-                message=f"Your order for {updated.get('product_name', 'a product')} was cancelled by the stand.",
-            )
-        except Exception:
-            logger.warning("Failed to create cancellation notification for order %s", order_id)
-    
-    return updated
-
-
-@router.get("/orders/by-session", response_model=list[OrderOut])
-async def list_orders_by_session(
-    session_id: str = Query(..., description="Stripe session ID"),
-    user: dict = Depends(get_current_user),
-):
-    """Return only orders that belong to a specific Stripe checkout session."""
-    orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
-
-    # Webhook may be delayed in local/dev setups; perform a safe status sync from Stripe session.
-    has_pending_stripe_orders = any(
-        o.get("payment_method") == "stripe" and o.get("status") == "pending"
-        for o in orders
-    )
-    if has_pending_stripe_orders:
-        try:
-            session = stripe.checkout.Session.retrieve(session_id)
-            if session and session.payment_status == "paid":
-                payment_intent_id = session.payment_intent or ""
-                for order in orders:
-                    if order.get("payment_method") == "stripe" and order.get("status") == "pending":
-                        updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
-                        if updated_order and changed:
-                            product = await mkt_svc.get_product(updated_order["product_id"])
-                            if product and str(product.get("type") or "product") != "service":
-                                await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
-
-                # Return refreshed state after sync
-                orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
-        except Exception as exc:
-            logger.warning("Session status sync skipped for %s: %s", session_id, exc)
-
-    return orders
-
-
-@router.get("/orders/unified", response_model=list[UnifiedOrderOut])
-async def list_unified_orders(
-    session_id: str | None = Query(None, description="Stripe session ID"),
-    group_id: str | None = Query(None, description="Checkout group ID"),
-    user: dict = Depends(get_current_user),
-):
-    """Return visitor orders grouped as unified checkout orders (products + services together)."""
-    # Safe status sync if session_id is provided (handles potential webhook delays)
-    if session_id:
-        try:
-            orders = await mkt_svc.list_orders_for_buyer(str(user["_id"]), session_id=session_id)
-            has_pending = any(
-                o.get("payment_method") == "stripe" and o.get("status") == "pending"
-                for o in orders
-            )
-            if has_pending:
-                session = stripe.checkout.Session.retrieve(session_id)
-                if session and session.payment_status == "paid":
-                    payment_intent_id = session.payment_intent or ""
-                    for order in orders:
-                        if order.get("payment_method") == "stripe" and order.get("status") == "pending":
-                            updated_order, changed = await mkt_svc.mark_order_paid_if_pending(order["id"], payment_intent_id)
-                            if updated_order and changed:
-                                product = await mkt_svc.get_product(updated_order["product_id"])
-                                if product and str(product.get("type") or "product") != "service":
-                                    await mkt_svc.decrement_stock(updated_order["product_id"], updated_order["quantity"])
-        except Exception as exc:
-            logger.warning("Unified session sync skipped for %s: %s", session_id, exc)
-
-    return await mkt_svc.list_unified_orders_for_buyer(
-        str(user["_id"]),
-        session_id=session_id,
-        group_id=group_id,
-    )
+    cancelled = await mkt_svc.cancel_order(order_id, body.note)
+    return cancelled
 
 
 @router.get("/orders/{order_id}/receipt")
@@ -630,70 +411,29 @@ async def get_order_receipt(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    order = stringify_object_ids(order)
-    if order.get("buyer_id") != str(user["_id"]):
+    if str(order.get("buyer_id")) != str(user["_id"]):
+        # Also allow stand owner to see it? Maybe not for "my-receipt" style
         raise HTTPException(status_code=403, detail="Not your order")
 
     # Get product details
-    product = None
-    product_id = order.get("product_id")
-    if product_id and ObjectId.is_valid(product_id):
-        product = await db.stand_products.find_one({"_id": ObjectId(product_id)})
-        if product:
-            product = stringify_object_ids(product)
-
-    # Resolve seller details (enterprise owning this stand)
-    seller_name = ""
-    seller_email = ""
-    stand = None
-    org = None
-    stand_id = order.get("stand_id")
-    if stand_id and ObjectId.is_valid(stand_id):
-        stand = await db.stands.find_one({"_id": ObjectId(stand_id)})
-    if stand and stand.get("organization_id"):
-        org_id = str(stand.get("organization_id"))
-        if ObjectId.is_valid(org_id):
-            org = await db.organizations.find_one({"_id": ObjectId(org_id)})
-        else:
-            org = await db.organizations.find_one({"_id": org_id})
-    if org:
-        org = stringify_object_ids(org)
-        seller_name = org.get("name", "")
-        owner_id = str(org.get("owner_id", ""))
-        if owner_id and ObjectId.is_valid(owner_id):
-            seller_user = await db.users.find_one({"_id": ObjectId(owner_id)})
-            if seller_user:
-                seller_user = stringify_object_ids(seller_user)
-                seller_email = seller_user.get("email", "")
-
-    quantity = int(order.get("quantity", 1) or 1)
-    total_amount = float(order.get("total_amount", 0) or 0)
-    unit_price = float(order.get("unit_price", 0) or 0)
-    product_type = product.get("type", "product") if product else "product"
-    is_service = str(product_type) == "service"
-    if unit_price <= 0 and quantity > 0 and total_amount > 0:
-        unit_price = round(total_amount / quantity, 2)
-    display_quantity = None if is_service else quantity
-    display_unit_price = total_amount if is_service else unit_price
+    product = await db.stand_products.find_one({"_id": order.get("product_id")})
 
     receipt = {
-        "receipt_id": order["_id"],
-        "order_id": order["_id"],
+        "receipt_id": str(order["_id"]),
+        "order_id": str(order["_id"]),
         "product_name": product["name"] if product else order.get("product_name", "Unknown"),
-        "product_type": product_type,
-        "quantity": display_quantity,
-        "unit_price": display_unit_price,
-        "amount": total_amount,
-        "currency": (order.get("currency") or (product.get("currency") if product else "MAD") or "MAD").upper(),
+        "product_type": product.get("type", "product") if product else "product",
+        "quantity": order.get("quantity", 1),
+        "amount": order.get("total_amount", 0),
+        "currency": order.get("currency", "MAD").upper(),
         "status": order.get("status", "unknown"),
         "payment_method": order.get("payment_method", "stripe"),
+        "stripe_session_id": order.get("stripe_session_id", ""),
+        "stripe_payment_intent_id": order.get("stripe_payment_intent_id", ""),
         "buyer_name": user.get("full_name", user.get("name", "")),
         "buyer_email": user.get("email", ""),
-        "seller_name": seller_name,
-        "seller_email": seller_email,
         "shipping_address": order.get("shipping_address", ""),
         "delivery_notes": order.get("delivery_notes", ""),
-        "buyer_phone": order.get("buyer_phone", ""),
         "created_at": order["created_at"].isoformat() if hasattr(order.get("created_at", ""), "isoformat") else str(order.get("created_at", "")),
         "paid_at": order["paid_at"].isoformat() if order.get("paid_at") and hasattr(order["paid_at"], "isoformat") else str(order.get("paid_at", "")),
     }

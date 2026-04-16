@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc, getEventDayDate } from '@/lib/timezone';
@@ -19,6 +20,7 @@ import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import { getLiveWorkflowLabel, getEffectiveWorkflowState } from '@/lib/eventWorkflowBadge';
+import { t } from 'i18next';
 
 const resolveDisplayTimezone = (rawTz?: string, fallback?: string): string => {
     const base = fallback || 'Africa/Casablanca';
@@ -87,31 +89,31 @@ const formatToUTCDisplay = (rawDate?: any, formatStr: string = 'MMM d, yyyy', tz
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; badgeClass: string; icon: React.ReactNode }> = {
     pending_payment: {
-        label: 'Pay Stand Fee',
+        label: 'enterprise.events.actions.payFee',
         color: 'bg-amber-50 text-amber-700 border-amber-200',
         badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
         icon: <CreditCard size={13} />,
     },
     pending_admin_approval: {
-        label: 'Awaiting Approval',
+        label: 'enterprise.events.status.awaitingApproval',
         color: 'bg-blue-50 text-blue-700 border-blue-200',
         badgeClass: 'bg-blue-100 text-blue-700 border-blue-200',
         icon: <Loader size={13} className="animate-spin" />,
     },
     approved: {
-        label: 'Stand Approved',
+        label: 'enterprise.events.status.standApproved',
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
         icon: <CheckCircle2 size={13} />,
     },
     guest_approved: {
-        label: 'Guest Approved',
+        label: 'enterprise.events.status.guestApproved',
         color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
         icon: <CheckCircle2 size={13} />,
     },
     rejected: {
-        label: 'Stand Rejected',
+        label: 'enterprise.events.status.standRejected',
         color: 'bg-red-50 text-red-700 border-red-200',
         badgeClass: 'bg-red-100 text-red-700 border-red-200',
         icon: <AlertCircle size={13} />,
@@ -261,10 +263,10 @@ function ScheduleSection({ ev }: { ev: any }) {
 
     if (scheduleDays.length === 0) {
         const phases = [
-            { label: 'Registration Opens', date: ev.schedule?.registration_open_date },
-            { label: 'Registration Deadline', date: ev.schedule?.registration_deadline },
-            { label: 'Event Starts', date: extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date) },
-            { label: 'Event Ends', date: extractDateStr(ev.end_date) || extractDateStr(ev.schedule?.end_date) },
+            { label: t('enterprise.events.detail.registrationOpens'), date: ev.schedule?.registration_open_date },
+            { label: t('enterprise.events.detail.registrationDeadline'), date: ev.schedule?.registration_deadline },
+            { label: t('enterprise.events.detail.eventStarts'), date: extractDateStr(ev.start_date) || extractDateStr(ev.schedule?.start_date) },
+            { label: t('enterprise.events.detail.eventEnds'), date: extractDateStr(ev.end_date) || extractDateStr(ev.schedule?.end_date) },
         ].filter(p => p.date);
 
         if (phases.length === 0) return null;
@@ -272,7 +274,7 @@ function ScheduleSection({ ev }: { ev: any }) {
         return (
             <div>
                 <h3 className="text-sm font-bold text-zinc-700 mb-3 flex items-center gap-2">
-                    <Clock size={14} /> Schedule
+                    <Clock size={14} /> {t('enterprise.events.detail.schedule')}
                 </h3>
                 <div className="space-y-2">
                     {phases.map((p, i) => (
@@ -289,7 +291,7 @@ function ScheduleSection({ ev }: { ev: any }) {
     return (
         <div>
             <h3 className="text-sm font-bold text-zinc-700 mb-4 flex items-center gap-2">
-                <Calendar size={14} /> Detailed Schedule
+                <Calendar size={14} /> {t('enterprise.events.detail.detailedSchedule')}
             </h3>
             <div className="space-y-4">
                 {scheduleDays.map((day: any, di: number) => (
@@ -310,18 +312,18 @@ function ScheduleSection({ ev }: { ev: any }) {
                                             {formatSlotTime(day.day_number, slot.start_time)} - {formatSlotTime(day.day_number, slot.end_time)}
                                         </div>
                                         <span className="text-sm text-zinc-700 leading-snug">
-                                            {slot.label || 'Activity'}
+                                            {slot.label || t('enterprise.events.detail.activityFallback')}
                                         </span>
                                         {isOvernightSlot(slot.start_time, slot.end_time) && (
                                             <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 border border-indigo-200 rounded-full px-2 py-0.5">
-                                                Overnight
+                                                {t('enterprise.events.detail.overnight')}
                                             </span>
                                         )}
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="px-4 py-3 text-xs text-zinc-400 italic">No slots defined for this day.</div>
+                            <div className="px-4 py-3 text-xs text-zinc-400 italic">{t('enterprise.events.detail.noSlots')}</div>
                         )}
                     </div>
                 ))}
@@ -339,6 +341,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     onPay: (id: string) => void;
     actionLoading: string | null;
 }) {
+    const { t } = useTranslation('enterprise');
     const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
@@ -437,7 +440,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
             });
         } catch (error) {
             console.error('Error generating receipt:', error);
-            alert('Could not generate receipt.');
+            alert(t('enterprise.events.modal.receiptError'));
         }
     };
 
@@ -482,20 +485,20 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${accentText}`}>
                                 {isEventLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
                                 {isEventLive
-                                    ? 'Live Now'
+                                    ? t('enterprise.events.detail.liveNow')
                                     : isEventInProgress
-                                        ? 'In Progress'
+                                        ? t('enterprise.events.detail.inProgress')
                                         : (evState === 'approved' || evState === 'payment_done' || isEventUpcoming)
-                                            ? 'Upcoming'
+                                            ? t('enterprise.events.detail.upcoming')
                                             : isEventEnded
-                                                ? 'Ended'
-                                                : 'Upcoming'}
+                                                ? t('enterprise.events.detail.ended')
+                                                : t('enterprise.events.detail.upcoming')}
                             </span>
                             {statusConf && (
                                 <>
                                     <span className="text-zinc-300">|</span>
                                     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
-                                        {statusConf.icon} {statusConf.label}
+                                        {statusConf.icon} {t(statusConf.label)}
                                     </span>
                                 </>
                             )}
@@ -612,7 +615,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                     <Link href={`/enterprise/events/${evId}/analytics`}>
                                         <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
                                             <BarChart3 size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
-                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Analyse</span>
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">{t('enterprise.events.actions.viewAnalytics')}</span>
                                         </div>
                                     </Link>
                                 )}
@@ -620,7 +623,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                     <Link href={`/enterprise/events/${evId}/stand`}>
                                         <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
                                             <Settings size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
-                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Configure</span>
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">{t('enterprise.events.actions.configureStand')}</span>
                                         </div>
                                     </Link>
                                 )}
@@ -632,7 +635,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                 <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/80 flex gap-3 flex-shrink-0">
                     {!participation && !isEventEnded && (
                         <Button onClick={() => onJoin(evId)} isLoading={actionLoading === evId} className="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 font-bold shadow-sm shadow-indigo-200">
-                            Request to Join
+                            {t('enterprise.events.actions.requestToJoin')}
                         </Button>
                     )}
                     {partStatus === 'pending_payment' && !isEventEnded && (
@@ -642,24 +645,24 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             className={`flex-1 h-11 font-bold shadow-sm ${standPrice === 0 ? 'bg-zinc-600 hover:bg-zinc-700 shadow-zinc-200' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'}`}
                         >
                             <CreditCard size={16} className="mr-2" />
-                            {standPrice === 0 ? 'Confirm Free Stand' : `Pay Stand Fee (${standPrice} MAD)`}
+                            {standPrice === 0 ? t('enterprise.events.actions.confirmFreeStand') : `${t('enterprise.events.actions.payFee')} (${standPrice} MAD)`}
                         </Button>
                     )}
                     {partStatus === 'pending_admin_approval' && (
                         <Button disabled className="flex-1 h-11 opacity-60 cursor-not-allowed font-bold">
-                            <Loader size={16} className="mr-2 animate-spin" /> Waiting for Admin Approval
+                            <Loader size={16} className="mr-2 animate-spin" /> {t('enterprise.events.actions.waitingForAdminApproval')}
                         </Button>
                     )}
                     {isAccepted && (
                         <button
                             onClick={downloadReceipt}
-                            title="Download Receipt"
+                            title={t('enterprise.events.actions.downloadReceipt')}
                             className="h-11 px-4 flex items-center gap-2 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold transition-colors"
                         >
-                            <Download size={14} /> Receipt
+                            <Download size={14} /> {t('enterprise.events.actions.receipt')}
                         </button>
                     )}
-                    <Button variant="outline" onClick={onClose} className="px-5 h-11 border-zinc-200 font-bold">Close</Button>
+                    <Button variant="outline" onClick={onClose} className="px-5 h-11 border-zinc-200 font-bold">{t('enterprise.events.actions.close')}</Button>
                 </div>
             </div>
         </div>
@@ -676,6 +679,7 @@ function EnterpriseEventCard({
     onJoin: (id: string) => void;
     actionLoading: string | null;
 }) {
+    const { t } = useTranslation('enterprise');
     const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
@@ -707,7 +711,7 @@ function EnterpriseEventCard({
             });
         } catch (error) {
             console.error('Error generating receipt:', error);
-            alert('Could not generate receipt.');
+            alert(t('enterprise.events.modal.receiptError'));
         }
     };
 
@@ -734,28 +738,28 @@ function EnterpriseEventCard({
         const evStateStr = String(ev.state || '');
 
         if (evStateStr === 'approved' || evStateStr === 'payment_done') {
-            return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+            return { label: t('enterprise.events.status.upcoming'), class: 'bg-indigo-500 text-white', pulse: false };
         }
 
         if (evStateStr === 'closed' || isEventEnded) {
-            return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
+            return { label: t('enterprise.events.status.ended'), class: 'bg-zinc-500 text-white', pulse: false };
         }
 
         if (evStateStr === 'live') {
             const liveLabel = getLiveWorkflowLabel(ev as any);
             if (liveLabel) {
                 if (liveLabel.kind === 'session_live') {
-                    return { label: 'Live', class: 'bg-emerald-500 text-white', pulse: true };
+                    return { label: t('enterprise.events.status.live'), class: 'bg-emerald-500 text-white', pulse: true };
                 }
                 if (liveLabel.kind === 'between_slots') {
-                    return { label: 'In Progress', class: 'bg-blue-500 text-white', pulse: false };
+                    return { label: t('enterprise.events.status.inProgress'), class: 'bg-blue-500 text-white', pulse: false };
                 }
                 if (liveLabel.kind === 'closed') {
-                    return { label: 'Ended', class: 'bg-zinc-500 text-white', pulse: false };
+                    return { label: t('enterprise.events.status.ended'), class: 'bg-zinc-500 text-white', pulse: false };
                 }
-                return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+                return { label: t('enterprise.events.status.upcoming'), class: 'bg-indigo-500 text-white', pulse: false };
             }
-            return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+            return { label: t('enterprise.events.status.upcoming'), class: 'bg-indigo-500 text-white', pulse: false };
         }
 
         if (isEventNotReady) {
@@ -766,7 +770,7 @@ function EnterpriseEventCard({
             };
         }
 
-        return { label: 'Upcoming', class: 'bg-indigo-500 text-white', pulse: false };
+        return { label: t('enterprise.events.status.upcoming'), class: 'bg-indigo-500 text-white', pulse: false };
     })();
 
     return (
@@ -828,13 +832,13 @@ function EnterpriseEventCard({
                 {statusConf && (
                     <div className={`flex items-center gap-1.5 text-[11px] font-semibold w-fit`}>
                         <span className={`inline-flex items-center gap-1 ${statusConf.color.includes('emerald') ? 'text-emerald-600' : statusConf.color.includes('amber') ? 'text-amber-600' : statusConf.color.includes('blue') ? 'text-blue-600' : statusConf.color.includes('red') ? 'text-red-600' : 'text-zinc-600'}`}>
-                            {statusConf.icon} {statusConf.label}
+                            {statusConf.icon} {t(statusConf.label)}
                         </span>
                     </div>
                 )}
                 {!participation && !isEventEnded && (
                     <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                        <Clock size={11} /> Not registered
+                        <Clock size={11} /> {t('enterprise.events.status.notRegistered')}
                     </div>
                 )}
 
@@ -858,7 +862,7 @@ function EnterpriseEventCard({
                         ev.stands_left === 0 ? 'text-red-500' : ev.stands_left <= 2 ? 'text-amber-600' : 'text-emerald-600'
                     }`}>
                         <Users size={10} />
-                        {ev.stands_left === 0 ? 'Fully Booked' : `${ev.stands_left} stand${ev.stands_left > 1 ? 's' : ''} left`}
+                        {ev.stands_left === 0 ? t('enterprise.events.status.fullyBooked') : `${ev.stands_left} stand${ev.stands_left > 1 ? 's' : ''} left`}
                     </div>
                 )}
 
@@ -868,7 +872,7 @@ function EnterpriseEventCard({
                     {!isAccepted ? (
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={onDetails} className="flex-1 flex items-center justify-center gap-1.5 text-xs h-10 border-zinc-200 hover:bg-zinc-50 font-bold">
-                                View Details
+                                {t('enterprise.events.actions.viewDetails')}
                             </Button>
                             {!participation && !isEventEnded && ev.stands_left !== 0 && (
                                 <Button
@@ -877,59 +881,59 @@ function EnterpriseEventCard({
                                     isLoading={actionLoading === evId}
                                     className="flex-1 text-xs h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold"
                                 >
-                                    Join Event
+                                    {t('enterprise.events.actions.joinEvent')}
                                 </Button>
                             )}
                             {!participation && !isEventEnded && ev.stands_left === 0 && (
                                 <Button size="sm" disabled className="flex-1 text-xs h-10 opacity-50 bg-zinc-100 text-zinc-400 font-bold">
-                                    Fully Booked
+                                    {t('enterprise.events.status.fullyBooked')}
                                 </Button>
                             )}
                             {partStatus === 'pending_payment' && !isEventEnded && (
                                 <Button size="sm" onClick={onDetails} className="flex-1 text-xs h-10 bg-amber-600 hover:bg-amber-700 shadow-sm shadow-amber-100 font-bold">
                                     <CreditCard size={14} className="mr-1.5" />
-                                    {standPrice === 0 ? 'Confirm' : 'Pay Fee'}
+                                    {standPrice === 0 ? t('enterprise.events.actions.confirm') : t('enterprise.events.actions.payFee')}
                                 </Button>
                             )}
                             {(partStatus === 'pending_admin_approval') && (
                                 <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-zinc-50 border-zinc-100 font-bold">
-                                    Awaiting Approval
+                                    {t('enterprise.events.status.awaitingApproval')}
                                 </Button>
                             )}
                             {partStatus === 'rejected' && (
                                 <Button size="sm" variant="outline" disabled className="flex-1 text-xs h-10 opacity-60 bg-red-50 border-red-100 text-red-400 font-bold">
-                                    Rejected
+                                    {t('enterprise.events.status.rejected')}
                                 </Button>
                             )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-2">
                             <Button variant="outline" size="sm" onClick={onDetails} className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
-                                Details
+                                {t('enterprise.events.actions.details')}
                             </Button>
 
                             {lifecycle.displayState !== 'ENDED' && (
                                 <Link href={`/enterprise/events/${evId}/stand`} className="contents">
                                     <Button variant="outline" size="sm" className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
-                                        <Settings size={13} /> Configure
+                                        <Settings size={13} /> {t('enterprise.events.actions.configureStand')}
                                     </Button>
                                 </Link>
                             )}
 
                             <Link href={`/enterprise/events/${evId}/analytics`} className="contents">
                                 <Button variant="outline" size="sm" className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
-                                    <BarChart3 size={13} /> Analyse
+                                    <BarChart3 size={13} /> {t('enterprise.events.actions.viewAnalytics')}
                                 </Button>
                             </Link>
 
                             <Button variant="outline" size="sm" onClick={downloadReceipt} className="flex items-center justify-center gap-1.5 text-[11px] h-9 border-zinc-200 hover:bg-zinc-50 font-bold">
-                                <Download size={13} /> Receipt
+                                <Download size={13} /> {t('enterprise.events.actions.receipt')}
                             </Button>
 
                             {lifecycle.displayState === 'LIVE' && (
                                 <Link href={`/enterprise/events/${evId}/manage`} className="col-span-2">
                                     <Button size="sm" className="w-full flex items-center justify-center gap-1.5 text-[11px] h-9 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 font-bold text-white">
-                                        <MessageSquare size={13} /> Manage Event
+                                        <MessageSquare size={13} /> {t('enterprise.events.actions.manageEvent')}
                                     </Button>
                                 </Link>
                             )}
@@ -944,6 +948,7 @@ function EnterpriseEventCard({
 // --- Main Page ---
 
 export default function EnterpriseEventsPage() {
+    const { t } = useTranslation('enterprise');
     const VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -1025,40 +1030,40 @@ export default function EnterpriseEventsPage() {
         <div className="space-y-6 animate-in fade-in duration-500">
             {paymentSuccess && (
                 <div className="rounded-xl p-4 text-sm font-medium bg-green-50 text-green-700 border border-green-200">
-                    <p className="font-bold">Stand Fee Payment Successful!</p>
-                    <p className="mt-1">Your payment has been confirmed. Your participation is approved and you can access your stand now.</p>
+                    <p className="font-bold">{t('enterprise.events.notifications.paymentSuccess')}</p>
+                    <p className="mt-1">{t('enterprise.events.notifications.paymentSuccessMessage')}</p>
                 </div>
             )}
             {paymentCancelled && (
                 <div className="rounded-xl p-4 text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                    <p className="font-bold">Payment Cancelled</p>
-                    <p className="mt-1">Stand fee payment was cancelled. You can try again from the event details.</p>
+                    <p className="font-bold">{t('enterprise.events.notifications.paymentCancelled')}</p>
+                    <p className="mt-1">{t('enterprise.events.notifications.paymentCancelledMessage')}</p>
                 </div>
             )}
             {eventEnded && (
                 <div className="rounded-xl p-4 text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300">
-                    <p className="font-bold">Live Session Ended</p>
-                    <p className="mt-1">You were moved out of the live management room because this event timeline has ended.</p>
+                    <p className="font-bold">{t('enterprise.events.banner.liveSessionEndedTitle')}</p>
+                    <p className="mt-1">{t('enterprise.events.banner.liveSessionEndedDescription')}</p>
                 </div>
             )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-zinc-500 text-sm">Browse available events and manage your participation.</p>
+                <p className="text-zinc-500 text-sm">{t('enterprise.events.banner.browseDescription')}</p>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
                         className="pl-3 pr-8 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition text-zinc-700 cursor-pointer"
                     >
-                        <option value="all">All Events</option>
-                        <option value="live">Live Now</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="upcoming">Upcoming</option>
-                        <option value="ended">Ended</option>
-                        <option value="mine">My Events</option>
+                        <option value="all">{t('enterprise.events.filters.all')}</option>
+                        <option value="live">{t('enterprise.events.filters.live')}</option>
+                        <option value="in_progress">{t('enterprise.events.filters.inProgress')}</option>
+                        <option value="upcoming">{t('enterprise.events.filters.upcoming')}</option>
+                        <option value="ended">{t('enterprise.events.filters.ended')}</option>
+                        <option value="mine">{t('enterprise.events.filters.mine')}</option>
                     </select>
                     <input
                         type="text"
-                        placeholder="Search events"
+                        placeholder={t('enterprise.events.searchPlaceholder')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         className="w-full sm:w-56 pl-4 pr-4 py-2 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"

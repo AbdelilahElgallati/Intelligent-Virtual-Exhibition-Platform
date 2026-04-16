@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useCallback, use } from 'react';
 import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Conference } from '@/types/conference';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { http } from '@/lib/http';
 
 function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
+    const { t } = useTranslation('enterprise');
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [loading, setLoading] = useState(true);
@@ -41,11 +43,11 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                     onClick={() => router.back()}
                     style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: 14, marginBottom: 24, padding: 0 }}
                 >
-                    ← Back
+                    ← {t('enterprise.conferences.card.back')}
                 </button>
                 <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 8px 0' }}>My Assigned Conferences</h1>
                 <p style={{ color: '#94a3b8', fontSize: 14, margin: '0 0 32px 0' }}>
-                    Conferences assigned to you by the event organizer. Click "Go Live" when ready to broadcast.
+                    Conferences assigned to you by the event organizer. Click "{t('enterprise.conferences.card.goLive')}" when ready to broadcast.
                 </p>
 
                 {conferences.length === 0 ? (
@@ -126,13 +128,13 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                                     padding: '10px 24px', fontWeight: 700,
                                                     cursor: canGoLive ? 'pointer' : 'not-allowed', fontSize: 13,
                                                 }}
-                                                title={!canGoLive ? `Go Live available 20 minutes before start (${Math.ceil(minutesUntil)} min away)` : ''}
+                                                title={!canGoLive ? `${t('enterprise.conferences.card.goLive')} available 20 minutes before start (${Math.ceil(minutesUntil)} min away)` : ''}
                                             >
-                                                {canGoLive ? '🔴 Go Live' : `⏰ Go Live in ${Math.ceil(minutesUntil)} min`}
+                                                {canGoLive ? `🔴 ${t('enterprise.conferences.card.goLive')}` : `⏰ ${t('enterprise.conferences.card.goLive')} in ${Math.ceil(minutesUntil)} min`}
                                             </button>
                                         )}
                                         {conf.status === 'ended' && (
-                                            <span style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>✅ Session ended</span>
+                                            <span style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>✅ {t('enterprise.conferences.card.sessionEnded')}</span>
                                         )}
                                     </div>
                                 </div>

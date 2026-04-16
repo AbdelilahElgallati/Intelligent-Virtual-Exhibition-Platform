@@ -52,16 +52,10 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
-    # Daily.co (cloud-hosted WebRTC — replace LiveKit)
-    DAILY_API_KEY: str = ""
-    DAILY_DOMAIN: str = ""  # e.g. yourapp.daily.co
+    # AI / Ollama
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    EMBEDDING_MODEL: str = "multilingual-e5-small"
 
-    # Cloudflare R2 Object Storage
-    R2_ACCESS_KEY_ID: str = ""
-    R2_SECRET_ACCESS_KEY: str = ""
-    R2_BUCKET_NAME: str = ""
-    R2_ENDPOINT: str = ""
-    R2_PUBLIC_BASE_URL: str = ""
 
     # Pydantic Config
     class Config:

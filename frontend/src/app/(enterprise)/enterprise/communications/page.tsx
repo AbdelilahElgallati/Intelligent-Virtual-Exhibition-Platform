@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -57,6 +58,7 @@ interface Stand {
 // ─── Chat List Item ──────────────────────────────────────────────────────────
 
 const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; active: boolean; onClick: () => void; unreadCount?: number }) => {
+    const { t } = useTranslation('enterprise');
     return (
         <div
             onClick={onClick}
@@ -78,7 +80,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
                     </span>
                 </div>
                 <p className="text-xs text-zinc-500 truncate">
-                    {room.last_message?.content || "No messages yet"}
+                    {room.last_message?.content || t('enterprise.communications.chats.noMessages')}
                 </p>
             </div>
             {!!unreadCount && unreadCount > 0 && (
@@ -94,6 +96,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
 // ─── Meeting Item ────────────────────────────────────────────────────────────
 
 const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeting: Meeting; timeZone: string; onStatusUpdate: (id: string, status: string) => void; currentTime: number }) => {
+    const { t } = useTranslation('enterprise');
     const statusStyles = {
         pending: 'bg-amber-50 text-amber-700 border-amber-100',
         approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -114,11 +117,11 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                             </div>
                             <div>
                                 <h4 className="text-sm font-bold text-zinc-900">
-                                    Visitor Request #{(meeting.id || meeting._id).slice(-6)}
+                                    {t('enterprise.communications.meeting.requestLabel')}{(meeting.id || meeting._id).slice(-6)}
                                 </h4>
                                 <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                                     <Clock size={12} />
-                                            Submitted {formatInTZ(meeting.created_at, viewerTimeZone, 'MMM d, yyyy')}
+                                            {t('enterprise.communications.meetings.submitted', { date: formatInTZ(meeting.created_at, viewerTimeZone, 'MMM d, yyyy') })}
                                 </div>
                             </div>
                         </div>
@@ -132,7 +135,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                             </div>
                             <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">
                                 <Clock size={14} className="text-indigo-500" />
-                                <span>Duration: 30 min</span>
+                                <span>{t('enterprise.communications.meetings.duration')}</span>
                             </div>
                         </div>
 
@@ -148,7 +151,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                             "text-[10px] font-bold px-2 py-1 rounded-full border text-center uppercase tracking-wider",
                             statusStyles[meeting.status]
                         )}>
-                            {meeting.status}
+                            {t(`enterprise.communications.meetings.status.${meeting.status}`)}
                         </span>
 
                         {meeting.status === 'pending' && (
@@ -158,7 +161,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                                     className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700"
                                     onClick={() => onStatusUpdate(meeting.id || meeting._id, 'approved')}
                                 >
-                                    <CheckCircle2 size={12} className="mr-1" /> Approve
+                                    <CheckCircle2 size={12} className="mr-1" /> {t('enterprise.communications.meetings.approve')}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -166,7 +169,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                                     className="h-8 text-xs text-red-600 hover:bg-red-50 border-red-100"
                                     onClick={() => onStatusUpdate(meeting.id || meeting._id, 'rejected')}
                                 >
-                                    <XCircle size={12} className="mr-1" /> Decline
+                                    <XCircle size={12} className="mr-1" /> {t('enterprise.communications.meetings.decline')}
                                 </Button>
                             </div>
                         )}
@@ -181,18 +184,18 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                                     className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                     onClick={() => window.location.href = `/meetings/${meeting.id || meeting._id}/room`}
                                 >
-                                    <ArrowRight size={12} className="mr-1" /> Join
+                                    <ArrowRight size={12} className="mr-1" /> {t('enterprise.communications.meetings.join')}
                                 </Button>
                             ) : now >= end ? (
-                                <span className="text-[10px] text-zinc-400 text-center">Meeting ended</span>
+                                <span className="text-[10px] text-zinc-400 text-center">{t('enterprise.communications.meetings.ended')}</span>
                             ) : (
                                 <span className="text-[10px] text-zinc-400 text-center">
-                                    Approved · starts {formatInTZ(meeting.start_time, getUserTimezone(), 'h:mm a')}
+                                    {t('enterprise.communications.meetings.approvedStarts', { time: formatInTZ(meeting.start_time, getUserTimezone(), 'h:mm a') })}
                                 </span>
                             );
                         })()}
                         {meeting.status === 'rejected' && (
-                            <span className="text-[10px] text-red-400 text-center">Declined</span>
+                            <span className="text-[10px] text-red-400 text-center">{t('enterprise.communications.meetings.declined')}</span>
                         )}
                     </div>
                 </div>
@@ -204,6 +207,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function EnterpriseCommunicationsPage() {
+    const { t } = useTranslation('enterprise');
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings'>('chats');
     const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -352,7 +356,7 @@ export default function EnterpriseCommunicationsPage() {
                         activeTab === 'chats' ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
                     )}
                 >
-                    <MessageSquare size={16} /> Chats
+                    <MessageSquare size={16} /> {t('enterprise.communications.tabs.chats')}
                     {unreadTotal > 0 && (
                         <span className="ml-1 text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
                             {unreadTotal > 9 ? '9+' : unreadTotal}
@@ -371,7 +375,7 @@ export default function EnterpriseCommunicationsPage() {
                         activeTab === 'meetings' ? "bg-white text-indigo-600 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
                     )}
                 >
-                    <Calendar size={16} /> Meetings
+                    <Calendar size={16} /> {t('enterprise.communications.tabs.meetings')}
                     {meetings.filter(m => m.status === 'pending').length > 0 && (
                         <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
                             {meetings.filter(m => m.status === 'pending').length}
@@ -392,7 +396,7 @@ export default function EnterpriseCommunicationsPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Find conversation..."
+                                    placeholder={t('enterprise.communications.searchPlaceholder')}
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
                                     className="w-full pl-9 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -413,7 +417,7 @@ export default function EnterpriseCommunicationsPage() {
                             ) : rooms.length === 0 ? (
                                 <div className="p-10 text-center">
                                     <MessageSquare size={32} className="mx-auto text-zinc-200 mb-3" />
-                                    <p className="text-zinc-400 text-xs">No active chats yet.</p>
+                                    <p className="text-zinc-400 text-xs">{t('enterprise.communications.chats.empty')}</p>
                                 </div>
                             ) : (
                                 rooms
@@ -449,13 +453,13 @@ export default function EnterpriseCommunicationsPage() {
                                         <ChevronLeft size={16} />
                                     </button>
                                     <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Conversation</p>
-                                        <p className="text-sm font-semibold text-zinc-900">{activeRoom?.name || 'Member'}</p>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">{t('enterprise.communications.chats.conversation')}</p>
+                                        <p className="text-sm font-semibold text-zinc-900">{activeRoom?.name || t('enterprise.communications.chats.member')}</p>
                                     </div>
                                 </div>
                                 <ChatPanel
                                     initialRoomId={selectedRoomId!}
-                                    standName={activeRoom?.name || "Member"}
+                                    standName={activeRoom?.name || t('enterprise.communications.chats.member')}
                                     isEmbedded={true}
                                     disableMessageLimit={true}
                                     eventTimeZone={activeEventTimeZone}
@@ -467,9 +471,9 @@ export default function EnterpriseCommunicationsPage() {
                                 <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center text-indigo-500 mb-6">
                                     <MessageSquare size={40} />
                                 </div>
-                                <h3 className="text-xl font-bold text-zinc-900 mb-2">Select a Conversation</h3>
+                                <h3 className="text-xl font-bold text-zinc-900 mb-2">{t('enterprise.communications.chats.selectTitle')}</h3>
                                 <p className="text-zinc-500 max-w-sm">
-                                    Select a visitor or enterprise from the list to start or continue your conversation.
+                                    {t('enterprise.communications.chats.subtitle')}
                                 </p>
                             </div>
                         )}
@@ -485,8 +489,8 @@ export default function EnterpriseCommunicationsPage() {
                     ) : meetings.length === 0 ? (
                         <Card className="border-dashed border-2 border-zinc-200 p-20 text-center">
                             <Calendar size={48} className="mx-auto text-zinc-200 mb-4" />
-                            <h3 className="text-lg font-bold text-zinc-900 mb-2">No meetings scheduled</h3>
-                            <p className="text-zinc-500">When visitors request meetings with your stands, they will appear here.</p>
+                            <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('enterprise.communications.meetings.empty.title')}</h3>
+                            <p className="text-zinc-500">{t('enterprise.communications.meetings.empty.subtitle')}</p>
                         </Card>
                     ) : (
                         meetings.map(meeting => {

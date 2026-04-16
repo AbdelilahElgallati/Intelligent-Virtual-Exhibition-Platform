@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { http } from "@/lib/http";
@@ -141,6 +142,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseEventRequestsPage() {
+    const { t } = useTranslation('enterprise');
     const params = useParams();
     const eventId = params.eventId as string;
 
@@ -297,7 +299,7 @@ export default function EnterpriseEventRequestsPage() {
                         <ArrowLeft size={14} />
                         Back to Event Management
                     </Link>
-                    <h1 className="mt-2 text-2xl font-black text-zinc-900 tracking-tight">Products & Services Requests</h1>
+                    <h1 className="mt-2 text-2xl font-black text-zinc-900 tracking-tight">{t('enterprise.eventRequests.productsTitle')}</h1>
                     <p className="text-sm text-zinc-500 mt-1">
                         Manage visitor requests, payment details, delivery workflow, and contact points for this event.
                     </p>
@@ -359,7 +361,7 @@ export default function EnterpriseEventRequestsPage() {
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:max-w-2xl">
                             <label className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">
-                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> Order status</span>
+                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> {t('enterprise.eventRequests.filters.orderStatus')}</span>
                                 <select
                                     value={orderStatusFilter}
                                     onChange={(e) => setOrderStatusFilter(e.target.value as "all" | FulfillmentStatus)}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatInTZ } from '@/lib/timezone';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -43,6 +44,7 @@ interface Stand {
 }
 
 export default function EnterpriseLeadsPage() {
+    const { t } = useTranslation('enterprise');
     const [leads, setLeads] = useState<Lead[]>([]);
     const [stands, setStands] = useState<Stand[]>([]);
     const [events, setEvents] = useState<any[]>([]);
@@ -111,7 +113,7 @@ export default function EnterpriseLeadsPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-indigo-600 text-white border-0 shadow-lg shadow-indigo-100">
                     <CardContent className="p-6">
-                        <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">Total Leads</p>
+                        <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">{t('enterprise.leads.kpi.totalLeads')}</p>
                         <h3 className="text-3xl font-bold">{leads.length}</h3>
                     </CardContent>
                 </Card>
@@ -148,7 +150,7 @@ export default function EnterpriseLeadsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
                         <input
                             type="text"
-                            placeholder="Search leads..."
+                            placeholder={t('enterprise.leads.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"

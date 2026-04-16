@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@tanstack/react-query": ["node_modules/@tanstack/react-query"],
+      "@react-three/fiber": ["node_modules/@react-three/fiber"],
+      "@react-three/drei": ["node_modules/@react-three/drei"]
+    }
+  }
+}

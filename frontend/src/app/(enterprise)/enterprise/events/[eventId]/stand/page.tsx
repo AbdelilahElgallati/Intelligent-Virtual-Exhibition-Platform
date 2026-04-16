@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { http } from '@/lib/http';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInUserTZ } from '@/lib/timezone';
@@ -52,6 +53,7 @@ const PRESENTER_AVATAR_PRESETS: BrandingPreset[] = [
 ];
 
 export default function StandConfigPage() {
+    const { t } = useTranslation('enterprise');
     const params = useParams();
     const eventId = params?.eventId as string;
 
@@ -151,7 +153,7 @@ export default function StandConfigPage() {
         setIsSaving(true); setMessage(null);
         try {
             await http.patch(`/enterprise/events/${eventId}/stand`, branding);
-            setMessage({ type: 'success', text: 'Branding saved!' });
+            setMessage({ type: 'success', text: t('enterprise.stand.messages.brandingSaved') });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Save failed' });
         } finally { setIsSaving(false); }
@@ -159,7 +161,7 @@ export default function StandConfigPage() {
 
     const uploadLogoFromFile = async (file: File) => {
         if (!file.type.startsWith('image/')) {
-            setMessage({ type: 'error', text: 'Please choose an image file for the logo.' });
+            setMessage({ type: 'error', text: t('enterprise.stand.messages.logoChooseError') });
             return;
         }
 
@@ -171,12 +173,12 @@ export default function StandConfigPage() {
             const data = await http.post<{ logo_url: string }>(`/enterprise/profile/logo`, formData);
             const logoUrl = data?.logo_url || '';
             if (!logoUrl) {
-                throw new Error('Upload completed but no logo URL was returned.');
+                throw new Error(t('enterprise.stand.messages.logoUploadError'));
             }
             setBranding((p) => ({ ...p, logo_url: logoUrl }));
-            setMessage({ type: 'success', text: 'Logo uploaded. Click Save Branding to apply it to this stand.' });
+            setMessage({ type: 'success', text: t('enterprise.stand.messages.logoUploadSuccess') });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to upload logo image.' });
+            setMessage({ type: 'error', text: err.message || t('enterprise.stand.messages.logoUploadFailed') });
         } finally {
             setIsUploadingLogo(false);
             if (logoFileInputRef.current) logoFileInputRef.current.value = '';
@@ -205,7 +207,7 @@ export default function StandConfigPage() {
             }
 
             await http.patch(`/enterprise/events/${eventId}/stand/products`, linkedProducts);
-            setMessage({ type: 'success', text: 'Products linked!' });
+            setMessage({ type: 'success', text: t('enterprise.stand.messages.productsLinked') });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'Save failed' });
         } finally { setIsSaving(false); }
@@ -243,11 +245,11 @@ export default function StandConfigPage() {
     const addResource = async () => {
         setMessage(null);
         if (!newResource.title) {
-            setMessage({ type: 'error', text: 'Please provide a title for the resource.' });
+            setMessage({ type: 'error', text: t('enterprise.stand.messages.resourceTitleRequired') });
             return;
         }
         if ((newResource.resource_type === 'video_url' || newResource.resource_type === 'link') && !newResource.url) {
-            setMessage({ type: 'error', text: 'Please provide a valid URL for this resource tape.' });
+            setMessage({ type: 'error', text: t('enterprise.stand.messages.resourceUrlRequired') });
             return;
         }
         if ((newResource.resource_type === 'pdf' || newResource.resource_type === 'image') && !newResource.file) {
@@ -257,7 +259,7 @@ export default function StandConfigPage() {
 
         const standId = stand?.id || stand?._id;
         if (!standId) {
-            setMessage({ type: 'error', text: 'Stand configuration not fully loaded yet.' });
+            setMessage({ type: 'error', text: t('enterprise.stand.messages.standConfigNotLoaded') });
             return;
         }
         setIsSaving(true);
@@ -281,7 +283,7 @@ export default function StandConfigPage() {
         try {
             const res = await http.post<any>(`/enterprise/events/${eventId}/stand/enable-assistant`, {});
             setRagStatus({ ...ragStatus, ...res });
-            setMessage({ type: 'success', text: `AI assistant enabled! Indexed ${res.indexed_documents} document(s).` });
+            setMessage({ type: 'success', text: t('enterprise.stand.messages.aiActivationSuccess', { indexed_documents: res.indexed_documents }) });
         } catch (err: any) {
             setMessage({ type: 'error', text: err.message || 'RAG activation failed' });
         } finally { setRagLoading(false); }
@@ -297,15 +299,15 @@ export default function StandConfigPage() {
     if (isLoading) return (
         <div className="text-center py-20">
             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-zinc-500">Loading stand configuration...</p>
+            <p className="text-zinc-500">{t('enterprise.stand.messages.loadingStandConfig')}</p>
         </div>
     );
 
     if (!stand) return (
         <div className="text-center py-20 bg-red-50 rounded-2xl border border-red-100">
             <AlertCircle className="mx-auto text-red-300 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-red-900">Access Denied</h3>
-            <p className="text-red-600 mt-2">Your join request must be approved and your stand fee must be paid before configuring a stand.</p>
+            <h3 className="text-lg font-bold text-red-900">{t('enterprise.stand.messages.accessDenied')}</h3>
+            <p className="text-red-600 mt-2">{t('enterprise.stand.messages.accessDeniedReason')}</p>
         </div>
     );
 
@@ -318,7 +320,7 @@ export default function StandConfigPage() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="text-center sm:text-left">
-                        <h2 className="text-3xl font-extrabold mb-2">Configure Your Stand</h2>
+                        <h2 className="text-3xl font-extrabold mb-2">{t('enterprise.stand.labels.configureYourStand')}</h2>
                         <p className="text-indigo-100">Managing: <span className="font-semibold text-white">{stand.name}</span></p>
                     </div>
                     {/* Shortcut buttons */}
@@ -326,18 +328,18 @@ export default function StandConfigPage() {
                         {isLive && (
                             <Link href={`/enterprise/events/${eventId}/manage`}>
                                 <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
-                                    <MessageSquare size={15} /> Manage Event
+                                    <MessageSquare size={15} /> {t('enterprise.stand.labels.manageEvent')}
                                 </button>
                             </Link>
                         )}
                         <Link href={`/enterprise/events/${eventId}/analytics`}>
                             <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold rounded-xl border border-white/30 transition-all backdrop-blur-sm">
-                                <BarChart3 size={15} /> Analytics
+                                <BarChart3 size={15} /> {t('enterprise.stand.labels.analytics')}
                             </button>
                         </Link>
                         <Link href="/enterprise/events">
                             <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 text-sm font-medium rounded-xl border border-white/20 transition-all backdrop-blur-sm">
-                                <ChevronLeft size={15} /> All Events
+                                <ChevronLeft size={15} /> {t('enterprise.stand.labels.allEvents')}
                             </button>
                         </Link>
                     </div>
@@ -379,16 +381,16 @@ export default function StandConfigPage() {
                                 value={branding.description}
                                 onChange={(e) => setBranding(p => ({ ...p, description: e.target.value }))}
                                 className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm"
-                                placeholder="What will visitors find at your stand?"
+                                placeholder={t('enterprise.stand.labels.companyBioPlaceholder')}
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Input
-                                    label="Logo URL"
+                                    label={t('enterprise.stand.labels.logoUrl')}
                                     value={branding.logo_url}
                                     onChange={(e) => setBranding(p => ({ ...p, logo_url: e.target.value }))}
-                                    placeholder="https://..."
+                                    placeholder={t('enterprise.stand.labels.logoUrlPlaceholder')}
                                 />
                                 <div className="flex items-center gap-3">
                                     <Button
@@ -398,9 +400,9 @@ export default function StandConfigPage() {
                                         onClick={() => logoFileInputRef.current?.click()}
                                         className="flex items-center gap-2"
                                     >
-                                        <Upload size={14} /> Upload Logo Image
+                                        <Upload size={14} /> {t('enterprise.stand.labels.uploadLogoImage')}
                                     </Button>
-                                    <span className="text-xs text-zinc-500">Use URL or upload a file.</span>
+                                    <span className="text-xs text-zinc-500">{t('enterprise.stand.labels.uploadLogoHelper')}</span>
                                 </div>
                                 <input
                                     ref={logoFileInputRef}
@@ -416,7 +418,7 @@ export default function StandConfigPage() {
                             <Input label="Custom Background URL" value={branding.stand_background_url} onChange={(e) => setBranding(p => ({ ...p, stand_background_url: e.target.value }))} placeholder="https://... or /stands/..." />
                         </div>
                         <div className="space-y-3">
-                            <label className="text-sm font-semibold text-zinc-700">Stand Background Presets</label>
+                            <label className="text-sm font-semibold text-zinc-700">{t('enterprise.stand.labels.standBackgroundPresets')}</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {STAND_BACKGROUND_PRESETS.map((preset) => {
                                     const isSelected = branding.stand_background_url === preset.value;
@@ -435,7 +437,7 @@ export default function StandConfigPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-6">
-                            <Input label="Presenter Name" value={branding.presenter_name} onChange={(e) => setBranding(p => ({ ...p, presenter_name: e.target.value }))} />
+                            <Input label={t('enterprise.stand.branding.presenterName')} value={branding.presenter_name} onChange={(e) => setBranding(p => ({ ...p, presenter_name: e.target.value }))} />
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-zinc-700">Theme Color</label>
                                 <div className="flex gap-3 items-center">
@@ -478,7 +480,7 @@ export default function StandConfigPage() {
                             />
                         </div>
                         <div className="flex justify-end">
-                            <Button onClick={saveBranding} isLoading={isSaving}>Save Branding</Button>
+                            <Button onClick={saveBranding} isLoading={isSaving}>{t('enterprise.stand.labels.saveBranding')}</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -488,10 +490,10 @@ export default function StandConfigPage() {
             {activeTab === 'products' && (
                 <Card className="border-zinc-200">
                     <CardContent className="p-8 space-y-6">
-                        <p className="text-sm text-zinc-500">Select which products from your catalog to display on this stand.</p>
+                        <p className="text-sm text-zinc-500">{t('enterprise.stand.labels.selectProductsDescription')}</p>
                         <div className="space-y-3">
                             {myProducts.length === 0 ? (
-                                <p className="text-zinc-400 text-sm text-center py-8">No products in your catalog yet. <a href="/enterprise/products" className="text-indigo-600 hover:underline">Add products first.</a></p>
+                                <p className="text-zinc-400 text-sm text-center py-8">{t('enterprise.stand.labels.noProductsInCatalog')} <a href="/enterprise/products" className="text-indigo-600 hover:underline">{t('enterprise.stand.labels.addProductsFirst')}</a></p>
                             ) : myProducts.map((prod) => {
                                 const pid = prod.id || prod._id;
                                 const isLinked = isProductLinked(pid);
@@ -507,13 +509,13 @@ export default function StandConfigPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-zinc-900 text-sm">{prod.name}</h4>
-                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `${prod.price} MAD` : 'Quote Only'} · {(prod.type || 'product') === 'service' ? 'Service' : `Product · ${stock} available`}</p>
+                                            <p className="text-xs text-zinc-500">{prod.category} · {prod.price ? `${prod.price} MAD` : 'Quote Only'} · {(prod.type || 'product') === 'service' ? t('enterprise.stand.labels.productTypeService') : `${t('enterprise.stand.labels.productTypeProduct')} · ${stock} ${t('enterprise.stand.labels.productStatusAvailable')}`}</p>
                                             {!isService && stock <= 0 && (
-                                                <p className="text-[11px] text-red-600 mt-1 font-semibold">Out of stock — cannot be selected</p>
+                                                <p className="text-[11px] text-red-600 mt-1 font-semibold">{t('enterprise.stand.labels.productOutOfStock')}</p>
                                             )}
                                             {!isService && isLinked && (
                                                 <div className="mt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Quantity</label>
+                                                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">{t('enterprise.stand.labels.quantityLabel')}</label>
                                                     <input
                                                         type="number"
                                                         min={1}
@@ -522,7 +524,7 @@ export default function StandConfigPage() {
                                                         onChange={(e) => updateLinkedQuantity(pid, parseInt(e.target.value || '1', 10) || 1)}
                                                         className="h-8 w-24 rounded-md border border-indigo-200 bg-white px-2 text-xs font-semibold text-zinc-700"
                                                     />
-                                                    <span className="text-[11px] text-zinc-500">Max {stock}</span>
+                                                    <span className="text-[11px] text-zinc-500">{t('enterprise.stand.labels.quantityMaxLabel')} {stock}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -531,7 +533,7 @@ export default function StandConfigPage() {
                             })}
                         </div>
                         <div className="flex justify-end">
-                            <Button onClick={saveProducts} isLoading={isSaving}>Save Selection ({linkedProducts.length})</Button>
+                            <Button onClick={saveProducts} isLoading={isSaving}>{t('enterprise.stand.labels.saveSelectionButton', { count: linkedProducts.length })}</Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -542,11 +544,11 @@ export default function StandConfigPage() {
                 <Card className="border-zinc-200">
                     <CardContent className="p-8 space-y-6">
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-zinc-700">Add Resource</h3>
+                            <h3 className="text-sm font-semibold text-zinc-700">{t('enterprise.stand.labels.addResource')}</h3>
                             <div className="grid grid-cols-3 gap-4">
-                                <Input label="Title" value={newResource.title} onChange={(e) => setNewResource(p => ({ ...p, title: e.target.value }))} placeholder="Product Brochure" />
+                                <Input label="Title" value={newResource.title} onChange={(e) => setNewResource(p => ({ ...p, title: e.target.value }))} placeholder={t('enterprise.stand.labels.resourcePlaceholder')} />
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Type</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.stand.labels.resourceTypeLabel')}</label>
                                     <select value={newResource.resource_type} onChange={(e) => {
                                         const val = e.target.value;
                                         const isFile = val === 'pdf' || val === 'image';
@@ -560,10 +562,10 @@ export default function StandConfigPage() {
                                     </select>
                                 </div>
                                 {(newResource.resource_type === 'video_url' || newResource.resource_type === 'link') ? (
-                                    <Input label="URL / Link" value={newResource.url} onChange={(e) => setNewResource(p => ({ ...p, url: e.target.value }))} placeholder="https://..." />
+                                    <Input label="URL / Link" value={newResource.url} onChange={(e) => setNewResource(p => ({ ...p, url: e.target.value }))} placeholder={t('enterprise.stand.labels.urlPlaceholder')} />
                                 ) : (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Upload File</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.stand.labels.uploadFileLabel')}</label>
                                         <input key={resources.length} type="file" onChange={(e) => setNewResource(p => ({ ...p, file: e.target.files?.[0] || null }))} className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-[8px] file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
                                     </div>
                                 )}
@@ -574,7 +576,7 @@ export default function StandConfigPage() {
                         </div>
                         <div className="border-t pt-6 space-y-3">
                             {resources.length === 0 ? (
-                                <p className="text-zinc-400 text-sm text-center py-4">No resources uploaded yet.</p>
+                                <p className="text-zinc-400 text-sm text-center py-4">{t('enterprise.stand.labels.noResourcesUploaded')}</p>
                             ) : resources.map((r) => {
                                 const isVideo = r.type === 'video' || r.type === 'video_url';
                                 const isLink = r.type === 'link';
@@ -617,22 +619,22 @@ export default function StandConfigPage() {
                                     <Cpu size={24} className={ragStatus?.rag_enabled ? 'text-white' : 'text-zinc-500'} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-zinc-900">AI Assistant</h3>
+                                    <h3 className="font-bold text-zinc-900">{t('enterprise.stand.labels.aiAssistantHeading')}</h3>
                                     <p className={`text-sm font-medium ${ragStatus?.rag_enabled ? 'text-emerald-600' : 'text-zinc-500'}`}>
-                                        {ragStatus?.rag_enabled ? '● Active' : '○ Inactive'}
+                                        {ragStatus?.rag_enabled ? `● ${t('enterprise.stand.labels.statusActive')}` : `○ ${t('enterprise.stand.labels.statusInactive')}`}
                                     </p>
                                 </div>
                             </div>
                             {ragStatus && (
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="bg-white rounded-xl p-4 border border-zinc-100">
-                                        <p className="text-zinc-500 text-xs mb-1">Indexed Documents</p>
+                                        <p className="text-zinc-500 text-xs mb-1">{t('enterprise.stand.labels.indexedDocuments')}</p>
                                         <p className="font-bold text-zinc-900 text-xl">{ragStatus.indexed_documents_count || 0}</p>
                                     </div>
                                     <div className="bg-white rounded-xl p-4 border border-zinc-100">
-                                        <p className="text-zinc-500 text-xs mb-1">Last Indexed</p>
+                                        <p className="text-zinc-500 text-xs mb-1">{t('enterprise.stand.labels.lastIndexed')}</p>
                                         <p className="font-bold text-zinc-900 text-sm">
-                                            {ragStatus.last_indexed_at ? formatInUserTZ(ragStatus.last_indexed_at, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Never'}
+                                            {ragStatus.last_indexed_at ? formatInUserTZ(ragStatus.last_indexed_at, { year: 'numeric', month: 'short', day: 'numeric' }) : t('enterprise.stand.labels.never')}
                                         </p>
                                     </div>
                                 </div>
@@ -640,12 +642,11 @@ export default function StandConfigPage() {
                         </div>
                         <div className="space-y-3">
                             <p className="text-sm text-zinc-600">
-                                Enabling the AI assistant indexes all your stand resources into the vector database.
-                                Visitors can then ask questions and receive answers based on your uploaded documents.
+                                {t('enterprise.stand.labels.aiDescription')}
                             </p>
                             <Button onClick={enableAssistant} isLoading={ragLoading} className="flex items-center gap-2">
                                 <Zap size={16} />
-                                {ragStatus?.rag_enabled ? 'Re-index & Refresh AI' : 'Enable AI Assistant'}
+                                {ragStatus?.rag_enabled ? t('enterprise.stand.labels.reindexRefreshAi') : t('enterprise.stand.labels.enableAiAssistant')}
                             </Button>
                         </div>
                     </CardContent>

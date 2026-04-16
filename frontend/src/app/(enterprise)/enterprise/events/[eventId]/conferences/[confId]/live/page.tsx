@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { LoadingState } from '@/components/ui/LoadingState';
 import SpeakerRoom from '@/components/conferences/SpeakerRoom';
 import { Conference, ConferenceTokenResponse } from '@/types/conference';
@@ -31,12 +32,13 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 15000): 
 
 function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }) {
     const router = useRouter();
+    const { t } = useTranslation('enterprise');
     const [conf, setConf] = useState<Conference | null>(null);
     const [tokenData, setTokenData] = useState<ConferenceTokenResponse | null>(null);
     const [eventData, setEventData] = useState<Event | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [loadingMessage, setLoadingMessage] = useState('Setting up your broadcast…');
+    const [loadingMessage, setLoadingMessage] = useState(t('enterprise.eventManagement.conferences.live.setupBroadcast'));
     const [reloadTick, setReloadTick] = useState(0);
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
 
@@ -51,7 +53,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
             setError(null);
 
             try {
-                setLoadingMessage('Checking event timeline…');
+                setLoadingMessage(t('enterprise.eventManagement.conferences.live.checkingTimeline'));
                 const evt = await withTimeout(
                     apiClient.get<Event>(ENDPOINTS.EVENTS.GET(eventId)),
                     'Loading event timeline'
@@ -64,16 +66,16 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
                     if (cancelled) return;
                     setError(
                         !currentLifecycle.hasScheduleSlots
-                            ? 'Timeline is not published yet. Speaker studio opens only during live schedule slots.'
+                            ? t('enterprise.eventManagement.conferences.live.timelineNotPublished')
                             : currentLifecycle.displayState === 'ENDED'
-                              ? 'Event timeline has ended. Broadcast access is closed.'
+                              ? t('enterprise.eventManagement.conferences.live.timelineEnded')
                               : formatTimeToStart(currentLifecycle.nextSlot?.start || null)
                     );
                     setLoading(false);
                     return;
                 }
 
-                setLoadingMessage('Loading conference details…');
+                setLoadingMessage(t('enterprise.eventManagement.conferences.live.loadingDetails'));
                 const existingConf = await withTimeout(
                     http.get<Conference>(`/conferences/${confId}`),
                     'Loading conference details'
@@ -81,7 +83,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
 
                 // When speaker rejoins an already-live room, avoid re-starting it.
                 if (existingConf.status !== 'live') {
-                    setLoadingMessage('Starting conference room…');
+                    setLoadingMessage(t('enterprise.eventManagement.conferences.live.startingRoom'));
                     await withTimeout(
                         http.post(`/conferences/${confId}/start`, {}),
                         'Starting conference room'
@@ -98,7 +100,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
                 if (cancelled) return;
                 setConf(cData);
 
-                setLoadingMessage('Requesting live access token…');
+                setLoadingMessage(t('enterprise.eventManagement.conferences.live.requestingToken'));
                 const tData = await withTimeout(
                     http.get<ConferenceTokenResponse>(`/conferences/${confId}/speaker-token`),
                     'Requesting live access token'
@@ -107,7 +109,7 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
                 setTokenData(tData);
             } catch (e: unknown) {
                 if (cancelled) return;
-                setError(e instanceof Error ? e.message : 'Failed to connect');
+                setError(e instanceof Error ? e.message : t('enterprise.eventManagement.conferences.live.failedConnect'));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -157,22 +159,22 @@ function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-4">⚠️</div>
                 <h2 className="text-xl font-bold text-zinc-900 mb-2 text-center">
-                    {error || 'Could not start broadcast'}
+                    {error || t('enterprise.eventManagement.conferences.live.startFailed')}
                 </h2>
                 <p className="text-sm text-zinc-500 text-center max-w-md mb-5">
-                    Please check your connection and make sure you are the assigned speaker for this conference. Try again in a moment.
+                    {t('enterprise.eventManagement.conferences.live.startFailedHint')}
                 </p>
                 <button
                     onClick={() => setReloadTick((prev) => prev + 1)}
                     className="px-6 py-2.5 border border-zinc-200 bg-white hover:bg-zinc-100 text-zinc-700 font-semibold rounded-xl transition-colors text-sm"
                 >
-                    Retry Setup
+                    {t('enterprise.eventManagement.conferences.live.retrySetup')}
                 </button>
                 <button
                     onClick={() => router.push(`/enterprise/events/${eventId}/manage`)}
                     className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                 >
-                    ← Back to Event
+                    {t('enterprise.eventManagement.conferences.live.backToEvent')}
                 </button>
             </div>
         );
@@ -203,9 +205,10 @@ export default function EnterpriseSpeakerLivePage({
 }: {
     params: Promise<{ eventId: string; confId: string }>;
 }) {
+    const { t } = useTranslation('enterprise');
     const { eventId, confId } = use(params);
     return (
-        <Suspense fallback={<LoadingState message="Loading…" />}>
+        <Suspense fallback={<LoadingState message={t('enterprise.eventManagement.conferences.live.loading')} />}>
             <SpeakerContent eventId={eventId} confId={confId} />
         </Suspense>
     );
