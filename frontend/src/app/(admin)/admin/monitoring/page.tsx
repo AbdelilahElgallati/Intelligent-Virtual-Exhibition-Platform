@@ -36,7 +36,7 @@ function CreateIncidentModal({ onClose, onCreate }: {
     onClose: () => void;
     onCreate: (data: IncidentCreate) => Promise<void>;
 }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [form, setForm] = useState<IncidentCreate>({ title: '', description: '', severity: 'medium' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -113,7 +113,7 @@ function CreateIncidentModal({ onClose, onCreate }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MonitoringPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [health, setHealth] = useState<PlatformHealth | null>(null);
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [loading, setLoading] = useState(true);

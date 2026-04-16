@@ -447,20 +447,11 @@ export function VirtualStandLayout({
                         label="About"
                     />
 
-<<<<<<< HEAD
                     {/* Shop (only visible when stand has products) */}
                     {hasProducts && onProductsOpen && (
                         <ActionBarBtn
                             themeColor={themeColor}
                             onClick={onProductsOpen}
-=======
-                    {/* Shop */}
-                    {onShopOpen && (
-                        <ActionBarBtn
-                            glow
-                            themeColor={themeColor}
-                            onClick={onShopOpen}
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
                             icon={<ShoppingBag className="w-4 h-4" />}
                             label="Shop"
                         />

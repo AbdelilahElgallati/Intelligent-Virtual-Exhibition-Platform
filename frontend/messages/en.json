@@ -527,7 +527,9 @@
     "actions": {
       "cancel": "Cancel",
       "confirmSure": "Are you sure?",
-      "yesProceed": "Yes, proceed"
+      "yesProceed": "Yes, proceed",
+      "viewAll": "View all",
+      "saveAll": "Save All Changes"
     },
     "errors": {
       "actionFailed": "Action failed. Please try again."
@@ -1076,6 +1078,15 @@
       "incidents": "Incidents",
       "profile": "Profile"
     },
+    "common": {
+      "currency": "MAD",
+      "actions": {
+        "processingIndicator": "…"
+      },
+      "ui": {
+        "emptyValue": "—"
+      }
+    },
     "dashboard": {
       "title": "Admin Dashboard",
       "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance.",
@@ -1137,7 +1148,12 @@
       "charts": {
         "thirtyDayTrend": "30-Day Event Creation Trend",
         "eventDistribution": "Event Distribution",
-        "eventsCreated": "Events Created"
+        "eventsCreated": "Events Created",
+        "fourteenDayTrend": "14-Day Activity Trend",
+        "interactionBreakdown": "Interaction Breakdown"
+      },
+      "eventDetail": {
+        "title": "Event Deep Metrics"
       },
       "eventsTable": {
         "title": "Recent Events — click for deep metrics",
@@ -1183,6 +1199,9 @@
       "noEvents": "No events found.",
       "searchPlaceholder": "Search by name, organizer, or status…",
       "failedToLoad": "Failed to load events.",
+      "pricing": {
+        "perEnterprise": "/ enterprise"
+      },
       "filters": {
         "all": "All States"
       },
@@ -1393,8 +1412,8 @@
         "inProgress": "In progress"
       },
       "countdown": {
-        "startsIn": "Event starts in",
-        "endsIn": "Event ends in",
+        "startsIn": "Starts In",
+        "endsIn": "Ends In",
         "startPassed": "Scheduled start has passed — auto-start pending",
         "endPassed": "Scheduled end has passed — auto-close pending"
       },
@@ -1455,6 +1474,7 @@
     "users": {
       "title": "User Governance",
       "description": "Access control and global registry",
+      "initialsFallback": "U",
       "anonymousUser": "Anonymous User",
       "failedToLoad": "Failed to load user registry",
       "addAdministrator": "Add Administrator",
@@ -1508,11 +1528,22 @@
         "revoke": "User privileges revoked.",
         "restore": "User privileges restored.",
         "create": "New administrator account created."
+      },
+      "modals": {
+        "create": {
+          "placeholders": {
+            "fullName": "John Doe",
+            "email": "admin@ivep.platform",
+            "username": "jdoe_admin"
+          }
+        }
       }
     },
     "organizations": {
       "title": "Organization Review",
       "description": "Corporate partners and enterprise identities",
+      "partnerLabel": "{{role}} Partner",
+      "initialsFallback": "O",
       "loadingRegistry": "Loading registry…",
       "noOrganizations": "No organizations found",
       "noDescription": "No description provided",
@@ -1555,9 +1586,9 @@
         "suspended": "Suspended"
       },
       "toast": {
-        "verified": "{name} verified.",
-        "flagToggled": "{name} flag toggled.",
-        "suspensionToggled": "{name} suspension toggled."
+        "verified": "{{name}} verified.",
+        "flagToggled": "{{name}} flag toggled.",
+        "suspensionToggled": "{{name}} suspension toggled."
       }
     },
     "enterprises": {
@@ -1605,60 +1636,77 @@
         "enterprisePartner": "Enterprise Partner"
       }
     },
-    "organizerRegistrations": {
-      "title": "Organizer Registrations",
-      "description": "Review and approve organizer account applications.",
-      "loading": "Loading…",
-      "tabs": {
-        "all": "All",
-        "pendingApproval": "Pending Approval",
-        "approved": "Approved",
-        "rejected": "Rejected"
+    "approvals": {
+      "organizer": {
+        "title": "Organizer Registrations",
+        "description": "Review and approve organizer account applications.",
+        "loading": "Loading…",
+        "tabs": {
+          "all": "All",
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "totalCount": "{{count}} total",
+        "noRegistrations": "No organizer registrations found for this status.",
+        "field": {
+          "organization": "Organisation",
+          "type": "Type",
+          "location": "Location",
+          "phone": "Phone",
+          "proEmail": "Pro Email",
+          "website": "Website"
+        },
+        "status": {
+          "pending_approval": "Pending Approval",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "error": {
+          "loadFailed": "Failed to load registrations",
+          "approveFailed": "Approval failed",
+          "rejectFailed": "Rejection failed"
+        },
+        "rejectionReasonPrompt": "Rejection reason (optional):"
       },
-      "total": "{total} total",
-      "noData": "No organizer registrations found for this status.",
-      "fields": {
-        "organisation": "Organisation",
-        "type": "Type",
-        "location": "Location",
-        "phone": "Phone",
-        "proEmail": "Pro Email",
-        "website": "Website"
-      },
-      "approve": "Approve",
-      "reject": "Reject",
-      "rejectPrompt": "Rejection reason (optional):",
-      "approveFailed": "Approval failed",
-      "rejectFailed": "Rejection failed",
-      "failedToLoad": "Failed to load registrations"
-    },
-    "enterpriseRegistrations": {
-      "title": "Enterprise Registrations",
-      "description": "Review and approve enterprise account applications.",
-      "loading": "Loading…",
-      "contactLabel": "Contact:",
-      "tabs": {
-        "all": "All",
-        "pendingApproval": "Pending Approval",
-        "approved": "Approved",
-        "rejected": "Rejected"
-      },
-      "total": "{total} total",
-      "noData": "No enterprise registrations found for this status.",
-      "contact": "Contact",
-      "employees": "{count} employees",
-      "founded": "Founded {year}",
-      "linkedin": "LinkedIn",
-      "registered": "Registered",
-      "approve": "Approve",
-      "reject": "Reject",
-      "rejectPrompt": "Rejection reason (optional):",
-      "approveFailed": "Approval failed",
-      "rejectFailed": "Rejection failed",
-      "failedToLoad": "Failed to load registrations"
+      "enterprise": {
+        "title": "Enterprise Registrations",
+        "description": "Review and approve enterprise account applications.",
+        "loading": "Loading…",
+        "tabs": {
+          "all": "All",
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "totalCount": "{{count}} total",
+        "noRegistrations": "No enterprise registrations found for this status.",
+        "field": {
+          "contact": "Contact",
+          "employees": "{{count}} employees",
+          "founded": "Founded {{year}}",
+          "linkedin": "LinkedIn"
+        },
+        "status": {
+          "pending_approval": "Pending Approval",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "registeredOn": "Registered on {{date}}",
+        "error": {
+          "loadFailed": "Failed to load registrations",
+          "approveFailed": "Approval failed",
+          "rejectFailed": "Rejection failed"
+        },
+        "rejectionReasonPrompt": "Rejection reason (optional):"
+      }
     },
     "enterpriseJoinRequests": {
       "title": "Enterprise Join Requests",
+      "eventPlaceholder": "Event {{id}}",
+      "error": {
+        "loadFailed": "Failed to load requests"
+      },
       "tabs": {
         "awaitingApproval": "Awaiting Approval",
         "pendingPayment": "Pending Payment",
@@ -1666,28 +1714,29 @@
         "rejected": "Rejected"
       },
       "searchPlaceholder": "Search by org name or email…",
-      "requestsFound": "{total} requests found",
-      "noRequests": "No {status} requests found",
+      "requestsFound": "{{total}} requests found",
+      "noRequests": "No {{status}} requests found",
       "table": {
         "enterprise": "Enterprise",
         "contact": "Contact",
         "industry": "Industry",
         "history": "History",
+        "historyApproved": "approved",
         "status": "Status",
         "actions": "Actions",
-        "approvedCount": "{count} approved",
+        "approvedCount": "{{count}} approved",
         "suspended": "suspended"
       },
       "approve": "Approve",
       "reject": "Reject",
-      "approvedToast": "{name} approved",
-      "rejectedToast": "{name} rejected",
+      "approvedToast": "{{name}} approved",
+      "rejectedToast": "{{name}} rejected",
       "approveFailed": "Approve failed",
       "rejectFailed": "Reject failed",
       "failedToLoad": "Failed to load requests",
       "rejectModal": {
         "title": "Reject Request",
-        "description": "Reject {name}'s join request",
+        "description": "Reject {{name}}'s join request",
         "reasonLabel": "Reason",
         "reasonOptional": "(optional)",
         "reasonPlaceholder": "Explain why the request is being rejected…",
@@ -1704,6 +1753,14 @@
     "finance": {
       "title": "Financial Dashboard",
       "description": "Unified transactions, payout settlement, and payout audit history.",
+      "stats": {
+        "totalVolume": "Total Volume",
+        "settled": "Settled",
+        "unpaid": "Unpaid"
+      },
+      "actions": {
+        "markAsPaid": "Mark as Paid"
+      },
       "summary": {
         "totalVolume": "Total Volume",
         "settled": "Settled",
@@ -1737,7 +1794,7 @@
         "noAction": "No action",
         "noTransactions": "No transactions found for the selected filters."
       },
-      "payoutHistory": {
+      "payouts": {
         "title": "Payout History",
         "receiver": "Receiver",
         "amount": "Amount",
@@ -1753,24 +1810,15 @@
         "deleteFailed": "Failed to delete payout history",
         "editSuccess": "Payout history updated successfully",
         "editFailed": "Failed to update payout history",
-        "invalidId": "Invalid payout id"
-      },
-      "confirmModal": {
-        "title": "Confirm Payout Settlement",
-        "description": "You are settling {source} for {amount}.",
-        "noteLabel": "Optional note",
+        "invalidId": "Invalid payout id",
+        "confirmTitle": "Confirm Payout Settlement",
+        "confirmDescription": "You are settling {{source}} for {{amount}}.",
+        "optionalNote": "Optional note",
         "notePlaceholder": "Settlement note (optional)",
-        "confirm": "Confirm",
-        "processing": "Processing...",
-        "failed": "Failed to mark payout"
-      },
-      "editModal": {
-        "title": "Edit Payout History",
+        "editTitle": "Edit Payout History",
         "statusLabel": "Status",
         "completed": "Completed",
-        "pending": "Pending",
-        "noteLabel": "Note",
-        "notePlaceholder": "Edit note"
+        "pending": "Pending"
       }
     },
     "subscriptions": {
@@ -1797,30 +1845,30 @@
       "failedToLoad": "Failed to load subscriptions",
       "actionFailed": "Action failed",
       "toast": {
-        "switched": "{name} switched to {plan}.",
-        "cancelled": "{name} subscription cancelled."
+        "switched": "{{name}} switched to {{plan}}.",
+        "cancelled": "{{name}} subscription cancelled."
       }
     },
     "monitoring": {
       "title": "Platform Monitoring",
       "description": "Server health, database status, and incidents.",
-      "lastRefresh": "Last refresh: {time}",
+      "lastRefresh": "Last Refresh: {{time}}",
       "degradedAlert": {
         "title": "Platform degraded",
         "message": "one or more services are reporting issues. Consider creating an incident."
       },
       "health": {
-        "overall": "Overall",
+        "overall": "Overall Health",
         "mongodb": "MongoDB",
         "redis": "Redis",
         "apiProcess": "API Process",
-        "uptime": "Uptime",
-        "latency": "Latency",
+        "uptime": "Uptime: {{uptime}}",
+        "latency": "Latency: {{ms}}ms",
         "notConfigured": "Not configured"
       },
       "incidents": {
         "title": "Recent Incidents",
-        "count": "{count} incidents",
+        "count": "{{count}} incidents",
         "noIncidents": "No incidents recorded."
       },
       "createIncident": {
@@ -1838,6 +1886,15 @@
         "create": "Create Incident",
         "creating": "Creating…",
         "failed": "Failed to create incident"
+      },
+      "kpi": {
+        "activeVisitors": "Active Visitors",
+        "activeStands": "Active Stands",
+        "ongoingMeetings": "Ongoing Meetings",
+        "messagesPerMin": "Messages / Min"
+      },
+      "charts": {
+        "userDistribution": "User Distribution"
       },
       "failedToLoad": "Failed to load monitoring data"
     },
@@ -1862,7 +1919,7 @@
       },
       "table": {
         "title": "Log Entries",
-        "entriesCount": "{count} entries",
+        "entriesCount": "{{count}} entries",
         "timestamp": "Timestamp",
         "action": "Action",
         "entity": "Entity",
@@ -1886,7 +1943,7 @@
       },
       "list": {
         "title": "Incidents",
-        "total": "{count} total",
+        "total": "{{count}} total",
         "noIncidents": "No incidents found."
       },
       "create": {
@@ -1962,25 +2019,25 @@
       },
       "confirm": {
         "startTitle": "Start Session",
-        "startMessage": "Start session \"{name}\" now? Viewers will be notified.",
+        "startMessage": "Start session \"{{name}}\" now? Viewers will be notified.",
         "startLabel": "Start Now",
         "endTitle": "End Session",
-        "endMessage": "End session \"{name}\" now? This cannot be undone.",
+        "endMessage": "End session \"{{name}}\" now? This cannot be undone.",
         "endLabel": "End Now"
       },
       "toast": {
-        "startSuccess": "Session \"{name}\" started",
-        "endSuccess": "Session \"{name}\" ended",
+        "startSuccess": "Session \"{{name}}\" started",
+        "endSuccess": "Session \"{{name}}\" ended",
         "startFailed": "Failed to start session",
         "endFailed": "Failed to end session",
-        "syncSuccess": "{count} session(s) imported from schedule",
+        "syncSuccess": "{{count}} session(s) imported from schedule",
         "syncFailed": "No schedule found for this event. Please add conference slots in the event schedule builder first."
       },
       "noSessions": "No sessions yet."
     },
     "organizerReport": {
       "title": "Organizer Report",
-      "description": "Business intelligence & event performance · Updated {time}",
+      "description": "Business intelligence & event performance · Updated {{time}}",
       "keyMetrics": "Key Metrics",
       "kpi": {
         "totalVisitors": "Total Visitors",
@@ -2034,7 +2091,7 @@
       "backToEvent": "Back to Event",
       "eventFallback": "Event",
       "live": "LIVE",
-      "updated": "Updated {time}",
+      "updated": "Updated {{time}}",
       "kpis": {
         "activeUsers": "Active Users",
         "messagesPerMin": "Messages / Min",
@@ -2051,13 +2108,13 @@
         "noActiveUsers": "No active users"
       },
       "activeUsers": {
-        "title": "Active Users ({count})",
+        "title": "Active Users ({{count}})",
         "online": "Online",
         "noUsers": "No active users",
-        "since": "Since {time}"
+        "since": "Since {{time}}"
       },
       "safetyFlags": {
-        "title": "Safety Flags ({count} recent)",
+        "title": "Safety Flags ({{count}} recent)",
         "attention": "Attention",
         "allClear": "No open flags — all clear",
         "highPriority": "High priority",
@@ -2066,6 +2123,19 @@
       "error": {
         "failedToFetch": "Failed to fetch metrics",
         "back": "Back"
+      }
+    },
+    "reports": {
+      "description": "Business intelligence & event performance",
+      "sections": {
+        "keyMetrics": "Key Metrics",
+        "revenuePerformance": "Revenue Performance"
+      },
+      "kpi": {
+        "totalVisitors": "Total Visitors"
+      },
+      "charts": {
+        "leadGenPerformance": "Lead Generation Performance"
       }
     }
   },
@@ -2510,17 +2580,22 @@
   "enterprise": {
     "dashboard": {
       "workspaceLabel": "Enterprise Workspace",
+      "welcomeBack": "Welcome back,",
       "welcome": "Welcome back, {name}",
-      "summary": "You have {count} active stand(s), {count} catalog items, and {count} pending request(s) awaiting your attention.",
+      "fallbackOrgName": "Your Enterprise",
+      "summary": "You have {{count}} items awaiting your attention.",
+      "stat": {
+        "viewDetails": "View details"
+      },
       "pills": {
-        "live": "{count} Live",
-        "upcoming": "{count} Upcoming"
+        "live": "Live",
+        "upcoming": "Upcoming"
       },
       "kpi": {
         "catalogItems": "Catalog Items",
         "catalogSub": "{products} products · {services} services",
         "activeStands": "Active Stands",
-        "activeStandsSub": "across {count} event(s)",
+        "activeStandsSub": "across {{count}} event(s)",
         "pendingRequests": "Pending Requests",
         "pendingRequestsSub": "{count} total inquiries",
         "totalInquiries": "Total Inquiries",
@@ -2567,13 +2642,13 @@
         }
       },
       "requestsAwaiting": {
-        "title": "{count} Request(s) Awaiting Response",
+        "title": "{{count}} Request(s) Awaiting Response",
         "subtitle": "Visitors are enquiring about your products. Respond promptly to convert leads.",
         "action": "Handle now"
       },
       "allCaughtUp": {
         "title": "All caught up!",
-        "subtitle": "{count} inquir(ies/y) handled. Great work."
+        "subtitle": "{{count}} inquir(ies/y) handled. Great work."
       },
       "catalogHealth": {
         "title": "Catalog Health",
@@ -2584,7 +2659,91 @@
         "inquiries": "Inquiries"
       }
     },
+    "profile": {
+      "updateCoverPhoto": "Update Cover Photo",
+      "accountVerified": "Account Verified",
+      "primaryContact": "Primary Contact",
+      "accountEmail": "Account Email",
+      "registeredEntity": "Registered Entity",
+      "baseLocation": "Base Location",
+      "sector": "Sector",
+      "global": "Global",
+      "memberSince": "Member since {{year}}",
+      "completionStatus": {
+        "title": "Completion Status",
+        "description": "Complete your profile to increase your visibility in virtual exhibitions."
+      },
+      "aboutCompany": "About Company",
+      "companyName": "Company Name",
+      "industry": "Industry",
+      "country": "Country",
+      "city": "City",
+      "companySize": "Company Size",
+      "professionalEmail": "Professional Email",
+      "companyBio": "Company Bio",
+      "displayedOnBooth": "Displayed on your booth",
+      "companyBioPlaceholder": "Tell visitors about your company value proposition...",
+      "category": {
+        "label": "Category",
+        "selectPlaceholder": "Select a category"
+      },
+      "businessTags": "Business Tags",
+      "accountTimezone": "Account Timezone",
+      "accountTimezoneHelp": "Used as your personal display timezone across the platform.",
+      "contactPresence": "Contact & Presence",
+      "publicBusinessEmail": "Public Business Email",
+      "phoneNumber": "Phone Number",
+      "corporateWebsite": "Corporate Website",
+      "linkedinProfile": "LinkedIn Profile",
+      "saveAllChanges": "Save All Changes",
+      "updateLogo": "Update Logo",
+      "placeholders": {
+        "companyName": "Acme Corporation",
+        "industry": "Technology",
+        "country": "Morocco",
+        "city": "Casablanca",
+        "companySize": "51-200",
+        "professionalEmail": "business@acme.com",
+        "businessTags": "AI, Blockchain, SaaS, Green Energy (comma separated)",
+        "contactEmail": "contact@acme.com",
+        "contactPhone": "+212 600-000000",
+        "website": "https://acme.com",
+        "linkedin": "https://linkedin.com/company/acme"
+      },
+      "logoAlt": "Logo",
+      "categories": {
+        "technology": "Technology",
+        "healthcare": "Healthcare",
+        "finance": "Finance",
+        "education": "Education",
+        "manufacturing": "Manufacturing",
+        "retail": "Retail",
+        "logistics": "Logistics",
+        "energy": "Energy",
+        "telecommunications": "Telecommunications",
+        "consulting": "Consulting",
+        "mediaMarketing": "Media & Marketing",
+        "tourismHospitality": "Tourism & Hospitality",
+        "governmentPublicServices": "Government & Public Services",
+        "nonProfit": "Non-Profit",
+        "other": "Other"
+      },
+      "messages": {
+        "logoUploaded": "Logo uploaded!",
+        "bannerUploaded": "Banner uploaded!",
+        "uploadFailed": "Failed to upload file.",
+        "profileUpdated": "Profile updated successfully!",
+        "profileUpdateFailed": "Failed to update profile."
+      }
+    },
     "events": {
+      "notifications": {
+        "paymentSuccess": "Stand Fee Payment Successful!",
+        "paymentSuccessMessage": "Your payment has been confirmed. Your participation is approved and you can access your stand now.",
+        "paymentCancelled": "Payment Cancelled",
+        "paymentCancelledMessage": "Stand fee payment was cancelled. You can try again from the event details."
+      },
+      "browseTitle": "Browse & Manage Events",
       "title": "Browse & Manage Events",
       "subtitle": "Discover exhibitions, join as an exhibitor, and manage your stand.",
       "searchPlaceholder": "Search events…",
@@ -2604,16 +2763,32 @@
         "awaitingApproval": "Awaiting Approval",
         "standApproved": "Stand Approved",
         "guestApproved": "Guest Approved",
-        "standRejected": "Stand Rejected"
+        "standRejected": "Stand Rejected",
+        "live": "Live",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "notRegistered": "Not registered",
+        "fullyBooked": "Fully Booked",
+        "rejected": "Rejected"
       },
       "actions": {
         "requestToJoin": "Request to Join",
+        "joinEvent": "Join Event",
+        "confirm": "Confirm",
+        "confirmFreeStand": "Confirm Free Stand",
         "configureStand": "Configure Stand",
         "manage": "Manage",
+        "manageEvent": "Manage Event",
+        "details": "Details",
+        "close": "Close",
         "viewAnalytics": "View Analytics",
+        "payFee": "Pay Stand Fee",
         "payNow": "Pay Now",
         "viewDetails": "View Details",
-        "downloadReceipt": "Download Receipt"
+        "downloadReceipt": "Download Receipt",
+        "receipt": "Receipt",
+        "waitingForAdminApproval": "Waiting for Admin Approval"
       },
       "detail": {
         "liveNow": "Live Now",
@@ -2625,13 +2800,10 @@
         "noSlots": "No slots defined for this day.",
         "activityFallback": "Activity",
         "overnight": "Overnight",
-        "organizer": "Organizer",
         "category": "Category",
         "date": "Date",
-        "location": "Location",
         "enterprises": "Enterprises",
         "standFee": "Stand Fee",
-        "free": "Free",
         "description": "Description",
         "participationStatus": "Participation Status",
         "payment": {
@@ -2655,13 +2827,34 @@
         "eventEnds": "Event Ends",
         "past": "Past",
         "nextSlot": "Next slot: {time}",
-        "countdown": "{time}"
+        "countdown": "{time}",
+        "organizer": "Organizer",
+        "location": "Location",
+        "enterpriseSlots": "Enterprise Slots",
+        "standsLeft": "{{left}} of {{total}} left",
+        "standsTotal": "{{total}} stands",
+        "free": "Free",
+        "rejectionReason": "Rejection Reason",
+        "liveSlot": "Live slot: {{slot}}"
       },
       "modal": {
         "configureStand": "Configure Stand",
         "manageEvent": "Manage Event",
         "viewAnalytics": "View Analytics",
         "receiptError": "Could not generate receipt."
+      },
+      "filters": {
+        "all": "All Events",
+        "live": "Live Now",
+        "inProgress": "In Progress",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "mine": "My Events"
+      },
+      "banner": {
+        "liveSessionEndedTitle": "Live Session Ended",
+        "liveSessionEndedDescription": "You were moved out of the live management room because this event timeline has ended.",
+        "browseDescription": "Browse available events and manage your participation."
       }
     },
     "stand": {
@@ -2702,7 +2895,8 @@
           "upload": "Upload Logo",
           "current": "Current Logo",
           "remove": "Remove Logo"
-        }
+        },
+        "presenterName": "Presenter Name"
       },
       "products": {
         "title": "Featured Products",
@@ -2733,6 +2927,66 @@
           "placeholder": "Example: We are a leading provider of cloud analytics. Our flagship product is DataVision Pro. We serve enterprises in healthcare and finance."
         },
         "save": "Save AI Configuration"
+      },
+      "messages": {
+        "brandingSaved": "Branding saved!",
+        "logoChooseError": "Please choose an image file for the logo.",
+        "logoUploadError": "Upload completed but no logo URL was returned.",
+        "logoUploadSuccess": "Logo uploaded. Click Save Branding to apply it to this stand.",
+        "logoUploadFailed": "Failed to upload logo image.",
+        "productsLinked": "Products linked!",
+        "resourceTitleRequired": "Please provide a title for the resource.",
+        "resourceUrlRequired": "Please provide a valid URL for this resource tape.",
+        "resourceFileRequired": "Please select a file to upload.",
+        "standConfigNotLoaded": "Stand configuration not fully loaded yet.",
+        "aiActivationSuccess": "AI assistant enabled! Indexed {indexed_documents} document(s).",
+        "aiActivationFailed": "RAG activation failed",
+        "loadingStandConfig": "Loading stand configuration...",
+        "accessDenied": "Access Denied",
+        "accessDeniedReason": "Your join request must be approved and your stand fee must be paid before configuring a stand."
+      },
+      "labels": {
+        "configureYourStand": "Configure Your Stand",
+        "manageEvent": "Manage Event",
+        "analytics": "Analytics",
+        "allEvents": "All Events",
+        "companyBioPlaceholder": "What will visitors find at your stand?",
+        "logoUrl": "Logo URL",
+        "logoUrlPlaceholder": "https://...",
+        "uploadLogoImage": "Upload Logo Image",
+        "uploadLogoHelper": "Use URL or upload a file.",
+        "standBackgroundPresets": "Stand Background Presets",
+        "saveBranding": "Save Branding",
+        "selectProductsDescription": "Select which products from your catalog to display on this stand.",
+        "noProductsInCatalog": "No products in your catalog yet.",
+        "addProductsFirst": "Add products first.",
+        "productTypeService": "Service",
+        "productTypeProduct": "Product",
+        "productStatusAvailable": "available",
+        "productOutOfStock": "Out of stock — cannot be selected",
+        "quantityLabel": "Quantity",
+        "quantityMaxLabel": "Max",
+        "saveSelectionButton": "Save Selection ({count})",
+        "addResource": "Add Resource",
+        "resourcePlaceholder": "Product Brochure",
+        "resourceTypeLabel": "Type",
+        "resourceTypePdf": "PDF",
+        "resourceTypeImage": "Image",
+        "resourceTypeVideo": "Video URL",
+        "resourceTypeLink": "Link",
+        "urlPlaceholder": "https://...",
+        "uploadFileLabel": "Upload File",
+        "addResourceButton": "Add Resource",
+        "noResourcesUploaded": "No resources uploaded yet.",
+        "aiAssistantHeading": "AI Assistant",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "indexedDocuments": "Indexed Documents",
+        "lastIndexed": "Last Indexed",
+        "never": "Never",
+        "aiDescription": "Enabling the AI assistant indexes all your stand resources into the vector database. Visitors can then ask questions and receive answers based on your uploaded documents.",
+        "reindexRefreshAi": "Re-index & Refresh AI",
+        "enableAiAssistant": "Enable AI Assistant"
       }
     },
     "eventManagement": {
@@ -2744,10 +2998,62 @@
         "conferences": "Conferences",
         "partners": "Partners"
       },
+      "gating": {
+        "pending": {
+          "title": "Approval Pending",
+          "description": "Your enterprise participation is currently being reviewed by the exhibition organizers. You will have full access to this management hub once your stand is approved."
+        },
+        "notStarted": {
+          "title": "Event Not Started Yet",
+          "description": "This event hasn't opened yet. All features — meetings, chats, conferences, and partner interactions — will be available once the event goes live."
+        },
+        "betweenSlots": {
+          "title": "Event In Progress",
+          "description": "The event is currently between schedule slots. Management features are temporarily locked and reopen automatically at the next live slot."
+        },
+        "timelineMissing": {
+          "title": "Timeline Not Published Yet",
+          "description": "This event does not have published schedule slots yet. Meetings, conferences, and live interactions unlock only during live slots."
+        },
+        "ended": {
+          "title": "Event Has Ended",
+          "description": "This exhibition has concluded. Meeting rooms, live chats, and conference sessions are no longer available. Thank you for your participation.",
+          "redirecting": "Redirecting you back to your enterprise events dashboard..."
+        },
+        "rejected": {
+          "title": "Event Rejected",
+          "description": "This event was not approved by the platform administrators. Access to all event features is unavailable.",
+          "reasonLabel": "Reason:"
+        },
+        "notReady": {
+          "title": "Event Not Available",
+          "description": "This event is currently being prepared. All interactive features will become available once the event is fully set up and goes live.",
+          "states": {
+            "pendingApproval": "Pending platform approval",
+            "waitingForPayment": "Waiting for organizer payment",
+            "paymentVerification": "Payment verification in progress",
+            "inProgress": "Event setup in progress"
+          }
+        }
+      },
+      "actions": {
+        "backToEvents": "Back to Events",
+        "refreshStatus": "Refresh Status",
+        "refresh": "Refresh",
+        "viewAnalytics": "View Analytics",
+        "analytics": "Analytics",
+        "requests": "Requests",
+        "config": "Config",
+        "sendMessage": "Send Message",
+        "requestMeeting": "Request Meeting"
+      },
+      "eventFallback": "Event",
       "chats": {
         "empty": "No active chats.",
         "selectConversation": "Select a conversation",
-        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation."
+        "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation.",
+        "emptyB2B": "No enterprise chats yet. Start one from the Partners tab.",
+        "emptyVisitors": "No visitor chats for this event yet."
       },
       "meetings": {
         "title": "Meeting Requests",
@@ -2756,23 +3062,107 @@
         "approve": "Approve",
         "decline": "Decline",
         "ended": "Meeting ended",
-        "approvedStarts": "Approved · starts {time}",
-        "join": "Join"
+        "approvedStarts": "Approved · starts {{time}}",
+        "join": "Join",
+        "filters": {
+          "all": "All",
+          "liveSoon": "Live & Soon",
+          "upcoming": "Upcoming",
+          "past": "Past"
+        },
+        "awaitingResponse": "{{count}} awaiting your response",
+        "visitorFallback": "Visitor",
+        "partnerFallback": "Partner",
+        "toPartner": "To: {{name}}",
+        "received": "Received",
+        "sent": "Sent",
+        "generalDiscussion": "General Discussion",
+        "individual": "Individual",
+        "awaitingPartnerApproval": "Awaiting partner approval",
+        "timeSlotPassed": "Time slot has passed",
+        "joinLive": "Join Live",
+        "joinNow": "Join Now",
+        "availableIn": "Available {{slot}}",
+        "meetingWindowPassed": "Meeting window passed",
+        "emptyStates": {
+          "all": "No Meetings Scheduled",
+          "live": "No Live Meetings",
+          "upcoming": "No Upcoming Meetings",
+          "past": "No Past Meetings",
+          "subtitleAll": "When visitors or partners request meetings, they will appear here.",
+          "subtitleFiltered": "Try switching to a different filter."
+        }
       },
       "conferences": {
         "title": "Assigned Conferences",
         "empty": "No conference sessions assigned.",
         "subtitle": "When organizers assign you to a conference, it will appear here.",
         "goLive": "Go Live",
-        "enterStudio": "Enter Studio"
+        "enterStudio": "Enter Studio",
+        "eventConferencesTitle": "Event Conferences",
+        "eventConferencesSubtitle": "View all scheduled live sessions. You can host your assigned talks or join others.",
+        "hostingBadge": "You are Hosting",
+        "liveBadge": "Live",
+        "ended": "Ended",
+        "attendeesCount": "{{count}} attendees",
+        "conferenceEnded": "Conference Ended",
+        "joinConference": "Join Conference",
+        "notStartedYet": "Not Started Yet",
+        "speakersCanGoLive": "Speakers can go live up to 15 mins before scheduled time.",
+        "noConferences": "No Conferences",
+        "noConferencesSubtitle": "There are no conferences scheduled for this event yet.",
+        "live": {
+          "loading": "Loading...",
+          "setupBroadcast": "Setting up your broadcast...",
+          "checkingTimeline": "Checking event timeline...",
+          "timelineNotPublished": "Timeline is not published yet. Speaker studio opens only during live schedule slots.",
+          "timelineEnded": "Event timeline has ended. Broadcast access is closed.",
+          "loadingDetails": "Loading conference details...",
+          "startingRoom": "Starting conference room...",
+          "requestingToken": "Requesting live access token...",
+          "failedConnect": "Failed to connect",
+          "startFailed": "Could not start broadcast",
+          "startFailedHint": "Please check your connection and make sure you are the assigned speaker for this conference. Try again in a moment.",
+          "retrySetup": "Retry Setup",
+          "backToEvent": "Back to Event"
+        }
       },
       "partners": {
         "title": "Partner Enterprises",
         "empty": "No partner enterprises yet.",
-        "subtitle": "Connect with other enterprises participating in this event."
+        "subtitle": "Connect with other enterprises participating in this event.",
+        "approvedParticipant": "Approved Participant",
+        "details": "Details",
+        "meeting": "Meeting",
+        "emptyTitle": "No Partners Available",
+        "emptySubtitle": "Other enterprises participating in this event will appear here once approved.",
+        "partnerDetails": "Partner Details",
+        "approved": "Approved",
+        "pending": "Pending",
+        "total": "Total",
+        "b2bEventPartner": "B2B Event Partner",
+        "meetingStatus": "Meeting Status",
+        "currentEvent": "Current Event",
+        "analyzingMeetings": "Analyzing meetings...",
+        "meetingsWithPartner": "Meetings with this Partner",
+        "youSent": "You sent",
+        "theySent": "They sent",
+        "awaitingTheirApproval": "Awaiting their approval",
+        "approvedStarts": "Approved · starts {{time}}",
+        "companyOverview": "Company Overview",
+        "overviewFallback": "This enterprise is participating in the event and is available for direct partnership discussions and meeting requests.",
+        "contactLinks": "Contact & Links",
+        "emailNotShared": "Email not shared",
+        "phoneNotShared": "Phone not shared",
+        "locationInfo": "Location Info",
+        "primaryOffice": "Primary Office",
+        "globalHeadquarters": "Global Headquarters",
+        "eventAvailability": "Event Availability",
+        "eventAvailabilitySubtitle": "Available for B2B networking during all event days."
       }
     },
     "eventRequests": {
+      "productsTitle": "Products & Services Requests",
       "title": "Product & Service Requests",
       "eventLabel": "{eventTitle}",
       "tabs": {
@@ -2790,6 +3180,7 @@
           "label": "Filter by Event",
           "all": "All Events"
         },
+        "orderStatus": "Order status",
         "orderFulfillment": "Order Fulfillment",
         "allStatuses": "All Statuses",
         "requestStatus": "Request Status",
@@ -2837,6 +3228,17 @@
       "refineView": "Refine View"
     },
     "eventAnalytics": {
+      "header": {
+        "subtitle": "Performance insights for this specific event."
+      },
+      "metrics": {
+        "impressions": "Impressions",
+        "impressionsSub": "Total Views",
+        "engagement": "Engagement",
+        "engagementSub": "Interactions",
+        "uniqueLeads": "Unique Leads",
+        "uniqueLeadsSub": "Visitors"
+      },
       "title": "Stand Analytics",
       "eventLabel": "{eventTitle}",
       "backToManagement": "Back to Management",
@@ -2854,6 +3256,21 @@
       "peakDay": "Peak Day",
       "dailyAvg": "Daily Avg",
       "views": "views",
+      "actionsLabel": "Actions",
+      "interactionStatus": "Interaction Status",
+      "pulseTitle": "Real-time Visitor Pulse",
+      "interactionSummary": "Total interactions captured at your stand during this event.",
+      "recentActivityEmpty": "No recent activity",
+      "visitTooltip": "{{hour}}: {{count}} visits",
+      "pending": {
+        "title": "Analytics Pending",
+        "subtitle": "Your stand analytics will be available once your participation is approved by the organizers."
+      },
+      "actions": {
+        "backToEvents": "Back to Events",
+        "refreshStatus": "Refresh Status",
+        "manageHub": "Manage Hub"
+      },
       "noStand": "No approved stand for this event yet.",
       "noStandHint": "Configure your stand to unlock analytics.",
       "loading": "Loading analytics..."
@@ -2880,19 +3297,25 @@
       "sessionEnded": "Session ended."
     },
     "paymentSuccess": {
+      "standApproved": "Stand Approved!",
       "title": "Payment Successful",
       "subtitle": "Your stand fee has been processed.",
       "paymentLabel": "Stand Fee Payment",
       "paymentStatus": "Payment Status: Confirmed",
       "amountPaid": "Amount Paid",
       "amount": "{amount} {currency}",
+      "amountPaidLabel": "Stand Fee: {amount} {currency}",
       "paymentReference": "Payment Reference",
       "transactionDate": "Transaction Date",
       "viewReceipt": "View Receipt",
       "generatingPdf": "Generating PDF…",
       "backToEvents": "Back to Events",
       "processing": "Your payment is being processed.",
-      "confirmed": "Your payment has been confirmed. Access will be granted once the organizer activates the event."
+      "confirmed": "Your payment has been confirmed. Access will be granted once the organizer activates the event.",
+      "successMessage": "Your stand fee has been paid successfully. Your participation is approved.",
+      "statusPaid": "Paid",
+      "eventLoadingHint": "Event details are still loading. You can download your receipt — it matches the PDF from the Enterprise Events page.",
+      "downloadReceipt": "Download receipt (PDF)"
     },
     "leads": {
       "title": "Leads & Contacts",
@@ -2927,6 +3350,7 @@
       }
     },
     "productRequests": {
+      "allInquiriesTitle": "All Inquiries & Orders",
       "title": "All Inquiries & Orders",
       "subtitle": "A unified view of all visitor requests and marketplace checkouts across every event you participate in.",
       "kpi": {
@@ -3006,6 +3430,7 @@
       "subtitle": "Manage your catalog of products and services.",
       "addButton": "Add Product / Service",
       "form": {
+        "nameLabel": "Product / Service Name *",
         "addProduct": "Add New Product",
         "addService": "Add New Service",
         "editProduct": "Edit Product",
@@ -3038,7 +3463,7 @@
         },
         "image": {
           "label": "Image",
-          "uploadHint": "Click to upload a product image (JPG, PNG, WebP)",
+          "uploadHint": "Click to upload or drag and drop",
           "selected": "Image selected — click to replace",
           "current": "Current"
         },
@@ -3063,13 +3488,19 @@
       "loading": "Loading catalog..."
     },
     "analytics": {
+      "header": {
+        "title": "Stand Performance"
+      },
+      "filters": {
+        "combined": "Combined Overview"
+      },
       "title": "Stand Performance",
       "subtitle": "Real-time insights across your virtual exhibition presence.",
       "standSelector": {
         "combined": "📊 Combined Overview ({count} stands)",
         "stand": "🗂 {eventTitle} — {standName}"
       },
-      "showing": "Showing: {eventTitle} · {standName}",
+      "showing": "Showing: {{eventTitle}} · {{standName}}",
       "kpi": {
         "impressions": "Impressions",
         "impressionsSub": "Total Views",
@@ -3085,7 +3516,18 @@
       "insufficientData": "Insufficient data for trend analysis",
       "peakDay": "Peak Day",
       "dailyAvg": "Daily Avg",
-      "views": "{count} views",
+      "views": "{{count}} views",
+      "actions": {
+        "refresh": "Refresh"
+      },
+      "labels": {
+        "today": "Today",
+        "thirtyDaysAgo": "30d ago"
+      },
+      "defaults": {
+        "unnamedStand": "Unnamed Stand",
+        "unnamedEvent": "Unnamed Event"
+      },
       "empty": {
         "title": "No approved event participations yet",
         "subtitle": "Once your stand is approved for an event, analytics will appear here."
@@ -3093,6 +3535,14 @@
       "loading": "Loading analytics..."
     },
     "conferences": {
+      "allSessions": {
+        "title": "Speaking Sessions"
+      },
+      "card": {
+        "goLive": "Go Live",
+        "back": "Back",
+        "sessionEnded": "Session ended"
+      },
       "title": "Speaking Sessions",
       "subtitle": "Manage your webinars and live conferences across all events.",
       "live": "Live",
@@ -3106,12 +3556,15 @@
       "fetchFailed": "Failed to fetch conferences"
     },
     "communications": {
+      "meeting": {
+        "requestLabel": "Visitor Request #"
+      },
       "tabs": {
         "chats": "Chats",
-        "chatsUnread": "{unread}",
-        "chatsCount": "{count}",
+        "chatsUnread": "{{unread}}",
+        "chatsCount": "{{count}}",
         "meetings": "Meetings",
-        "meetingsPending": "{count} pending"
+        "meetingsPending": "{{count}} pending"
       },
       "searchPlaceholder": "Find conversation...",
       "chats": {
@@ -3123,8 +3576,8 @@
         "noMessages": "No messages yet"
       },
       "meetings": {
-        "requestLabel": "Visitor Request #{id}",
-        "submitted": "Submitted {date}",
+        "requestLabel": "Visitor Request #{{id}}",
+        "submitted": "Submitted {{date}}",
         "duration": "Duration: 30 min",
         "status": {
           "pending": "pending",
@@ -3137,7 +3590,7 @@
         "decline": "Decline",
         "join": "Join",
         "ended": "Meeting ended",
-        "approvedStarts": "Approved · starts {time}",
+        "approvedStarts": "Approved · starts {{time}}",
         "declined": "Declined",
         "empty": {
           "title": "No meetings scheduled",
@@ -3148,15 +3601,15 @@
     },
     "notifications": {
       "title": "Notifications",
-      "unreadCount": "{count} unread",
+      "unreadCount": "{{count}} unread",
       "allCaughtUp": "All caught up!",
       "markAllRead": "Mark all read",
       "markRead": "Mark read",
       "empty": "No notifications yet.",
       "timeLabels": {
-        "daysAgo": "{X}d ago",
-        "hoursAgo": "{X}h ago",
-        "minutesAgo": "{X}m ago",
+        "daysAgo": "{{X}}d ago",
+        "hoursAgo": "{{X}}h ago",
+        "minutesAgo": "{{X}}m ago",
         "justNow": "just now"
       },
       "types": {

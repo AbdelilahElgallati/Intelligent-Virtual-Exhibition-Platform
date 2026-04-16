@@ -46,7 +46,7 @@ function formatInTimeZone(date: Date, timeZone: string, options: Intl.DateTimeFo
 
 // ── Structured schedule renderer ─────────────────────────────────────────────
 function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone: string }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     let days: EventScheduleDay[] | null = event.schedule_days ?? null;
 
     if (!days && event.event_timeline) {
@@ -162,7 +162,7 @@ function getAdminListStatusBadge(event: OrganizerEvent, t: any): { label: string
 }
 
 function EventListStatusBadge({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const { label, cls } = getAdminListStatusBadge(event, t);
     return (
         <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>
@@ -204,7 +204,7 @@ interface EventPanelProps {
 }
 
 function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [paymentAmount, setPaymentAmount] = useState('');
     const [approveError, setApproveError] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -278,7 +278,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                             <InfoRow label={t('admin.events.detail.location')} value={event.location} />
                             <InfoRow label={t('admin.events.detail.category')} value={event.category} />
                             <InfoRow label={t('admin.events.detail.enterprises')} value={event.num_enterprises} />
-                            <InfoRow label={t('admin.events.detail.payment')} value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} MAD` : t('admin.events.detail.autoCalc')} />
+                            <InfoRow label={t('admin.events.detail.payment')} value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} ${t('admin.common.currency')}` : t('admin.events.detail.autoCalc')} />
                         </div>
                     </Section>
 
@@ -305,7 +305,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                         <Section icon={DollarSign} title={t('admin.events.detail.pricingTitle')}>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                                 {event.stand_price != null && (
-                                    <InfoRow label={t('admin.events.detail.standPrice')} value={`${event.stand_price.toFixed(2)} MAD / enterprise`} />
+                                    <InfoRow label={t('admin.events.detail.standPrice')} value={`${event.stand_price.toFixed(2)} ${t('admin.common.currency')} ${t('admin.events.pricing.perEnterprise')}`} />
                                 )}
                                 <InfoRow
                                     label={t('admin.events.detail.visitorAccess')}
@@ -535,7 +535,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminEventsPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const router = useRouter();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);

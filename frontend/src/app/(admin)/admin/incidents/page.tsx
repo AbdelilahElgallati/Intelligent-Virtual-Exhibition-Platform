@@ -134,7 +134,7 @@ function IncidentPanel({ incident, onUpdate, onClose }: {
                     {incident.description && <p className="text-sm text-zinc-600 mt-2">{incident.description}</p>}
                 </div>
 
-                {error && <p className="text-sm text-red-600">{err}</p>}
+                {err && <p className="text-sm text-red-600">{err}</p>}
 
                 {/* Notes */}
                 <div>

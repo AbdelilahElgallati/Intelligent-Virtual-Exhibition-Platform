@@ -55,7 +55,7 @@ function getPayoutId(payout: PayoutRecord): string {
 }
 
 export default function AdminFinancePage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -220,15 +220,15 @@ export default function AdminFinancePage() {
             <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                     <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.stats.totalVolume')}</p>
-                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.total, 'MAD')}</p>
+                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.total, t('admin.common.currency'))}</p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                     <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.stats.settled')}</p>
-                    <p className="mt-2 text-xl font-semibold text-green-700">{formatAmount(summary.settled, 'MAD')}</p>
+                    <p className="mt-2 text-xl font-semibold text-green-700">{formatAmount(summary.settled, t('admin.common.currency'))}</p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
                     <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.stats.unpaid')}</p>
-                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.unpaid, 'MAD')}</p>
+                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.unpaid, t('admin.common.currency'))}</p>
                 </div>
             </div>
 
@@ -373,7 +373,7 @@ export default function AdminFinancePage() {
                                             <div className="font-mono text-xs">{p.receiver_id}</div>
                                             <div className="text-xs text-zinc-500">{p.receiver_name || '-'}</div>
                                         </td>
-                                        <td className="px-4 py-3">{formatAmount(p.amount, 'MAD')}</td>
+                                        <td className="px-4 py-3">{formatAmount(p.amount, t('admin.common.currency'))}</td>
                                         <td className="px-4 py-3">
                                             <div className="font-mono text-xs">{p.processed_by}</div>
                                             <div className="text-xs text-zinc-500">{p.processed_by_name || '-'}</div>

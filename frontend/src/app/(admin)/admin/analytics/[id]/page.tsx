@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import {
     BarChart3, ArrowLeft, Eye, Store, MessageSquare, Users, RefreshCw,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ function MetricCard({ label, value, icon: Icon, accent }: {
 }
 
 export default function EventAnalyticsPage() {
+    const { t } = useTranslation('admin');
     const { id } = useParams<{ id: string }>();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ export default function EventAnalyticsPage() {
                         <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
                             <BarChart3 className="w-4 h-4 text-indigo-600" />
                         </div>
-                        <h1 className="text-xl font-bold text-zinc-900">Event Deep Metrics</h1>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.analytics.eventDetail.title')}</h1>
                     </div>
                 </div>
                 <button
@@ -113,7 +115,7 @@ export default function EventAnalyticsPage() {
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">14-Day Activity Trend</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t('admin.analytics.charts.fourteenDayTrend')}</h2>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -126,7 +128,7 @@ export default function EventAnalyticsPage() {
                 </div>
 
                 <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">Interaction Breakdown</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t('admin.analytics.charts.interactionBreakdown')}</h2>
                     <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                             <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}

@@ -52,7 +52,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 // ── Admin Creation Modal ──────────────────────────────────────────────────
 function CreateAdminModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState({
@@ -100,7 +100,7 @@ function CreateAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                             <label className="text-[11px] font-semibold text-zinc-500 uppercase px-1">{t('admin.users.fullName')}</label>
                             <input
                                 required
-                                type="text" placeholder="John Doe"
+                                type="text" placeholder={t('admin.users.modals.create.placeholders.fullName')}
                                 value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}
                                 className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
                             />
@@ -110,7 +110,7 @@ function CreateAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                             <label className="text-[11px] font-semibold text-zinc-500 uppercase px-1">{t('admin.users.emailAddress')}</label>
                             <input
                                 required
-                                type="email" placeholder="admin@ivep.platform"
+                                type="email" placeholder={t('admin.users.modals.create.placeholders.email')}
                                 value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                                 className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
                             />
@@ -121,7 +121,7 @@ function CreateAdminModal({ onClose, onSuccess }: { onClose: () => void; onSucce
                                 <label className="text-[11px] font-semibold text-zinc-500 uppercase px-1">{t('admin.users.username')}</label>
                                 <input
                                     required
-                                    type="text" placeholder="jdoe_admin"
+                                    type="text" placeholder={t('admin.users.modals.create.placeholders.username')}
                                     value={form.username} onChange={e => setForm({ ...form, username: e.target.value })}
                                     className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
                                 />
@@ -166,7 +166,7 @@ function UserPanel({
     onActivate: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
@@ -278,7 +278,7 @@ function UserPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -416,7 +416,7 @@ export default function AdminUsersPage() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 transition-colors">
-                                                {(u.full_name || u.email || 'U').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 1)}
+                                                {(u.full_name || u.email || t('admin.users.initialsFallback')).split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 1)}
                                             </div>
                                             <div>
                                                 <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{u.full_name || t('admin.users.anonymousUser')}</div>

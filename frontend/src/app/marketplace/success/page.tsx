@@ -1,21 +1,8 @@
 'use client';
 
-<<<<<<< HEAD
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { CheckCircle2, Package, Loader2 } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
-import { ENDPOINTS } from '@/lib/api/endpoints';
-import type { MarketplaceOrder } from '@/types/marketplace';
-import { useSearchParams } from 'next/navigation';
-
-export default function MarketplaceSuccessPage() {
-    const searchParams = useSearchParams();
-    const [orders, setOrders] = useState<MarketplaceOrder[]>([]);
-=======
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Package, Loader2, FileText, Briefcase } from 'lucide-react';
+import { CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import type { UnifiedMarketplaceOrder } from '@/types/marketplace';
@@ -43,20 +30,11 @@ function MarketplaceSuccessContent() {
     const standIdFromUrl = searchParams.get('stand_id');
     const eventIdFromUrl = searchParams.get('event_id');
     const [orders, setOrders] = useState<UnifiedMarketplaceOrder[]>([]);
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         (async () => {
             try {
-<<<<<<< HEAD
-                const data = await apiClient.get<MarketplaceOrder[]>(ENDPOINTS.MARKETPLACE.MY_ORDERS);
-                // Show most recent paid orders first
-                const sorted = data
-                    .filter((o) => o.status === 'paid')
-                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                setOrders(sorted.slice(0, 5));
-=======
                 let data: UnifiedMarketplaceOrder[] = [];
                 if (sessionId) {
                     data = await apiClient.get<UnifiedMarketplaceOrder[]>(
@@ -77,19 +55,12 @@ function MarketplaceSuccessContent() {
                         .slice(0, 3);
                 }
                 setOrders(data);
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
             } catch {
                 /* ignore */
             } finally {
                 setLoading(false);
             }
         })();
-<<<<<<< HEAD
-    }, []);
-
-    const fmt = (amount: number) =>
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-=======
     }, [sessionId, groupIdFromUrl, orderIdFromUrl]);
 
     const fmt = (amount: number, currency: string = 'MAD') =>
@@ -201,7 +172,6 @@ function MarketplaceSuccessContent() {
             </>
         );
     };
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white flex items-center justify-center p-4">
@@ -215,42 +185,6 @@ function MarketplaceSuccessContent() {
                     Thank you for your purchase. Your order has been confirmed.
                 </p>
 
-<<<<<<< HEAD
-                {loading ? (
-                    <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                    </div>
-                ) : orders.length > 0 ? (
-                    <div className="space-y-3 mb-6 text-left">
-                        {orders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
-                            >
-                                <Package className="w-5 h-5 text-indigo-500 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-gray-800 truncate">
-                                        {order.product_name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        Qty: {order.quantity} · {fmt(order.total_amount)}
-                                    </p>
-                                </div>
-                                <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold uppercase">
-                                    {order.status}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                ) : null}
-
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link
-                        href="/dashboard"
-                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                    >
-                        Go to Dashboard
-=======
                 {renderOrderSummary()}
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -259,7 +193,6 @@ function MarketplaceSuccessContent() {
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
                     >
                         Go Back to Stand
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
                     </Link>
                     <Link
                         href="/events"
@@ -272,8 +205,6 @@ function MarketplaceSuccessContent() {
         </div>
     );
 }
-<<<<<<< HEAD
-=======
 
 export default function MarketplaceSuccessPage() {
     return (
@@ -282,4 +213,3 @@ export default function MarketplaceSuccessPage() {
         </Suspense>
     );
 }
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750

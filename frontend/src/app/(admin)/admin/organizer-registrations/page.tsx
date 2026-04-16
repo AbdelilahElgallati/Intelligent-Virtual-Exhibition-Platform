@@ -28,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TABS = ['ALL', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 
 export default function OrganizerRegistrationsPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [registrations, setRegistrations] = useState<OrgReg[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -129,11 +129,11 @@ export default function OrganizerRegistrationsPage() {
 
                                     {/* Org Details */}
                                     <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.organization')} </span><span className="text-zinc-600">{reg.org_name || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.type')} </span><span className="text-zinc-600">{reg.org_type || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.location')} </span><span className="text-zinc-600">{[reg.org_city, reg.org_country].filter(Boolean).join(', ') || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.phone')} </span><span className="text-zinc-600">{reg.org_phone || '—'}</span></div>
-                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.proEmail')} </span><span className="text-zinc-600">{reg.org_professional_email || '—'}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.organization')} </span><span className="text-zinc-600">{reg.org_name || t('admin.common.ui.emptyValue')}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.type')} </span><span className="text-zinc-600">{reg.org_type || t('admin.common.ui.emptyValue')}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.location')} </span><span className="text-zinc-600">{[reg.org_city, reg.org_country].filter(Boolean).join(', ') || t('admin.common.ui.emptyValue')}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.phone')} </span><span className="text-zinc-600">{reg.org_phone || t('admin.common.ui.emptyValue')}</span></div>
+                                        <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.proEmail')} </span><span className="text-zinc-600">{reg.org_professional_email || t('admin.common.ui.emptyValue')}</span></div>
                                         {reg.org_website && (
                                             <div><span className="font-medium text-zinc-700">{t('admin.approvals.organizer.field.website')} </span>
                                                 <a href={reg.org_website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline truncate">{reg.org_website}</a>
@@ -148,7 +148,7 @@ export default function OrganizerRegistrationsPage() {
                                         <button onClick={() => handleApprove(reg._id)}
                                             disabled={processing === reg._id}
                                             className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all">
-                                            {processing === reg._id ? '…' : t('common.actions.approve')}
+                                            {processing === reg._id ? t('admin.common.actions.processingIndicator') : t('common.actions.approve')}
                                         </button>
                                         <button onClick={() => handleReject(reg._id)}
                                             disabled={processing === reg._id}

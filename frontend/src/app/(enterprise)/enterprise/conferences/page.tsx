@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatInTZ } from '@/lib/timezone';
 import { useAuth } from '@/context/AuthContext';
 import { http } from '@/lib/http';
@@ -12,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 
 export default function EnterpriseConferencesPage() {
+    const { t } = useTranslation('enterprise');
     const { user } = useAuth();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
@@ -49,7 +51,7 @@ export default function EnterpriseConferencesPage() {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">Speaking Sessions</h1>
+                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{t('enterprise.conferences.allSessions.title')}</h1>
                     <p className="text-zinc-500 mt-1">Manage your webinars and live conferences across all events.</p>
                 </div>
             </div>

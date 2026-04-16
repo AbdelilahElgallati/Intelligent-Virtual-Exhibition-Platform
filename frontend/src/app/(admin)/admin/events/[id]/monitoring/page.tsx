@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
     Users, Building2, CalendarCheck, MessageSquare, Download, Flag,
     ArrowLeft, RefreshCw, AlertTriangle, ExternalLink, Wifi, WifiOff,
@@ -139,6 +140,7 @@ function ChartsSection({ history, metrics }: {
     history: MetricDataPoint[];
     metrics: LiveMetrics;
 }) {
+    const { t } = useTranslation('admin');
     // Role distribution for pie chart
     const roleCounts: Record<string, number> = {};
     metrics.active_users.forEach(u => {
@@ -226,7 +228,7 @@ function ChartsSection({ history, metrics }: {
                 </div>
                 <div className="flex items-center gap-2 mb-4 relative">
                     <Users className="w-4 h-4 text-amber-500" />
-                    <h3 className="text-sm font-semibold text-zinc-700">User Distribution</h3>
+                    <h3 className="text-sm font-semibold text-zinc-700">{t('admin.monitoring.charts.userDistribution')}</h3>
                 </div>
                 {!hasPieData ? (
                     <div className="flex items-center justify-center h-40 text-xs text-zinc-400">
@@ -388,6 +390,7 @@ function FlagAlertsPanel({ flags, eventId, router }: {
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function EventMonitoringPage() {
+    const { t } = useTranslation('admin');
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -536,7 +539,7 @@ export default function EventMonitoringPage() {
             {kpis ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                     <KPICard
-                        label="Active Visitors"
+                        label={t('admin.monitoring.kpi.activeVisitors')}
                         value={kpis.active_visitors}
                         icon={<Users className="w-5 h-5 text-indigo-600" />}
                         accent="bg-indigo-50 border border-indigo-100"
@@ -544,7 +547,7 @@ export default function EventMonitoringPage() {
                         border="border-zinc-200"
                     />
                     <KPICard
-                        label="Active Stands"
+                        label={t('admin.monitoring.kpi.activeStands')}
                         value={kpis.active_stands}
                         icon={<Building2 className="w-5 h-5 text-emerald-600" />}
                         accent="bg-emerald-50 border border-emerald-100"
@@ -552,7 +555,7 @@ export default function EventMonitoringPage() {
                         border="border-zinc-200"
                     />
                     <KPICard
-                        label="Ongoing Meetings"
+                        label={t('admin.monitoring.kpi.ongoingMeetings')}
                         value={kpis.ongoing_meetings}
                         icon={<CalendarCheck className="w-5 h-5 text-blue-600" />}
                         accent="bg-blue-50 border border-blue-100"
@@ -560,7 +563,7 @@ export default function EventMonitoringPage() {
                         border="border-zinc-200"
                     />
                     <KPICard
-                        label="Messages / Min"
+                        label={t('admin.monitoring.kpi.messagesPerMin')}
                         value={kpis.messages_per_minute}
                         icon={<MessageSquare className="w-5 h-5 text-violet-600" />}
                         accent="bg-violet-50 border border-violet-100"

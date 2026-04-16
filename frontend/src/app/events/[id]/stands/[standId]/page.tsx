@@ -12,7 +12,6 @@ import { ChatPanel } from '@/components/stand/ChatPanel';
 import { MeetingRequestModal } from '@/components/stand/MeetingRequestModal';
 import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { ChatShell } from '@/components/assistant/ChatShell';
-import { ProductsPanel } from '@/components/stand/ProductsPanel';
 import { favoritesService } from '@/services/favorites.service';
 import { useAuth } from '@/hooks/useAuth';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
@@ -34,15 +33,10 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-<<<<<<< HEAD
-    const [isProductsOpen, setIsProductsOpen] = useState(false);
-    const [hasProducts, setHasProducts] = useState(false);
-=======
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [hasProducts, setHasProducts] = useState(false);
     const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
     const [visitorRoomId, setVisitorRoomId] = useState<string | null>(null);
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
     const [favoriteId, setFavoriteId] = useState<string | null>(null);
     const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
     const [timelineNow, setTimelineNow] = useState<number>(Date.now());
@@ -81,35 +75,11 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     } catch { }
                 }
                 try {
-<<<<<<< HEAD
-                    await apiClient.post('/analytics/log', {
-                        type: 'stand_visit',
-                        event_id: id,
-                        stand_id: standId,
-                    });
-                } catch (e) {
-                    // ignore
-                }
-
-                // Check if stand has marketplace products
-                try {
-                    const prods = await apiClient.get<any[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(standId));
-                    setHasProducts(Array.isArray(prods) && prods.length > 0);
-                } catch {
-                    /* ignore */
-                }
-            } catch (error) {
-                console.error('Failed to fetch stand', error);
-            } finally {
-                setLoading(false);
-            }
-=======
                     const products = await apiClient.get<unknown[]>(ENDPOINTS.MARKETPLACE.PRODUCTS(resolvedStandId));
                     setHasProducts(Array.isArray(products) && products.length > 0);
                 } catch { }
                 apiClient.post('/metrics/log', { type: 'stand_visit', event_id: id, stand_id: resolvedStandId }).catch(() => {});
             } catch (error) { console.error('Failed to fetch stand', error); } finally { setLoading(false); }
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
         };
         fetchStand();
     }, [id, standId, isAuthenticated]);
@@ -223,17 +193,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             <VirtualStandLayout
                 stand={stand} themeColor={themeColor} avatarBg={avatarBg}
                 backHref={`/events/${stand.event_id || id}/live?tab=stands`}
-<<<<<<< HEAD
-                onChatOpen={() => setIsChatOpen(true)}
-                onMeetingOpen={() => setIsMeetingModalOpen(true)}
-                onAssistantOpen={() => setIsAssistantOpen(true)}
-                onProductsOpen={() => setIsProductsOpen(true)}
-                hasProducts={hasProducts}
-                onFavoriteToggle={toggleFavorite}
-                favoriteId={favoriteId}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-=======
                 onChatOpen={() => {
                     setIsChatOpen(true);
                     setHasUnreadMessages(false);
@@ -241,7 +200,6 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 onAssistantOpen={() => setIsAssistantOpen(true)} onShopOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
                 onFavoriteToggle={toggleFavorite} favoriteId={favoriteId} activeTab={activeTab} onTabChange={setActiveTab}
                 hasUnreadChat={hasUnreadMessages}
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
             >
                 {activeTab === 'resources' ? (
                     <div className="space-y-5"><StandResources standId={resolvedStandId} /></div>
@@ -250,62 +208,10 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 )}
             </VirtualStandLayout>
 
-<<<<<<< HEAD
-            {/* ===== Overlays (same as before, outside layout) ===== */}
-
-            {/* Chat Panel */}
-            {isChatOpen && (
-                <ChatPanel
-                    standId={standId}
-                    standName={stand.name}
-                    onClose={() => setIsChatOpen(false)}
-                    avatarBg={avatarBg}
-                />
-            )}
-
-            {/* Assistant */}
-            {isAssistantOpen && (
-                <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-sm">
-                    <div className="w-full sm:w-[520px] h-full bg-white shadow-2xl border-l border-gray-200">
-                        <ChatShell
-                            scope={`stand-${standId}`}
-                            title={`${stand.name} Assistant`}
-                            subtitle="Ask anything about this stand and its resources."
-                            suggestedPrompts={[
-                                'Summarize what this stand offers.',
-                                'Show me the key brochures/resources.',
-                                'What makes this company different?',
-                            ]}
-                            onClose={() => setIsAssistantOpen(false)}
-                            className="h-full"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Meeting Modal */}
-            <MeetingRequestModal
-                isOpen={isMeetingModalOpen}
-                onClose={() => setIsMeetingModalOpen(false)}
-                standId={standId}
-                standName={stand.name}
-            />
-
-            {/* Products Panel */}
-            {isProductsOpen && (
-                <ProductsPanel
-                    standId={standId}
-                    standName={stand.name}
-                    themeColor={themeColor}
-                    onClose={() => setIsProductsOpen(false)}
-                />
-            )}
-=======
             {isChatOpen && <ChatPanel standId={resolvedStandId} standName={stand.name} onClose={() => setIsChatOpen(false)} avatarBg={avatarBg} themeColor={themeColor} onMeetingOpen={() => setIsMeetingModalOpen(true)} eventTimeZone={eventData?.event_timezone} />}
             {isAssistantOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-3"><div className="w-full max-w-5xl h-[88vh] bg-white rounded-2xl shadow-2xl overflow-hidden"><ChatShell scope={`stand-${resolvedStandId}`} title={`${stand.name} Assistant`} onClose={() => setIsAssistantOpen(false)} className="h-full" /></div></div>}
             {isShopOpen && <ProductsPanel standId={resolvedStandId} standName={stand.name} themeColor={themeColor} onClose={() => setIsShopOpen(false)} />}
             <MeetingRequestModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} standId={resolvedStandId} standName={stand.name} eventId={String(eventData?.id || id)} eventStartDate={eventData?.start_date} eventEndDate={eventData?.end_date} scheduleDays={eventData?.schedule_days} eventTimeZone={eventData?.event_timezone} themeColor={themeColor} />
->>>>>>> eb6221363e02667d615fd22792910b75ec97f750
         </>
     );
 }

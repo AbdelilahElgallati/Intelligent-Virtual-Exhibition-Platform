@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Conference } from '@/types/conference';
 import { OrganizerEvent, EventScheduleDay } from '@/types/event';
@@ -324,6 +325,7 @@ const ChatItem = ({ room, active, onClick, unreadCount, tz }: { room: ChatRoom; 
 );
 
 export default function EventManagementHub() {
+    const { t } = useTranslation('enterprise');
     const params = useParams();
     const router = useRouter();
     const { user } = useAuth();
@@ -849,17 +851,16 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
                     <Clock size={48} className="text-amber-500 animate-pulse" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">Approval Pending</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">{t('enterprise.eventManagement.gating.pending.title')}</h2>
                 <p className="text-zinc-500 max-w-md leading-relaxed mb-10">
-                    Your enterprise participation is currently being reviewed by the exhibition organizers.
-                    You will have full access to this management hub once your stand is approved.
+                    {t('enterprise.eventManagement.gating.pending.description')}
                 </p>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh Status
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.refreshStatus')}
                     </Button>
                 </div>
             </div>
@@ -874,10 +875,10 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center mb-8">
                     <CalendarClock size={48} className="text-indigo-500" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Not Started Yet</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.notStarted.title')}</h2>
                 <p className="text-lg font-semibold text-indigo-600 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-500 max-w-lg leading-relaxed mb-8">
-                    This event hasn&apos;t opened yet. All features — meetings, chats, conferences, and partner interactions — will be available once the event goes live.
+                    {t('enterprise.eventManagement.gating.notStarted.description')}
                 </p>
 
                 <div className="mb-8 inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700">
@@ -894,10 +895,10 @@ export default function EventManagementHub() {
 
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.refresh')}
                     </Button>
                 </div>
             </div>
@@ -910,20 +911,20 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center mb-8">
                     <Hourglass size={48} className="text-blue-500" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event In Progress</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.betweenSlots.title')}</h2>
                 <p className="text-lg font-semibold text-blue-600 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-500 max-w-lg leading-relaxed mb-6">
-                    The event is currently between schedule slots. Management features are temporarily locked and reopen automatically at the next live slot.
+                    {t('enterprise.eventManagement.gating.betweenSlots.description')}
                 </p>
                 <div className="mb-8 inline-flex items-center rounded-full bg-blue-50 border border-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
                     {formatTimeToStart((eventTimeline as any).nextSlotStart ? new Date((eventTimeline as any).nextSlotStart) : null)}
                 </div>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.refresh')}
                     </Button>
                 </div>
             </div>
@@ -936,17 +937,17 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
                     <AlertTriangle size={48} className="text-amber-500" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Timeline Not Published Yet</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.timelineMissing.title')}</h2>
                 <p className="text-lg font-semibold text-amber-600 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-500 max-w-lg leading-relaxed mb-10">
-                    This event does not have published schedule slots yet. Meetings, conferences, and live interactions unlock only during live slots.
+                    {t('enterprise.eventManagement.gating.timelineMissing.description')}
                 </p>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.refresh')}
                     </Button>
                 </div>
             </div>
@@ -959,14 +960,13 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center mb-8">
                     <CalendarCheck size={48} className="text-zinc-400" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Has Ended</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.ended.title')}</h2>
                 <p className="text-lg font-semibold text-zinc-500 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-400 max-w-lg leading-relaxed mb-6">
-                    This exhibition has concluded. Meeting rooms, live chats, and conference sessions are no longer available.
-                    Thank you for your participation.
+                    {t('enterprise.eventManagement.gating.ended.description')}
                 </p>
                 <p className="text-sm font-medium text-zinc-500 mb-6">
-                    Redirecting you back to your enterprise events dashboard...
+                    {t('enterprise.eventManagement.gating.ended.redirecting')}
                 </p>
 
                 {/* Event period */}
@@ -979,10 +979,10 @@ export default function EventManagementHub() {
 
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button variant="outline" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
-                        <LayoutDashboard size={16} className="mr-2" /> View Analytics
+                        <LayoutDashboard size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.viewAnalytics')}
                     </Button>
                 </div>
             </div>
@@ -995,18 +995,18 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-8">
                     <ShieldAlert size={48} className="text-red-400" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Rejected</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.rejected.title')}</h2>
                 <p className="text-lg font-semibold text-red-500 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-500 max-w-lg leading-relaxed mb-4">
-                    This event was not approved by the platform administrators. Access to all event features is unavailable.
+                    {t('enterprise.eventManagement.gating.rejected.description')}
                 </p>
                 {(eventTimeline as any).reason && (
                     <div className="p-4 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-sm max-w-md mb-10">
-                        <strong>Reason:</strong> {(eventTimeline as any).reason}
+                        <strong>{t('enterprise.eventManagement.gating.rejected.reasonLabel')}</strong> {(eventTimeline as any).reason}
                     </div>
                 )}
                 <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                    <ArrowLeft size={16} className="mr-2" /> Back to Events
+                    <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                 </Button>
             </div>
         );
@@ -1014,9 +1014,9 @@ export default function EventManagementHub() {
 
     if (eventTimeline && eventTimeline.gate === 'not-ready') {
         const stateLabels: Record<string, string> = {
-            pending_approval: 'Pending platform approval',
-            waiting_for_payment: 'Waiting for organizer payment',
-            payment_proof_submitted: 'Payment verification in progress',
+            pending_approval: t('enterprise.eventManagement.gating.notReady.states.pendingApproval'),
+            waiting_for_payment: t('enterprise.eventManagement.gating.notReady.states.waitingForPayment'),
+            payment_proof_submitted: t('enterprise.eventManagement.gating.notReady.states.paymentVerification'),
         };
         const currentState = (eventTimeline as any).state || '';
         return (
@@ -1024,21 +1024,21 @@ export default function EventManagementHub() {
                 <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
                     <Lock size={48} className="text-amber-500" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">Event Not Available</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-3 tracking-tight">{t('enterprise.eventManagement.gating.notReady.title')}</h2>
                 <p className="text-lg font-semibold text-amber-600 mb-2">{eventTimeline.title}</p>
                 <p className="text-zinc-500 max-w-lg leading-relaxed mb-6">
-                    This event is currently being prepared. All interactive features will become available once the event is fully set up and goes live.
+                    {t('enterprise.eventManagement.gating.notReady.description')}
                 </p>
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-10">
                     <Hourglass size={14} className="animate-pulse" />
-                    {stateLabels[currentState] || 'Event setup in progress'}
+                    {stateLabels[currentState] || t('enterprise.eventManagement.gating.notReady.states.inProgress')}
                 </div>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventManagement.actions.refresh')}
                     </Button>
                 </div>
             </div>
@@ -1052,7 +1052,7 @@ export default function EventManagementHub() {
                 <Card className="mb-2">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || 'Event'}</h2>
+                            <h2 className="text-2xl font-black text-zinc-900 tracking-tight mb-1">{eventData?.title || t('enterprise.eventManagement.eventFallback')}</h2>
                             <div className="text-sm text-zinc-500 mb-1">{eventData?.description}</div>
                             <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
                                 <span><Calendar size={12} className="inline mr-1" />{eventData?.start_date?.slice(0, 10)} to {eventData?.end_date?.slice(0, 10)}</span>
@@ -1063,13 +1063,13 @@ export default function EventManagementHub() {
                         </div>
                         <div className="flex gap-2 items-center">
                             <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/analytics`)}>
-                                <LayoutDashboard size={14} className="mr-2" /> Analytics
+                                <LayoutDashboard size={14} className="mr-2" /> {t('enterprise.eventManagement.actions.analytics')}
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage/requests`)}>
-                                <Package size={14} className="mr-2" /> Requests
+                                <Package size={14} className="mr-2" /> {t('enterprise.eventManagement.actions.requests')}
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/stand`)}>
-                                <Calendar size={14} className="mr-2" /> Config
+                                <Calendar size={14} className="mr-2" /> {t('enterprise.eventManagement.actions.config')}
                             </Button>
                         </div>
                     </CardHeader>
@@ -1081,10 +1081,10 @@ export default function EventManagementHub() {
             {/* Tabs */}
             <div className="flex gap-1 bg-zinc-100 p-1 rounded-2xl w-fit">
                 {[
-                    { id: 'chats', label: 'Chats', icon: MessageSquare, count: visitorRooms.length + b2bRooms.length },
-                    { id: 'meetings', label: 'Meetings', icon: Calendar, count: meetings.filter(m => m.status === 'pending').length },
-                    { id: 'conferences', label: 'Conferences', icon: Video, count: allConferences.length },
-                    { id: 'partners', label: 'Partners', icon: Users, count: participants.length },
+                    { id: 'chats', label: t('enterprise.eventManagement.tabs.chats'), icon: MessageSquare, count: visitorRooms.length + b2bRooms.length },
+                    { id: 'meetings', label: t('enterprise.eventManagement.tabs.meetings'), icon: Calendar, count: meetings.filter(m => m.status === 'pending').length },
+                    { id: 'conferences', label: t('enterprise.eventManagement.tabs.conferences'), icon: Video, count: allConferences.length },
+                    { id: 'partners', label: t('enterprise.eventManagement.tabs.partners'), icon: Users, count: participants.length },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -1185,8 +1185,8 @@ export default function EventManagementHub() {
                                         : <MessageSquare size={32} className="mx-auto text-zinc-200 mb-3" />}
                                     <p className="text-zinc-400 text-xs">
                                         {chatSubTab === 'b2b'
-                                            ? "No enterprise chats yet. Start one from the Partners tab."
-                                            : "No visitor chats for this event yet."}
+                                            ? t('enterprise.eventManagement.chats.emptyB2B')
+                                            : t('enterprise.eventManagement.chats.emptyVisitors')}
                                     </p>
                                 </div>
                             )}
@@ -1262,10 +1262,10 @@ export default function EventManagementHub() {
                     {/* Meeting sub-filters */}
                     <div className="flex items-center gap-3 flex-wrap">
                         {[
-                            { id: 'all' as const, label: 'All', count: meetings.length },
-                            { id: 'live' as const, label: 'Live & Soon', count: liveMeetings.length },
-                            { id: 'upcoming' as const, label: 'Upcoming', count: upcomingMeetings.length },
-                            { id: 'past' as const, label: 'Past', count: pastMeetings.length },
+                            { id: 'all' as const, label: t('enterprise.eventManagement.meetings.filters.all'), count: meetings.length },
+                            { id: 'live' as const, label: t('enterprise.eventManagement.meetings.filters.liveSoon'), count: liveMeetings.length },
+                            { id: 'upcoming' as const, label: t('enterprise.eventManagement.meetings.filters.upcoming'), count: upcomingMeetings.length },
+                            { id: 'past' as const, label: t('enterprise.eventManagement.meetings.filters.past'), count: pastMeetings.length },
                         ].map(f => (
                             <button
                                 key={f.id}
@@ -1291,7 +1291,7 @@ export default function EventManagementHub() {
                         {pendingInbound.length > 0 && (
                             <span className="ml-auto flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
                                 <Hourglass size={12} />
-                                {pendingInbound.length} awaiting your response
+                                {t('enterprise.eventManagement.meetings.awaitingResponse', { count: pendingInbound.length })}
                             </span>
                         )}
                     </div>
@@ -1333,7 +1333,7 @@ export default function EventManagementHub() {
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                     <h4 className={clsx("font-bold truncate", isPast ? "text-zinc-400" : "text-zinc-900")}>
-                                                        {m.type === 'inbound' ? (m.requester_name || m.requester_org_name || 'Visitor') : `To: ${m.receiver_org_name || 'Partner'}`}
+                                                        {m.type === 'inbound' ? (m.requester_name || m.requester_org_name || t('enterprise.eventManagement.meetings.visitorFallback')) : t('enterprise.eventManagement.meetings.toPartner', { name: m.receiver_org_name || t('enterprise.eventManagement.meetings.partnerFallback') })}
                                                     </h4>
                                                     {/* Timeline badge */}
                                                     <span className={clsx(
@@ -1355,11 +1355,11 @@ export default function EventManagementHub() {
                                                         </span>
                                                     )}
                                                     <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
-                                                        {m.type === 'inbound' ? 'Received' : 'Sent'}
+                                                        {m.type === 'inbound' ? t('enterprise.eventManagement.meetings.received') : t('enterprise.eventManagement.meetings.sent')}
                                                     </span>
                                                 </div>
                                                 <p className={clsx("text-sm font-medium mb-1.5", isPast ? "text-zinc-400" : "text-zinc-600")}>
-                                                    {m.purpose || 'General Discussion'}
+                                                    {m.purpose || t('enterprise.eventManagement.meetings.generalDiscussion')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
                                                     <span className="flex items-center gap-1.5">
@@ -1374,7 +1374,7 @@ export default function EventManagementHub() {
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
                                                         <Building2 size={11} />
-                                                        {m.type === 'inbound' ? (m.requester_org_name || 'Individual') : (m.receiver_org_name || 'Partner')}
+                                                        {m.type === 'inbound' ? (m.requester_org_name || t('enterprise.eventManagement.meetings.individual')) : (m.receiver_org_name || t('enterprise.eventManagement.meetings.partnerFallback'))}
                                                     </span>
                                                 </div>
                                             </div>
@@ -1391,14 +1391,14 @@ export default function EventManagementHub() {
                                                         className="flex-1 md:flex-none text-red-600 border-red-100 hover:bg-red-50"
                                                         onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}
                                                     >
-                                                        <XCircle size={14} className="mr-1.5" /> Reject
+                                                        <XCircle size={14} className="mr-1.5" /> {t('enterprise.eventManagement.meetings.decline')}
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}
                                                     >
-                                                        <CheckCircle2 size={14} className="mr-1.5" /> Approve
+                                                        <CheckCircle2 size={14} className="mr-1.5" /> {t('enterprise.eventManagement.meetings.approve')}
                                                     </Button>
                                                 </div>
                                             )}
@@ -1407,14 +1407,14 @@ export default function EventManagementHub() {
                                             {m.status === 'pending' && m.type === 'outbound' && !isExpired && (
                                                 <span className="text-xs text-amber-500 font-medium flex items-center gap-1.5">
                                                     <Hourglass size={12} className="animate-pulse" />
-                                                    Awaiting partner approval
+                                                    {t('enterprise.eventManagement.meetings.awaitingPartnerApproval')}
                                                 </span>
                                             )}
 
                                             {/* Expired pending => Show expired notice */}
                                             {m.status === 'pending' && isExpired && (
                                                 <span className="text-xs text-red-400 font-medium flex items-center gap-1.5">
-                                                    <Timer size={12} /> Time slot has passed
+                                                    <Timer size={12} /> {t('enterprise.eventManagement.meetings.timeSlotPassed')}
                                                 </span>
                                             )}
 
@@ -1431,21 +1431,21 @@ export default function EventManagementHub() {
                                                     onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}
                                                 >
                                                     <Video size={14} className="mr-1.5" />
-                                                    {m.session_status === 'live' ? 'Join Live' : 'Join Now'}
+                                                    {m.session_status === 'live' ? t('enterprise.eventManagement.meetings.joinLive') : t('enterprise.eventManagement.meetings.joinNow')}
                                                 </Button>
                                             )}
 
                                             {/* Approved but not yet time */}
                                             {m.status === 'approved' && tl.status === 'upcoming' && (
                                                 <span className="text-xs text-indigo-500 font-medium flex items-center gap-1.5">
-                                                    <Clock size={12} /> Available {tl.label.toLowerCase()}
+                                                    <Clock size={12} /> {t('enterprise.eventManagement.meetings.availableIn', { slot: tl.label.toLowerCase() })}
                                                 </span>
                                             )}
 
                                             {/* Approved but expired without joining */}
                                             {m.status === 'approved' && isExpired && (
                                                 <span className="text-xs text-red-400 font-medium flex items-center gap-1.5">
-                                                    <Timer size={12} /> Meeting window passed
+                                                    <Timer size={12} /> {t('enterprise.eventManagement.meetings.meetingWindowPassed')}
                                                 </span>
                                             )}
                                         </div>
@@ -1458,15 +1458,15 @@ export default function EventManagementHub() {
                             <div className="h-64 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
                                 <Calendar size={48} className="text-zinc-200 mb-4" />
                                 <h3 className="text-lg font-bold text-zinc-400">
-                                    {meetingFilter === 'all' ? 'No Meetings Scheduled' :
-                                     meetingFilter === 'live' ? 'No Live Meetings' :
-                                     meetingFilter === 'upcoming' ? 'No Upcoming Meetings' :
-                                     'No Past Meetings'}
+                                     {meetingFilter === 'all' ? t('enterprise.eventManagement.meetings.emptyStates.all') :
+                                      meetingFilter === 'live' ? t('enterprise.eventManagement.meetings.emptyStates.live') :
+                                      meetingFilter === 'upcoming' ? t('enterprise.eventManagement.meetings.emptyStates.upcoming') :
+                                      t('enterprise.eventManagement.meetings.emptyStates.past')}
                                 </h3>
                                 <p className="text-sm text-zinc-400 max-w-xs">
                                     {meetingFilter === 'all'
-                                        ? 'When visitors or partners request meetings, they will appear here.'
-                                        : 'Try switching to a different filter.'}
+                                        ? t('enterprise.eventManagement.meetings.emptyStates.subtitleAll')
+                                        : t('enterprise.eventManagement.meetings.emptyStates.subtitleFiltered')}
                                 </p>
                             </div>
                         )}
@@ -1494,7 +1494,7 @@ export default function EventManagementHub() {
                                                         <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">
                                                             {p.organization_name === 'Unknown Enterprise' ? `Partner #${(orgId || pId).slice(-4)}` : p.organization_name}
                                                         </h4>
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Approved Participant</p>
+                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{t('enterprise.eventManagement.partners.approvedParticipant')}</p>
                                                     </div>
                                                 </div>
                                                 <Button size="sm" variant="ghost" className="rounded-full w-9 h-9 p-0 text-indigo-600 hover:bg-indigo-50" onClick={() => handleStartB2B(orgId)}>
@@ -1512,7 +1512,7 @@ export default function EventManagementHub() {
                                                         fetchPartnerMeetings(p.organization_id || p.id || p._id || '');
                                                     }}
                                                 >
-                                                    Details
+                                                    {t('enterprise.eventManagement.partners.details')}
                                                 </Button>
                                                 {p.stand_id && (
                                                     <Button
@@ -1532,7 +1532,7 @@ export default function EventManagementHub() {
                                                             else { setBusySlots([]); setLoadingSlots(false); }
                                                         }}
                                                     >
-                                                        <Calendar size={12} className="mr-1.5" /> Meeting
+                                                        <Calendar size={12} className="mr-1.5" /> {t('enterprise.eventManagement.partners.meeting')}
                                                     </Button>
                                                 )}
                                             </div>
@@ -1544,8 +1544,8 @@ export default function EventManagementHub() {
                         {participants.length === 0 && (
                             <div className="h-64 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
                                 <Users size={48} className="text-zinc-200 mb-4" />
-                                <h3 className="text-lg font-bold text-zinc-400">No Partners Available</h3>
-                                <p className="text-sm text-zinc-400 max-w-xs">Other enterprises participating in this event will appear here once approved.</p>
+                                <h3 className="text-lg font-bold text-zinc-400">{t('enterprise.eventManagement.partners.emptyTitle')}</h3>
+                                <p className="text-sm text-zinc-400 max-w-xs">{t('enterprise.eventManagement.partners.emptySubtitle')}</p>
                             </div>
                         )}
                     </div>
@@ -1557,8 +1557,8 @@ export default function EventManagementHub() {
                     <div className="flex-1 space-y-6 overflow-y-auto">
                         <Card className="border-indigo-100 bg-indigo-50/50 p-6 flex items-center justify-between">
                             <div>
-                                <h3 className="text-lg font-bold text-indigo-900">Event Conferences</h3>
-                                <p className="text-sm text-indigo-700 mt-1">View all scheduled live sessions. You can host your assigned talks or join others.</p>
+                                <h3 className="text-lg font-bold text-indigo-900">{t('enterprise.eventManagement.conferences.eventConferencesTitle')}</h3>
+                                <p className="text-sm text-indigo-700 mt-1">{t('enterprise.eventManagement.conferences.eventConferencesSubtitle')}</p>
                             </div>
                             <Video size={40} className="text-indigo-400 opacity-50" />
                         </Card>
@@ -1582,7 +1582,7 @@ export default function EventManagementHub() {
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <h4 className="font-bold text-zinc-900 group-hover:text-indigo-600 transition-colors">{c.title}</h4>
-                                                    {isHost && <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">You are Hosting</span>}
+                                                    {isHost && <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">{t('enterprise.eventManagement.conferences.hostingBadge')}</span>}
                                                 </div>
                                                 <span className={clsx(
                                                     "px-2 py-1 text-[10px] font-bold rounded uppercase",
@@ -1590,7 +1590,7 @@ export default function EventManagementHub() {
                                                         : hasEnded ? "bg-zinc-200 text-zinc-500"
                                                         : "bg-zinc-100 text-zinc-600"
                                                 )}>
-                                                    {c.status === 'live' ? '🔴 Live' : hasEnded ? 'Ended' : c.status}
+                                                    {c.status === 'live' ? t('enterprise.eventManagement.conferences.liveBadge') : hasEnded ? t('enterprise.eventManagement.conferences.ended') : c.status}
                                                 </span>
                                             </div>
                                             <div className="space-y-2 mb-6 text-xs text-zinc-500">
@@ -1598,7 +1598,7 @@ export default function EventManagementHub() {
                                                     <Clock size={14} /> {formatInTZ(c.start_time, eventData?.event_timezone || 'UTC', 'MMM d, yyyy h:mm a')}
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Users size={14} /> {c.attendee_count} attendees
+                                                    <Users size={14} /> {t('enterprise.eventManagement.conferences.attendeesCount', { count: c.attendee_count })}
                                                 </div>
                                             </div>
 
@@ -1616,7 +1616,7 @@ export default function EventManagementHub() {
                                                             router.push(`/enterprise/events/${eventId}/conferences/${c._id}/live`);
                                                         }}
                                                     >
-                                                        {hasEnded ? 'Conference Ended' : c.status === 'live' ? 'Enter Studio' : canGoLive ? 'Go Live' : 'Not Started Yet'}
+                                                        {hasEnded ? t('enterprise.eventManagement.conferences.conferenceEnded') : c.status === 'live' ? t('enterprise.eventManagement.conferences.enterStudio') : canGoLive ? t('enterprise.eventManagement.conferences.goLive') : t('enterprise.eventManagement.conferences.notStartedYet')}
                                                     </Button>
                                                 ) : (
                                                     <Button
@@ -1627,13 +1627,13 @@ export default function EventManagementHub() {
                                                             router.push(`/events/${eventId}/live/conferences/${c._id}/watch`);
                                                         }}
                                                     >
-                                                        {hasEnded ? 'Conference Ended' : c.status === 'live' ? 'Join Conference' : canJoin ? 'Join Conference' : 'Not Started Yet'}
+                                                        {hasEnded ? t('enterprise.eventManagement.conferences.conferenceEnded') : c.status === 'live' ? t('enterprise.eventManagement.conferences.joinConference') : canJoin ? t('enterprise.eventManagement.conferences.joinConference') : t('enterprise.eventManagement.conferences.notStartedYet')}
                                                     </Button>
                                                 )}
                                             </div>
                                             {isHost && !hasEnded && (
                                                 <p className="text-[10px] text-zinc-400 mt-2 text-center">
-                                                    Speakers can go live up to 15 mins before scheduled time.
+                                                    {t('enterprise.eventManagement.conferences.speakersCanGoLive')}
                                                 </p>
                                             )}
                                         </div>
@@ -1643,8 +1643,8 @@ export default function EventManagementHub() {
                             {allConferences.length === 0 && (
                                 <div className="col-span-full h-48 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200">
                                     <Video size={48} className="text-zinc-200 mb-4" />
-                                    <h3 className="text-lg font-bold text-zinc-400">No Conferences</h3>
-                                    <p className="text-sm text-zinc-400 max-w-xs">There are no conferences scheduled for this event yet.</p>
+                                    <h3 className="text-lg font-bold text-zinc-400">{t('enterprise.eventManagement.conferences.noConferences')}</h3>
+                                    <p className="text-sm text-zinc-400 max-w-xs">{t('enterprise.eventManagement.conferences.noConferencesSubtitle')}</p>
                                 </div>
                             )}
                         </div>
@@ -1663,7 +1663,7 @@ export default function EventManagementHub() {
                                         <div className="p-1.5 bg-indigo-50 rounded-lg">
                                             <Building2 className="text-indigo-600" size={18} />
                                         </div>
-                                        <CardTitle className="text-lg font-black">Partner Details</CardTitle>
+                                        <CardTitle className="text-lg font-black">{t('enterprise.eventManagement.partners.partnerDetails')}</CardTitle>
                                     </div>
                                     <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0" onClick={() => setIsPartnerModalOpen(false)}>
                                         <XCircle size={20} />
@@ -1684,9 +1684,9 @@ export default function EventManagementHub() {
                                         <div className="flex-1">
                                             <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                                                 <h3 className="text-2xl font-black text-zinc-900">{selectedPartner.organization_name}</h3>
-                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">Approved</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">{t('enterprise.eventManagement.partners.approved')}</span>
                                             </div>
-                                            <p className="text-zinc-500 text-sm font-medium mb-2">B2B Event Partner</p>
+                                            <p className="text-zinc-500 text-sm font-medium mb-2">{t('enterprise.eventManagement.partners.b2bEventPartner')}</p>
                                             <div className="flex flex-wrap justify-center sm:justify-start gap-2">
                                                 {selectedPartner.industry && (
                                                     <span className="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-[11px] font-bold">
@@ -1706,27 +1706,27 @@ export default function EventManagementHub() {
                                     <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                                                <Calendar size={13} /> Meeting Status
+                                                <Calendar size={13} /> {t('enterprise.eventManagement.partners.meetingStatus')}
                                             </div>
-                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">Current Event</span>
+                                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">{t('enterprise.eventManagement.partners.currentEvent')}</span>
                                         </div>
                                         
                                         {loadingPartnerMeetings ? (
                                             <div className="flex items-center justify-center py-4 gap-2 text-zinc-400 text-xs">
-                                                <Loader2 className="animate-spin" size={16} /> Analyzing meetings...
+                                                <Loader2 className="animate-spin" size={16} /> {t('enterprise.eventManagement.partners.analyzingMeetings')}
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-3 gap-3">
                                                 <div className="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 text-center transition-all hover:scale-[1.02]">
-                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Approved</p>
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">{t('enterprise.eventManagement.partners.approved')}</p>
                                                     <p className="text-2xl font-black text-emerald-700">{partnerMeetings?.filter(m => m.status === 'approved').length || 0}</p>
                                                 </div>
                                                 <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-100/50 text-center transition-all hover:scale-[1.02]">
-                                                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Pending</p>
+                                                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">{t('enterprise.eventManagement.partners.pending')}</p>
                                                     <p className="text-2xl font-black text-amber-700">{partnerMeetings?.filter(m => m.status === 'pending').length || 0}</p>
                                                 </div>
                                                 <div className="p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 text-center transition-all hover:scale-[1.02]">
-                                                    <p className="text-[10px] font-bold text-indigo-600 uppercase mb-1">Total</p>
+                                                    <p className="text-[10px] font-bold text-indigo-600 uppercase mb-1">{t('enterprise.eventManagement.partners.total')}</p>
                                                     <p className="text-2xl font-black text-indigo-700">{partnerMeetings?.length || 0}</p>
                                                 </div>
                                             </div>
@@ -1737,7 +1737,7 @@ export default function EventManagementHub() {
                                     {!loadingPartnerMeetings && partnerMeetings && partnerMeetings.length > 0 && (
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
-                                                <Calendar size={13} /> Meetings with this Partner
+                                                <Calendar size={13} /> {t('enterprise.eventManagement.partners.meetingsWithPartner')}
                                             </div>
                                             <div className="space-y-2">
                                                 {[...(partnerMeetings || [])]
@@ -1766,7 +1766,7 @@ export default function EventManagementHub() {
                                                                                 ? "bg-indigo-50 text-indigo-600 border-indigo-100"
                                                                                 : "bg-violet-50 text-violet-600 border-violet-100"
                                                                         )}>
-                                                                            {isSender ? "↑ You sent" : "↓ They sent"}
+                                                                            {isSender ? t('enterprise.eventManagement.partners.youSent') : t('enterprise.eventManagement.partners.theySent')}
                                                                         </span>
                                                                         <span className={clsx(
                                                                             "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider",
@@ -1795,38 +1795,38 @@ export default function EventManagementHub() {
                                                                         <>
                                                                             <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                                                                 onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}>
-                                                                                <CheckCircle2 size={12} className="mr-1" /> Approve
+                                                                                <CheckCircle2 size={12} className="mr-1" /> {t('enterprise.eventManagement.meetings.approve')}
                                                                             </Button>
                                                                             <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-100 hover:bg-red-50"
                                                                                 onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}>
-                                                                                <XCircle size={12} className="mr-1" /> Reject
+                                                                                <XCircle size={12} className="mr-1" /> {t('enterprise.eventManagement.meetings.decline')}
                                                                             </Button>
                                                                         </>
                                                                     )}
                                                                     {isSender && m.status === 'pending' && !isExpired && (
                                                                         <span className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
-                                                                            <Hourglass size={11} className="animate-pulse" /> Awaiting their approval
+                                                                            <Hourglass size={11} className="animate-pulse" /> {t('enterprise.eventManagement.partners.awaitingTheirApproval')}
                                                                         </span>
                                                                     )}
                                                                     {m.status === 'pending' && isExpired && (
                                                                         <span className="text-xs text-red-400 flex items-center gap-1.5">
-                                                                            <Timer size={11} /> Time slot passed
+                                                                            <Timer size={11} /> {t('enterprise.eventManagement.meetings.timeSlotPassed')}
                                                                         </span>
                                                                     )}
                                                                     {canJoin && (
                                                                         <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                                                             onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}>
-                                                                            <Video size={12} className="mr-1" /> Join Now
+                                                                            <Video size={12} className="mr-1" /> {t('enterprise.eventManagement.meetings.joinNow')}
                                                                         </Button>
                                                                     )}
                                                                     {m.status === 'approved' && !canJoin && now < end && (
                                                                         <span className="text-xs text-emerald-600 flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-lg">
-                                                                            <CheckCircle2 size={11} /> Approved · starts {formatInTZ(m.start_time, eventData?.event_timezone || 'UTC', 'h:mm a')}
+                                                                            <CheckCircle2 size={11} /> {t('enterprise.eventManagement.partners.approvedStarts', { time: formatInTZ(m.start_time, eventData?.event_timezone || 'UTC', 'h:mm a') })}
                                                                         </span>
                                                                     )}
                                                                     {m.status === 'approved' && now >= end && (
                                                                         <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                                                                            <CheckCircle2 size={11} /> Meeting ended
+                                                                            <CheckCircle2 size={11} /> {t('enterprise.eventManagement.meetings.ended')}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -1840,31 +1840,31 @@ export default function EventManagementHub() {
                                     {/* Company Overview */}
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
-                                            <FileText size={13} /> Company Overview
+                                                <FileText size={13} /> {t('enterprise.eventManagement.partners.companyOverview')}
+                                            </div>
+                                            <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-600 text-sm leading-relaxed">
+                                            {selectedPartner.description || t('enterprise.eventManagement.partners.overviewFallback')}
+                                            </div>
                                         </div>
-                                        <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-600 text-sm leading-relaxed">
-                                            {selectedPartner.description || 'This enterprise is participating in the event and is available for direct partnership discussions and meeting requests.'}
-                                        </div>
-                                    </div>
 
                                     {/* Details Grid */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-3">
                                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                                                <Globe size={13} /> Contact & Links
+                                                <Globe size={13} /> {t('enterprise.eventManagement.partners.contactLinks')}
                                             </div>
                                             <div className="space-y-3 text-sm text-zinc-600">
                                                 <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
                                                     <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors shadow-sm">
                                                         <Mail size={14} />
                                                     </div>
-                                                    <span className="font-medium truncate">{selectedPartner.contact_email || 'Email not shared'}</span>
+                                                    <span className="font-medium truncate">{selectedPartner.contact_email || t('enterprise.eventManagement.partners.emailNotShared')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
                                                     <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors shadow-sm">
                                                         <Phone size={14} />
                                                     </div>
-                                                    <span className="font-medium">{selectedPartner.contact_phone || 'Phone not shared'}</span>
+                                                    <span className="font-medium">{selectedPartner.contact_phone || t('enterprise.eventManagement.partners.phoneNotShared')}</span>
                                                 </div>
                                                 {selectedPartner.website && (
                                                     <a href={selectedPartner.website} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 transition-colors group">
@@ -1879,19 +1879,19 @@ export default function EventManagementHub() {
 
                                         <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-3">
                                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                                                <MapPin size={13} /> Location Info
+                                                <MapPin size={13} /> {t('enterprise.eventManagement.partners.locationInfo')}
                                             </div>
                                             <div className="space-y-4">
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Primary Office</p>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{t('enterprise.eventManagement.partners.primaryOffice')}</p>
                                                     <p className="text-sm font-bold text-zinc-900 flex items-center gap-2">
                                                         <span className="text-lg">📍</span>
-                                                        {[selectedPartner.location_city, selectedPartner.location_country].filter(Boolean).join(', ') || 'Global Headquarters'}
+                                                        {[selectedPartner.location_city, selectedPartner.location_country].filter(Boolean).join(', ') || t('enterprise.eventManagement.partners.globalHeadquarters')}
                                                     </p>
                                                 </div>
                                                 <div className="pt-3 border-t border-zinc-50">
-                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Event Availability</p>
-                                                    <p className="text-xs font-medium text-zinc-600">Available for B2B networking during all event days.</p>
+                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{t('enterprise.eventManagement.partners.eventAvailability')}</p>
+                                                    <p className="text-xs font-medium text-zinc-600">{t('enterprise.eventManagement.partners.eventAvailabilitySubtitle')}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1903,7 +1903,7 @@ export default function EventManagementHub() {
                                     setIsPartnerModalOpen(false);
                                     handleStartB2B(selectedPartner.organization_id!);
                                 }}>
-                                    <MessageSquare className="mr-2" size={18} /> Send Message
+                                    <MessageSquare className="mr-2" size={18} /> {t('enterprise.eventManagement.actions.sendMessage')}
                                 </Button>
                                 {selectedPartner.stand_id && (
                                     <Button variant="outline" className="flex-1 py-6 font-bold border-zinc-200 hover:border-indigo-600 hover:text-indigo-600 transition-all" onClick={() => {
@@ -1915,7 +1915,7 @@ export default function EventManagementHub() {
                                         fetchPartnerMeetings(selectedPartner.organization_id || selectedPartner.id || selectedPartner._id || '');
                                         if (selectedPartner?.stand_id) fetchBusySlots(selectedPartner.stand_id);
                                     }}>
-                                        <Calendar className="mr-2" size={18} /> Request Meeting
+                                        <Calendar className="mr-2" size={18} /> {t('enterprise.eventManagement.actions.requestMeeting')}
                                     </Button>
                                 )}
                             </CardFooter>

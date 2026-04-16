@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
     LineChart, Line,
     BarChart, Bar,
@@ -50,12 +51,13 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, icon, colour, format = 'number' }: KpiCardProps) {
+    const { t } = useTranslation('admin');
     const animated = useCountUp(value);
     const display = (() => {
         switch (format) {
             case 'percent': return `${animated.toFixed(0)}%`;
             case 'score': return `${animated}/100`;
-            case 'currency': return `${animated.toLocaleString()} MAD`;
+            case 'currency': return `${animated.toLocaleString()} ${t('admin.common.currency')}`;
             default: return animated.toLocaleString();
         }
     })();
@@ -125,6 +127,7 @@ function DashboardSkeleton() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OrganizerReportPage() {
+    const { t } = useTranslation('admin');
     const { id: eventId } = useParams<{ id: string }>();
     const [data, setData] = useState<OrganizerSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -202,7 +205,7 @@ export default function OrganizerReportPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-zinc-900">📊 Organizer Report</h1>
                     <p className="text-zinc-500 text-sm mt-1">
-                        Business intelligence & event performance · Updated {generatedAt}
+                        {t('admin.reports.description')} · Updated {generatedAt}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -227,9 +230,9 @@ export default function OrganizerReportPage() {
 
             {/* ── KPI Grid ── */}
             <section>
-                <SectionHead><TrendingUp className="w-4 h-4 text-violet-500" /> Key Metrics</SectionHead>
+                <SectionHead><TrendingUp className="w-4 h-4 text-violet-500" /> {t('admin.reports.sections.keyMetrics')}</SectionHead>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <KpiCard label="Total Visitors" value={ov.total_visitors} icon={<Users className="w-5 h-5" />} colour="bg-violet-600" format="number" />
+                    <KpiCard label={t('admin.reports.kpi.totalVisitors')} value={ov.total_visitors} icon={<Users className="w-5 h-5" />} colour="bg-violet-600" format="number" />
                     <KpiCard label="Enterprise Rate" value={Math.round(ov.enterprise_participation_rate)} icon={<Building2 className="w-5 h-5" />} colour="bg-blue-600" format="percent" />
                     <KpiCard label="Engagement Score" value={Math.round(ov.stand_engagement_score)} icon={<BarChart2 className="w-5 h-5" />} colour="bg-indigo-500" format="score" />
                     <KpiCard label="Leads Generated" value={ov.leads_generated} icon={<TrendingUp className="w-5 h-5" />} colour="bg-emerald-600" format="number" />
@@ -240,7 +243,7 @@ export default function OrganizerReportPage() {
 
             {/* ── Revenue Summary ── */}
             <section>
-                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> Revenue Performance</SectionHead>
+                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> {t('admin.reports.sections.revenuePerformance')}</SectionHead>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Revenue Breakdown */}
                     <div className="lg:col-span-2 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between">
@@ -255,7 +258,7 @@ export default function OrganizerReportPage() {
                                         <span className="text-zinc-600 font-medium">{r.label}</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`font-bold text-xl ${r.colour}`}>{r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD</p>
+                                        <p className={`font-bold text-xl ${r.colour}`}>{r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })} {t('admin.common.currency')}</p>
                                         <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Verified Income</p>
                                     </div>
                                 </div>
@@ -265,7 +268,7 @@ export default function OrganizerReportPage() {
                             <div>
                                 <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Total Gross Revenue</p>
                                 <p className="text-4xl font-black text-zinc-900 tracking-tight">
-                                    {ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD
+                                    {ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })} {t('admin.common.currency')}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -387,7 +390,7 @@ export default function OrganizerReportPage() {
                 {/* Lead generation - Full Width */}
                 <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-bold text-zinc-700">Lead Generation Performance</h3>
+                        <h3 className="text-sm font-bold text-zinc-700">{t('admin.reports.charts.leadGenPerformance')}</h3>
                         <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
                             <Target className="w-4 h-4 text-emerald-500" />
                         </div>

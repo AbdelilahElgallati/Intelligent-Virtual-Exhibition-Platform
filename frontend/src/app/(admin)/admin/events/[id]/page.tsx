@@ -114,7 +114,7 @@ const STATE_CONFIG: Record<
 // ── State Badge ──────────────────────────────────────────────────────────────
 
 function StateBadge({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const effective = getEffectiveWorkflowState(event);
     if (event.state === 'live') {
         const live = getLiveWorkflowLabel(event);
@@ -151,10 +151,10 @@ function StateBadge({ event }: { event: OrganizerEvent }) {
     }
     const cfg = STATE_CONFIG[effective] ?? {
         labelKey: '',
-        label: effective,
         bg: 'bg-zinc-100',
         text: 'text-zinc-600',
         dot: 'bg-zinc-400',
+        iconKey: '',
         icon: null,
     };
     return (
@@ -163,7 +163,7 @@ function StateBadge({ event }: { event: OrganizerEvent }) {
         >
             <span className={`w-2 h-2 rounded-full ${cfg.dot} ${effective === 'live' ? 'animate-pulse' : ''}`} />
             {cfg.icon}
-            {'labelKey' in cfg && cfg.labelKey ? t(cfg.labelKey) : cfg.label}
+            {cfg.labelKey ? t(cfg.labelKey) : effective}
         </span>
     );
 }
@@ -202,7 +202,7 @@ function formatDuration(ms: number): string {
 }
 
 function CountdownBanner({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const state = event.state as EventState;
     const startDate = event.start_date ? new Date(event.start_date) : null;
     const endDate = event.end_date ? new Date(event.end_date) : null;
@@ -265,7 +265,7 @@ const STATE_ORDER: Record<string, number> = {
 };
 
 function EventTimeline({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const currentIdx = STATE_ORDER[event.state] ?? 0;
 
     return (
@@ -375,7 +375,7 @@ function ConfirmModal({
     onConfirm: () => void;
     onCancel: () => void;
 }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 p-6">
@@ -403,7 +403,7 @@ function ConfirmModal({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminEventDetailPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -663,7 +663,7 @@ export default function AdminEventDetailPage() {
                         {event.payment_amount != null && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-600">
                                 <DollarSign className="w-4 h-4 text-zinc-400" />
-                                Payment: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} MAD</span>
+                                Payment: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} {t('admin.common.currency')}</span>
                             </div>
                         )}
                         {event.payment_proof_url && (

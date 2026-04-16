@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '@/lib/api/notifications';
 import { Bell, CheckCheck, CreditCard, Link2, CheckCircle2, Info, Clock, Building2, Calendar, Package } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -33,18 +34,19 @@ function getMeta(type: string) {
     return TYPE_META[type] ?? { icon: Bell, ring: 'border-gray-200 bg-gray-50', dot: 'bg-gray-400' };
 }
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string, t: any) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60_000);
     const hours = Math.floor(mins / 60);
     const days = Math.floor(hours / 24);
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (mins > 0) return `${mins}m ago`;
-    return 'just now';
+    if (days > 0) return t('enterprise.notifications.timeLabels.daysAgo', { X: days });
+    if (hours > 0) return t('enterprise.notifications.timeLabels.hoursAgo', { X: hours });
+    if (mins > 0) return t('enterprise.notifications.timeLabels.minutesAgo', { X: mins });
+    return t('enterprise.notifications.timeLabels.justNow');
 }
 
 export default function EnterpriseNotificationsPage() {
+    const { t } = useTranslation('enterprise');
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [markingAll, setMarkingAll] = useState(false);
@@ -93,10 +95,10 @@ export default function EnterpriseNotificationsPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Bell className="w-6 h-6 text-indigo-600" />
-                        Notifications
+                        {t('enterprise.notifications.title')}
                     </h1>
                     <p className="text-sm text-gray-500 mt-0.5">
-                        {unread > 0 ? `${unread} unread` : 'All caught up!'}
+                        {unread > 0 ? t('enterprise.notifications.unreadCount', { count: unread }) : t('enterprise.notifications.allCaughtUp')}
                     </p>
                 </div>
                 {unread > 0 && (
@@ -108,7 +110,7 @@ export default function EnterpriseNotificationsPage() {
                         onClick={handleMarkAll}
                     >
                         <CheckCheck className="w-4 h-4" />
-                        Mark all read
+                        {t('enterprise.notifications.markAllRead')}
                     </Button>
                 )}
             </div>
@@ -117,7 +119,7 @@ export default function EnterpriseNotificationsPage() {
             {notifications.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <Bell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">No notifications yet.</p>
+                    <p className="text-gray-500 text-sm">{t('enterprise.notifications.empty')}</p>
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
@@ -143,7 +145,7 @@ export default function EnterpriseNotificationsPage() {
                                     </p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <Clock className="w-3 h-3 text-gray-400" />
-                                        <span className="text-xs text-gray-400">{timeAgo(n.created_at)}</span>
+                                        <span className="text-xs text-gray-400">{timeAgo(n.created_at, t)}</span>
                                         {!n.is_read && (
                                             <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
                                         )}
@@ -156,7 +158,7 @@ export default function EnterpriseNotificationsPage() {
                                         onClick={() => handleMarkOne(id)}
                                         className="shrink-0 text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                                     >
-                                        Mark read
+                                        {t('enterprise.notifications.markRead')}
                                     </button>
                                 )}
                             </div>

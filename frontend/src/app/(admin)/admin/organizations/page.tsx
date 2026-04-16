@@ -14,7 +14,7 @@ import { PartnerDashboardRead } from '@/types/admin';
 import { formatInUserTZ } from '@/lib/timezone';
 
 function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const badges = [];
     if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{t('admin.organizations.detail.verified')}</span>);
     if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{t('admin.organizations.detail.flagged')}</span>);
@@ -66,7 +66,7 @@ function OrgPanel({
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
@@ -81,7 +81,7 @@ function OrgPanel({
                             <div className="flex items-center flex-wrap gap-2">
                                 <StatusBadges org={org} />
                                 <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${org.owner_role === 'organizer' ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'}`}>
-                                    {org.owner_role} Partner
+                                    {t('admin.organizations.partnerLabel', { role: org.owner_role })}
                                 </span>
                             </div>
                         </div>
@@ -109,7 +109,7 @@ function OrgPanel({
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <DollarSign className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">
-                                    {(org.stats?.primary_currency || 'MAD')}&nbsp;
+                                    {(org.stats?.primary_currency || t('admin.common.currency'))}&nbsp;
                                     {(org.stats?.total_revenue || 0).toLocaleString()}
                                 </div>
                                 <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
@@ -207,7 +207,7 @@ function OrgPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminOrganizationsPage() {
-    const { t } = useTranslation();
+    const { t } = useTranslation('admin');
     const [orgs, setOrgs] = useState<PartnerDashboardRead[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -303,7 +303,7 @@ export default function AdminOrganizationsPage() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 transition-colors">
-                                                {(org.name || 'O').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 1)}
+                                                {(org.name || t('admin.organizations.initialsFallback')).split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 1)}
                                             </div>
                                             <div>
                                                 <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition-colors">{org.name}</div>
