@@ -22,17 +22,18 @@ import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import ScheduleEditor from "@/components/events/ScheduleEditor";
 import { useAuth } from "@/context/AuthContext";
 import { resolveMediaUrl } from '@/lib/media';
+import { useTranslation } from "react-i18next";
 
 
-const STATE_LABELS: Record<EventStatus, string> = {
-  pending_approval: "Pending Review",
-  approved: "Approved & Pending Payment",
-  rejected: "Rejected",
-  waiting_for_payment: "Approved - Waiting Payment",
-  payment_proof_submitted: "Payment proof under review",
-  payment_done: "Payment Confirmed",
-  live: "Event is Live",
-  closed: "Event Ended",
+const STATE_LABEL_KEYS: Record<EventStatus, string> = {
+  pending_approval: "organizer.eventDetail.states.pendingReview",
+  approved: "organizer.eventDetail.states.approvedPendingPayment",
+  rejected: "organizer.eventDetail.states.rejected",
+  waiting_for_payment: "organizer.eventDetail.states.approvedWaitingPayment",
+  payment_proof_submitted: "organizer.eventDetail.states.proofUnderReview",
+  payment_done: "organizer.eventDetail.states.paymentConfirmed",
+  live: "organizer.eventDetail.states.eventLive",
+  closed: "organizer.eventDetail.states.eventEnded",
 };
 
 const STATE_COLORS: Record<EventStatus, string> = {
@@ -47,7 +48,7 @@ const STATE_COLORS: Record<EventStatus, string> = {
 };
 
 // ── Schedule renderer (mirrors admin panel) ──────────────────────────────────
-function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userTimezone: string }) {
+function ScheduleDisplay({ event, userTimezone, t }: { event: OrganizerEvent; userTimezone: string; t: (key: string, options?: any) => string }) {
       // ...existing code...
     const now = new Date();
     const eventTimezone = event.event_timezone || 'UTC';
@@ -98,7 +99,7 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
         blockedRanges[nextDayNum].push({
           start: "00:00",
           end: slot.end_time,
-          label: `Continuing from Day ${day.day_number}: ${slot.label || 'Untitled'}`
+          label: t("organizer.eventDetail.schedule.overlapSpillover", { N: day.day_number })
         });
       }
     });
@@ -109,11 +110,11 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
     const absStart = getAbsTimeUTC(dayNumber, slot.start_time);
     const eventStart = new Date(event.start_date);
     if (absStart && absStart < eventStart) {
-        return `Before Start (${formatInUserTZ(eventStart, {hour:'2-digit', minute:'2-digit', hour12: false}, undefined, userTimezone)})`;
+        return `${t("organizer.eventDetail.schedule.beforeStart")} (${formatInUserTZ(eventStart, {hour:'2-digit', minute:'2-digit', hour12: false}, undefined, userTimezone)})`;
     }
     const dayBlocked = blockedRanges[dayNumber] || [];
     for (const b of dayBlocked) {
-        if (slot.start_time < b.end) return `Overlap spill-over from Day ${dayNumber - 1}`;
+        if (slot.start_time < b.end) return t("organizer.eventDetail.schedule.overlapSpillover", { N: dayNumber - 1 });
     }
     return null;
   };
@@ -146,13 +147,13 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
                     {day.day_number}
                   </span>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900 leading-tight">Day {day.day_number}</h3>
+                    <h3 className="text-sm font-bold text-zinc-900 leading-tight">{t("organizer.newEvent.sections.schedule")} {day.day_number}</h3>
                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{formatDayLabel(day.day_number, dayIndex)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-xl border border-zinc-100 shadow-sm">
                   <Calendar className="w-3 h-3 text-zinc-400" />
-                  <span className="text-[10px] font-bold text-zinc-500 tabular-nums lowercase">{day.slots.length + dayBlocked.length} session{day.slots.length + dayBlocked.length !== 1 ? 's' : ''}</span>
+                  <span className="text-[10px] font-bold text-zinc-500 tabular-nums lowercase">{day.slots.length + dayBlocked.length} {t("organizer.eventDetail.conferences.title").toLowerCase()}</span>
                 </div>
               </div>
               <div className="p-4 space-y-3">
@@ -168,7 +169,7 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-zinc-400 leading-snug truncate italic">
-                          {block.label} {passed && <span className="text-[8px] bg-zinc-200 text-zinc-500 px-1 rounded ml-2 not-italic">Past</span>}
+                          {block.label} {passed && <span className="text-[8px] bg-zinc-200 text-zinc-500 px-1 rounded ml-2 not-italic">{t("organizer.eventDetail.schedule.past")}</span>}
                         </p>
                       </div>
                     </div>
@@ -189,29 +190,29 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
                       )}
                       {passed && !violation && (
                         <div className="absolute -top-2 left-6 px-1.5 py-0.5 bg-zinc-500 text-white text-[8px] font-black uppercase tracking-tighter rounded shadow-sm z-10 flex items-center gap-1">
-                          <Clock className="w-2.5 h-2.5" /> Past
+                          <Clock className="w-2.5 h-2.5" /> {t("organizer.eventDetail.schedule.past")}
                         </div>
                       )}
 
                       <div className="flex items-center gap-3 shrink-0">
                         <div className={`text-[11px] font-black rounded-lg px-2.5 py-1.5 whitespace-nowrap tabular-nums shadow-sm border ${violation ? 'text-red-700 bg-white border-red-200' : slot.is_conference ? 'text-violet-700 bg-white border-violet-100' : 'text-indigo-700 bg-white border-indigo-100'}`}>
                           {formatSlotTime(day.day_number, slot.start_time)} <span className="opacity-30 mx-0.5">→</span> {formatSlotTime(day.day_number, slot.end_time)}
-                          {isCrossDay && <span className="ml-1.5 text-[8px] text-amber-600 uppercase tracking-tighter font-black">+1d</span>}
+                          {isCrossDay && <span className="ml-1.5 text-[8px] text-amber-600 uppercase tracking-tighter font-black">{t("organizer.eventDetail.schedule.nextDayBadge")}</span>}
                         </div>
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-zinc-800 leading-snug group-hover:text-indigo-600 transition-colors">
-                            {slot.label || <em className="text-zinc-400 font-normal">No description</em>}
+                            {slot.label || <em className="text-zinc-400 font-normal">{t("organizer.eventDetail.schedule.noDescription")}</em>}
                         </p>
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
                             {slot.is_conference && (
                                 <span className="text-[9px] font-black uppercase text-violet-700 bg-violet-100/50 border border-violet-200/50 rounded-md px-2 py-0.5 tracking-tight flex items-center gap-1">
-                                <Video className="w-2.5 h-2.5" /> Conference Room
+                                <Video className="w-2.5 h-2.5" /> {t("organizer.eventDetail.schedule.conferenceRoom")}
                                 </span>
                             )}
                             {isCrossDay && <span className="text-[9px] font-black uppercase text-amber-700 bg-amber-100/50 border border-amber-200/50 rounded-md px-2 py-0.5 tracking-tight flex items-center gap-1 shadow-sm">
-                                <ArrowRight className="w-2.5 h-2.5" /> Cross-day
+                                <ArrowRight className="w-2.5 h-2.5" /> {t("organizer.eventDetail.schedule.crossDay")}
                             </span>}
                             {slot.assigned_enterprise_name && (
                                 <span className="text-[9px] font-bold text-zinc-400 flex items-center gap-1 ml-1">
@@ -227,7 +228,7 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
               {!day.slots.length && !dayBlocked.length && (
                 <div className="py-8 text-center bg-zinc-50/30 border-2 border-dashed border-zinc-100 rounded-2xl m-4">
                    <Clock className="w-6 h-6 text-zinc-200 mx-auto mb-2" />
-                   <p className="text-xs text-zinc-400 italic">No slots defined for this day.</p>
+                   <p className="text-xs text-zinc-400 italic">{t("organizer.eventDetail.schedule.noSlots")}</p>
                 </div>
               )}
             </div>
@@ -237,7 +238,7 @@ function ScheduleDisplay({ event, userTimezone }: { event: OrganizerEvent; userT
     );
   }
   if (event.event_timeline) return <p className="text-sm text-gray-700 whitespace-pre-wrap">{event.event_timeline}</p>;
-  return <p className="text-xs text-zinc-400 italic">No schedule provided</p>;
+  return <p className="text-xs text-zinc-400 italic">{t("organizer.eventDetail.schedule.noSchedule")}</p>;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -293,6 +294,7 @@ function EditEventModal({
   onClose: () => void; 
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     title: event.title,
     description: event.description || "",
@@ -375,7 +377,7 @@ function EditEventModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to update event");
+      setError(err.message || t("organizer.eventDetail.toast.updateFailed"));
     } finally {
       setLoading(false);
     }
@@ -389,7 +391,7 @@ function EditEventModal({
             <div className="p-2 bg-indigo-50 rounded-lg">
               <Pencil className="w-5 h-5 text-indigo-600" />
             </div>
-            Edit Event Information
+            {t("organizer.eventDetail.editEvent")}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <XCircle className="w-6 h-6 text-gray-400" />
@@ -405,18 +407,18 @@ function EditEventModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Event Title</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.eventTitle")}</label>
               <input name="title" value={form.title} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">URL Slug (Friendly ID)</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.urlSlug")}</label>
               <input name="slug" value={form.slug} onChange={handleChange} placeholder="e.g. tech-expo-2025" className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Event Timezone</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.timezone")}</label>
               <select name="event_timezone" value={form.event_timezone} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 bg-white">
                 {["UTC", "Africa/Casablanca", "Europe/Paris", "Europe/London", "America/New_York", "Asia/Dubai", "Asia/Tokyo"].map(tz => (
                   <option key={tz} value={tz}>{tz}</option>
@@ -424,45 +426,45 @@ function EditEventModal({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Registration Deadline</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.registrationDeadline")}</label>
               <input type="datetime-local" name="registration_deadline" value={form.registration_deadline} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Start Date</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.startDate")}</label>
               <input type="datetime-local" name="start_date" value={form.start_date} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">End Date</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.endDate")}</label>
               <input type="datetime-local" name="end_date" value={form.end_date} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Category</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.category")}</label>
               <select name="category" value={form.category} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 bg-white">
                 {["Exhibition", "Conference", "Webinar", "Networking", "Workshop", "Hackathon"].map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{t(`organizer.newEvent.categories.${cat.toLowerCase()}`)}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Description</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.description")}</label>
             <textarea name="description" value={form.description} onChange={handleChange} rows={2} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 resize-none" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.location")}</label>
               <input name="location" value={form.location} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tags (comma-separated)</label>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.tags")}</label>
               <input name="tags" value={form.tags} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" />
             </div>
           </div>
@@ -471,19 +473,19 @@ function EditEventModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-3.5 h-3.5" /> Stand Price (MAD)
+                  <DollarSign className="w-3.5 h-3.5" /> {t("organizer.eventDetail.form.standPrice")}
                 </label>
                 <input name="stand_price" type="number" step="0.01" value={form.stand_price} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                   <input type="checkbox" name="is_paid" checked={form.is_paid} onChange={handleChange} className="w-4 h-4 accent-indigo-600 rounded" />
-                  Paid Event for Visitors
+                  {t("organizer.eventDetail.form.paidEvent")}
                 </label>
                 {form.is_paid && (
                   <div className="relative">
-                    <input name="ticket_price" type="number" step="0.01" placeholder="Ticket Price" value={form.ticket_price} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">MAD</span>
+                    <input name="ticket_price" type="number" step="0.01" placeholder={t("organizer.eventDetail.form.ticketPrice")} value={form.ticket_price} onChange={handleChange} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300" required />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">{t("organizer.eventDetail.form.currency")}</span>
                   </div>
                 )}
               </div>
@@ -491,18 +493,18 @@ function EditEventModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Extended Details</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.extendedDetails")}</label>
             <textarea name="extended_details" value={form.extended_details} onChange={handleChange} rows={4} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 resize-none" />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Additional Info</label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t("organizer.eventDetail.form.additionalInfo")}</label>
             <textarea name="additional_info" value={form.additional_info} onChange={handleChange} rows={2} className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-gray-300 resize-none" />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="rounded-xl px-6">Cancel</Button>
-            <Button type="submit" isLoading={loading} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-8 shadow-lg shadow-indigo-200">Save Changes</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="rounded-xl px-6">{t("organizer.eventDetail.buttons.cancel")}</Button>
+            <Button type="submit" isLoading={loading} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-8 shadow-lg shadow-indigo-200">{t("organizer.eventDetail.buttons.save")}</Button>
           </div>
         </form>
       </Card>
@@ -528,21 +530,6 @@ function InfoRow({
   );
 }
 
-const WORKFLOW_STEPS: { key: EventStatus; label: string; getDesc: (event: OrganizerEvent) => string }[] = [
-  { key: "pending_approval", label: "Request Submitted", getDesc: () => "Awaiting admin review" },
-  {
-    key: "waiting_for_payment",
-    label: "Admin Approved",
-    getDesc: (e) =>
-      e.payment_amount != null
-        ? `Payment required: ${e.payment_amount.toFixed(2)} MAD`
-        : "Payment required",
-  },
-  { key: "payment_done", label: "Payment Confirmed", getDesc: () => "Access links generated" },
-  { key: "live", label: "Event Live", getDesc: () => "Event is currently running" },
-  { key: "closed", label: "Event Closed", getDesc: () => "Event has ended" },
-];
-
 const STEP_ORDER: EventStatus[] = [
   "pending_approval",
   "waiting_for_payment",
@@ -552,6 +539,7 @@ const STEP_ORDER: EventStatus[] = [
 ];
 
 export default function EventDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const eventId = params?.id as string;
   const { user } = useAuth();
@@ -570,13 +558,43 @@ export default function EventDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const reportDownloadLockRef = useRef(false);
+  const workflowSteps: { key: EventStatus; label: string; getDesc: (event: OrganizerEvent) => string }[] = [
+    {
+      key: "pending_approval",
+      label: t("organizer.eventDetail.approvalWorkflow.steps.requestSubmitted.label"),
+      getDesc: () => t("organizer.eventDetail.approvalWorkflow.steps.requestSubmitted.description"),
+    },
+    {
+      key: "waiting_for_payment",
+      label: t("organizer.eventDetail.approvalWorkflow.steps.adminApproved.label"),
+      getDesc: (e) =>
+        e.payment_amount != null
+          ? t("organizer.eventDetail.approvalWorkflow.steps.adminApproved.description", { amount: e.payment_amount.toFixed(2) })
+          : t("organizer.eventDetail.approvalWorkflow.steps.adminApproved.descriptionNoAmount"),
+    },
+    {
+      key: "payment_done",
+      label: t("organizer.eventDetail.approvalWorkflow.steps.paymentConfirmed.label"),
+      getDesc: () => t("organizer.eventDetail.approvalWorkflow.steps.paymentConfirmed.description"),
+    },
+    {
+      key: "live",
+      label: t("organizer.eventDetail.approvalWorkflow.steps.eventLive.label"),
+      getDesc: () => t("organizer.eventDetail.approvalWorkflow.steps.eventLive.description"),
+    },
+    {
+      key: "closed",
+      label: t("organizer.eventDetail.approvalWorkflow.steps.eventClosed.label"),
+      getDesc: () => t("organizer.eventDetail.approvalWorkflow.steps.eventClosed.description"),
+    },
+  ];
 
   const fetchEvent = async () => {
     try {
       const data = await eventsApi.getEventById(eventId);
       setEvent(data);
     } catch {
-      setError("Could not load event details.");
+      setError(t("organizer.eventDetail.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -589,13 +607,13 @@ export default function EventDetailPage() {
 const handleConfirmPayment = async () => {
     const normalizedProofUrl = proofUrl.trim();
     if (!proofFile && !normalizedProofUrl) {
-      setError("Please upload an image/PDF proof or provide a URL/path.");
+      setError(t("organizer.eventDetail.payment.uploadProof"));
       return;
     }
 
     if (
       !confirm(
-        "Confirm that you have sent the payment to the displayed RIB and wish to submit this proof?"
+        t("organizer.eventDetail.payment.confirmMessage")
       )
     )
       return;
@@ -609,7 +627,7 @@ const handleConfirmPayment = async () => {
       setProofFile(null);
       setProofUrl("");
     } catch (err: any) {
-      setError(err.message || "Payment proof submission failed.");
+      setError(err.message || t("organizer.eventDetail.toast.proofFailed"));
     } finally {
       setPaymentLoading(false);
     }
@@ -622,7 +640,7 @@ const handleConfirmPayment = async () => {
     try {
       await organizerService.exportEventReportPDF(eventId);
     } catch (err: any) {
-      setError(err.message || "Failed to download report.");
+      setError(err.message || t("organizer.eventDetail.toast.reportFailed"));
     } finally {
       reportDownloadLockRef.current = false;
       setReportLoading(false);
@@ -630,26 +648,26 @@ const handleConfirmPayment = async () => {
   };
 
   const handleStartEvent = async () => {
-    if (!confirm("Are you sure you want to start this event? It will go LIVE and be visible to visitors.")) return;
+    if (!confirm(t("organizer.eventDetail.confirm.startMessage"))) return;
     setLoading(true);
     try {
       await organizerService.startEvent(eventId);
       await fetchEvent();
     } catch (err: any) {
-      setError(err.message || "Failed to start event.");
+      setError(err.message || t("organizer.eventDetail.toast.startFailed"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCloseEvent = async () => {
-    if (!confirm("Are you sure you want to close this event? This action is permanent.")) return;
+    if (!confirm(t("organizer.eventDetail.confirm.closeMessage"))) return;
     setLoading(true);
     try {
       await organizerService.closeEvent(eventId);
       await fetchEvent();
     } catch (err: any) {
-      setError(err.message || "Failed to close event.");
+      setError(err.message || t("organizer.eventDetail.toast.closeFailed"));
     } finally {
       setLoading(false);
     }
@@ -666,12 +684,12 @@ const handleConfirmPayment = async () => {
   if (!event) {
     return (
       <div className="text-center py-20 text-gray-400">
-        <p>Event not found.</p>
+        <p>{t("organizer.eventDetail.notFound")}</p>
         <Link
           href="/organizer/events"
           className="text-indigo-600 text-sm mt-2 inline-block"
         >
-          Back to events
+          {t("organizer.eventDetail.backToEvents")}
         </Link>
       </div>
     );
@@ -748,7 +766,7 @@ const handleConfirmPayment = async () => {
                     : STATE_COLORS[effectiveState]
                 }`}
               >
-                {liveWorkflowBadge ? liveWorkflowBadge.label : STATE_LABELS[effectiveState]}
+                {liveWorkflowBadge ? liveWorkflowBadge.label : t(STATE_LABEL_KEYS[effectiveState])}
               </span>
             </div>
             {event.description && (
@@ -764,7 +782,7 @@ const handleConfirmPayment = async () => {
             className="h-11 px-4 gap-2 rounded-2xl text-[13px] font-bold text-zinc-600 border-zinc-100 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all active:scale-95"
             onClick={() => setIsEditModalOpen(true)}
           >
-            <Pencil className="w-3.5 h-3.5" /> Edit Info
+              <Pencil className="w-3.5 h-3.5" /> {t("organizer.eventDetail.buttons.editInfo")}
           </Button>
           
           <div className="h-8 w-px bg-zinc-100 mx-1.5 hidden lg:block" />
@@ -772,7 +790,7 @@ const handleConfirmPayment = async () => {
           {effectiveState !== "payment_done" && (
             <Link href={`/organizer/events/${event.id}/analytics`}>
               <Button variant="outline" size="sm" className="h-11 px-4 gap-2 rounded-2xl text-[13px] font-bold text-zinc-600 border-zinc-100 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/30 transition-all active:scale-95">
-                <BarChart2 className="w-3.5 h-3.5" /> Analytics
+                <BarChart2 className="w-3.5 h-3.5" /> {t("organizer.eventDetail.buttons.analytics")}
               </Button>
             </Link>
           )}
@@ -784,7 +802,7 @@ const handleConfirmPayment = async () => {
             onClick={handleDownloadReport}
             isLoading={reportLoading}
           >
-            <Download className="w-3.5 h-3.5" /> Report
+            <Download className="w-3.5 h-3.5" /> {t("organizer.eventDetail.buttons.report")}
           </Button>
 
           {effectiveState === "payment_done" && (
@@ -794,7 +812,7 @@ const handleConfirmPayment = async () => {
               className="h-11 px-6 gap-2 rounded-2xl text-[13px] font-black bg-green-600 hover:bg-green-700 shadow-xl shadow-green-100 border-none transition-all active:scale-95 whitespace-nowrap"
               onClick={handleStartEvent}
             >
-              <Check className="w-4 h-4" /> Start Event
+              <Check className="w-4 h-4" /> {t("organizer.eventDetail.buttons.start")}
             </Button>
           )}
 
@@ -806,7 +824,7 @@ const handleConfirmPayment = async () => {
               onClick={handleCloseEvent}
               isLoading={loading}
             >
-              <XCircle className="w-4 h-4" /> Close Event
+              <XCircle className="w-4 h-4" /> {t("organizer.eventDetail.buttons.close")}
             </Button>
           )}
         </div>
@@ -815,10 +833,10 @@ const handleConfirmPayment = async () => {
       {/* Tabs Navigation */}
       <div className="flex p-1 bg-zinc-100 border border-zinc-200/50 rounded-2xl w-fit">
         {[
-          { id: "overview", label: "Overview", icon: Info },
-          { id: "schedule", label: "Schedule", icon: CalendarDays },
-          { id: "conferences", label: "Conferences", icon: Video },
-          { id: "links", label: "Links", icon: Link2 },
+          { id: "overview", label: t("organizer.eventDetail.tabs.overview"), icon: Info },
+          { id: "schedule", label: t("organizer.eventDetail.tabs.schedule"), icon: CalendarDays },
+          { id: "conferences", label: t("organizer.eventDetail.tabs.conferences"), icon: Video },
+          { id: "links", label: t("organizer.eventDetail.tabs.links"), icon: Link2 },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -850,10 +868,10 @@ const handleConfirmPayment = async () => {
             {/* Approval Workflow (Moved here from main list) */}
             <Card className="p-6 rounded-3xl border-zinc-100 shadow-sm">
               <h2 className="text-xs font-bold text-gray-400 mb-6 uppercase tracking-widest flex items-center gap-2">
-                <Clock className="w-4 h-4 text-zinc-300" /> Approval Workflow
-              </h2>
+                  <Clock className="w-4 h-4 text-zinc-300" /> {t("organizer.eventDetail.approvalWorkflow.title")}
+                </h2>
               <ol className="relative border-l-2 border-zinc-100 ml-4 space-y-8 pb-1">
-                {WORKFLOW_STEPS.map((step) => {
+                {workflowSteps.map((step) => {
                   const stepIdx = STEP_ORDER.indexOf(step.key);
                   const isDone = currentIdx > stepIdx;
                   const isCurrent = currentIdx === stepIdx && event.state !== "rejected";
@@ -887,19 +905,19 @@ const handleConfirmPayment = async () => {
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
                   <div className="space-y-4 flex-1">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold uppercase tracking-wider">
-                      <CreditCard className="w-4 h-4" /> Action Required
+                      <CreditCard className="w-4 h-4" /> {t("organizer.eventDetail.payment.actionRequired")}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-orange-900">Finalize Payment</h3>
+                      <h3 className="text-lg font-bold text-orange-900">{t("organizer.eventDetail.payment.finalizePayment")}</h3>
                       <p className="text-sm text-orange-700 mt-1 leading-relaxed">
-                        To activate your event and generate guest links, please send <span className="font-black text-orange-900 underline decoration-orange-300 underline-offset-4">{event.payment_amount?.toFixed(2)} MAD</span> to the Platform RIB below.
+                        {t("organizer.eventDetail.payment.instruction", { amount: event.payment_amount?.toFixed(2) })}
                       </p>
                     </div>
 
                     <div className="bg-white/60 border border-orange-200/50 backdrop-blur-sm rounded-2xl p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold uppercase text-orange-400 tracking-widest">Platform RIB</label>
+                          <label className="text-[10px] font-bold uppercase text-orange-400 tracking-widest">{t("organizer.eventDetail.payment.ribLabel")}</label>
                           <div className="font-mono text-base font-bold text-zinc-800 tracking-tighter">
                             {event.rib_code || "007 999 000123456789 01"}
                           </div>
@@ -909,7 +927,7 @@ const handleConfirmPayment = async () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase text-orange-400 tracking-widest">Upload Proof (Image/PDF)</label>
+                      <label className="text-[10px] font-bold uppercase text-orange-400 tracking-widest">{t("organizer.eventDetail.payment.uploadProof")}</label>
                       <div className="flex flex-col gap-3">
                         <label className="group relative flex-1 cursor-pointer">
                           <div className={`border-2 border-dashed rounded-2xl px-5 py-4 flex items-center gap-4 transition-all duration-300 ${proofFile ? 'border-orange-500 bg-orange-50' : 'border-zinc-200 bg-white hover:border-orange-400 hover:bg-orange-50/30'}`}>
@@ -918,9 +936,9 @@ const handleConfirmPayment = async () => {
                             </div>
                             <div className="flex-1 min-w-0">
                                <p className={`text-sm truncate ${proofFile ? 'text-orange-900 font-bold' : 'text-zinc-500 font-medium'}`}>
-                                {proofFile ? proofFile.name : 'Choose file or drag here'}
+                                {proofFile ? proofFile.name : t("organizer.eventDetail.payment.chooseFile")}
                               </p>
-                              <p className="text-[10px] text-zinc-400">PDF, JPG, PNG up to 10MB</p>
+                              <p className="text-[10px] text-zinc-400">{t("organizer.eventDetail.payment.fileHint")}</p>
                             </div>
                             <input
                               type="file"
@@ -933,7 +951,7 @@ const handleConfirmPayment = async () => {
                         <div className="relative group">
                           <input
                             type="text"
-                            placeholder="...or paste proof URL here"
+                            placeholder={t("organizer.eventDetail.payment.urlPlaceholder")}
                             value={proofUrl}
                             onChange={(e) => setProofUrl(e.target.value)}
                             className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm text-zinc-700 placeholder:text-zinc-400 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
@@ -950,7 +968,7 @@ const handleConfirmPayment = async () => {
                     disabled={!proofFile && !proofUrl.trim()} 
                     onClick={handleConfirmPayment}
                   >
-                    Submit Payment Proof
+                    {t("organizer.eventDetail.payment.submitProof")}
                   </Button>
                 </div>
               </Card>
@@ -963,9 +981,9 @@ const handleConfirmPayment = async () => {
                     <Clock className="w-7 h-7 animate-spin-slow" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-blue-950">Under Review</h3>
+                    <h3 className="text-lg font-bold text-blue-950">{t("organizer.eventDetail.banners.proofUnderReview.title")}</h3>
                     <p className="text-sm text-blue-700/80 leading-relaxed mt-1">
-                      Our financial team is verifying your payment. This typically takes 1-2 hours during business hours.
+                      {t("organizer.eventDetail.banners.proofUnderReview.message")}
                     </p>
                     {event.payment_proof_url && (
                       <div className="mt-4">
@@ -975,7 +993,7 @@ const handleConfirmPayment = async () => {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 bg-white shadow-sm border border-blue-100 px-4 py-2 rounded-xl hover:bg-blue-50 transition-all"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" /> View Submitted Proof
+                          <ExternalLink className="w-3.5 h-3.5" /> {t("organizer.eventDetail.payment.submitProof")}
                         </a>
                       </div>
                     )}
@@ -988,18 +1006,18 @@ const handleConfirmPayment = async () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="p-6 rounded-3xl border-zinc-100 shadow-sm space-y-6">
                 <div>
-                  <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest">Description & Goals</h2>
+                  <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest">{t("organizer.eventDetail.form.description")}</h2>
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{event.description}</p>
                 </div>
                 {event.extended_details && (
                   <div>
-                    <h2 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Extended Context</h2>
+                    <h2 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">{t("organizer.eventDetail.form.extendedDetails")}</h2>
                     <p className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap line-clamp-6">{event.extended_details}</p>
                   </div>
                 )}
                 {event.additional_info && (
                    <div>
-                    <h2 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">Operational Notes</h2>
+                    <h2 className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-widest">{t("organizer.eventDetail.form.additionalInfo")}</h2>
                     <p className="text-sm text-zinc-600 leading-relaxed italic border-l-4 border-zinc-100 pl-4">{event.additional_info}</p>
                   </div>
                 )}
@@ -1007,27 +1025,27 @@ const handleConfirmPayment = async () => {
 
               <div className="space-y-6">
                 <Card className="p-6 rounded-3xl border-zinc-100 shadow-sm">
-                  <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest">Quick Info</h2>
+                  <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest">{t("organizer.eventDetail.overview.eventInformation")}</h2>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-zinc-50 rounded-lg"><Tag className="w-4 h-4 text-zinc-400" /></div>
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Category</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{t("organizer.eventDetail.form.category")}</p>
                         <p className="text-sm font-semibold text-zinc-800">{event.category}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-zinc-50 rounded-lg"><ExternalLink className="w-4 h-4 text-zinc-400" /></div>
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Location</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{t("organizer.eventDetail.form.location")}</p>
                         <p className="text-sm font-semibold text-zinc-800">{event.location}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-zinc-50 rounded-lg"><Users className="w-4 h-4 text-zinc-400" /></div>
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Enterprise Allocation</p>
-                        <p className="text-sm font-semibold text-zinc-800">{event.num_enterprises} Stands</p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{t("organizer.events.table.enterprises")}</p>
+                        <p className="text-sm font-semibold text-zinc-800">{event.num_enterprises}</p>
                       </div>
                     </div>
                     {event.tags && event.tags.length > 0 && (
@@ -1045,26 +1063,26 @@ const handleConfirmPayment = async () => {
 
                 <Card className="p-6 rounded-3xl border-zinc-100 shadow-sm bg-zinc-50/50">
                   <h2 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-zinc-300" /> Financial Settings
+                    <DollarSign className="w-4 h-4 text-zinc-300" /> {t("organizer.eventDetail.overview.pricing")}
                   </h2>
                   <div className="space-y-4">
                     <div className="flex justify-between items-end border-b border-zinc-100 pb-3">
                       <div>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">Stand Price</p>
-                        <p className="text-lg font-black text-zinc-800 tracking-tight">{event.stand_price?.toFixed(2)} <span className="text-xs font-normal text-zinc-400 uppercase">MAD</span></p>
+                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter">{t("organizer.eventDetail.form.standPrice")}</p>
+                        <p className="text-lg font-black text-zinc-800 tracking-tight">{event.stand_price?.toFixed(2)} <span className="text-xs font-normal text-zinc-400 uppercase">{t("organizer.eventDetail.form.currency")}</span></p>
                       </div>
-                      <span className="text-[10px] text-zinc-400 mb-1">Per Enterprise</span>
+                      <span className="text-[10px] text-zinc-400 mb-1">{t("organizer.events.table.enterprises")}</span>
                     </div>
                     <div>
-                      <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter mb-2">Visitor Access</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-tighter mb-2">{t("organizer.eventDetail.links.visitorAccess")}</p>
                       {event.is_paid ? (
                         <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-between">
-                          <span className="text-sm font-bold text-orange-700">Paid Entry</span>
-                          <span className="text-sm font-black text-orange-800">{event.ticket_price?.toFixed(2)} MAD</span>
+                          <span className="text-sm font-bold text-orange-700">{t("organizer.newEvent.labels.eventTypePaid")}</span>
+                          <span className="text-sm font-black text-orange-800">{event.ticket_price?.toFixed(2)} {t("organizer.eventDetail.form.currency")}</span>
                         </div>
                       ) : (
                         <div className="p-3 bg-green-50 border border-green-100 rounded-xl">
-                          <span className="text-sm font-bold text-green-700">Free Access</span>
+                          <span className="text-sm font-bold text-green-700">{t("organizer.newEvent.labels.eventTypeFree")}</span>
                         </div>
                       )}
                     </div>
@@ -1080,8 +1098,8 @@ const handleConfirmPayment = async () => {
             <Card className="p-8 rounded-3xl border-zinc-100 shadow-sm">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-lg font-bold text-zinc-900">Event Schedule</h2>
-                  <p className="text-sm text-zinc-500">Timeline and session breakdown across the event duration.</p>
+                  <h2 className="text-lg font-bold text-zinc-900">{t("organizer.eventDetail.schedule.title")}</h2>
+                  <p className="text-sm text-zinc-500">{t("organizer.newEvent.labels.scheduleDescription")}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {!isEditingSchedule && (
@@ -1090,7 +1108,7 @@ const handleConfirmPayment = async () => {
                         onClick={() => setIsEditingSchedule(true)}
                         className="rounded-xl h-10 border-zinc-200 text-zinc-600 bg-white hover:bg-zinc-50 border shadow-sm px-4"
                     >
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit Schedule
+                        <Edit2 className="w-4 h-4 mr-2" /> {t("organizer.eventDetail.schedule.editSchedule")}
                     </Button>
                   )}
                   <div className="flex items-center gap-2 bg-zinc-50 px-4 py-2 rounded-2xl border border-zinc-100">
@@ -1113,8 +1131,8 @@ const handleConfirmPayment = async () => {
                   onCancel={() => setIsEditingSchedule(false)}
                 />
               ) : (
-                <ScheduleDisplay event={event} userTimezone={userTimezone} />
-              )}
+                 <ScheduleDisplay event={event} userTimezone={userTimezone} t={t} />
+               )}
             </Card>
           </div>
         )}
@@ -1128,9 +1146,9 @@ const handleConfirmPayment = async () => {
                 <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-zinc-100 flex items-center justify-center mx-auto mb-4">
                   <Video className="w-8 h-8 text-zinc-300" />
                 </div>
-                <h3 className="text-base font-bold text-zinc-800">Conferences Locked</h3>
+                <h3 className="text-base font-bold text-zinc-800">{t("organizer.eventDetail.conferences.title")}</h3>
                 <p className="text-sm text-zinc-500 mt-1 max-w-xs mx-auto">
-                  Conference management will become available once the event is approved and payment is confirmed.
+                  {t("organizer.eventDetail.conferences.subtitle")}
                 </p>
               </Card>
             )}
@@ -1146,8 +1164,8 @@ const handleConfirmPayment = async () => {
                     <Link2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-indigo-950">Invitation & Publication Links</h2>
-                    <p className="text-sm text-indigo-600/70 font-medium">Share these links to invite guests. IDs are masked for security.</p>
+                    <h2 className="text-lg font-bold text-indigo-950">{t("organizer.eventDetail.links.title")}</h2>
+                    <p className="text-sm text-indigo-600/70 font-medium">{t("organizer.eventDetail.links.subtitle")}</p>
                   </div>
                 </div>
                 
@@ -1156,16 +1174,14 @@ const handleConfirmPayment = async () => {
                     <div className="group">
                       <div className="flex items-center gap-2 mb-2">
                          <div className="w-2 h-4 bg-indigo-400 rounded-full" />
-                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">Enterprise Guest Invite</span>
+                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">{t("organizer.eventDetail.links.enterpriseAccess")}</span>
                       </div>
                       <div className="flex items-center gap-3 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm group-hover:border-indigo-300 transition-all duration-300">
                         <MaskedLink url={enterpriseInviteLink} />
                         <div className="h-8 w-px bg-zinc-100 mx-1" />
                         <CopyButton text={enterpriseInviteLink} />
                       </div>
-                      <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">
-                        Share with exhibitors. They are auto-accepted as guests without requiring registration payment.
-                      </p>
+                       <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">{t("organizer.eventDetail.links.enterpriseAccess")}</p>
                     </div>
                   )}
                   
@@ -1173,16 +1189,14 @@ const handleConfirmPayment = async () => {
                     <div className="group">
                       <div className="flex items-center gap-2 mb-2">
                          <div className="w-2 h-4 bg-indigo-400 rounded-full" />
-                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">Visitor Guest Invite</span>
+                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">{t("organizer.eventDetail.links.visitorAccess")}</span>
                       </div>
                       <div className="flex items-center gap-3 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm group-hover:border-indigo-300 transition-all duration-300">
                         <MaskedLink url={visitorInviteLink} />
                         <div className="h-8 w-px bg-zinc-100 mx-1" />
                         <CopyButton text={visitorInviteLink} />
                       </div>
-                      <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">
-                        Share with VIP visitors. They get full access bypass and skip the ticket purchase flow.
-                      </p>
+                       <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">{t("organizer.eventDetail.links.visitorAccess")}</p>
                     </div>
                   )}
 
@@ -1190,16 +1204,14 @@ const handleConfirmPayment = async () => {
                     <div className="group">
                       <div className="flex items-center gap-2 mb-2">
                          <div className="w-2 h-4 bg-indigo-400 rounded-full" />
-                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">Public Publication Link</span>
+                         <span className="text-xs font-black uppercase text-indigo-900 tracking-wider">{t("organizer.eventDetail.overview.publicPage")}</span>
                       </div>
                       <div className="flex items-center gap-3 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm group-hover:border-indigo-300 transition-all duration-300">
                         <MaskedLink url={publicityLink} />
                         <div className="h-8 w-px bg-zinc-100 mx-1" />
                         <CopyButton text={publicityLink} />
                       </div>
-                      <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">
-                        Share on social media. Visitors using this link follow the normal registration and ticket flow.
-                      </p>
+                       <p className="text-[11px] text-indigo-500 mt-2 ml-1 leading-relaxed">{t("organizer.eventDetail.overview.publicPage")}</p>
                     </div>
                   )}
                 </div>
@@ -1209,9 +1221,9 @@ const handleConfirmPayment = async () => {
                 <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-zinc-100 flex items-center justify-center mx-auto mb-4">
                   <Link2 className="w-8 h-8 text-zinc-300" />
                 </div>
-                <h3 className="text-base font-bold text-zinc-800">Links Not Generated</h3>
+                <h3 className="text-base font-bold text-zinc-800">{t("organizer.eventDetail.links.linkNotAvailable")}</h3>
                 <p className="text-sm text-zinc-500 mt-1 max-w-xs mx-auto">
-                  Access links are generated once payment is confirmed by the administration.
+                  {t("organizer.eventDetail.links.noEnterpriseLink")}
                 </p>
               </Card>
             )}

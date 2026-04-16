@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ChangePassword from '@/components/common/ChangePassword';
+import { useTranslation } from 'react-i18next';
 
 const FALLBACK_TIMEZONES = [
     'UTC',
@@ -31,6 +32,7 @@ const TIMEZONE_OPTIONS =
         : FALLBACK_TIMEZONES;
 
 export default function OrganizerProfile() {
+    const { t } = useTranslation();
     const { user, refreshUser } = useAuth();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +51,7 @@ export default function OrganizerProfile() {
             setForm({
                 full_name: user.full_name || '',
                 bio: user.bio || '',
-                language: user.language || 'English',
+                language: user.language || t("organizer.profile.languages.english"),
                 timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 interests: user.interests || []
             });
@@ -96,9 +98,9 @@ export default function OrganizerProfile() {
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('ivep:auth-user-updated'));
             }
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: t("organizer.profile.messages.updateSuccess") });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+            setMessage({ type: 'error', text: err.message || t("organizer.profile.messages.updateFailed") });
         } finally {
             setIsLoading(false);
         }
@@ -108,8 +110,8 @@ export default function OrganizerProfile() {
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
             <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Profile Settings</h1>
-                    <p className="text-zinc-500 mt-1">Manage your identity and organization presence on IVEP.</p>
+                    <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">{t("organizer.profile.title")}</h1>
+                    <p className="text-zinc-500 mt-1">{t("organizer.profile.subtitle")}</p>
                 </div>
             </div>
 
@@ -130,45 +132,45 @@ export default function OrganizerProfile() {
                         <Card className="border-zinc-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-zinc-50/50 border-b border-zinc-100 py-5 px-8">
                                 <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                                    <UserCircle size={18} className="text-indigo-500" /> Basic Information
+                                    <UserCircle size={18} className="text-indigo-500" /> {t("organizer.profile.sections.basicInfo")}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Full Name</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t("organizer.profile.fullName.label")}</label>
                                     <Input
                                         name="full_name"
                                         value={form.full_name}
                                         onChange={handleChange}
-                                        placeholder="Enter your full name"
+                                        placeholder={t("organizer.profile.fullName.placeholder")}
                                         className="h-11 rounded-xl"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Email (Read-only)</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t("organizer.profile.email.label")}</label>
                                     <div className="flex items-center gap-3 h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-500 text-sm">
                                         <Mail size={16} className="text-zinc-400" />
                                         {user?.email}
                                     </div>
-                                    <p className="text-[10px] text-zinc-400 italic px-1">Email changes require support verification.</p>
+                                    <p className="text-[10px] text-zinc-400 italic px-1">{t("organizer.profile.email.hint")}</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Short Bio</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t("organizer.profile.bio.label")}</label>
                                     <textarea
                                         name="bio"
                                         value={form.bio}
                                         onChange={handleChange}
                                         className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-inner"
-                                        placeholder="Tell us a bit about your professional background..."
+                                        placeholder={t("organizer.profile.bio.placeholder")}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> Preferred Language
+                                            <Globe size={14} className="text-indigo-500" /> {t("organizer.profile.language.label")}
                                         </label>
                                         <select
                                             name="language"
@@ -176,15 +178,15 @@ export default function OrganizerProfile() {
                                             onChange={(e) => setForm(prev => ({ ...prev, language: e.target.value }))}
                                             className="w-full h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 shadow-inner"
                                         >
-                                            <option>English</option>
-                                            <option>Spanish</option>
-                                            <option>French</option>
-                                            <option>Arabic</option>
+                                            <option>{t("organizer.profile.languages.english")}</option>
+                                            <option>{t("organizer.profile.languages.spanish")}</option>
+                                            <option>{t("organizer.profile.languages.french")}</option>
+                                            <option>{t("organizer.profile.languages.arabic")}</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> Timezone
+                                            <Globe size={14} className="text-indigo-500" /> {t("organizer.profile.timezone.label")}
                                         </label>
                                         <select
                                             name="timezone"
@@ -203,7 +205,7 @@ export default function OrganizerProfile() {
 
                         <div className="flex justify-end">
                             <Button type="submit" className="min-w-[180px] h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow-lg shadow-indigo-100 flex items-center gap-2" isLoading={isLoading}>
-                                <Save size={18} /> Update Profile
+                                <Save size={18} /> {t("organizer.profile.actions.update")}
                             </Button>
                         </div>
                     </form>
@@ -222,15 +224,15 @@ export default function OrganizerProfile() {
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <Shield size={16} className="text-indigo-500" />
-                                <span className="font-medium">Account Verified</span>
+                                <span className="font-medium">{t("organizer.profile.accountVerified")}</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <Building size={16} className="text-indigo-500" />
-                                <span className="font-medium">{user?.org_name || 'IVEP Organizer'}</span>
+                                <span className="font-medium">{user?.org_name || t("organizer.profile.fallbackOrgName")}</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <FileText size={16} className="text-indigo-500" />
-                                <span className="font-medium">Joined {user?.created_at ? new Date(user.created_at).getFullYear() : '2024'}</span>
+                                <span className="font-medium">{t("organizer.profile.joined", { year: user?.created_at ? new Date(user.created_at).getFullYear() : '2024' })}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -242,7 +244,7 @@ export default function OrganizerProfile() {
                             className="w-full h-11 rounded-xl border-zinc-200 bg-white gap-2 text-zinc-600 hover:bg-zinc-50"
                             onClick={() => router.push('/organizer/notifications')}
                         >
-                            <Bell size={16} /> Notifications
+                            <Bell size={16} /> {t("organizer.notifications.title")}
                         </Button>
                     </div>
 
@@ -250,9 +252,9 @@ export default function OrganizerProfile() {
                         <div className="flex items-start gap-3">
                             <Settings size={20} className="text-indigo-500 mt-1" />
                             <div>
-                                <h4 className="text-sm font-bold text-indigo-900">Need Help?</h4>
+                                <h4 className="text-sm font-bold text-indigo-900">{t("organizer.profile.help.title")}</h4>
                                 <p className="text-xs text-indigo-700/70 mt-1 leading-relaxed">
-                                    For organization-level changes or role migrations, please contact our support team.
+                                    {t("organizer.profile.help.description")}
                                 </p>
                             </div>
                         </div>

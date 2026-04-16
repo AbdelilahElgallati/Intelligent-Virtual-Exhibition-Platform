@@ -2241,6 +2241,7 @@
         "startDate": "Start Date *",
         "endDate": "End Date *",
         "timezone": "Event Timezone",
+        "timezoneHint": "Schedule slots are interpreted in this timezone for all users.",
         "location": "Location",
         "tags": "Tags (comma-separated)",
         "bannerImage": "Banner Image URL",
@@ -2269,7 +2270,9 @@
         "tags": "e.g. AI, Tech, Startup",
         "bannerUrl": "https://example.com/banner.jpg or /uploads/event_banners/...",
         "numEnterprises": "e.g. 20",
-        "extendedDetails": "Provide detailed information: objectives, target audience, special features, etc."
+        "extendedDetails": "Provide detailed information: objectives, target audience, special features, etc.",
+        "standPrice": "e.g. 500",
+        "ticketPrice": "e.g. 25.00"
       },
       "buttons": {
         "submit": "Submit Request",
@@ -2512,7 +2515,12 @@
         "close": "Close Profile",
         "loadFailed": "Failed to load organization profile."
       },
-      "unnamedEnterprise": "Unnamed enterprise"
+      "unnamedEnterprise": "Unnamed enterprise",
+      "generalCategory": "General",
+      "timelineLabel": "Timeline",
+      "notScheduled": "Not scheduled",
+      "dataRecencyLabel": "Data Recency",
+      "realTimeActive": "Real-time update active"
     },
     "notifications": {
       "title": "Notifications",
@@ -2575,6 +2583,51 @@
         }
       },
       "perMonth": "/month"
+    },
+    "profile": {
+      "title": "Profile Settings",
+      "subtitle": "Manage your identity and organization presence on IVEP.",
+      "sections": {
+        "basicInfo": "Basic Information"
+      },
+      "fullName": {
+        "label": "Full Name",
+        "placeholder": "Enter your full name"
+      },
+      "email": {
+        "label": "Email (Read-only)",
+        "hint": "Email changes require support verification."
+      },
+      "bio": {
+        "label": "Short Bio",
+        "placeholder": "Tell us a bit about your professional background..."
+      },
+      "language": {
+        "label": "Preferred Language"
+      },
+      "languages": {
+        "english": "English",
+        "spanish": "Spanish",
+        "french": "French",
+        "arabic": "Arabic"
+      },
+      "timezone": {
+        "label": "Timezone"
+      },
+      "actions": {
+        "update": "Update Profile"
+      },
+      "messages": {
+        "updateSuccess": "Profile updated successfully!",
+        "updateFailed": "Failed to update profile."
+      },
+      "accountVerified": "Account Verified",
+      "fallbackOrgName": "IVEP Organizer",
+      "joined": "Joined {year}",
+      "help": {
+        "title": "Need Help?",
+        "description": "For organization-level changes or role migrations, please contact our support team."
+      }
     }
   },
   "enterprise": {

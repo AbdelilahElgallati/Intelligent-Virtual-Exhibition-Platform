@@ -4,22 +4,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { eventsApi } from '@/lib/api/events';
 import { OrganizerEvent, EventStatus } from '@/types/event';
-import { Plus, Search, Eye, CreditCard, Play, XCircle, BarChart2 } from 'lucide-react';
+import { Plus, Search, Eye, CreditCard, Play, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatInUserTZ } from '@/lib/timezone';
 import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
+import { useTranslation } from 'react-i18next';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const STATE_LABELS: Record<EventStatus, string> = {
-    pending_approval: 'Pending Review',
-    approved: 'Approved',
-    rejected: 'Rejected',
-    waiting_for_payment: 'Waiting for Payment',
-    payment_proof_submitted: 'Proof Submitted',
-    payment_done: 'Payment Done',
-    live: 'Live',
-    closed: 'Closed',
+const STATE_LABEL_KEYS: Record<EventStatus, string> = {
+    pending_approval: "organizer.eventDetail.states.pendingReview",
+    approved: "organizer.events.states.approved",
+    rejected: "organizer.events.states.rejected",
+    waiting_for_payment: "organizer.events.states.waitingForPayment",
+    payment_proof_submitted: "organizer.eventDetail.states.proofUnderReview",
+    payment_done: "organizer.events.states.paymentDone",
+    live: "organizer.events.states.live",
+    closed: "organizer.events.states.closed",
 };
 
 const STATE_COLORS: Record<EventStatus, string> = {
@@ -34,28 +35,29 @@ const STATE_COLORS: Record<EventStatus, string> = {
 };
 
 /** When backend state is `live`, badge reflects real-world timing (upcoming / in-session / live), not only the workflow flag. */
-function getOrganizerListStatusBadge(event: OrganizerEvent): { label: string; className: string } {
+function getOrganizerListStatusBadge(event: OrganizerEvent, t: (key: string) => string): { label: string; className: string } {
     const effective = getEffectiveWorkflowState(event);
     if (event.state !== 'live') {
-        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
+        return { label: t(STATE_LABEL_KEYS[effective]), className: STATE_COLORS[effective] };
     }
     const live = getLiveWorkflowLabel(event);
     if (!live) {
-        return { label: STATE_LABELS[effective], className: STATE_COLORS[effective] };
+        return { label: t(STATE_LABEL_KEYS[effective]), className: STATE_COLORS[effective] };
     }
     if (live.kind === 'closed') {
-        return { label: STATE_LABELS.closed, className: STATE_COLORS.closed };
+        return { label: t(STATE_LABEL_KEYS.closed), className: STATE_COLORS.closed };
     }
     if (live.kind === 'session_live') {
-        return { label: 'Live', className: STATE_COLORS.live };
+        return { label: t("organizer.events.states.live"), className: STATE_COLORS.live };
     }
     if (live.kind === 'between_slots') {
-        return { label: 'In progress', className: 'bg-sky-100 text-sky-700' };
+        return { label: t("organizer.events.states.inProgress"), className: 'bg-sky-100 text-sky-700' };
     }
-    return { label: 'Upcoming', className: 'bg-indigo-100 text-indigo-700' };
+    return { label: t("organizer.events.states.upcoming"), className: 'bg-indigo-100 text-indigo-700' };
 }
 
 export default function OrganizerEvents() {
+    const { t } = useTranslation();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -77,21 +79,13 @@ export default function OrganizerEvents() {
     const handleStart = async (id: string) => {
         setActionLoading(id + '-start');
         try { await eventsApi.startEvent(id); await fetchEvents(); }
-        catch (err: any) { alert(err.message || 'Failed to start event'); }
-        finally { setActionLoading(null); }
-    };
-
-    const handleClose = async (id: string) => {
-        if (!confirm('Are you sure you want to close this event?')) return;
-        setActionLoading(id + '-close');
-        try { await eventsApi.closeEvent(id); await fetchEvents(); }
-        catch (err: any) { alert(err.message || 'Failed to close event'); }
+        catch (err: any) { alert(err.message || t("organizer.events.toast.startFailed")); }
         finally { setActionLoading(null); }
     };
 
     const filtered = events.filter((e) => {
         const q = search.toLowerCase();
-        const badge = getOrganizerListStatusBadge(e);
+        const badge = getOrganizerListStatusBadge(e, t);
         return e.title.toLowerCase().includes(q) || badge.label.toLowerCase().includes(q);
     });
 
@@ -108,13 +102,13 @@ export default function OrganizerEvents() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Events</h1>
-                    <p className="text-gray-500 text-sm">Manage and track your event requests.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t("organizer.events.title")}</h1>
+                    <p className="text-gray-500 text-sm">{t("organizer.events.subtitle")}</p>
                 </div>
                 <Link href="/organizer/events/new">
                     <Button className="bg-indigo-600 hover:bg-indigo-700">
                         <Plus className="w-4 h-4 mr-2" />
-                        New Event Request
+                        {t("organizer.events.newEvent")}
                     </Button>
                 </Link>
             </div>
@@ -125,7 +119,7 @@ export default function OrganizerEvents() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search by title or status…"
+                        placeholder={t("organizer.events.searchPlaceholder")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -137,27 +131,27 @@ export default function OrganizerEvents() {
             {filtered.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center text-gray-500 text-sm">
                     {events.length === 0
-                        ? "You haven't submitted any event requests yet."
-                        : 'No events match your search.'}
+                        ? t("organizer.events.empty")
+                        : t("organizer.events.noMatch")}
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                             <tr>
-                                <th className="px-6 py-3 text-left font-semibold">Event</th>
-                                <th className="px-4 py-3 text-left font-semibold">Dates</th>
-                                <th className="px-4 py-3 text-left font-semibold">Enterprises</th>
-                                <th className="px-4 py-3 text-left font-semibold">Payment</th>
-                                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                                <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                                <th className="px-6 py-3 text-left font-semibold">{t("organizer.events.table.event")}</th>
+                                <th className="px-4 py-3 text-left font-semibold">{t("organizer.events.table.dates")}</th>
+                                <th className="px-4 py-3 text-left font-semibold">{t("organizer.events.table.enterprises")}</th>
+                                <th className="px-4 py-3 text-left font-semibold">{t("organizer.events.table.payment")}</th>
+                                <th className="px-4 py-3 text-left font-semibold">{t("organizer.events.table.status")}</th>
+                                <th className="px-4 py-3 text-right font-semibold">{t("organizer.events.table.actions")}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filtered.map((event) => (
                                 (() => {
                                     const effectiveState = getEffectiveWorkflowState(event);
-                                    const listBadge = getOrganizerListStatusBadge(event);
+                                    const listBadge = getOrganizerListStatusBadge(event, t);
                                     return (
                                 <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4">
@@ -185,18 +179,18 @@ export default function OrganizerEvents() {
                                         <div className="flex items-center justify-end gap-2 flex-wrap">
                                             {/* View details — always shown */}
                                             <Link href={`/organizer/events/${event.slug || event.id}`}>
-                                                <Button variant="outline" size="sm" className="gap-1">
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    View
-                                                </Button>
-                                            </Link>
+                                                    <Button variant="outline" size="sm" className="gap-1">
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        {t("organizer.events.actions.view")}
+                                                    </Button>
+                                                </Link>
 
                                             {/* Pay — when waiting_for_payment */}
                                             {event.state === 'waiting_for_payment' && (
                                                 <Link href={`/organizer/events/${event.slug || event.id}`}>
                                                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600 gap-1">
                                                         <CreditCard className="w-3.5 h-3.5" />
-                                                        Pay Now
+                                                        {t("organizer.events.actions.payNow")}
                                                     </Button>
                                                 </Link>
                                             )}
@@ -210,7 +204,7 @@ export default function OrganizerEvents() {
                                                     onClick={() => handleStart(event.id)}
                                                 >
                                                     <Play className="w-3.5 h-3.5" />
-                                                    Start
+                                                    {t("organizer.events.actions.start")}
                                                 </Button>
                                             )}
 
@@ -233,7 +227,7 @@ export default function OrganizerEvents() {
                                                 <Link href={`/organizer/events/${event.slug || event.id}/analytics`}>
                                                     <Button variant="outline" size="sm" className="gap-1">
                                                         <BarChart2 className="w-3.5 h-3.5" />
-                                                        Analytics
+                                                        {t("organizer.events.actions.analytics")}
                                                     </Button>
                                                 </Link>
                                             )}
