@@ -15,17 +15,17 @@
       {
         "id": "qwen/qwen3-coder:free",
         "name": "Qwen3 Coder (OpenRouter)",
-        "envKey": "OPENROUTER_API_KEY",
+        "envKey": "OPENROUTER_API_KEY2",
         "baseUrl": "https://openrouter.ai/api/v1"
       }
     ]
   },
   "model": {
-    "name": "qwen/qwen3-coder:free"
+    "name": "coder-model"
   },
   "security": {
     "auth": {
-      "selectedType": "openai"
+      "selectedType": "qwen-oauth"
     }
   }
 }
