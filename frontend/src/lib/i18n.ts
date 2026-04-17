@@ -18,8 +18,8 @@ i18n
     interpolation: {
       escapeValue: false,
     },
-    ns: ['auth', 'profile', 'common', 'dashboard', 'landing', 'layout', 'events', 'admin', 'organizer', 'enterprise', 'visitor'],
-    defaultNS: 'common',
+    ns: ['translation'],
+    defaultNS: 'translation',
     detection: {
       order: ['localStorage', 'cookie', 'navigator'],
       caches: ['localStorage'],
