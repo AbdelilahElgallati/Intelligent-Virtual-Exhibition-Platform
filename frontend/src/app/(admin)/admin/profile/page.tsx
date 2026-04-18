@@ -31,7 +31,7 @@ const TIMEZONE_OPTIONS =
         : FALLBACK_TIMEZONES;
 
 export default function AdminProfile() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -65,13 +65,24 @@ export default function AdminProfile() {
 
         try {
             await http.put('/users/me', form);
+            
+            // Sync i18n language immediately
+            const langMap: Record<string, string> = {
+                'English': 'en',
+                'French': 'fr',
+                'Arabic': 'ar',
+                'Spanish': 'es'
+            };
+            const langCode = langMap[form.language] || 'en';
+            i18n.changeLanguage(langCode);
+
             try {
                 if (typeof window !== 'undefined') {
                     const raw = localStorage.getItem('auth_user');
                     const parsed = raw ? (JSON.parse(raw) as any) : {};
                     localStorage.setItem(
                         'auth_user',
-                        JSON.stringify({ ...parsed, timezone: form.timezone })
+                        JSON.stringify({ ...parsed, timezone: form.timezone, language: form.language })
                     );
                 }
             } catch {
@@ -81,9 +92,9 @@ export default function AdminProfile() {
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('ivep:auth-user-updated'));
             }
-            setMessage({ type: 'success', text: t('profile.success.update') });
+            setMessage({ type: 'success', text: t('profile.admin.success') });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || t('profile.errors.updateFailed') });
+            setMessage({ type: 'error', text: err.message || t('profile.admin.error') });
         } finally {
             setIsLoading(false);
         }
@@ -94,7 +105,7 @@ export default function AdminProfile() {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">{t('profile.title')}</h1>
-                    <p className="text-zinc-500 mt-1">{t('profile.description')}</p>
+                    <p className="text-zinc-500 mt-1">{t('profile.admin.subtitle')}</p>
                 </div>
             </div>
 
@@ -115,23 +126,23 @@ export default function AdminProfile() {
                         <Card className="border-zinc-200 shadow-sm overflow-hidden">
                             <CardHeader className="bg-zinc-50/50 border-b border-zinc-100 py-5 px-8">
                                 <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                                    <UserCircle size={18} className="text-indigo-500" /> {t('profile.sections.account')}
+                                    <UserCircle size={18} className="text-indigo-500" /> {t('profile.admin.accountInfo')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.fullName')}</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.admin.fullName.label')}</label>
                                     <Input
                                         name="full_name"
                                         value={form.full_name}
                                         onChange={handleChange}
-                                        placeholder={t('profile.placeholders.fullName')}
+                                        placeholder={t('profile.admin.fullName.placeholder')}
                                         className="h-11 rounded-xl"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.emailReadOnly')}</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.admin.email.label')}</label>
                                     <div className="flex items-center gap-3 h-11 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-500 text-sm">
                                         <Mail size={16} className="text-zinc-400" />
                                         {user?.email}
@@ -139,20 +150,20 @@ export default function AdminProfile() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.labels.bio')}</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('profile.admin.shortBio.label')}</label>
                                     <textarea
                                         name="bio"
                                         value={form.bio}
                                         onChange={handleChange}
                                         className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-inner"
-                                        placeholder={t('profile.placeholders.bio')}
+                                        placeholder={t('profile.admin.shortBio.placeholder')}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> {t('profile.labels.language')}
+                                            <Globe size={14} className="text-indigo-500" /> {t('profile.admin.preferredLanguage')}
                                         </label>
                                         <select
                                             name="language"
@@ -168,7 +179,7 @@ export default function AdminProfile() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> {t('profile.labels.timezone')}
+                                            <Globe size={14} className="text-indigo-500" /> {t('profile.admin.timezone')}
                                         </label>
                                         <select
                                             name="timezone"
@@ -187,7 +198,7 @@ export default function AdminProfile() {
 
                         <div className="flex justify-end">
                             <Button type="submit" className="min-w-[180px] h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow-lg shadow-indigo-100 flex items-center gap-2" isLoading={isLoading}>
-                                <Save size={18} /> {t('profile.actions.update')}
+                                <Save size={18} /> {t('profile.admin.updateProfile')}
                             </Button>
                         </div>
                     </form>
@@ -206,12 +217,12 @@ export default function AdminProfile() {
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <Shield size={16} className="text-indigo-500" />
-                                <span className="font-medium">{t('profile.roles.admin')}</span>
+                                <span className="font-medium">{t('profile.admin.administratorAccount')}</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-zinc-600">
                                 <User size={16} className="text-indigo-500" />
                                 <span className="font-medium">
-                                    {t('profile.joinedDate', { year: user?.created_at ? new Date(user.created_at).getFullYear() : '2024' })}
+                                    {t('profile.admin.joinedYear', { year: user?.created_at ? new Date(user.created_at).getFullYear() : '2024' })}
                                 </span>
                             </div>
                         </CardContent>
@@ -225,7 +236,7 @@ export default function AdminProfile() {
                             <div>
                                 <h4 className="text-sm font-bold text-indigo-900">{t('common.help.title')}</h4>
                                 <p className="text-xs text-indigo-700/70 mt-1 leading-relaxed">
-                                    {t('common.help.adminSupportDescription')}
+                                    {t('profile.admin.needHelp.message')}
                                 </p>
                             </div>
                         </div>

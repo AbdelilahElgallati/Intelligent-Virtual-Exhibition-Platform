@@ -507,6 +507,15 @@
   },
   "common": {
     "brand": "IVEP",
+    "languages": {
+      "english": "English",
+      "spanish": "Spanish",
+      "french": "French",
+      "arabic": "Arabic",
+      "german": "German",
+      "chinese": "Chinese",
+      "japanese": "Japanese"
+    },
     "buttons": {
       "submit": "Submit",
       "save": "Save",
@@ -529,7 +538,26 @@
       "confirmSure": "Are you sure?",
       "yesProceed": "Yes, proceed",
       "viewAll": "View all",
-      "saveAll": "Save All Changes"
+      "saveAll": "Save All Changes",
+      "search": "Search",
+      "refresh": "Refresh",
+      "clear": "Clear",
+      "clearSearch": "Clear Search",
+      "retry": "Retry",
+      "edit": "Edit",
+      "delete": "Delete",
+      "approve": "Approve",
+      "reject": "Reject",
+      "processing": "Processing"
+    },
+    "filters": {
+      "all": "All"
+    },
+    "status": {
+      "optional": "Optional"
+    },
+    "help": {
+      "title": "Need Help?"
     },
     "errors": {
       "actionFailed": "Action failed. Please try again."
@@ -581,7 +609,12 @@
       "admin": "admin",
       "organizer": "organizer",
       "enterprise": "enterprise",
-      "visitor": "visitor"
+      "visitor": "visitor",
+      "platform": "platform"
+    },
+    "states": {
+      "loading": "Loading...",
+      "error": "Error"
     },
     "ui": {
       "dataTable": {
@@ -660,7 +693,7 @@
       "revisitStand": "Revisit Stand",
       "product": "Product",
       "service": "Service",
-      "paidOrdersHint": "You have {{count}} paid order{{plural}}. Each card groups products and services from the same checkout.",
+      "paidOrdersHint": "You have {count} paid order{plural}. Each card groups products and services from the same checkout.",
       "payment": {
         "stripe": "Stripe",
         "cod": "COD"
@@ -1092,7 +1125,7 @@
     "dashboard": {
       "title": "Admin Dashboard",
       "description": "Manage events, users, organizations, subscriptions, analytics, monitoring, and governance.",
-      "goTo": "Go to {{title}}",
+      "goTo": "Go to {title}",
       "cards": {
         "events": {
           "description": "Review, approve, and manage all platform events.",
@@ -1139,12 +1172,14 @@
     "analytics": {
       "title": "Analytics Dashboard",
       "description": "Platform-level metrics and engagement trends.",
+      "failedToLoad": "Failed to load analytics data.",
       "kpi": {
         "totalUsers": "Total Users",
         "activeEvents": "Active Events",
         "totalStands": "Total Stands",
         "totalEvents": "Total Events",
         "organizations": "Organizations",
+        "pending": "Pending Approval",
         "pendingApproval": "Pending"
       },
       "charts": {
@@ -1252,7 +1287,7 @@
         "pricingTitle": "Pricing",
         "standPrice": "Stand price",
         "visitorAccess": "Visitor access",
-        "paidTicket": "Paid ({{price}} MAD)",
+        "paidTicket": "Paid ({price} MAD)",
         "free": "Free",
         "descriptionTitle": "Description",
         "extendedDetailsTitle": "Extended Details",
@@ -1268,7 +1303,7 @@
         "noSlots": "No slots defined",
         "noSchedule": "No schedule provided",
         "timesDisplayedIn": "Times displayed in",
-        "dayNum": "Day {{num}}"
+        "dayNum": "Day {num}"
       },
       "table": {
         "event": "Event",
@@ -1444,20 +1479,20 @@
         "paymentProof": "Payment Proof"
       },
       "info": {
-        "autoStartScheduled": "⏰ Auto-start is scheduled when {{date}} is reached.",
-        "autoCloseScheduled": "🟢 Event is live. Auto-close scheduled when {{date}} passes.",
+        "autoStartScheduled": "⏰ Auto-start is scheduled when {date} is reached.",
+        "autoCloseScheduled": "🟢 Event is live. Auto-close scheduled when {date} passes.",
         "startDate": "start date",
         "endDate": "end date"
       },
       "confirm": {
         "paymentTitle": "Confirm Payment Proof",
-        "paymentMessage": "Are you sure you want to verify the payment proof for \"{{title}}\"? This will activate the event and generate access links.",
+        "paymentMessage": "Are you sure you want to verify the payment proof for \"{title}\"? This will activate the event and generate access links.",
         "paymentLabel": "Yes, Confirm Payment",
         "startTitle": "Force Start Event",
-        "startMessage": "This will immediately transition \"{{title}}\" from Payment Done → Live, bypassing the scheduled start time. This action is logged.",
+        "startMessage": "This will immediately transition \"{title}\" from Payment Done → Live, bypassing the scheduled start time. This action is logged.",
         "startLabel": "Yes, Start Now",
         "closeTitle": "Force Close Event",
-        "closeMessage": "This will immediately close \"{{title}}\" and transition it from Live → Closed. This action cannot be undone and is logged.",
+        "closeMessage": "This will immediately close \"{title}\" and transition it from Live → Closed. This action cannot be undone and is logged.",
         "closeLabel": "Yes, Close Now"
       },
       "toast": {
@@ -1544,7 +1579,7 @@
     "organizations": {
       "title": "Organization Review",
       "description": "Corporate partners and enterprise identities",
-      "partnerLabel": "{{role}} Partner",
+      "partnerLabel": "{role} Partner",
       "initialsFallback": "O",
       "loadingRegistry": "Loading registry…",
       "noOrganizations": "No organizations found",
@@ -1588,9 +1623,9 @@
         "suspended": "Suspended"
       },
       "toast": {
-        "verified": "{{name}} verified.",
-        "flagToggled": "{{name}} flag toggled.",
-        "suspensionToggled": "{{name}} suspension toggled."
+        "verified": "{name} verified.",
+        "flagToggled": "{name} flag toggled.",
+        "suspensionToggled": "{name} suspension toggled."
       }
     },
     "enterprises": {
@@ -1649,7 +1684,7 @@
           "approved": "Approved",
           "rejected": "Rejected"
         },
-        "totalCount": "{{count}} total",
+        "totalCount": "{count} total",
         "noRegistrations": "No organizer registrations found for this status.",
         "field": {
           "organization": "Organisation",
@@ -1681,12 +1716,12 @@
           "approved": "Approved",
           "rejected": "Rejected"
         },
-        "totalCount": "{{count}} total",
+        "totalCount": "{count} total",
         "noRegistrations": "No enterprise registrations found for this status.",
         "field": {
           "contact": "Contact",
-          "employees": "{{count}} employees",
-          "founded": "Founded {{year}}",
+          "employees": "{count} employees",
+          "founded": "Founded {year}",
           "linkedin": "LinkedIn"
         },
         "status": {
@@ -1694,7 +1729,7 @@
           "approved": "Approved",
           "rejected": "Rejected"
         },
-        "registeredOn": "Registered on {{date}}",
+        "registeredOn": "Registered on {date}",
         "error": {
           "loadFailed": "Failed to load registrations",
           "approveFailed": "Approval failed",
@@ -1705,7 +1740,7 @@
     },
     "enterpriseJoinRequests": {
       "title": "Enterprise Join Requests",
-      "eventPlaceholder": "Event {{id}}",
+      "eventPlaceholder": "Event {id}",
       "error": {
         "loadFailed": "Failed to load requests"
       },
@@ -1716,8 +1751,8 @@
         "rejected": "Rejected"
       },
       "searchPlaceholder": "Search by org name or email…",
-      "requestsFound": "{{total}} requests found",
-      "noRequests": "No {{status}} requests found",
+      "requestsFound": "{total} requests found",
+      "noRequests": "No {status} requests found",
       "table": {
         "enterprise": "Enterprise",
         "contact": "Contact",
@@ -1726,19 +1761,19 @@
         "historyApproved": "approved",
         "status": "Status",
         "actions": "Actions",
-        "approvedCount": "{{count}} approved",
+        "approvedCount": "{count} approved",
         "suspended": "suspended"
       },
       "approve": "Approve",
       "reject": "Reject",
-      "approvedToast": "{{name}} approved",
-      "rejectedToast": "{{name}} rejected",
+      "approvedToast": "{name} approved",
+      "rejectedToast": "{name} rejected",
       "approveFailed": "Approve failed",
       "rejectFailed": "Reject failed",
       "failedToLoad": "Failed to load requests",
       "rejectModal": {
         "title": "Reject Request",
-        "description": "Reject {{name}}'s join request",
+        "description": "Reject {name}'s join request",
         "reasonLabel": "Reason",
         "reasonOptional": "(optional)",
         "reasonPlaceholder": "Explain why the request is being rejected…",
@@ -1779,6 +1814,9 @@
         "unpaid": "Unpaid",
         "processing": "Processing",
         "paid": "Paid",
+        "pending": "Pending",
+        "completed": "Completed",
+        "failed": "Failed",
         "organizer": "Organizer",
         "enterprise": "Enterprise",
         "platform": "Platform"
@@ -1814,7 +1852,7 @@
         "editFailed": "Failed to update payout history",
         "invalidId": "Invalid payout id",
         "confirmTitle": "Confirm Payout Settlement",
-        "confirmDescription": "You are settling {{source}} for {{amount}}.",
+        "confirmDescription": "You are settling {source} for {amount}.",
         "optionalNote": "Optional note",
         "notePlaceholder": "Settlement note (optional)",
         "editTitle": "Edit Payout History",
@@ -1847,14 +1885,14 @@
       "failedToLoad": "Failed to load subscriptions",
       "actionFailed": "Action failed",
       "toast": {
-        "switched": "{{name}} switched to {{plan}}.",
-        "cancelled": "{{name}} subscription cancelled."
+        "switched": "{name} switched to {plan}.",
+        "cancelled": "{name} subscription cancelled."
       }
     },
     "monitoring": {
       "title": "Platform Monitoring",
       "description": "Server health, database status, and incidents.",
-      "lastRefresh": "Last Refresh: {{time}}",
+      "lastRefresh": "Last Refresh: {time}",
       "degradedAlert": {
         "title": "Platform degraded",
         "message": "one or more services are reporting issues. Consider creating an incident."
@@ -1864,13 +1902,21 @@
         "mongodb": "MongoDB",
         "redis": "Redis",
         "apiProcess": "API Process",
-        "uptime": "Uptime: {{uptime}}",
-        "latency": "Latency: {{ms}}ms",
-        "notConfigured": "Not configured"
+        "uptime": "Uptime: {uptime}",
+        "latency": "Latency: {ms}ms",
+        "notConfigured": "Not configured",
+        "pidLabel": "PID: {pid}",
+        "status": {
+          "healthy": "Healthy",
+          "ok": "OK",
+          "degraded": "Degraded",
+          "error": "Error",
+          "notConfigured": "Not configured"
+        }
       },
       "incidents": {
         "title": "Recent Incidents",
-        "count": "{{count}} incidents",
+        "count": "{count} incidents",
         "noIncidents": "No incidents recorded."
       },
       "createIncident": {
@@ -1921,7 +1967,7 @@
       },
       "table": {
         "title": "Log Entries",
-        "entriesCount": "{{count}} entries",
+        "entriesCount": "{count} entries",
         "timestamp": "Timestamp",
         "action": "Action",
         "entity": "Entity",
@@ -1945,7 +1991,7 @@
       },
       "list": {
         "title": "Incidents",
-        "total": "{{count}} total",
+        "total": "{count} total",
         "noIncidents": "No incidents found."
       },
       "create": {
@@ -2021,25 +2067,25 @@
       },
       "confirm": {
         "startTitle": "Start Session",
-        "startMessage": "Start session \"{{name}}\" now? Viewers will be notified.",
+        "startMessage": "Start session \"{name}\" now? Viewers will be notified.",
         "startLabel": "Start Now",
         "endTitle": "End Session",
-        "endMessage": "End session \"{{name}}\" now? This cannot be undone.",
+        "endMessage": "End session \"{name}\" now? This cannot be undone.",
         "endLabel": "End Now"
       },
       "toast": {
-        "startSuccess": "Session \"{{name}}\" started",
-        "endSuccess": "Session \"{{name}}\" ended",
+        "startSuccess": "Session \"{name}\" started",
+        "endSuccess": "Session \"{name}\" ended",
         "startFailed": "Failed to start session",
         "endFailed": "Failed to end session",
-        "syncSuccess": "{{count}} session(s) imported from schedule",
+        "syncSuccess": "{count} session(s) imported from schedule",
         "syncFailed": "No schedule found for this event. Please add conference slots in the event schedule builder first."
       },
       "noSessions": "No sessions yet."
     },
     "organizerReport": {
       "title": "Organizer Report",
-      "description": "Business intelligence & event performance · Updated {{time}}",
+      "description": "Business intelligence & event performance · Updated {time}",
       "keyMetrics": "Key Metrics",
       "kpi": {
         "totalVisitors": "Total Visitors",
@@ -2093,7 +2139,7 @@
       "backToEvent": "Back to Event",
       "eventFallback": "Event",
       "live": "LIVE",
-      "updated": "Updated {{time}}",
+      "updated": "Updated {time}",
       "kpis": {
         "activeUsers": "Active Users",
         "messagesPerMin": "Messages / Min",
@@ -2110,13 +2156,13 @@
         "noActiveUsers": "No active users"
       },
       "activeUsers": {
-        "title": "Active Users ({{count}})",
+        "title": "Active Users ({count})",
         "online": "Online",
         "noUsers": "No active users",
-        "since": "Since {{time}}"
+        "since": "Since {time}"
       },
       "safetyFlags": {
-        "title": "Safety Flags ({{count}} recent)",
+        "title": "Safety Flags ({count} recent)",
         "attention": "Attention",
         "allClear": "No open flags — all clear",
         "highPriority": "High priority",
@@ -2638,7 +2684,7 @@
       "welcomeBack": "Welcome back,",
       "welcome": "Welcome back, {name}",
       "fallbackOrgName": "Your Enterprise",
-      "summary": "You have {{count}} items awaiting your attention.",
+      "summary": "You have {count} items awaiting your attention.",
       "stat": {
         "viewDetails": "View details"
       },
@@ -2650,7 +2696,7 @@
         "catalogItems": "Catalog Items",
         "catalogSub": "{products} products · {services} services",
         "activeStands": "Active Stands",
-        "activeStandsSub": "across {{count}} event(s)",
+        "activeStandsSub": "across {count} event(s)",
         "pendingRequests": "Pending Requests",
         "pendingRequestsSub": "{count} total inquiries",
         "totalInquiries": "Total Inquiries",
@@ -2660,7 +2706,8 @@
         "title": "My Event Participations",
         "viewAll": "View all",
         "empty": "No event participations yet",
-        "emptyAction": "Browse events"
+        "emptyAction": "Browse events",
+        "tbd": "TBD"
       },
       "eventStatus": {
         "approved": "Approved",
@@ -2697,13 +2744,13 @@
         }
       },
       "requestsAwaiting": {
-        "title": "{{count}} Request(s) Awaiting Response",
+        "title": "{count} Request(s) Awaiting Response",
         "subtitle": "Visitors are enquiring about your products. Respond promptly to convert leads.",
         "action": "Handle now"
       },
       "allCaughtUp": {
         "title": "All caught up!",
-        "subtitle": "{{count}} inquir(ies/y) handled. Great work."
+        "subtitle": "{count} inquir(ies/y) handled. Great work."
       },
       "catalogHealth": {
         "title": "Catalog Health",
@@ -2723,7 +2770,7 @@
       "baseLocation": "Base Location",
       "sector": "Sector",
       "global": "Global",
-      "memberSince": "Member since {{year}}",
+      "memberSince": "Member since {year}",
       "completionStatus": {
         "title": "Completion Status",
         "description": "Complete your profile to increase your visibility in virtual exhibitions."
@@ -2886,11 +2933,11 @@
         "organizer": "Organizer",
         "location": "Location",
         "enterpriseSlots": "Enterprise Slots",
-        "standsLeft": "{{left}} of {{total}} left",
-        "standsTotal": "{{total}} stands",
+        "standsLeft": "{left} of {total} left",
+        "standsTotal": "{total} stands",
         "free": "Free",
         "rejectionReason": "Rejection Reason",
-        "liveSlot": "Live slot: {{slot}}"
+        "liveSlot": "Live slot: {slot}"
       },
       "modal": {
         "configureStand": "Configure Stand",
@@ -3117,7 +3164,7 @@
         "approve": "Approve",
         "decline": "Decline",
         "ended": "Meeting ended",
-        "approvedStarts": "Approved · starts {{time}}",
+        "approvedStarts": "Approved · starts {time}",
         "join": "Join",
         "filters": {
           "all": "All",
@@ -3125,10 +3172,10 @@
           "upcoming": "Upcoming",
           "past": "Past"
         },
-        "awaitingResponse": "{{count}} awaiting your response",
+        "awaitingResponse": "{count} awaiting your response",
         "visitorFallback": "Visitor",
         "partnerFallback": "Partner",
-        "toPartner": "To: {{name}}",
+        "toPartner": "To: {name}",
         "received": "Received",
         "sent": "Sent",
         "generalDiscussion": "General Discussion",
@@ -3137,7 +3184,7 @@
         "timeSlotPassed": "Time slot has passed",
         "joinLive": "Join Live",
         "joinNow": "Join Now",
-        "availableIn": "Available {{slot}}",
+        "availableIn": "Available {slot}",
         "meetingWindowPassed": "Meeting window passed",
         "emptyStates": {
           "all": "No Meetings Scheduled",
@@ -3159,7 +3206,7 @@
         "hostingBadge": "You are Hosting",
         "liveBadge": "Live",
         "ended": "Ended",
-        "attendeesCount": "{{count}} attendees",
+        "attendeesCount": "{count} attendees",
         "conferenceEnded": "Conference Ended",
         "joinConference": "Join Conference",
         "notStartedYet": "Not Started Yet",
@@ -3203,7 +3250,7 @@
         "youSent": "You sent",
         "theySent": "They sent",
         "awaitingTheirApproval": "Awaiting their approval",
-        "approvedStarts": "Approved · starts {{time}}",
+        "approvedStarts": "Approved · starts {time}",
         "companyOverview": "Company Overview",
         "overviewFallback": "This enterprise is participating in the event and is available for direct partnership discussions and meeting requests.",
         "contactLinks": "Contact & Links",
@@ -3316,7 +3363,7 @@
       "pulseTitle": "Real-time Visitor Pulse",
       "interactionSummary": "Total interactions captured at your stand during this event.",
       "recentActivityEmpty": "No recent activity",
-      "visitTooltip": "{{hour}}: {{count}} visits",
+      "visitTooltip": "{hour}: {count} visits",
       "pending": {
         "title": "Analytics Pending",
         "subtitle": "Your stand analytics will be available once your participation is approved by the organizers."
@@ -3555,7 +3602,7 @@
         "combined": "📊 Combined Overview ({count} stands)",
         "stand": "🗂 {eventTitle} — {standName}"
       },
-      "showing": "Showing: {{eventTitle}} · {{standName}}",
+      "showing": "Showing: {eventTitle} · {standName}",
       "kpi": {
         "impressions": "Impressions",
         "impressionsSub": "Total Views",
@@ -3571,7 +3618,7 @@
       "insufficientData": "Insufficient data for trend analysis",
       "peakDay": "Peak Day",
       "dailyAvg": "Daily Avg",
-      "views": "{{count}} views",
+      "views": "{count} views",
       "actions": {
         "refresh": "Refresh"
       },
@@ -3616,10 +3663,10 @@
       },
       "tabs": {
         "chats": "Chats",
-        "chatsUnread": "{{unread}}",
-        "chatsCount": "{{count}}",
+        "chatsUnread": "{unread}",
+        "chatsCount": "{count}",
         "meetings": "Meetings",
-        "meetingsPending": "{{count}} pending"
+        "meetingsPending": "{count} pending"
       },
       "searchPlaceholder": "Find conversation...",
       "chats": {
@@ -3631,8 +3678,8 @@
         "noMessages": "No messages yet"
       },
       "meetings": {
-        "requestLabel": "Visitor Request #{{id}}",
-        "submitted": "Submitted {{date}}",
+        "requestLabel": "Visitor Request #{id}",
+        "submitted": "Submitted {date}",
         "duration": "Duration: 30 min",
         "status": {
           "pending": "pending",
@@ -3645,7 +3692,7 @@
         "decline": "Decline",
         "join": "Join",
         "ended": "Meeting ended",
-        "approvedStarts": "Approved · starts {{time}}",
+        "approvedStarts": "Approved · starts {time}",
         "declined": "Declined",
         "empty": {
           "title": "No meetings scheduled",
@@ -3656,15 +3703,15 @@
     },
     "notifications": {
       "title": "Notifications",
-      "unreadCount": "{{count}} unread",
+      "unreadCount": "{count} unread",
       "allCaughtUp": "All caught up!",
       "markAllRead": "Mark all read",
       "markRead": "Mark read",
       "empty": "No notifications yet.",
       "timeLabels": {
-        "daysAgo": "{{X}}d ago",
-        "hoursAgo": "{{X}}h ago",
-        "minutesAgo": "{{X}}m ago",
+        "daysAgo": "{X}d ago",
+        "hoursAgo": "{X}h ago",
+        "minutesAgo": "{X}m ago",
         "justNow": "just now"
       },
       "types": {
@@ -4419,3 +4466,4 @@
     }
   }
 }
+

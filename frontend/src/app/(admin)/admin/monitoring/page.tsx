@@ -36,20 +36,20 @@ function CreateIncidentModal({ onClose, onCreate }: {
     onClose: () => void;
     onCreate: (data: IncidentCreate) => Promise<void>;
 }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [form, setForm] = useState<IncidentCreate>({ title: '', description: '', severity: 'medium' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const submit = async () => {
-        if (!form.title.trim()) { setError(t('admin.monitoring.errors.titleRequired')); return; }
+        if (!form.title.trim()) { setError(t('admin.monitoring.createIncident.titleRequired')); return; }
         setLoading(true);
         setError('');
         try {
             await onCreate(form);
             onClose();
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('admin.monitoring.errors.createFailed'));
+            setError(e instanceof Error ? e.message : t('admin.monitoring.createIncident.failed'));
         } finally {
             setLoading(false);
         }
@@ -58,39 +58,39 @@ function CreateIncidentModal({ onClose, onCreate }: {
     return (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">{t('admin.monitoring.actions.createIncident')}</h2>
+                <h2 className="text-base font-semibold text-zinc-900">{t('admin.monitoring.createIncident.title')}</h2>
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 <div className="space-y-3">
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.field.title')} *</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.titleLabel')} *</label>
                         <input
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder={t('admin.monitoring.field.titlePlaceholder')}
+                            placeholder={t('admin.monitoring.createIncident.titlePlaceholder')}
                             value={form.title}
                             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.field.description')}</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.descriptionLabel')}</label>
                         <textarea
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
                             rows={3}
-                            placeholder={t('admin.monitoring.field.descriptionPlaceholder')}
+                            placeholder={t('admin.monitoring.createIncident.descriptionPlaceholder')}
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.field.severity')}</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.severityLabel')}</label>
                         <select
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={form.severity}
                             onChange={e => setForm(f => ({ ...f, severity: e.target.value as IncidentCreate['severity'] }))}
                         >
-                            <option value="low">{t('admin.monitoring.severity.low')}</option>
-                            <option value="medium">{t('admin.monitoring.severity.medium')}</option>
-                            <option value="high">{t('admin.monitoring.severity.high')}</option>
-                            <option value="critical">{t('admin.monitoring.severity.critical')}</option>
+                            <option value="low">{t('admin.monitoring.createIncident.low')}</option>
+                            <option value="medium">{t('admin.monitoring.createIncident.medium')}</option>
+                            <option value="high">{t('admin.monitoring.createIncident.high')}</option>
+                            <option value="critical">{t('admin.monitoring.createIncident.critical')}</option>
                         </select>
                     </div>
                 </div>
@@ -103,7 +103,7 @@ function CreateIncidentModal({ onClose, onCreate }: {
                         disabled={loading}
                         className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                     >
-                        {loading ? t('admin.monitoring.actions.creating') : t('admin.monitoring.actions.createIncident')}
+                        {loading ? t('admin.monitoring.createIncident.creating') : t('admin.monitoring.createIncident.create')}
                     </button>
                 </div>
             </div>
@@ -113,7 +113,7 @@ function CreateIncidentModal({ onClose, onCreate }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MonitoringPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [health, setHealth] = useState<PlatformHealth | null>(null);
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [loading, setLoading] = useState(true);
@@ -133,13 +133,19 @@ export default function MonitoringPage() {
             setIncidents(inc);
             setLastRefresh(formatInUserTZ(new Date(), { hour: '2-digit', minute: '2-digit' }));
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('admin.monitoring.errors.loadFailed'));
+            setError(e instanceof Error ? e.message : t('admin.monitoring.failedToLoad'));
         } finally {
             setLoading(false);
         }
     }, [t]);
 
     useEffect(() => { load(); }, [load]);
+
+    const statusLabel = (value: string) => {
+        const normalized = (value || '').toLowerCase();
+        const key = normalized === 'not_configured' ? 'notConfigured' : normalized;
+        return t(`admin.monitoring.health.status.${key}`, { defaultValue: value?.replace(/_/g, ' ') || '' });
+    };
 
     const handleCreate = async (data: IncidentCreate) => {
         const newIncident = await adminService.createIncident(data);
@@ -184,13 +190,13 @@ export default function MonitoringPage() {
                         onClick={load}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
                     >
-                        <RefreshCw className="w-3.5 h-3.5" /> {t('admin.monitoring.actions.refresh')}
+                        <RefreshCw className="w-3.5 h-3.5" /> {t('common.actions.refresh')}
                     </button>
                     <button
                         onClick={() => setShowCreate(true)}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                     >
-                        <Plus className="w-3.5 h-3.5" /> {t('admin.monitoring.actions.createIncident')}
+                        <Plus className="w-3.5 h-3.5" /> {t('admin.monitoring.createIncident.create')}
                     </button>
                 </div>
             </div>
@@ -203,7 +209,7 @@ export default function MonitoringPage() {
             {isDegraded && (
                 <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                    <span>{t('admin.monitoring.degradedAlert')}</span>
+                    <span>{t('admin.monitoring.degradedAlert.message')}</span>
                 </div>
             )}
 
@@ -219,7 +225,7 @@ export default function MonitoringPage() {
                         <div className="flex items-center gap-2">
                             {statusIcon(health.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.status)}`}>
-                                {health.status}
+                                {statusLabel(health.status)}
                             </span>
                         </div>
                         <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
@@ -235,7 +241,7 @@ export default function MonitoringPage() {
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.mongodb.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.mongodb.status)}`}>
-                                {health.services.mongodb.status}
+                                {statusLabel(health.services.mongodb.status)}
                             </span>
                         </div>
                         {health.services.mongodb.latency_ms !== null && (
@@ -251,7 +257,7 @@ export default function MonitoringPage() {
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.redis.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.redis.status)}`}>
-                                {health.services.redis.status.replace(/_/g, ' ')}
+                                {statusLabel(health.services.redis.status)}
                             </span>
                         </div>
                     </div>
@@ -259,15 +265,15 @@ export default function MonitoringPage() {
                     <div className="bg-white border border-zinc-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-2">
                             <Server className="w-4 h-4 text-zinc-400" />
-                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.api')}</p>
+                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.apiProcess')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.api.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.api.status)}`}>
-                                {health.services.api.status}
+                                {statusLabel(health.services.api.status)}
                             </span>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-2">PID: {health.services.api.pid}</p>
+                        <p className="text-xs text-zinc-400 mt-2">{t('admin.monitoring.health.pidLabel', { pid: health.services.api.pid })}</p>
                     </div>
                 </div>
             )}

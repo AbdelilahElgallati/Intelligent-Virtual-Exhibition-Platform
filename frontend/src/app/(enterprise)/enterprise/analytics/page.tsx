@@ -105,7 +105,7 @@ const BAR_COLORS = [
 ];
 
 export default function EnterpriseAnalyticsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [stands, setStands] = useState<StandEntry[]>([]);
     const [analytics, setAnalytics] = useState<Record<string, StandAnalytics>>({});
     const [isLoading, setIsLoading] = useState(true);

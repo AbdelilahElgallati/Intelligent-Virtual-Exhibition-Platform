@@ -118,7 +118,7 @@ function EnterprisePanel({
                         <div className="grid grid-cols-1 gap-y-3">
                             <InfoRow label={t('admin.enterprises.detail.companyName')} value={org.name} />
                             <InfoRow label={t('admin.enterprises.detail.joinDate')} value={fmt(org.created_at)} />
-                            <InfoRow label={t('admin.enterprises.detail.industry')} value={org.industry} />
+                            <InfoRow label={t('admin.enterprises.table.industry')} value={org.industry} />
                             <InfoRow label={t('admin.enterprises.detail.brandWebsite')} value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
                             <InfoRow label={t('admin.enterprises.detail.businessEmail')} value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
                         </div>
@@ -213,7 +213,7 @@ export default function AdminEnterprisesPage() {
     const fetchEnterprises = useCallback(async () => {
         setLoading(true); setError(null);
         try { setEnterprises(await adminService.getDetailedEnterprises()); }
-        catch (e: any) { setError(e.message ?? t('admin.enterprises.failedToLoad')); }
+        catch (e: any) { setError(e.message ?? t('common.errors.loadFailed')); }
         finally { setLoading(false); }
     }, [t]);
 

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function EnterpriseProductsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);

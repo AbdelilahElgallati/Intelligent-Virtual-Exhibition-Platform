@@ -92,6 +92,9 @@ export default function EnterpriseRegistrationsPage() {
         }
     };
 
+    const getApprovalStatusKey = (value: string) =>
+        (value || '').toLowerCase().replace(/[\s-]+/g, '_');
+
     return (
         <div className="space-y-6">
             <div>
@@ -143,7 +146,7 @@ export default function EnterpriseRegistrationsPage() {
                                                 <p className="text-xs text-zinc-500">{reg.email}</p>
                                             </div>
                                             <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${STATUS_COLORS[reg.approval_status] || 'bg-zinc-100 text-zinc-600 border-zinc-200'}`}>
-                                                {t(`admin.approvals.enterprise.status.${reg.approval_status.toLowerCase()}`, { defaultValue: reg.approval_status?.replace(/_/g, ' ') })}
+                                                {t(`admin.approvals.enterprise.status.${getApprovalStatusKey(reg.approval_status)}`, { defaultValue: reg.approval_status?.replace(/_/g, ' ') })}
                                             </span>
                                         </div>
 
@@ -218,11 +221,11 @@ export default function EnterpriseRegistrationsPage() {
                                     {/* Right: Actions */}
                                     {reg.approval_status === 'PENDING_APPROVAL' && (
                                         <div className="flex gap-2 flex-shrink-0">
-                                            <button onClick={() => handleApprove(reg._id)}
-                                                disabled={processing === reg._id}
-                                                className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1.5">
+                                                <button onClick={() => handleApprove(reg._id)}
+                                                    disabled={processing === reg._id}
+                                                    className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-1.5">
                                                 <CheckCircle2 size={15} />
-                                                {processing === reg._id ? '…' : t('common.actions.approve')}
+                                                {processing === reg._id ? t('admin.common.actions.processingIndicator') : t('common.actions.approve')}
                                             </button>
                                             <button onClick={() => handleReject(reg._id)}
                                                 disabled={processing === reg._id}

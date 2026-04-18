@@ -53,7 +53,7 @@ const PRESENTER_AVATAR_PRESETS: BrandingPreset[] = [
 ];
 
 export default function StandConfigPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const params = useParams();
     const eventId = params?.eventId as string;
 

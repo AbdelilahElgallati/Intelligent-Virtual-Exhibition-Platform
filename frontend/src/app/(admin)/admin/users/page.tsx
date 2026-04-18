@@ -20,8 +20,9 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 function RoleBadge({ role }: { role: string }) {
+    const { t } = useTranslation();
     const cls = ROLE_BADGE[role] ?? 'bg-slate-100 text-slate-600 border border-slate-200';
-    return <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase tracking-wide ${cls}`}>{role}</span>;
+    return <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded uppercase tracking-wide ${cls}`}>{t(`roles.${role}`, { defaultValue: role })}</span>;
 }
 
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
@@ -52,7 +53,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 // ── Admin Creation Modal ──────────────────────────────────────────────────
 function CreateAdminModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState({
@@ -166,7 +167,7 @@ function UserPanel({
     onActivate: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
@@ -278,7 +279,7 @@ function UserPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);

@@ -44,7 +44,7 @@ interface Stand {
 }
 
 export default function EnterpriseLeadsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [stands, setStands] = useState<Stand[]>([]);
     const [events, setEvents] = useState<any[]>([]);

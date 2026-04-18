@@ -325,7 +325,7 @@ const ChatItem = ({ room, active, onClick, unreadCount, tz }: { room: ChatRoom; 
 );
 
 export default function EventManagementHub() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const params = useParams();
     const router = useRouter();
     const { user } = useAuth();

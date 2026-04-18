@@ -46,7 +46,7 @@ function formatInTimeZone(date: Date, timeZone: string, options: Intl.DateTimeFo
 
 // ── Structured schedule renderer ─────────────────────────────────────────────
 function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone: string }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     let days: EventScheduleDay[] | null = event.schedule_days ?? null;
 
     if (!days && event.event_timeline) {
@@ -101,13 +101,13 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
                                             {formatSlotRangeLabel(startLabel, endLabel)}
                                         </span>
                                         <p className="text-sm text-zinc-700 leading-snug pt-0.5">
-                                            {slot.label || <em className="text-zinc-400">{t('admin.events.detail.noDescription')}</em>}
+                                            {slot.label || <em className="text-zinc-400">{t('admin.events.panel.noDescription')}</em>}
                                         </p>
                                     </div>
                                 );
                             })}
                             {day.slots.length === 0 && (
-                                <p className="text-xs text-zinc-400 italic px-1">{t('admin.events.detail.noSlots')}</p>
+                                <p className="text-xs text-zinc-400 italic px-1">{t('admin.events.panel.noSlots')}</p>
                             )}
                         </div>
                     </div>
@@ -120,7 +120,7 @@ function ScheduleDisplay({ event, timeZone }: { event: OrganizerEvent; timeZone:
     if (event.event_timeline) {
         return <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.event_timeline}</p>;
     }
-    return <p className="text-xs text-zinc-400 italic">{t('admin.events.detail.noSchedule')}</p>;
+    return <p className="text-xs text-zinc-400 italic">{t('admin.events.panel.noSchedule')}</p>;
 }
 
 type EventState = OrganizerEvent['state'];
@@ -162,7 +162,7 @@ function getAdminListStatusBadge(event: OrganizerEvent, t: any): { label: string
 }
 
 function EventListStatusBadge({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const { label, cls } = getAdminListStatusBadge(event, t);
     return (
         <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full ${cls}`}>
@@ -204,7 +204,7 @@ interface EventPanelProps {
 }
 
 function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: EventPanelProps) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [paymentAmount, setPaymentAmount] = useState('');
     const [approveError, setApproveError] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -265,28 +265,28 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     {/* Banner */}
                     {event.banner_url && (
                         <div className="rounded-xl overflow-hidden border border-zinc-200 aspect-video bg-zinc-100">
-                            <img src={resolveMediaUrl(event.banner_url)} alt={t('admin.events.detail.bannerAlt')} className="w-full h-full object-cover" />
+                            <img src={resolveMediaUrl(event.banner_url)} alt={t('admin.events.title')} className="w-full h-full object-cover" />
                         </div>
                     )}
 
                     {/* Logistics */}
-                    <Section icon={Calendar} title={t('admin.events.detail.title')}>
-                        <p className="text-[11px] text-zinc-500 -mt-1 mb-2">{t('admin.events.detail.timezoneLabel')} <strong>{timeZone}</strong></p>
+                    <Section icon={Calendar} title={t('admin.events.panel.eventDetails')}>
+                        <p className="text-[11px] text-zinc-500 -mt-1 mb-2">{t('admin.events.panel.timezoneLabel')} <strong>{timeZone}</strong></p>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                            <InfoRow label={t('admin.events.detail.startDate')} value={fmt(event.start_date)} />
-                            <InfoRow label={t('admin.events.detail.endDate')} value={fmt(event.end_date)} />
-                            <InfoRow label={t('admin.events.detail.location')} value={event.location} />
-                            <InfoRow label={t('admin.events.detail.category')} value={event.category} />
-                            <InfoRow label={t('admin.events.detail.enterprises')} value={event.num_enterprises} />
-                            <InfoRow label={t('admin.events.detail.payment')} value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} ${t('admin.common.currency')}` : t('admin.events.detail.autoCalc')} />
+                            <InfoRow label={t('admin.events.panel.startDate')} value={fmt(event.start_date)} />
+                            <InfoRow label={t('admin.events.panel.endDate')} value={fmt(event.end_date)} />
+                            <InfoRow label={t('admin.events.panel.location')} value={event.location} />
+                            <InfoRow label={t('admin.events.panel.category')} value={event.category} />
+                            <InfoRow label={t('admin.events.panel.enterprises')} value={event.num_enterprises} />
+                            <InfoRow label={t('admin.events.panel.payment')} value={event.payment_amount != null ? `${event.payment_amount.toFixed(2)} ${t('admin.common.currency')}` : t('admin.events.panel.autoCalc')} />
                         </div>
                     </Section>
 
                     {/* Payment Proof */}
                     {event.payment_proof_url && (
-                        <Section icon={CreditCard} title={t('admin.events.detail.paymentProofTitle')}>
+                        <Section icon={CreditCard} title={t('admin.events.panel.paymentProof')}>
                             <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl space-y-3">
-                                <p className="text-xs text-indigo-700 font-medium">{t('admin.events.detail.paymentProofDescription')}</p>
+                                <p className="text-xs text-indigo-700 font-medium">{t('admin.events.panel.paymentProofMessage')}</p>
                                 <a
                                     href={resolveMediaUrl(event.payment_proof_url)}
                                     target="_blank"
@@ -294,7 +294,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {t('admin.events.detail.viewProof')}
+                                    {t('admin.events.panel.viewProof')}
                                 </a>
                             </div>
                         </Section>
@@ -302,16 +302,16 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Pricing */}
                     {(event.stand_price != null || event.is_paid != null) && (
-                        <Section icon={DollarSign} title={t('admin.events.detail.pricingTitle')}>
+                        <Section icon={DollarSign} title={t('admin.events.panel.pricing')}>
                             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                                 {event.stand_price != null && (
-                                    <InfoRow label={t('admin.events.detail.standPrice')} value={`${event.stand_price.toFixed(2)} ${t('admin.common.currency')} ${t('admin.events.pricing.perEnterprise')}`} />
+                                    <InfoRow label={t('admin.events.panel.standPrice')} value={`${event.stand_price.toFixed(2)} ${t('admin.common.currency')} ${t('admin.events.pricing.perEnterprise')}`} />
                                 )}
                                 <InfoRow
-                                    label={t('admin.events.detail.visitorAccess')}
+                                    label={t('admin.events.panel.visitorAccess')}
                                     value={event.is_paid
-                                        ? t('admin.events.detail.paidTicket', { price: event.ticket_price != null ? event.ticket_price.toFixed(2) : '?' })
-                                        : t('admin.events.detail.free')}
+                                        ? `${t('admin.events.panel.paid')} (${event.ticket_price != null ? event.ticket_price.toFixed(2) : '?'} ${t('admin.common.currency')})`
+                                        : t('admin.events.panel.free')}
                                 />
                             </div>
                         </Section>
@@ -319,34 +319,34 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Description */}
                     {event.description && (
-                        <Section icon={FileText} title={t('admin.events.detail.descriptionTitle')}>
+                        <Section icon={FileText} title={t('admin.events.panel.description')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.description}</p>
                         </Section>
                     )}
 
                     {/* Extended details */}
                     {event.extended_details && (
-                        <Section icon={Info} title={t('admin.events.detail.extendedDetailsTitle')}>
+                        <Section icon={Info} title={t('admin.events.panel.extendedDetails')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.extended_details}</p>
                         </Section>
                     )}
 
                     {/* Schedule */}
-                    <Section icon={Clock} title={t('admin.events.detail.scheduleTitle')}>
+                    <Section icon={Clock} title={t('admin.events.panel.schedule')}>
                         <ScheduleDisplay event={event} timeZone={timeZone} />
                     </Section>
 
 
                     {/* Additional info */}
                     {event.additional_info && (
-                        <Section icon={Info} title={t('admin.events.detail.additionalInfoTitle')}>
+                        <Section icon={Info} title={t('admin.events.panel.additionalInfo')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{event.additional_info}</p>
                         </Section>
                     )}
 
                     {/* Tags */}
                     {event.tags?.length > 0 && (
-                        <Section icon={Tag} title={t('admin.events.detail.tagsTitle')}>
+                        <Section icon={Tag} title={t('admin.events.panel.tags')}>
                             <div className="flex flex-wrap gap-1.5">
                                 {event.tags.map(t => (
                                     <span key={t} className="text-xs px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-full border border-zinc-200">
@@ -359,18 +359,18 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
                     {/* Links */}
                     {(event.enterprise_link || event.visitor_link) && (
-                        <Section icon={ExternalLink} title={t('admin.events.detail.linksTitle')}>
+                        <Section icon={ExternalLink} title={t('admin.events.panel.additionalInfo')}>
                             <div className="space-y-2">
                                 {event.enterprise_link && (
                                     <a href={event.enterprise_link} target="_blank" rel="noopener noreferrer"
                                         className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
-                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.detail.enterpriseLink')}
+                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.panel.enterpriseLink')}
                                     </a>
                                 )}
                                 {event.visitor_link && (
                                     <a href={event.visitor_link} target="_blank" rel="noopener noreferrer"
                                         className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
-                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.detail.visitorLink')}
+                                        <ExternalLink className="w-3.5 h-3.5" /> {t('admin.events.panel.visitorLink')}
                                     </a>
                                 )}
                             </div>
@@ -380,7 +380,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
                     {/* Rejection reason (if already rejected) */}
                     {event.rejection_reason && (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                            <p className="text-xs font-semibold text-red-600 mb-1">{t('admin.events.detail.rejectionReasonTitle')}</p>
+                            <p className="text-xs font-semibold text-red-600 mb-1">{t('admin.events.panel.rejectionReason')}</p>
                             <p className="text-sm text-red-700">{event.rejection_reason}</p>
                         </div>
                     )}
@@ -535,7 +535,7 @@ function EventPanel({ event, timeZone, onClose, onApprove, onReject, busy }: Eve
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminEventsPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const router = useRouter();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -670,7 +670,7 @@ export default function AdminEventsPage() {
                         value={timeZone}
                         onChange={(e) => setTimeZone(e.target.value)}
                         className="text-sm border border-zinc-200 rounded-lg px-3 py-2 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[220px]"
-                        title={t('admin.events.detail.timezoneLabel')}
+                        title={t('admin.events.panel.timezoneLabel')}
                     >
                         {Array.from(new Set([detectedTimeZone, ...COMMON_TIMEZONES])).map((tz) => (
                             <option key={tz} value={tz}>{tz}</option>
@@ -681,7 +681,7 @@ export default function AdminEventsPage() {
                     </button>
                 </div>
             </div>
-            <p className="text-xs text-zinc-500">{t('admin.events.detail.timesDisplayedIn')} <strong>{timeZone}</strong>.</p>
+            <p className="text-xs text-zinc-500">{t('admin.events.panel.timezoneLabel')} <strong>{timeZone}</strong>.</p>
 
             {/* Alerts */}
             {success && (

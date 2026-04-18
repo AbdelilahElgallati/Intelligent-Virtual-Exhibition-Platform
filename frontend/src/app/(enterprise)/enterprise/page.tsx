@@ -68,8 +68,7 @@ function QuickLink({ href, icon: Icon, label, desc, color }: any) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function EnterpriseDashboardPage() {
-    const { t } = useTranslation('enterprise');
-    const { t: tCommon } = useTranslation('common');
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [products, setProducts] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
@@ -174,7 +173,7 @@ export default function EnterpriseDashboardPage() {
                     value={products.length}
                     icon={Package}
                     color="bg-indigo-600"
-                    sub={`${productCount} products · ${serviceCount} services`}
+                    sub={t('enterprise.dashboard.kpi.catalogSub', { products: productCount, services: serviceCount })}
                     href="/enterprise/products"
                     viewLabel={t('enterprise.dashboard.stat.viewDetails')}
                 />
@@ -192,7 +191,7 @@ export default function EnterpriseDashboardPage() {
                     value={pendingRequests.length}
                     icon={Clock}
                     color="bg-amber-500"
-                    sub={`${requests.length} total inquiries`}
+                    sub={t('enterprise.dashboard.kpi.pendingRequestsSub', { count: requests.length })}
                     href="/enterprise/product-requests"
                     viewLabel={t('enterprise.dashboard.stat.viewDetails')}
                 />
@@ -201,7 +200,7 @@ export default function EnterpriseDashboardPage() {
                     value={requests.length}
                     icon={MessageSquare}
                     color="bg-purple-600"
-                    sub={`${requests.length - pendingRequests.length} handled`}
+                    sub={t('enterprise.dashboard.kpi.totalInquiriesSub', { count: requests.length - pendingRequests.length })}
                     href="/enterprise/product-requests"
                     viewLabel={t('enterprise.dashboard.stat.viewDetails')}
                 />
@@ -218,7 +217,7 @@ export default function EnterpriseDashboardPage() {
                             <h2 className="font-bold text-zinc-900 text-sm">{t('enterprise.dashboard.eventParticipations.title')}</h2>
                         </div>
                         <Link href="/enterprise/events" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                            {tCommon('common.actions.viewAll')} <ChevronRight size={13} />
+                            {t('common.actions.viewAll')} <ChevronRight size={13} />
                         </Link>
                     </div>
                     {recentEvents.length === 0 ? (
@@ -245,7 +244,7 @@ export default function EnterpriseDashboardPage() {
                                             <p className="font-semibold text-zinc-900 text-sm truncate">{ev.title}</p>
                                             <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                                                 <Calendar size={10} />
-                                                {ev.start_date ? formatInUserTZ(ev.start_date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : 'TBD'}
+                                                {ev.start_date ? formatInUserTZ(ev.start_date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : t('enterprise.dashboard.eventParticipations.tbd')}
                                             </p>
                                         </div>
                                         <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.cls}`}>
@@ -253,12 +252,12 @@ export default function EnterpriseDashboardPage() {
                                         </span>
                                         {isApproved && (
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Link href={`/enterprise/events/${evId}/stand`} title="Configure Stand">
+                                                <Link href={`/enterprise/events/${evId}/stand`} title={t('enterprise.dashboard.tooltips.configureStand')}>
                                                     <div className="p-1.5 rounded-lg hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 transition-colors">
                                                         <Settings size={13} />
                                                     </div>
                                                 </Link>
-                                                <Link href={`/enterprise/events/${evId}/analytics`} title="Analytics">
+                                                <Link href={`/enterprise/events/${evId}/analytics`} title={t('enterprise.dashboard.tooltips.analytics')}>
                                                     <div className="p-1.5 rounded-lg hover:bg-indigo-50 text-zinc-400 hover:text-indigo-600 transition-colors">
                                                         <BarChart3 size={13} />
                                                     </div>

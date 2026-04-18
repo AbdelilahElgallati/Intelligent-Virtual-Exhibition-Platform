@@ -30,7 +30,6 @@ interface VirtualStandLayoutProps {
     onChatOpen: () => void;
     onMeetingOpen: () => void;
     onAssistantOpen: () => void;
-    onShopOpen?: () => void;
     onFavoriteToggle: () => void;
     favoriteId: string | null;
     /* marketplace */
@@ -83,7 +82,6 @@ export function VirtualStandLayout({
     onChatOpen,
     onMeetingOpen,
     onAssistantOpen,
-    onShopOpen,
     onFavoriteToggle,
     favoriteId,
     onProductsOpen,

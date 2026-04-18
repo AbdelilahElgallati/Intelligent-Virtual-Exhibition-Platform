@@ -196,9 +196,9 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                     setIsChatOpen(true);
                     setHasUnreadMessages(false);
                 }} onMeetingOpen={() => setIsMeetingModalOpen(true)}
-                onAssistantOpen={() => setIsAssistantOpen(true)} onShopOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
+                onAssistantOpen={() => setIsAssistantOpen(true)} onProductsOpen={hasProducts ? () => setIsShopOpen(true) : undefined}
                 onFavoriteToggle={toggleFavorite} favoriteId={favoriteId} activeTab={activeTab} onTabChange={setActiveTab}
-                hasUnreadChat={hasUnreadMessages}
+                hasUnreadChat={hasUnreadMessages} hasProducts={hasProducts}
             >
                 {activeTab === 'resources' ? (
                     <div className="space-y-5"><StandResources standId={resolvedStandId} /></div>

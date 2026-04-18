@@ -32,7 +32,7 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 15000): 
 
 function SpeakerContent({ eventId, confId }: { eventId: string; confId: string }) {
     const router = useRouter();
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [conf, setConf] = useState<Conference | null>(null);
     const [tokenData, setTokenData] = useState<ConferenceTokenResponse | null>(null);
     const [eventData, setEventData] = useState<Event | null>(null);
@@ -205,7 +205,7 @@ export default function EnterpriseSpeakerLivePage({
 }: {
     params: Promise<{ eventId: string; confId: string }>;
 }) {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const { eventId, confId } = use(params);
     return (
         <Suspense fallback={<LoadingState message={t('enterprise.eventManagement.conferences.live.loading')} />}>

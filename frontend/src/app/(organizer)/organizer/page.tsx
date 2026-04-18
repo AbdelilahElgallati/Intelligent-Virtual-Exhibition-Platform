@@ -121,10 +121,10 @@ export default function OrganizerDashboard() {
     }, [events, eventSearch, stateFilter, activeEvents, pendingEvents, closedEvents]);
 
     const stats = [
-        { label: t("organizer.dashboard.stats.totalEvents"), value: events.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: t("organizer.dashboard.stats.activeEvents"), value: activeEvents.length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-        { label: t("organizer.dashboard.stats.pendingApproval"), value: pendingEvents.length, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        { label: t("organizer.dashboard.stats.totalVisitors"), value: summary?.overview.total_visitors ?? 0, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { id: 'total-events', label: t("organizer.dashboard.stats.totalEvents"), value: events.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { id: 'active-events', label: t("organizer.dashboard.stats.activeEvents"), value: activeEvents.length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+        { id: 'pending-approval', label: t("organizer.dashboard.stats.pendingApproval"), value: pendingEvents.length, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+        { id: 'total-visitors', label: t("organizer.dashboard.stats.totalVisitors"), value: summary?.overview.total_visitors ?? 0, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     ];
 
     const getEventStateBadgeClass = (state: string) => {
@@ -239,7 +239,7 @@ export default function OrganizerDashboard() {
                 {stats.map((stat) => {
                     const Icon = stat.icon;
                     return (
-                        <Card key={stat.label} className="p-6 border-none shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                        <Card key={stat.id} className="p-6 border-none shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                             <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
                                 <Icon className="w-6 h-6" />
                             </div>

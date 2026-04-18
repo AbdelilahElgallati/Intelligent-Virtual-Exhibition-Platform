@@ -14,7 +14,7 @@ import { PartnerDashboardRead } from '@/types/admin';
 import { formatInUserTZ } from '@/lib/timezone';
 
 function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation('');
     const badges = [];
     if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{t('admin.organizations.detail.verified')}</span>);
     if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{t('admin.organizations.detail.flagged')}</span>);
@@ -66,7 +66,7 @@ function OrgPanel({
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
 
     return (
@@ -207,7 +207,7 @@ function OrgPanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminOrganizationsPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [orgs, setOrgs] = useState<PartnerDashboardRead[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -225,7 +225,7 @@ export default function AdminOrganizationsPage() {
     const fetchOrgs = useCallback(async () => {
         setLoading(true); setError(null);
         try { setOrgs(await adminService.getDetailedOrganizations()); }
-        catch (e: any) { setError(e.message ?? t('admin.organizations.failedToLoad')); }
+        catch (e: any) { setError(e.message ?? t('common.errors.loadFailed')); }
         finally { setLoading(false); }
     }, [t]);
 

@@ -55,7 +55,7 @@ function getPayoutId(payout: PayoutRecord): string {
 }
 
 export default function AdminFinancePage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -99,7 +99,7 @@ export default function AdminFinancePage() {
                 id: item.id || item._id || `${item.transaction_id}-${index}`,
             })));
         } catch (err: unknown) {
-            const msg = (err as any)?.message || t('admin.finance.errors.loadFailed');
+            const msg = (err as any)?.message || t('common.errors.loadFailed');
             setError(msg);
         } finally {
             setLoading(false);
@@ -142,7 +142,7 @@ export default function AdminFinancePage() {
             closeModal();
             await fetchAll();
         } catch (err: unknown) {
-            alert((err as any)?.message || t('admin.finance.errors.payoutMarkFailed'));
+            alert((err as any)?.message || t('common.errors.actionFailed'));
         } finally {
             setSubmittingId(null);
         }
@@ -164,7 +164,7 @@ export default function AdminFinancePage() {
         if (!editingPayout) return;
         const payoutId = getPayoutId(editingPayout);
         if (!payoutId) {
-            addToast(t('admin.finance.errors.invalidPayoutId'), 'error');
+            addToast(t('admin.finance.payouts.invalidId'), 'error');
             return;
         }
 
@@ -176,9 +176,9 @@ export default function AdminFinancePage() {
             });
             closeEditPayoutModal();
             await fetchAll();
-            addToast(t('admin.finance.success.payoutUpdated'), 'success');
+            addToast(t('admin.finance.payouts.editSuccess'), 'success');
         } catch (err: unknown) {
-            addToast((err as any)?.message || t('admin.finance.errors.payoutUpdateFailed'), 'error');
+            addToast((err as any)?.message || t('admin.finance.payouts.editFailed'), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
@@ -187,7 +187,7 @@ export default function AdminFinancePage() {
     async function handleDeletePayout(payout: PayoutRecord) {
         const payoutId = getPayoutId(payout);
         if (!payoutId) {
-            addToast(t('admin.finance.errors.invalidPayoutId'), 'error');
+            addToast(t('admin.finance.payouts.invalidId'), 'error');
             return;
         }
 
@@ -198,15 +198,18 @@ export default function AdminFinancePage() {
             setPayoutActionLoadingId(payoutId);
             await adminService.deleteFinancePayout(payoutId);
             await fetchAll();
-            addToast(t('admin.finance.success.payoutDeleted'), 'success');
+            addToast(t('admin.finance.payouts.deleteSuccess'), 'success');
         } catch (err: unknown) {
-            addToast((err as any)?.message || t('admin.finance.errors.payoutDeleteFailed'), 'error');
+            addToast((err as any)?.message || t('admin.finance.payouts.deleteFailed'), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
     }
 
-    const sourceLabel = (source: SourceType) => t(`admin.finance.sources.${source}`, { defaultValue: source });
+    const sourceLabel = (source: SourceType) => {
+        const key = source.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+        return t(`admin.finance.filters.${key}`, { defaultValue: source });
+    };
 
     return (
         <div className="space-y-6">
@@ -235,35 +238,35 @@ export default function AdminFinancePage() {
             <div className="rounded-xl border border-zinc-200 bg-white p-4">
                 <div className="grid gap-3 md:grid-cols-3">
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.field.sourceType')}</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.sourceType')}</span>
                         <select
                             value={sourceType}
                             onChange={(e) => setSourceType(e.target.value as SelectValue<SourceType>)}
                             className="w-full rounded-lg border border-zinc-300 px-3 py-2"
                         >
                             <option value="all">{t('common.filters.all')}</option>
-                            <option value="event_ticket">{t('admin.finance.sources.event_ticket')}</option>
-                            <option value="marketplace">{t('admin.finance.sources.marketplace')}</option>
-                            <option value="stand_fee">{t('admin.finance.sources.stand_fee')}</option>
+                            <option value="event_ticket">{t('admin.finance.filters.eventTicket')}</option>
+                            <option value="marketplace">{t('admin.finance.filters.marketplace')}</option>
+                            <option value="stand_fee">{t('admin.finance.filters.standFee')}</option>
                         </select>
                     </label>
 
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.field.payoutStatus')}</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.payoutStatus')}</span>
                         <select
                             value={payoutStatus}
                             onChange={(e) => setPayoutStatus(e.target.value as SelectValue<PayoutStatus>)}
                             className="w-full rounded-lg border border-zinc-300 px-3 py-2"
                         >
                             <option value="all">{t('common.filters.all')}</option>
-                            <option value="unpaid">{t('admin.finance.status.unpaid')}</option>
-                            <option value="processing">{t('admin.finance.status.processing')}</option>
-                            <option value="paid">{t('admin.finance.status.paid')}</option>
+                            <option value="unpaid">{t('admin.finance.filters.unpaid')}</option>
+                            <option value="processing">{t('admin.finance.filters.processing')}</option>
+                            <option value="paid">{t('admin.finance.filters.paid')}</option>
                         </select>
                     </label>
 
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.field.receiverType')}</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.receiverType')}</span>
                         <select
                             value={receiverType}
                             onChange={(e) => setReceiverType(e.target.value as SelectValue<ReceiverType>)}
@@ -281,25 +284,25 @@ export default function AdminFinancePage() {
             <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
                 {loading ? (
                     <div className="p-6">
-                        <LoadingState message={t('admin.finance.loading')} />
+                        <LoadingState message={t('common.states.loading')} />
                     </div>
                 ) : error ? (
                     <div className="p-6 text-sm text-red-600">{error}</div>
                 ) : transactions.length === 0 ? (
-                    <div className="p-6 text-sm text-zinc-500">{t('admin.finance.noTransactions')}</div>
+                    <div className="p-6 text-sm text-zinc-500">{t('admin.finance.transactionsTable.noTransactions')}</div>
                 ) : (
                     <div className="max-h-[30rem] overflow-auto">
                         <table className="min-w-full text-sm">
                             <thead className="bg-zinc-50 text-zinc-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.type')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.amount')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.payer')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.receiver')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.status')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.payoutStatus')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.date')}</th>
-                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.table.actions')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.type')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.amount')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.payer')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.receiver')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.status')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.payoutStatus')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.date')}</th>
+                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.transactionsTable.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -312,18 +315,20 @@ export default function AdminFinancePage() {
                                             <div className="text-xs text-zinc-500">{getMetaString(tx, 'payer_name') || '-'}</div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="text-xs text-zinc-500">{tx.receiver_type}</div>
+                                            <div className="text-xs text-zinc-500">
+                                                {t(`admin.finance.filters.${String(tx.receiver_type || '').toLowerCase()}`, { defaultValue: tx.receiver_type })}
+                                            </div>
                                             <div className="font-mono text-xs">{tx.receiver_id || '-'}</div>
                                             <div className="text-xs text-zinc-500">{getMetaString(tx, 'receiver_name') || '-'}</div>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`rounded-full px-2 py-1 text-xs font-semibold ${getBadgeClass(tx.status)}`}>
-                                                {t(`admin.finance.status.${tx.status}`, { defaultValue: tx.status })}
+                                                {t(`admin.finance.filters.${String(tx.status || '').toLowerCase()}`, { defaultValue: tx.status })}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`rounded-full px-2 py-1 text-xs font-semibold ${getBadgeClass(tx.payout_status)}`}>
-                                                {t(`admin.finance.status.${tx.payout_status}`, { defaultValue: tx.payout_status })}
+                                                {t(`admin.finance.filters.${String(tx.payout_status || '').toLowerCase()}`, { defaultValue: tx.payout_status })}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-zinc-600">{formatDate(tx.paid_at || tx.created_at)}</td>
@@ -336,7 +341,7 @@ export default function AdminFinancePage() {
                                                     {t('admin.finance.actions.markAsPaid')}
                                                 </button>
                                             ) : (
-                                                <span className="text-xs text-zinc-500">{t('admin.finance.table.noAction')}</span>
+                                                <span className="text-xs text-zinc-500">{t('admin.finance.transactionsTable.noAction')}</span>
                                             )}
                                         </td>
                                     </tr>
@@ -358,12 +363,12 @@ export default function AdminFinancePage() {
                         <table className="min-w-full text-sm">
                             <thead className="bg-zinc-50 text-zinc-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.receiver')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.amount')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.receiver')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.amount')}</th>
                                     <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.admin')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.table.date')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.date')}</th>
                                     <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.note')}</th>
-                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.table.actions')}</th>
+                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.payouts.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -452,14 +457,14 @@ export default function AdminFinancePage() {
                         <p className="mt-1 text-xs text-zinc-500 font-mono">{getPayoutId(editingPayout)}</p>
 
                         <label className="mt-4 block text-sm text-zinc-700">
-                            {t('admin.finance.table.status')}
+                            {t('admin.finance.payouts.statusLabel')}
                             <select
                                 value={editStatus}
                                 onChange={(e) => setEditStatus(e.target.value as PayoutRecordStatus)}
                                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                             >
-                                <option value="completed">{t('admin.finance.status.completed')}</option>
-                                <option value="pending">{t('admin.finance.status.pending')}</option>
+                                <option value="completed">{t('admin.finance.payouts.completed')}</option>
+                                <option value="pending">{t('admin.finance.payouts.pending')}</option>
                             </select>
                         </label>
 

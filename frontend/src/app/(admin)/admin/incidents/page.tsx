@@ -38,7 +38,7 @@ function CreateModal({ onClose, onCreate }: {
     const [err, setErr] = useState('');
 
     const submit = async () => {
-        if (!form.title.trim()) { setErr(t('admin.monitoring.errors.titleRequired')); return; }
+        if (!form.title.trim()) { setErr(t('admin.incidents.create.titleRequired')); return; }
         setLoading(true);
         setErr('');
         try { await onCreate(form); onClose(); }
@@ -49,36 +49,36 @@ function CreateModal({ onClose, onCreate }: {
     return (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">{t('admin.monitoring.actions.newIncident')}</h2>
+                <h2 className="text-base font-semibold text-zinc-900">{t('admin.incidents.create.newIncident')}</h2>
                 {err && <p className="text-sm text-red-600">{err}</p>}
                 <div className="space-y-3">
                     <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.monitoring.field.title')} *</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.incidents.create.titleLabel')} *</label>
                         <input className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder={t('admin.monitoring.field.titlePlaceholder')}
+                            placeholder={t('admin.incidents.create.titlePlaceholder')}
                             value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.monitoring.field.description')}</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.incidents.create.descriptionLabel')}</label>
                         <textarea className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
-                            rows={3} placeholder={t('admin.monitoring.field.descriptionPlaceholder')}
+                            rows={3} placeholder={t('admin.incidents.create.descriptionPlaceholder')}
                             value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.monitoring.field.severity')}</label>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.incidents.create.severityLabel')}</label>
                         <select className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value as IncidentSeverity }))}>
-                            <option value="low">{t('admin.monitoring.severity.low')}</option>
-                            <option value="medium">{t('admin.monitoring.severity.medium')}</option>
-                            <option value="high">{t('admin.monitoring.severity.high')}</option>
-                            <option value="critical">{t('admin.monitoring.severity.critical')}</option>
+                            <option value="low">{t('admin.incidents.create.low')}</option>
+                            <option value="medium">{t('admin.incidents.create.medium')}</option>
+                            <option value="high">{t('admin.incidents.create.high')}</option>
+                            <option value="critical">{t('admin.incidents.create.critical')}</option>
                         </select>
                     </div>
                 </div>
                 <div className="flex gap-3 pt-1">
                     <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50">{t('common.actions.cancel')}</button>
                     <button onClick={submit} disabled={loading} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                        {loading ? t('admin.monitoring.actions.creating') : t('common.actions.create')}
+                        {loading ? t('admin.incidents.create.creating') : t('admin.incidents.create.create')}
                     </button>
                 </div>
             </div>
@@ -127,8 +127,8 @@ function IncidentPanel({ incident, onUpdate, onClose }: {
                         <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 text-lg leading-none">×</button>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${SEVERITY_BADGE[incident.severity]}`}>{t(`admin.monitoring.severity.${incident.severity}`, { defaultValue: incident.severity })}</span>
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${STATUS_BADGE[incident.status]}`}>{t(`admin.monitoring.incidents.status.${incident.status}`, { defaultValue: incident.status })}</span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${SEVERITY_BADGE[incident.severity]}`}>{t(`admin.incidents.create.${incident.severity}`, { defaultValue: incident.severity })}</span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${STATUS_BADGE[incident.status]}`}>{t(`admin.incidents.tabs.${incident.status}`, { defaultValue: incident.status })}</span>
                         <span className="text-[11px] text-zinc-400">{formatInUserTZ(incident.created_at, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     </div>
                     {incident.description && <p className="text-sm text-zinc-600 mt-2">{incident.description}</p>}
@@ -138,11 +138,11 @@ function IncidentPanel({ incident, onUpdate, onClose }: {
 
                 {/* Notes */}
                 <div>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.monitoring.field.adminNotes')}</label>
+                    <label className="block text-xs font-medium text-zinc-500 mb-1">{t('admin.incidents.detail.adminNotes')}</label>
                     <textarea
                         className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
                         rows={4}
-                        placeholder={t('admin.monitoring.field.adminNotesPlaceholder')}
+                        placeholder={t('admin.incidents.detail.notesPlaceholder')}
                         value={notes}
                         onChange={e => setNotes(e.target.value)}
                     />
@@ -151,16 +151,20 @@ function IncidentPanel({ incident, onUpdate, onClose }: {
                 {/* Actions */}
                 <div className="flex gap-3">
                     <button onClick={saveNotes} disabled={saving} className="flex-1 px-4 py-2 text-sm border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50 disabled:opacity-50">
-                        {t('admin.monitoring.actions.saveNotes')}
+                        {t('admin.incidents.detail.saveNotes')}
                     </button>
                     {nextStatus && (
                         <button onClick={advance} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                            {saving ? '…' : t(`admin.monitoring.actions.${nextStatus}`)}
+                            {saving ? t('admin.incidents.detail.saving') : (nextStatus === 'investigating'
+                                ? t('admin.incidents.detail.investigate')
+                                : nextStatus === 'mitigating'
+                                  ? t('admin.incidents.detail.mitigate')
+                                  : t('admin.incidents.detail.markResolved'))}
                         </button>
                     )}
                     {!nextStatus && (
                         <div className="flex-1 px-4 py-2 text-sm text-center bg-green-50 text-green-700 border border-green-200 rounded-lg">
-                            {t('admin.monitoring.status.resolvedCheck')}
+                            {t('admin.incidents.detail.resolved')}
                         </div>
                     )}
                 </div>
@@ -186,7 +190,7 @@ export default function IncidentsPage() {
             const data = await adminService.getIncidents({ status: filterStatus || undefined, limit: 50 });
             setIncidents(data);
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : t('admin.incidents.errors.loadFailed'));
+            setError(e instanceof Error ? e.message : t('admin.incidents.failedToLoad'));
         } finally {
             setLoading(false);
         }
@@ -232,7 +236,7 @@ export default function IncidentsPage() {
                         <RefreshCw className="w-3.5 h-3.5" /> {t('common.actions.refresh')}
                     </button>
                     <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                        <Plus className="w-3.5 h-3.5" /> {t('admin.monitoring.actions.newIncident')}
+                        <Plus className="w-3.5 h-3.5" /> {t('admin.incidents.create.newIncident')}
                     </button>
                 </div>
             </div>
@@ -247,7 +251,7 @@ export default function IncidentsPage() {
                             ? 'bg-white text-zinc-900 shadow-sm'
                             : 'text-zinc-500 hover:text-zinc-700'}`}
                     >
-                        {s === '' ? t('admin.incidents.filters.all') : t(`admin.incidents.filters.${s}`)}
+                        {s === '' ? t('admin.incidents.tabs.all') : t(`admin.incidents.tabs.${s}`)}
                     </button>
                 ))}
             </div>
@@ -257,8 +261,8 @@ export default function IncidentsPage() {
             {/* Incidents list */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.incidents.table.title')}</h2>
-                    <span className="text-xs text-zinc-400">{t('admin.incidents.table.total', { count: incidents.length })}</span>
+                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.incidents.list.title')}</h2>
+                    <span className="text-xs text-zinc-400">{t('admin.incidents.list.total', { count: incidents.length })}</span>
                 </div>
 
                 {loading ? (
@@ -266,7 +270,7 @@ export default function IncidentsPage() {
                         <div className="animate-spin w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full" />
                     </div>
                 ) : incidents.length === 0 ? (
-                    <p className="text-sm text-zinc-400 text-center py-12">{t('admin.incidents.table.noIncidents')}</p>
+                    <p className="text-sm text-zinc-400 text-center py-12">{t('admin.incidents.list.noIncidents')}</p>
                 ) : (
                     <div className="divide-y divide-zinc-100">
                         {incidents.map(inc => (
@@ -282,10 +286,10 @@ export default function IncidentsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${SEVERITY_BADGE[inc.severity] ?? ''}`}>
-                                        {t(`admin.monitoring.severity.${inc.severity}`, { defaultValue: inc.severity })}
+                                        {t(`admin.incidents.create.${inc.severity}`, { defaultValue: inc.severity })}
                                     </span>
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${STATUS_BADGE[inc.status] ?? ''}`}>
-                                        {t(`admin.monitoring.incidents.status.${inc.status}`, { defaultValue: inc.status })}
+                                        {t(`admin.incidents.tabs.${inc.status}`, { defaultValue: inc.status })}
                                     </span>
                                     <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-zinc-500" />
                                 </div>

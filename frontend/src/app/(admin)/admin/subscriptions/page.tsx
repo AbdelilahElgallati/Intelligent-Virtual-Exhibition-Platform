@@ -45,7 +45,7 @@ export default function AdminSubscriptionsPage() {
             const data = await adminService.getSubscriptions();
             setSubs(data);
         } catch (e: any) {
-            setError(e.message ?? t('admin.subscriptions.error.loadFailed'));
+            setError(e.message ?? t('admin.subscriptions.failedToLoad'));
         } finally {
             setLoading(false);
         }
@@ -63,7 +63,7 @@ export default function AdminSubscriptionsPage() {
         setActionId(orgId);
         try {
             await adminService.overrideSubscription(orgId, newPlan);
-            showSuccess(t('admin.subscriptions.success.switched', { name: orgName, plan: newPlan.toUpperCase() }));
+            showSuccess(t('admin.subscriptions.toast.switched', { name: orgName, plan: newPlan.toUpperCase() }));
             fetchSubs();
         } catch (e: any) {
             setError(e.message ?? t('common.errors.actionFailed'));
@@ -76,7 +76,7 @@ export default function AdminSubscriptionsPage() {
         setActionId(orgId);
         try {
             await adminService.cancelSubscription(orgId);
-            showSuccess(t('admin.subscriptions.success.cancelled', { name: orgName }));
+            showSuccess(t('admin.subscriptions.toast.cancelled', { name: orgName }));
             fetchSubs();
         } catch (e: any) {
             setError(e.message ?? t('common.errors.actionFailed'));
@@ -111,7 +111,7 @@ export default function AdminSubscriptionsPage() {
             {!loading && total > 0 && (
                 <div className="grid grid-cols-3 gap-4">
                     {[
-                        { label: t('admin.subscriptions.stats.totalOrgs'), value: total, cls: 'text-zinc-900' },
+                        { label: t('admin.subscriptions.stats.totalOrganizations'), value: total, cls: 'text-zinc-900' },
                         { label: t('admin.subscriptions.stats.proPlans'), value: proCount, cls: 'text-indigo-600' },
                         { label: t('admin.subscriptions.stats.freePlans'), value: freeCount, cls: 'text-zinc-500' },
                     ].map(({ label, value, cls }) => (
@@ -176,7 +176,7 @@ export default function AdminSubscriptionsPage() {
                                                 }`}>
                                                 <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-zinc-300'
                                                     }`} />
-                                                {sub.status ? t(`admin.subscriptions.status.${sub.status}`, { defaultValue: sub.status }) : t('admin.subscriptions.status.active')}
+                                                {sub.status || 'active'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -187,12 +187,12 @@ export default function AdminSubscriptionsPage() {
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 transition-colors"
                                                 >
                                                     <ArrowUpDown className="w-3 h-3" />
-                                                    {isFree ? t('admin.subscriptions.actions.upgrade') : t('admin.subscriptions.actions.downgrade')}
+                                                    {isFree ? t('admin.subscriptions.upgrade') : t('admin.subscriptions.downgrade')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleCancel(sub.organization_id, sub.organization_name ?? '')}
                                                     disabled={busy || isFree}
-                                                    title={isFree ? t('admin.subscriptions.tooltips.alreadyFree') : t('admin.subscriptions.tooltips.cancelToFree')}
+                                                    title={isFree ? t('admin.subscriptions.alreadyFree') : t('admin.subscriptions.cancelToFree')}
                                                     className="px-3 py-1.5 rounded-lg text-xs font-medium border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                                 >
                                                     {t('common.actions.cancel')}

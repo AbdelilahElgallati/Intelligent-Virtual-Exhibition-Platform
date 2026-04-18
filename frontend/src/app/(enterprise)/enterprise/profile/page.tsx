@@ -66,7 +66,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export default function EnterpriseProfilePage() {
-    const { t: tEnterprise } = useTranslation('enterprise');
+    const { t: tEnterprise, i18n } = useTranslation();
     const { t: tCommon } = useTranslation('common');
     const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);

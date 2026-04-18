@@ -46,7 +46,7 @@ function timeAgo(dateStr: string, t: any) {
 }
 
 export default function EnterpriseNotificationsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [markingAll, setMarkingAll] = useState(false);

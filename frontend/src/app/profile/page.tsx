@@ -10,6 +10,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import ChangePassword from '@/components/common/ChangePassword';
+import { useTranslation } from 'react-i18next';
+import { http } from '@/lib/http';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -173,12 +175,14 @@ function ProfileSection({
 // ── Main Profile Page ────────────────────────────────────────────────
 
 export default function ProfilePage() {
+    const { t, i18n } = useTranslation();
     const { user: authUser, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
     const [profile, setProfile] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const topRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = useState(false);
 
     // Form state
     const [fullName, setFullName] = useState('');
@@ -265,27 +269,33 @@ export default function ProfilePage() {
             const updated = await apiClient.put<User>(ENDPOINTS.USERS.ME, payload);
             setProfile(updated);
             populateForm(updated);
+
+            // Sync i18n language immediately
+            const langMap: Record<string, string> = {
+                'English': 'en',
+                'French': 'fr',
+                'Arabic': 'ar',
+                'Spanish': 'es'
+            };
+            const langCode = langMap[language] || 'en';
+            i18n.changeLanguage(langCode);
+
             setSaveMessage({ type: 'success', text: 'Your profile has been saved successfully!' });
-            // Ensure the user's timezone preference is immediately applied across the app.
+            // Ensure the user's timezone and language preferences are immediately applied across the app.
             try {
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem('auth_user', JSON.stringify({ ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}), timezone }));
+                    const currentAuth = JSON.parse(localStorage.getItem('auth_user') || '{}');
+                    localStorage.setItem('auth_user', JSON.stringify({ ...currentAuth, timezone, language }));
                 }
             } catch {
                 // Best-effort only.
             }
             await refreshUser?.();
-            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
-            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            // Re-apply to guarantee local state consistency
             try {
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem(
-                        'auth_user',
-                        JSON.stringify({
-                            ...(JSON.parse(localStorage.getItem('auth_user') || '{}') || {}),
-                            timezone,
-                        })
-                    );
+                    const currentAuth = JSON.parse(localStorage.getItem('auth_user') || '{}');
+                    localStorage.setItem('auth_user', JSON.stringify({ ...currentAuth, timezone, language }));
                 }
             } catch {
                 // Best-effort only.

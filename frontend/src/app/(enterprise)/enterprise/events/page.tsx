@@ -341,7 +341,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
     onPay: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
@@ -515,7 +515,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                         )}
                         {isEventInProgress && lifecycle.nextSlot?.start && (
                             <span className="text-xs font-semibold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">
-                                Next slot: {formatTimeToStart(lifecycle.nextSlot?.start)}
+                                {t('enterprise.events.detail.nextSlot', { time: formatTimeToStart(lifecycle.nextSlot?.start) })}
                             </span>
                         )}
                     </div>
@@ -532,7 +532,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                         <Building2 size={14} className="text-indigo-600" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Organizer</p>
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">{t('enterprise.events.detail.organizer')}</p>
                                         <p className="text-sm font-semibold text-zinc-900 truncate">{ev.organizer_name}</p>
                                     </div>
                                 </div>
@@ -543,7 +543,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                         <MapPin size={14} className="text-indigo-600" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Location</p>
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">{t('enterprise.events.detail.location')}</p>
                                         <p className="text-sm font-semibold text-zinc-900 truncate">{ev.location}</p>
                                     </div>
                                 </div>
@@ -554,11 +554,11 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                         <Users size={14} className="text-indigo-600" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Enterprise Slots</p>
+                                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">{t('enterprise.events.detail.enterpriseSlots')}</p>
                                         <p className="text-sm font-semibold text-zinc-900">
                                             {ev.stands_left !== undefined
-                                                ? `${ev.stands_left} of ${ev.max_stands || ev.num_enterprises} left`
-                                                : `${ev.max_stands || ev.num_enterprises} stands`
+                                                ? t('enterprise.events.detail.standsLeft', { left: ev.stands_left, total: ev.max_stands || ev.num_enterprises })
+                                                : t('enterprise.events.detail.standsTotal', { total: ev.max_stands || ev.num_enterprises })
                                             }
                                         </p>
                                     </div>
@@ -570,7 +570,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                         <DollarSign size={14} className={standPrice > 0 ? 'text-amber-600' : 'text-zinc-400'} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className={`text-[10px] uppercase tracking-wider font-semibold ${standPrice > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>Stand Fee</p>
+                                        <p className={`text-[10px] uppercase tracking-wider font-semibold ${standPrice > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>{t('enterprise.events.detail.standFee')}</p>
                                         <p className={`text-sm font-bold ${standPrice > 0 ? 'text-amber-800' : 'text-zinc-600'}`}>
                                             {standPrice > 0 ? `${standPrice} MAD` : 'Free'}
                                         </p>
@@ -595,7 +595,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                             <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
                                 <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-xs font-bold text-red-700 mb-0.5">Rejection Reason</p>
+                                    <p className="text-xs font-bold text-red-700 mb-0.5">{t('enterprise.events.detail.rejectionReason')}</p>
                                     <p className="text-sm text-red-800">{participation.rejection_reason}</p>
                                 </div>
                             </div>
@@ -607,7 +607,7 @@ function EventDetailPanel({ ev, onClose, onJoin, onPay, actionLoading }: {
                                     <Link href={`/enterprise/events/${evId}/manage`}>
                                         <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 hover:border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer group/nav">
                                             <MessageSquare size={18} className="text-zinc-400 group-hover/nav:text-indigo-600 transition-colors" />
-                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">Manage</span>
+                                            <span className="text-[11px] font-semibold text-zinc-500 group-hover/nav:text-indigo-600 transition-colors">{t('enterprise.events.actions.manage')}</span>
                                         </div>
                                     </Link>
                                 )}
@@ -679,7 +679,7 @@ function EnterpriseEventCard({
     onJoin: (id: string) => void;
     actionLoading: string | null;
 }) {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const evId = ev.slug || ev.id || ev._id;
     const participation = ev.participation;
     const partStatus = participation?.status;
@@ -820,7 +820,7 @@ function EnterpriseEventCard({
 
                 {isEventLive && lifecycle.currentSlot?.label && (
                     <div className="text-[11px] font-semibold text-emerald-600">
-                        Live slot: {lifecycle.currentSlot?.label}
+                        {t('visitor.eventCard.currentSlot', { label: lifecycle.currentSlot?.label })}
                     </div>
                 )}
                 {lifecycle.displayState === 'UPCOMING' && lifecycle.nextSlot?.start && (
@@ -862,7 +862,7 @@ function EnterpriseEventCard({
                         ev.stands_left === 0 ? 'text-red-500' : ev.stands_left <= 2 ? 'text-amber-600' : 'text-emerald-600'
                     }`}>
                         <Users size={10} />
-                        {ev.stands_left === 0 ? t('enterprise.events.status.fullyBooked') : `${ev.stands_left} stand${ev.stands_left > 1 ? 's' : ''} left`}
+                        {ev.stands_left === 0 ? t('enterprise.events.status.fullyBooked') : t('enterprise.events.detail.standsLeft', { left: ev.stands_left, total: ev.max_stands || ev.num_enterprises })}
                     </div>
                 )}
 
@@ -948,7 +948,7 @@ function EnterpriseEventCard({
 // --- Main Page ---
 
 export default function EnterpriseEventsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const VISIBLE_STATES = new Set(['approved', 'payment_done', 'live', 'closed']);
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);

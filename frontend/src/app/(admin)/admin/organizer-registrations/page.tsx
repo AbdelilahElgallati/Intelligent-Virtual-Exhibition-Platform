@@ -28,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TABS = ['ALL', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'];
 
 export default function OrganizerRegistrationsPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation('');
     const [registrations, setRegistrations] = useState<OrgReg[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);

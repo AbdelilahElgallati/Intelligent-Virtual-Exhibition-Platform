@@ -94,7 +94,7 @@ const MetricCard = ({ title, value, subValue, icon: Icon, trend, color }: any) =
 );
 
 export default function EventAnalyticsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const params = useParams();
     const router = useRouter();
     const eventId = params.eventId as string;

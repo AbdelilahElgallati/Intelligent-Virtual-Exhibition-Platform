@@ -142,7 +142,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseEventRequestsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const params = useParams();
     const eventId = params.eventId as string;
 

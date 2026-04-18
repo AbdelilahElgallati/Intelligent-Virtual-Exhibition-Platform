@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/common/Container';
 import { Globe, Languages } from 'lucide-react';
+import { http } from '@/lib/http';
 
 // ── Per-role top nav links ────────────────────────────────────────────────────
 
@@ -129,15 +130,24 @@ const roleBadge: Record<string, string> = {
 
 export const Navbar: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, refreshUser } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
     const [langOpen, setLangOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const langRef = useRef<HTMLDivElement>(null);
 
+    // Prevent hydration mismatch by only using translated strings after mount
+    // or forcing the default language during the initial pass.
+    const safeT = (key: string, args?: any): string => {
+        if (!mounted) return t(key, { ...args, lng: 'en' }) as string;
+        return t(key, args) as string;
+    };
+
     useEffect(() => {
+        setMounted(true);
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setProfileOpen(false);
@@ -161,9 +171,28 @@ export const Navbar: React.FC = () => {
         .toUpperCase()
         .slice(0, 2);
 
-    const toggleLanguage = (lng: string) => {
+    const toggleLanguage = async (lng: string) => {
         i18n.changeLanguage(lng);
         setLangOpen(false);
+
+        // Map short codes to the full names expected by the profile/backend
+        const langMap: Record<string, string> = {
+            en: 'English',
+            fr: 'French',
+            ar: 'Arabic',
+            es: 'Spanish'
+        };
+
+        if (isAuthenticated && user) {
+            try {
+                await http.put('/users/me', {
+                    language: langMap[lng] || 'English'
+                });
+                await refreshUser?.();
+            } catch (err) {
+                console.error('Failed to persist language preference:', err);
+            }
+        }
     };
 
     return (
@@ -184,11 +213,11 @@ export const Navbar: React.FC = () => {
                                         key={link.href}
                                         href={link.href}
                                         className={`text-sm font-medium transition-colors ${isActive
-                                                ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5'
-                                                : 'text-zinc-600 hover:text-indigo-600'
+                                            ? 'text-indigo-600 border-b-2 border-indigo-600 pb-0.5'
+                                            : 'text-zinc-600 hover:text-indigo-600'
                                             }`}
                                     >
-                                        {t(link.labelKey)}
+                                        {safeT(link.labelKey)}
                                     </Link>
                                 );
                             })}
@@ -201,24 +230,33 @@ export const Navbar: React.FC = () => {
                         <div className="relative" ref={langRef}>
                             <button
                                 onClick={() => setLangOpen(!langOpen)}
-                                className="p-2 rounded-full hover:bg-zinc-100 text-zinc-600 transition-colors"
+                                className="p-2 rounded-full hover:bg-zinc-100 text-zinc-600 transition-colors flex items-center gap-1"
                                 aria-label="Change language"
                             >
-                                <Languages size={20} />
+                                <Globe size={20} />
+                                {mounted && (
+                                    <span className="text-xs font-bold uppercase">{i18n.language?.split('-')[0]}</span>
+                                )}
                             </button>
                             {langOpen && (
                                 <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white border border-zinc-200 shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <button
                                         onClick={() => toggleLanguage('en')}
-                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language === 'en' ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language?.startsWith('en') ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
                                     >
                                         English
                                     </button>
                                     <button
                                         onClick={() => toggleLanguage('fr')}
-                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language === 'fr' ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language?.startsWith('fr') ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
                                     >
                                         Français
+                                    </button>
+                                    <button
+                                        onClick={() => toggleLanguage('ar')}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition-colors ${i18n.language?.startsWith('ar') ? 'text-indigo-600 font-bold' : 'text-zinc-700'}`}
+                                    >
+                                        العربية
                                     </button>
                                 </div>
                             )}
@@ -272,7 +310,7 @@ export const Navbar: React.FC = () => {
                                                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
                                                 >
                                                     {item.icon}
-                                                    {t(item.labelKey)}
+                                                    {safeT(item.labelKey)}
                                                 </Link>
                                             ))}
                                         </div>
@@ -286,7 +324,7 @@ export const Navbar: React.FC = () => {
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                                 </svg>
-                                                {t('layout.navbar.signOut')}
+                                                {safeT('layout.navbar.signOut')}
                                             </button>
                                         </div>
                                     </div>
@@ -295,10 +333,10 @@ export const Navbar: React.FC = () => {
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link href="/auth/login">
-                                    <Button variant="ghost" size="sm">{t('layout.navbar.login')}</Button>
+                                    <Button variant="ghost" size="sm">{safeT('layout.navbar.login')}</Button>
                                 </Link>
                                 <Link href="/auth/register">
-                                    <Button size="sm">{t('layout.navbar.register')}</Button>
+                                    <Button size="sm">{safeT('layout.navbar.register')}</Button>
                                 </Link>
                             </div>
                         )}
@@ -308,7 +346,7 @@ export const Navbar: React.FC = () => {
                             className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
                             aria-expanded={mobileMenuOpen}
                         >
-                            <span className="sr-only">{t('layout.navbar.openMenu')}</span>
+                            <span className="sr-only">{safeT('layout.navbar.openMenu')}</span>
                             {mobileMenuOpen ? (
                                 <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -337,7 +375,7 @@ export const Navbar: React.FC = () => {
                                             : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
                                         }`}
                                 >
-                                    {t(link.labelKey)}
+                                    {safeT(link.labelKey)}
                                 </Link>
                             );
                         })}

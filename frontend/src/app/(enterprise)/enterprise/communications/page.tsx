@@ -58,7 +58,7 @@ interface Stand {
 // ─── Chat List Item ──────────────────────────────────────────────────────────
 
 const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; active: boolean; onClick: () => void; unreadCount?: number }) => {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     return (
         <div
             onClick={onClick}
@@ -96,7 +96,7 @@ const ChatItem = ({ room, active, onClick, unreadCount }: { room: ChatRoom; acti
 // ─── Meeting Item ────────────────────────────────────────────────────────────
 
 const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeting: Meeting; timeZone: string; onStatusUpdate: (id: string, status: string) => void; currentTime: number }) => {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const statusStyles = {
         pending: 'bg-amber-50 text-amber-700 border-amber-100',
         approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -117,7 +117,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
                             </div>
                             <div>
                                 <h4 className="text-sm font-bold text-zinc-900">
-                                    {t('enterprise.communications.meeting.requestLabel')}{(meeting.id || meeting._id).slice(-6)}
+                                    {t('enterprise.communications.meetings.requestLabel', { id: (meeting.id || meeting._id).slice(-6) })}
                                 </h4>
                                 <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                                     <Clock size={12} />
@@ -207,7 +207,7 @@ const MeetingItem = ({ meeting, timeZone, onStatusUpdate, currentTime }: { meeti
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function EnterpriseCommunicationsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'chats' | 'meetings'>('chats');
     const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -344,6 +344,7 @@ export default function EnterpriseCommunicationsPage() {
     }, [rooms, lastSeenByRoom, selectedRoomId, user]);
 
     const unreadTotal = useMemo(() => Object.values(unreadByRoomId).reduce((sum, v) => sum + v, 0), [unreadByRoomId]);
+    const pendingMeetingsCount = useMemo(() => meetings.filter((m) => m.status === 'pending').length, [meetings]);
 
     return (
         <div className="h-[calc(100vh-140px)] flex flex-col gap-6 animate-in fade-in duration-500">
@@ -359,7 +360,7 @@ export default function EnterpriseCommunicationsPage() {
                     <MessageSquare size={16} /> {t('enterprise.communications.tabs.chats')}
                     {unreadTotal > 0 && (
                         <span className="ml-1 text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">
-                            {unreadTotal > 9 ? '9+' : unreadTotal}
+                            {t('enterprise.communications.tabs.chatsUnread', { unread: unreadTotal > 9 ? '9+' : unreadTotal })}
                         </span>
                     )}
                     {rooms.length > 0 && (
@@ -376,9 +377,9 @@ export default function EnterpriseCommunicationsPage() {
                     )}
                 >
                     <Calendar size={16} /> {t('enterprise.communications.tabs.meetings')}
-                    {meetings.filter(m => m.status === 'pending').length > 0 && (
+                    {pendingMeetingsCount > 0 && (
                         <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
-                            {meetings.filter(m => m.status === 'pending').length}
+                            {t('enterprise.communications.tabs.meetingsPending', { count: pendingMeetingsCount })}
                         </span>
                     )}
                 </button>

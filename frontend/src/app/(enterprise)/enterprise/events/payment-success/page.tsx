@@ -19,7 +19,7 @@ function formatEventDateLabel(iso?: string): string | undefined {
 }
 
 export default function EnterprisePaymentSuccessPage() {
-  const { t } = useTranslation('enterprise');
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const eventId = searchParams.get('event_id');
   const sessionId = searchParams.get('session_id');

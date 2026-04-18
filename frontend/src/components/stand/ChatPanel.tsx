@@ -191,7 +191,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
             return (
                 <div className="flex flex-col h-full bg-white w-full">
                     <div className="p-4 border-b flex justify-between items-center text-white" style={{ backgroundColor: themeColor }}>
-                        <h3 className="font-bold">Chat with {standName}</h3>
+                        <h3 className="font-bold">{t('visitor.chatPanel.title', { standName })}</h3>
                     </div>
                     <div className="flex-1 flex items-center justify-center p-6 text-center text-gray-500">
                         Please log in to chat.
@@ -214,7 +214,7 @@ export function ChatPanel({ standId, standName, onClose, avatarBg, initialRoomId
                             borderBottomColor: `rgba(${r},${g},${b},0.18)`,
                         }}
                     >
-                        <h3 className="font-bold">Chat with {standName}</h3>
+                        <h3 className="font-bold">{t('visitor.chatPanel.title', { standName })}</h3>
                         <button onClick={onClose} className="hover:opacity-80 p-1 rounded transition-colors"><X size={20} /></button>
                     </div>
                     <div className="flex items-center justify-center p-12 text-center text-gray-500">

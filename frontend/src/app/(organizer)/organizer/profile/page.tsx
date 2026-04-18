@@ -32,8 +32,9 @@ const TIMEZONE_OPTIONS =
         : FALLBACK_TIMEZONES;
 
 export default function OrganizerProfile() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { user, refreshUser } = useAuth();
+
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -51,7 +52,7 @@ export default function OrganizerProfile() {
             setForm({
                 full_name: user.full_name || '',
                 bio: user.bio || '',
-                language: user.language || t("organizer.profile.languages.english"),
+                language: user.language || 'English',
                 timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
                 interests: user.interests || []
             });
@@ -69,28 +70,37 @@ export default function OrganizerProfile() {
 
         try {
             await http.put('/users/me', form);
-            // Ensure the selected timezone is available immediately in localStorage,
-            // so schedule components can re-render using the correct viewer timezone.
+
+            // Sync i18n language immediately
+            const langMap: Record<string, string> = {
+                'English': 'en',
+                'French': 'fr',
+                'Arabic': 'ar',
+                'Spanish': 'es'
+            };
+            const langCode = langMap[form.language] || 'en';
+            i18n.changeLanguage(langCode);
+
+            // Ensure the selected preferences are available immediately in localStorage
             try {
                 if (typeof window !== 'undefined') {
                     const raw = localStorage.getItem('auth_user');
                     const parsed = raw ? (JSON.parse(raw) as any) : {};
                     localStorage.setItem(
                         'auth_user',
-                        JSON.stringify({ ...parsed, timezone: form.timezone })
+                        JSON.stringify({ ...parsed, timezone: form.timezone, language: form.language })
                     );
                 }
             } catch {
                 // Best-effort only.
             }
             await refreshUser?.();
-            // `refreshUser()` may overwrite `auth_user` with the backend response (which can lag).
-            // Re-apply the selected timezone to guarantee schedule rendering matches the profile selection.
+            // Re-apply to guarantee local state consistency
             try {
                 if (typeof window !== 'undefined') {
                     const raw = localStorage.getItem('auth_user');
                     const parsed = raw ? (JSON.parse(raw) as any) : {};
-                    localStorage.setItem('auth_user', JSON.stringify({ ...parsed, timezone: form.timezone }));
+                    localStorage.setItem('auth_user', JSON.stringify({ ...parsed, timezone: form.timezone, language: form.language }));
                 }
             } catch {
                 // Best-effort only.

@@ -135,7 +135,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseGlobalRequestsPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const [tab, setTab] = useState<"products" | "services">("products");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

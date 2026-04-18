@@ -9,7 +9,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { http } from '@/lib/http';
 
 function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [loading, setLoading] = useState(true);

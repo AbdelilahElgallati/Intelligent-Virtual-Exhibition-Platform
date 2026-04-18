@@ -23,6 +23,9 @@ type MarketplaceOrderExt = MarketplaceOrder & {
   stripe_session_id?: string;
   checkout_group_id?: string;
   product_type?: string;
+  product?: {
+    name?: string;
+  };
 };
 
 function normalizeJoinedEvents(payload: JoinedEventsPayload): Event[] {
@@ -63,7 +66,16 @@ function resolveOrderGroupId(order: MarketplaceOrderExt): string {
   const checkoutGroup = String(order.checkout_group_id || '').trim();
   if (checkoutGroup) return `group:${checkoutGroup}`;
 
-  return `order:${order.id}`;
+  const standId = String(order.stand_id || 'unknown-stand').trim() || 'unknown-stand';
+  const createdAt = parseISOUTC(order.created_at);
+  const minuteBucket = Number.isNaN(createdAt.getTime())
+    ? String(order.created_at || '').slice(0, 16)
+    : (() => {
+        createdAt.setSeconds(0, 0);
+        return createdAt.toISOString().slice(0, 16);
+      })();
+
+  return `legacy:${standId}:${minuteBucket}`;
 }
 
 function buildOrderRef(groupId: string, createdAt: string): string {
@@ -184,7 +196,7 @@ function upsertGroupedOrder(
   group.items.push({
     order_id: order.id,
     product_id: order.product_id,
-    product_name: order.product_name,
+    product_name: order.product_name || order.product?.name || 'Product',
     product_type: String(order.product_type || 'product'),
     quantity: Number(order.quantity || 1),
     unit_price: Number(order.unit_price || 0),
@@ -278,26 +290,20 @@ export default function VisitorOrdersPage() {
     if (hintedEventId) return hintedEventId;
 
     try {
-      const joined = await apiClient.get<JoinedEventsPayload>(ENDPOINTS.EVENTS.JOINED);
-      const joinedEvents = normalizeJoinedEvents(joined);
-      for (const evt of joinedEvents) {
-        const eventId = resolveEventId(evt);
-        if (!eventId) continue;
-        const found = await findStandInEvent(eventId, standId);
-        if (found) return eventId;
-      }
-    } catch {
-      // Best-effort fallback only.
-    }
-
-    try {
       const allEventsRaw = await apiClient.get<EventsListPayload>(ENDPOINTS.EVENTS.LIST);
       const allEvents = normalizeEventsList(allEventsRaw);
       for (const evt of allEvents) {
         const eventId = resolveEventId(evt);
         if (!eventId) continue;
         const found = await findStandInEvent(eventId, standId);
-        if (found) return eventId;
+        if (!found) continue;
+        try {
+          const standData = await apiClient.get<Stand & { event_id?: string }>(ENDPOINTS.STANDS.GET(eventId, standId));
+          const standEventId = String(standData.event_id || eventId);
+          if (standEventId) return standEventId;
+        } catch {
+          return eventId;
+        }
       }
     } catch {
       // Best-effort fallback only.
@@ -392,7 +398,7 @@ export default function VisitorOrdersPage() {
       eventLocation: ctx?.eventLocation,
       eventTimezone: ctx?.eventTimezone,
       items: order.items.map((item) => ({
-        product_name: item.product_name,
+        product_name: item.product_name || (item as unknown as { name?: string }).name || 'Product',
         product_type: item.product_type,
         quantity: item.quantity,
         unit_price: item.unit_price,
@@ -410,7 +416,7 @@ export default function VisitorOrdersPage() {
 
     setActionLoading(order.group_id);
     try {
-      const resolvedEventId = await resolveEventIdForStand(order.stand_id, order.event_id);
+      const resolvedEventId = order.event_id || await resolveEventIdForStand(order.stand_id);
       if (!resolvedEventId) {
         router.push('/events');
         return;
@@ -481,10 +487,10 @@ export default function VisitorOrdersPage() {
 
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {order.items.map((item) => {
+                {order.items.map((item, idx) => {
                   const isService = String(item.product_type || 'product') === 'service';
                   return (
-                    <div key={item.order_id} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                    <div key={`${order.group_id}-${item.product_id}-${idx}`} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{item.product_name}</p>

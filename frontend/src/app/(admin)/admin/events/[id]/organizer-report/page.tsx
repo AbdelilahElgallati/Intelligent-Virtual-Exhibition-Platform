@@ -51,7 +51,7 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, icon, colour, format = 'number' }: KpiCardProps) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const animated = useCountUp(value);
     const display = (() => {
         switch (format) {
@@ -127,7 +127,7 @@ function DashboardSkeleton() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OrganizerReportPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const { id: eventId } = useParams<{ id: string }>();
     const [data, setData] = useState<OrganizerSummary | null>(null);
     const [loading, setLoading] = useState(true);

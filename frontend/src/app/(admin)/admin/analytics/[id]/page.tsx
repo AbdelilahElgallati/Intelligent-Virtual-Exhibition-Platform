@@ -33,7 +33,7 @@ function MetricCard({ label, value, icon: Icon, accent }: {
 }
 
 export default function EventAnalyticsPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);

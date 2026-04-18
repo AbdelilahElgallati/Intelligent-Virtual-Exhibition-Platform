@@ -140,7 +140,7 @@ function ChartsSection({ history, metrics }: {
     history: MetricDataPoint[];
     metrics: LiveMetrics;
 }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     // Role distribution for pie chart
     const roleCounts: Record<string, number> = {};
     metrics.active_users.forEach(u => {
@@ -390,7 +390,7 @@ function FlagAlertsPanel({ flags, eventId, router }: {
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function EventMonitoringPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
 

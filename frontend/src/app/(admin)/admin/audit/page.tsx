@@ -122,7 +122,7 @@ export default function AuditPage() {
                         </label>
                         <input
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder={t('admin.audit.filters.actorIdPlaceholder')}
+                            placeholder={t('admin.audit.filters.actorPlaceholder')}
                             value={filterActorId}
                             onChange={e => setFilterActorId(e.target.value)}
                         />
@@ -157,8 +157,8 @@ export default function AuditPage() {
             {/* Logs table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.audit.table.logEntries')}</h2>
-                    <span className="text-xs text-zinc-400">{t('admin.audit.table.count', { count: logs.length })}</span>
+                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.audit.table.title')}</h2>
+                    <span className="text-xs text-zinc-400">{t('admin.audit.table.entriesCount', { count: logs.length })}</span>
                 </div>
 
                 {loading ? (

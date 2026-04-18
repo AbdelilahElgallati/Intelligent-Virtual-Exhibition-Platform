@@ -28,6 +28,7 @@ import { formatInUserTZ } from '@/lib/timezone';
 
 function StatusBadge({ status }: { status: string }) {
     const { t } = useTranslation();
+    const normalizedStatus = (status || '').toLowerCase();
     const STATUS_META: Record<string, { label: string; cls: string }> = {
         pending_payment: { label: t('admin.events.states.waiting_for_payment'), cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
         pending_admin_approval: { label: t('admin.enterpriseJoinRequests.tabs.awaitingApproval'), cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
@@ -36,7 +37,7 @@ function StatusBadge({ status }: { status: string }) {
         rejected: { label: t('admin.enterpriseJoinRequests.tabs.rejected'), cls: 'bg-red-50 text-red-700 border border-red-200' },
     };
 
-    const meta = STATUS_META[status] ?? { label: status, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+    const meta = STATUS_META[normalizedStatus] ?? { label: status, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
     return (
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${meta.cls}`}>
             {meta.label}
@@ -414,7 +415,8 @@ export default function EnterpriseRequestsPage() {
                         {!loading && data?.items.map(item => {
                             const pid = item.participant.id;
                             const isActing = actionLoading === pid;
-                            const isPending = (item.participant.status as string) === 'requested' || (item.participant.status as string) === 'pending_admin_approval';
+                            const participantStatus = String(item.participant.status || '').toLowerCase();
+                            const isPending = participantStatus === 'requested' || participantStatus === 'pending_admin_approval';
 
                             return (
                                 <tr key={pid} className="hover:bg-zinc-50 transition-colors">

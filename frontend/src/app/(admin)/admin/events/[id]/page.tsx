@@ -114,7 +114,7 @@ const STATE_CONFIG: Record<
 // ── State Badge ──────────────────────────────────────────────────────────────
 
 function StateBadge({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const effective = getEffectiveWorkflowState(event);
     if (event.state === 'live') {
         const live = getLiveWorkflowLabel(event);
@@ -202,7 +202,7 @@ function formatDuration(ms: number): string {
 }
 
 function CountdownBanner({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const state = event.state as EventState;
     const startDate = event.start_date ? new Date(event.start_date) : null;
     const endDate = event.end_date ? new Date(event.end_date) : null;
@@ -265,7 +265,7 @@ const STATE_ORDER: Record<string, number> = {
 };
 
 function EventTimeline({ event }: { event: OrganizerEvent }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const currentIdx = STATE_ORDER[event.state] ?? 0;
 
     return (
@@ -375,7 +375,7 @@ function ConfirmModal({
     onConfirm: () => void;
     onCancel: () => void;
 }) {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 p-6">
@@ -403,7 +403,7 @@ function ConfirmModal({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminEventDetailPage() {
-    const { t } = useTranslation('admin');
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -551,7 +551,7 @@ export default function AdminEventDetailPage() {
                                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                             >
                                 <BarChart2 className="w-4 h-4" />
-                                {t('admin.eventDetail.actions.organizerReport')}
+                                {t('admin.events.detail.actions.organizerReport')}
                             </button>
                             {/* Live Monitor button — always shown for live events */}
                             {state === 'live' && (
@@ -560,7 +560,7 @@ export default function AdminEventDetailPage() {
                                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                                 >
                                     <BarChart2 className="w-4 h-4" />
-                                    {t('admin.eventDetail.actions.liveMonitor')}
+                                    {t('admin.events.detail.actions.liveMonitor')}
                                 </button>
                             )}
 

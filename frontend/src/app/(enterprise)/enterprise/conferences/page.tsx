@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 
 export default function EnterpriseConferencesPage() {
-    const { t } = useTranslation('enterprise');
+    const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
