@@ -18,6 +18,7 @@ import { downloadEventTicketReceiptPdf } from '@/lib/pdf/receipts';
 import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc, getEventDayDate } from '@/lib/timezone';
 import { StandsListResponse } from '@/types/stand';
 import { isOvernightSlot } from '@/lib/schedule';
+import { useTranslation } from 'react-i18next';
 
 
 const resolveFavoriteDocId = (fav: any): string => String(fav?.id || fav?._id || '');
@@ -51,6 +52,7 @@ interface EventPageProps {
 }
 
 export default function EventDetailsPage({ params }: EventPageProps) {
+  const { t } = useTranslation();
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const id = resolvedParams?.id;
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
 
   const fetchData = useCallback(async () => {
     if (!id) {
-      setError('Event not found');
+      setError(t('events.detail.notFound'));
       setLoading(false);
       return;
     }
@@ -123,15 +125,15 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       console.error('Failed to fetch event details:', err);
       // If event fetch fails, it's a critical error for the page
       // If status fetch fails (e.g. 401 despite check), we might still want to show event
-      setError('Failed to load event details. Please try again later.');
+      setError(t('events.detail.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, t]);
 
   const handleJoin = async () => {
     if (!id) {
-      alert('Event not found.');
+      alert(t('events.detail.joinAlert.notFound'));
       return;
     }
     if (!isAuthenticated) {
@@ -159,7 +161,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       setStatus(statusData.status);
     } catch (err) {
       console.error('Failed to join event:', err);
-      alert('Failed to join event. Please try again.');
+      alert(t('events.detail.joinAlert.failed'));
     } finally {
       setJoinLoading(false);
     }
@@ -194,15 +196,15 @@ export default function EventDetailsPage({ params }: EventPageProps) {
     try {
       // Fetch receipt details from backend
       const res = await apiClient.get<any>(ENDPOINTS.PAYMENTS.RECEIPT(id));
-      if (!res) throw new Error('No receipt found');
+        if (!res) throw new Error(t('events.detail.receiptDownload.error'));
       const evAny = event as any;
       const tz = evAny?.event_timezone || getUserTimezone();
       const startDateLabel = event?.start_date ? formatInTZ(event.start_date, tz, 'MMM d, yyyy h:mm a') : undefined;
       const endDateLabel = event?.end_date ? formatInTZ(event.end_date, tz, 'MMM d, yyyy h:mm a') : undefined;
       await downloadEventTicketReceiptPdf({
         eventId: id,
-        eventTitle: event.title || 'Event',
-        payerName: res.payer_name || 'Visitor',
+         eventTitle: event.title || t('events.detail.exhibitionFallback'),
+         payerName: res.payer_name || t('events.detail.receiptDownload.payerDefault'),
         payerEmail: res.payer_email || '',
         amount: Number(res.amount || (event as any).ticket_price || 0),
         currency: res.currency || 'MAD',
@@ -214,31 +216,31 @@ export default function EventDetailsPage({ params }: EventPageProps) {
         category: evAny?.category,
         startDateLabel,
         endDateLabel,
-        paymentMethodLabel: 'Stripe (Online Card Payment)',
-      });
-    } catch (err) {
-      console.error('Failed to download receipt', err);
-      alert('Could not download receipt. You might not have a paid receipt for this event.');
-    }
-  };
+         paymentMethodLabel: t('events.detail.receiptDownload.paymentMethod'),
+       });
+     } catch (err) {
+       console.error('Failed to download receipt', err);
+       alert(t('events.detail.receiptDownload.error'));
+     }
+   };
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   if (loading) {
-    return <LoadingState message="Loading event details..." />;
+    return <LoadingState message={t('events.detail.loading')} />;
   }
 
   if (error || !event) {
     return (
       <Container className="py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">{error || 'Event not found'}</h2>
+        <h2 className="text-2xl font-bold mb-4">{error || t('events.detail.notFound')}</h2>
         <button
           onClick={() => window.location.reload()}
           className="text-primary hover:underline"
         >
-          Try again
+          {t('events.detail.tryAgain')}
         </button>
       </Container>
     );
@@ -306,7 +308,7 @@ export default function EventDetailsPage({ params }: EventPageProps) {
           dateLabel,
           startTime: formatSlotTime(dayNumber, slot?.start_time),
           endTime: formatSlotTime(dayNumber, slot?.end_time, crossesMidnight),
-          label: slot?.label || 'Session',
+          label: slot?.label || t('events.detail.scheduleHighlights.sessionFallback'),
           crossesMidnight,
         });
       });
@@ -354,23 +356,23 @@ export default function EventDetailsPage({ params }: EventPageProps) {
       <Container className="py-12">
         {wasEjectedFromLive && (
           <div className="mb-6 rounded-xl p-4 text-sm font-medium bg-slate-100 text-slate-700 border border-slate-300">
-            <p className="font-bold">Live Access Closed</p>
-            <p className="mt-1">This event has ended, so you were moved out of the live area.</p>
+            <p className="font-bold">{t('events.detail.liveAccessClosed.title')}</p>
+            <p className="mt-1">{t('events.detail.liveAccessClosed.message')}</p>
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <SectionTitle title="About this Event" align="left" className="mb-0" />
+              <SectionTitle title={t('events.detail.aboutThisEvent')} align="left" className="mb-0" />
               <div className="flex items-center gap-3">
                 {isApprovedVisitor && isPaidEvent && (
                   <Button size="sm" variant="outline" onClick={downloadReceipt} className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                    <Download size={16} /> Download Receipt
+                    <Download size={16} /> {t('events.detail.downloadReceipt')}
                   </Button>
                 )}
                 <Button size="sm" variant={favoriteId ? 'secondary' : 'outline'} onClick={toggleFavorite} className="gap-2">
                   <Heart className={`h-4 w-4 transition-all ${favoriteAnimating ? 'scale-125' : 'scale-100'} ${favoriteId ? 'fill-current' : ''}`} />
-                  {favoriteId ? 'Favorited' : 'Add to favorites'}
+                  {favoriteId ? t('events.detail.favorited') : t('events.detail.addToFavorites')}
                 </Button>
               </div>
             </div>
@@ -381,32 +383,32 @@ export default function EventDetailsPage({ params }: EventPageProps) {
             </section>
 
             <section>
-              <SectionTitle title="Event Insights" align="left" className="mb-4" />
+              <SectionTitle title={t('events.detail.insights.title')} align="left" className="mb-4" />
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-5 border rounded-xl bg-cyan-50/60 border-cyan-200">
-                  <p className="text-xs uppercase tracking-wide text-cyan-700 font-semibold">Attending Enterprises</p>
+                  <p className="text-xs uppercase tracking-wide text-cyan-700 font-semibold">{t('events.detail.insights.attendingEnterprises.label')}</p>
                   <p className="text-2xl font-bold text-cyan-900 mt-1">{resolvedEnterpriseNames.length}</p>
-                  <p className="text-sm text-cyan-800 mt-1">Companies ready to connect during the event.</p>
+                  <p className="text-sm text-cyan-800 mt-1">{t('events.detail.insights.attendingEnterprises.description')}</p>
                 </div>
 
                 <div className="p-5 border rounded-xl bg-indigo-50/60 border-indigo-200">
-                  <p className="text-xs uppercase tracking-wide text-indigo-700 font-semibold">Schedule Sessions</p>
+                  <p className="text-xs uppercase tracking-wide text-indigo-700 font-semibold">{t('events.detail.insights.scheduleSessions.label')}</p>
                   <p className="text-2xl font-bold text-indigo-900 mt-1">{totalSlots}</p>
-                  <p className="text-sm text-indigo-800 mt-1">Planned activities across the event timeline.</p>
+                  <p className="text-sm text-indigo-800 mt-1">{t('events.detail.insights.scheduleSessions.description')}</p>
                 </div>
 
                 <div className="p-5 border rounded-xl bg-emerald-50/70 border-emerald-200">
-                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Experience Focus</p>
+                  <p className="text-xs uppercase tracking-wide text-emerald-700 font-semibold">{t('events.detail.insights.experienceFocus.label')}</p>
                   <p className="text-base font-semibold text-emerald-900 mt-1">
-                    Networking, showcases, and live knowledge sessions
+                    {t('events.detail.insights.experienceFocus.description')}
                   </p>
-                  <p className="text-sm text-emerald-800 mt-1">Designed for discovery and real business conversations.</p>
+                  <p className="text-sm text-emerald-800 mt-1">{t('events.detail.insights.experienceFocus.subtitle')}</p>
                 </div>
               </div>
             </section>
 
             <section>
-              <SectionTitle title="Who You Can Meet" align="left" className="mb-4" />
+              <SectionTitle title={t('events.detail.whoYouCanMeet.title')} align="left" className="mb-4" />
               <div className="mt-6 p-6 border rounded-xl bg-white">
                 {resolvedEnterpriseNames.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -421,20 +423,20 @@ export default function EventDetailsPage({ params }: EventPageProps) {
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    Enterprise lineup is being finalized. Check again soon for participating companies and stands.
+                    {t('events.detail.whoYouCanMeet.lineupFinalized')}
                   </p>
                 )}
 
                 {!isApprovedVisitor && resolvedEnterpriseNames.length > 6 && (
                   <p className="mt-3 text-xs text-zinc-500">
-                    Register to unlock the full participant list and direct live access.
+                    {t('events.detail.whoYouCanMeet.unlockFullList')}
                   </p>
                 )}
               </div>
             </section>
 
             <section>
-              <SectionTitle title="Schedule Highlights" align="left" className="mb-4" />
+              <SectionTitle title={t('events.detail.scheduleHighlights.title')} align="left" className="mb-4" />
               <div className="mt-6 p-6 border rounded-xl bg-white">
                 {scheduleHighlights.length > 0 ? (
                   <div className="space-y-3">
@@ -443,25 +445,25 @@ export default function EventDetailsPage({ params }: EventPageProps) {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="font-semibold text-zinc-900">{slot.label}</p>
                           <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                            Day {slot.dayNumber}
+                            {t('events.detail.scheduleHighlights.dayLabel', { day_number: slot.dayNumber })}
                           </span>
                         </div>
                         <p className="mt-1 text-sm text-zinc-600">
                           {slot.dateLabel ? `${slot.dateLabel} • ` : ''}
-                          {slot.startTime || '--:--'}{slot.endTime ? ` - ${slot.endTime}${slot.crossesMidnight ? ' (+1 day)' : ''}` : ''}
+                          {slot.startTime || '--:--'}{slot.endTime ? ` - ${slot.endTime}${slot.crossesMidnight ? ` (${t('events.detail.scheduleHighlights.nextDayBadge')})` : ''}` : ''}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    Full schedule details will appear here as soon as timeline slots are published.
+                    {t('events.detail.scheduleHighlights.noSchedule')}
                   </p>
                 )}
 
                 {!isApprovedVisitor && scheduleHighlights.length > 4 && (
                   <p className="mt-3 text-xs text-zinc-500">
-                    Register to unlock the complete schedule and all live sections.
+                    {t('events.detail.scheduleHighlights.unlockFullSchedule')}
                   </p>
                 )}
               </div>

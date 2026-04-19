@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -12,6 +13,7 @@ const ORG_TYPES = ['Company', 'NGO', 'University', 'Government', 'Startup', 'Ass
 
 export default function RegisterPage() {
     const { register, isLoading } = useAuth();
+    const { t } = useTranslation();
     const [formData, setFormData] = useState<Record<string, string>>({
         username: '',
         email: '',
@@ -29,15 +31,15 @@ export default function RegisterPage() {
         const detail = err.message || '';
 
         if (detail.includes('already exists'))
-            return 'An account with this email already exists. Try logging in instead.';
+            return t('auth.register.error.emailExists');
         if (detail.includes('valid email'))
-            return 'Please enter a valid email address.';
+            return t('auth.register.error.invalidEmail');
         if (detail.includes('Company name'))
-            return 'Company name is required for enterprise accounts.';
+            return t('auth.register.error.companyNameRequired');
         if (detail.includes('Registration failed'))
-            return 'Registration failed during organization creation. Please try again.';
+            return t('auth.register.error.registrationFailed');
 
-        return 'Registration failed. Please check your information and try again.';
+        return t('auth.register.error.generic');
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -50,23 +52,23 @@ export default function RegisterPage() {
         setError(null);
 
         if (!formData.username || !formData.email || !formData.password) {
-            setError('Please fill in all required fields.');
+            setError(t('auth.register.error.allFields'));
             return;
         }
         if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters long.');
+            setError(t('auth.register.error.passwordMinLength'));
             return;
         }
         if (formData.password !== formData.confirm_password) {
-            setError('Passwords do not match. Please check and try again.');
+            setError(t('auth.register.error.passwordMismatch'));
             return;
         }
         if (formData.role === 'enterprise' && !formData.company_name) {
-            setError('Company name is required for enterprise accounts.');
+            setError(t('auth.register.error.companyNameRequired'));
             return;
         }
         if (formData.role === 'organizer' && !formData.org_name) {
-            setError('Organisation name is required for organizer accounts.');
+            setError(t('auth.register.error.orgNameRequired'));
             return;
         }
 
@@ -90,8 +92,8 @@ export default function RegisterPage() {
             <Container className="max-w-lg">
                 <Card className="shadow-lg">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-3xl font-bold text-indigo-600">Register</CardTitle>
-                        <p className="text-zinc-500 mt-2">Join the IVEP platform</p>
+                        <CardTitle className="text-3xl font-bold text-indigo-600">{t('auth.register.title')}</CardTitle>
+                        <p className="text-zinc-500 mt-2">{t('auth.register.subtitle')}</p>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -109,13 +111,12 @@ export default function RegisterPage() {
                                                     bg-green-50 px-4 py-3 text-sm text-green-700">
                                         <span className="mt-0.5 shrink-0">✅</span>
                                         <span>
-                                            Registration successful! Your account is pending admin approval.
-                                            You will receive an email notification once it is activated.
+                                            {t('auth.register.success.title')} {t('auth.register.success.message')}
                                         </span>
                                     </div>
                                     <Link href="/auth/login" className="w-full">
                                         <Button type="button" variant="primary" className="w-full">
-                                            Go to Login
+                                            {t('auth.register.success.goToLogin')}
                                         </Button>
                                     </Link>
                                 </div>
@@ -123,18 +124,18 @@ export default function RegisterPage() {
 
                             {!registrationSuccess && (
                                 <>
-                                    <Input label="Full Name" name="full_name" placeholder="John Doe"
+                                    <Input label={t('auth.register.fullName.label')} name="full_name" placeholder={t('auth.register.fullName.placeholder')}
                                         value={formData.full_name} onChange={handleChange} />
 
-                                    <Input label="Username *" name="username" placeholder="johndoe"
+                                    <Input label={t('auth.register.username.label')} name="username" placeholder={t('auth.register.username.placeholder')}
                                         value={formData.username} onChange={handleChange} required />
 
-                                    <Input label="Email *" name="email" type="email" placeholder="john@example.com"
+                                    <Input label={t('auth.register.email.label')} name="email" type="email" placeholder={t('auth.register.email.placeholder')}
                                         value={formData.email} onChange={handleChange} required />
 
                                     {/* Role selector */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-zinc-700">I am a:</label>
+                                        <label className="text-sm font-medium text-zinc-700">{t('auth.register.roleLabel')}</label>
                                         <div className="grid grid-cols-3 gap-2">
                                             {(['visitor', 'organizer', 'enterprise'] as const).map((r) => (
                                                 <button key={r} type="button"
@@ -146,7 +147,7 @@ export default function RegisterPage() {
                                                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                                                         : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-300'
                                                         }`}>
-                                                    {r}
+                                                    {t(`auth.register.roles.${r}`)}
                                                 </button>
                                             ))}
                                         </div>
@@ -155,36 +156,36 @@ export default function RegisterPage() {
                                     {/* ── ORGANIZER FIELDS ─────────────────────── */}
                                     {isOrganizer && (
                                         <div className="space-y-4 p-4 bg-amber-50/60 rounded-xl border border-amber-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Organisation Details</p>
-                                            <p className="text-xs text-amber-600">Your account will be reviewed by an admin before activation.</p>
+                                            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">{t('auth.register.organizer.title')}</p>
+                                            <p className="text-xs text-amber-600">{t('auth.register.organizer.approvalNote')}</p>
 
-                                            <Input label="Organisation Name *" name="org_name"
-                                                placeholder="Event Masters Inc." onChange={handleChange} required />
+                                            <Input label={t('auth.register.organizer.orgName.label')} name="org_name"
+                                                placeholder={t('auth.register.organizer.orgName.placeholder')} onChange={handleChange} required />
 
                                             <div className="space-y-1.5">
-                                                <label className="text-sm font-semibold text-zinc-700">Organisation Type *</label>
+                                                <label className="text-sm font-semibold text-zinc-700">{t('auth.register.organizer.orgType.label')}</label>
                                                 <select name="org_type" onChange={handleChange}
                                                     className="w-full p-3 bg-white border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
-                                                    <option value="">Select type…</option>
-                                                    {ORG_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    <option value="">{t('auth.register.organizer.orgType.placeholder')}</option>
+                                                    {ORG_TYPES.map((orgType) => <option key={orgType} value={orgType}>{t(`auth.register.organizer.orgTypes.${orgType.toLowerCase()}`)}</option>)}
                                                 </select>
                                             </div>
 
-                                            <Input label="Professional Email *" name="org_professional_email"
-                                                type="email" placeholder="contact@eventmasters.com"
+                                            <Input label={t('auth.register.organizer.professionalEmail.label')} name="org_professional_email"
+                                                type="email" placeholder={t('auth.register.organizer.professionalEmail.placeholder')}
                                                 onChange={handleChange} required />
 
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Country *" name="org_country" placeholder="France"
+                                                <Input label={t('auth.register.organizer.country.label')} name="org_country" placeholder={t('auth.register.organizer.country.placeholder')}
                                                     onChange={handleChange} required />
-                                                <Input label="City *" name="org_city" placeholder="Paris"
+                                                <Input label={t('auth.register.organizer.city.label')} name="org_city" placeholder={t('auth.register.organizer.city.placeholder')}
                                                     onChange={handleChange} required />
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Phone" name="org_phone" placeholder="+33 6 12 34 56 78"
+                                                <Input label={t('auth.register.organizer.phone.label')} name="org_phone" placeholder={t('auth.register.organizer.phone.placeholder')}
                                                     onChange={handleChange} />
-                                                <Input label="Website" name="org_website" placeholder="https://eventmasters.com"
+                                                <Input label={t('auth.register.organizer.website.label')} name="org_website" placeholder={t('auth.register.organizer.website.placeholder')}
                                                     onChange={handleChange} />
                                             </div>
                                         </div>
@@ -193,27 +194,27 @@ export default function RegisterPage() {
                                     {/* ── ENTERPRISE FIELDS ────────────────────── */}
                                     {isEnterprise && (
                                         <div className="space-y-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Company Details</p>
-                                            <p className="text-xs text-indigo-600">Your account will be reviewed by an admin before activation.</p>
+                                            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">{t('auth.register.enterprise.title')}</p>
+                                            <p className="text-xs text-indigo-600">{t('auth.register.enterprise.approvalNote')}</p>
 
-                                            <Input label="Company Name *" name="company_name"
-                                                placeholder="Acme Corp" onChange={handleChange} required />
+                                            <Input label={t('auth.register.enterprise.companyName.label')} name="company_name"
+                                                placeholder={t('auth.register.enterprise.companyName.placeholder')} onChange={handleChange} required />
 
-                                            <Input label="Professional Email *" name="professional_email"
-                                                type="email" placeholder="contact@acme.com"
+                                            <Input label={t('auth.register.enterprise.professionalEmail.label')} name="professional_email"
+                                                type="email" placeholder={t('auth.register.enterprise.professionalEmail.placeholder')}
                                                 onChange={handleChange} required />
 
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="Industry *" name="industry" placeholder="Tech"
+                                                <Input label={t('auth.register.enterprise.industry.label')} name="industry" placeholder={t('auth.register.enterprise.industry.placeholder')}
                                                     onChange={handleChange} required />
-                                                <Input label="Country *" name="country" placeholder="France"
+                                                <Input label={t('auth.register.enterprise.country.label')} name="country" placeholder={t('auth.register.enterprise.country.placeholder')}
                                                     onChange={handleChange} required />
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-4">
-                                                <Input label="City *" name="city" placeholder="Paris"
+                                                <Input label={t('auth.register.enterprise.city.label')} name="city" placeholder={t('auth.register.enterprise.city.placeholder')}
                                                     onChange={handleChange} required />
-                                                <Input label="Company Size *" name="company_size" placeholder="10-50"
+                                                <Input label={t('auth.register.enterprise.companySize.label')} name="company_size" placeholder={t('auth.register.enterprise.companySize.placeholder')}
                                                     onChange={handleChange} required />
                                             </div>
                                         </div>
@@ -221,7 +222,7 @@ export default function RegisterPage() {
 
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-zinc-700">
-                                            Password *
+                                            {t('auth.register.password.label')}
                                         </label>
                                         <div className="relative">
                                             <input
@@ -232,13 +233,13 @@ export default function RegisterPage() {
                                                 required
                                                 autoComplete="new-password"
                                                 className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-10"
-                                                placeholder="••••••••"
+                                                placeholder={t('auth.register.password.placeholder')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowPassword(prev => !prev)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
-                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                aria-label={showPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
                                             >
                                                 {showPassword ? (
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +257,7 @@ export default function RegisterPage() {
 
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-zinc-700">
-                                            Confirm password *
+                                            {t('auth.register.confirmPassword.label')}
                                         </label>
                                         <div className="relative">
                                             <input
@@ -267,13 +268,13 @@ export default function RegisterPage() {
                                                 required
                                                 autoComplete="new-password"
                                                 className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all pr-10"
-                                                placeholder="••••••••"
+                                                placeholder={t('auth.register.confirmPassword.placeholder')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowConfirmPassword(prev => !prev)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
-                                                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                                aria-label={showConfirmPassword ? t('auth.register.hidePassword') : t('auth.register.showPassword')}
                                             >
                                                 {showConfirmPassword ? (
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,19 +296,19 @@ export default function RegisterPage() {
                                         isLoading={isLoading}
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? 'Creating account...' : 'Create Account'}
+                                        {isLoading ? t('auth.register.submitting') : t('auth.register.submit')}
                                     </Button>
 
                                     {(isOrganizer || isEnterprise) && (
                                         <p className="text-xs text-center text-amber-600">
-                                            ⏳ {isOrganizer ? 'Organizer' : 'Enterprise'} accounts require admin approval before you can log in.
+                                            ⏳ {t('auth.register.approvalNotice', { role: isOrganizer ? t('common.roles.organizer') : t('common.roles.enterprise') })}
                                         </p>
                                     )}
 
                                     <div className="text-center text-sm text-zinc-600">
-                                        Already have an account?{' '}
+                                        {t('auth.register.hasAccount')}{' '}
                                         <Link href="/auth/login" className="text-indigo-600 font-semibold hover:underline">
-                                            Sign In
+                                            {t('auth.register.signInLink')}
                                         </Link>
                                     </div>
                                 </>

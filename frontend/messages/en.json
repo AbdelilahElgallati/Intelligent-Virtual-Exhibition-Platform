@@ -810,6 +810,14 @@
     "socialProof": {
       "title": "Trusted by Modern Event Teams",
       "subtitle": "Built for organizers and enterprises that care about premium attendee experiences.",
+      "partners": {
+        "acmeCorp": "Acme Corp",
+        "zenithTech": "Zenith Tech",
+        "horizonDynamics": "Horizon Dynamics",
+        "nexusIndustries": "Nexus Industries",
+        "quantumSolutions": "Quantum Solutions",
+        "apexInnovations": "Apex Innovations"
+      },
       "stats": {
         "eventsHosted": {
           "label": "Events Hosted",
@@ -980,6 +988,7 @@
     },
     "detail": {
       "loading": "Loading event details...",
+      "failedToLoad": "Failed to load event details. Please try again later.",
       "notFound": "Event not found",
       "tryAgain": "Try again",
       "organizerFallback": "IVEP Organizer",
@@ -1017,6 +1026,7 @@
         "title": "Schedule Highlights",
         "dayLabel": "Day {day_number}",
         "nextDayBadge": "+1 day",
+        "sessionFallback": "Session",
         "noSchedule": "Full schedule details will appear here as soon as timeline slots are published.",
         "unlockFullSchedule": "Register to unlock the complete schedule and all live sections."
       },
@@ -1095,6 +1105,118 @@
       "joinAlert": {
         "failed": "Failed to join event. Please try again.",
         "notFound": "Event not found."
+      }
+    },
+    "live": {
+      "loading": "Loading event..."
+    },
+    "payment": {
+      "loading": "Loading payment details...",
+      "title": "Event Payment",
+      "subtitle": "Secure payment for {title}",
+      "ticketPrice": "Ticket Price",
+      "freeEvent": {
+        "title": "This event is free",
+        "message": "No payment is required for this event."
+      },
+      "actions": {
+        "backToEvent": "← Back to Event",
+        "enterEvent": "Enter Event →",
+        "downloadInvoice": "Download Invoice (PDF)"
+      },
+      "cancelled": {
+        "title": "Payment Cancelled",
+        "message": "Your payment was cancelled. You can try again below."
+      },
+      "verifying": {
+        "title": "Verifying Payment...",
+        "message": "Please wait while we confirm your payment.",
+        "error": "Payment verification failed. Please contact support."
+      },
+      "confirmed": {
+        "title": "Payment Confirmed!",
+        "message": "Your payment has been verified. You now have full access to this event."
+      },
+      "checkout": {
+        "title": "Secure Payment",
+        "description": "Click the button below to securely pay {amount} MAD via Stripe. You will be redirected to Stripe's secure checkout page.",
+        "payNow": "Pay Now",
+        "redirecting": "Redirecting to Stripe...",
+        "startError": "Failed to start checkout. Please try again.",
+        "poweredBy": "Powered by Stripe. Your payment information is handled securely."
+      },
+      "receipt": {
+        "paymentMethod": {
+          "cod": "Pay on Reception (COD)",
+          "stripe": "Stripe (Online Card Payment)"
+        }
+      }
+    },
+    "standPage": {
+      "loading": "Loading stand...",
+      "unavailable": "Stand or event unavailable",
+      "aboutUs": "About Us",
+      "assistantTitle": "{stand_name} Assistant",
+      "registrationRequired": {
+        "title": "Registration Required",
+        "action": "Go to Event Registration"
+      },
+      "accessState": {
+        "inProgress": "Event In Progress",
+        "ended": "Event Ended",
+        "notStarted": "Event Not Started"
+      },
+      "accessMessage": {
+        "closedBetweenSlots": "Stand access is temporarily closed. Reopens at the next active slot.",
+        "closedAfterEvent": "This event has ended.",
+        "closedBeforeStart": "Stand access opens when the event starts."
+      },
+      "actions": {
+        "backToDetails": "Back to Details"
+      }
+    },
+    "liveStandPlaceholder": {
+      "title": "Stand Page",
+      "message": "This dedicated stand route is being prepared. You can continue browsing stands from the live event page.",
+      "back": "Back to Live Event"
+    },
+    "conferenceWatch": {
+      "loading": {
+        "joining": "Joining conference…",
+        "gettingToken": "Getting your access token…",
+        "default": "Loading…"
+      },
+      "actions": {
+        "goToEvent": "Go to Event",
+        "backToEvent": "← Back to Event",
+        "registerNow": "Register Now"
+      },
+      "registrationRequired": {
+        "title": "Registration Required",
+        "message": "You need approved participation to join conference sessions."
+      },
+      "sessionRegistrationRequired": {
+        "title": "Registration Required",
+        "message": "You are an approved participant of this event, but you haven't registered for this specific conference session yet."
+      },
+      "statusTitle": {
+        "scheduled": "Conference Not Started Yet",
+        "ended": "Conference Has Ended",
+        "timelineNotPublished": "Timeline Not Published Yet",
+        "eventTimelineEnded": "Event Timeline Ended",
+        "eventInProgress": "Event In Progress",
+        "eventNotLiveYet": "Event Not Live Yet"
+      },
+      "statusMessage": {
+        "scheduled": "This conference has not started yet. Come back when the speaker goes live!",
+        "ended": "This conference has ended.",
+        "timelineNotPublished": "Conference access is enabled only during published live schedule slots.",
+        "eventEnded": "This event has ended, so conference access is now closed.",
+        "betweenSlots": "There is no active slot right now. Access opens automatically at the next slot."
+      },
+      "errors": {
+        "loadFailed": "Failed to load conference",
+        "notAvailable": "Conference not available"
       }
     }
   },

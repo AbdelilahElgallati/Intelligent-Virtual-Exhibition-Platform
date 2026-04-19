@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { ParticipantStatus } from '@/lib/api/types';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
+import { useTranslation } from 'react-i18next';
 
 type StandWithAliases = Stand & { _id?: string; event_id?: string; };
 type EventWithAliases = Event & { _id?: string; };
@@ -25,6 +26,7 @@ type FavoriteDoc = { id?: string; _id?: string; target_type?: string; target_id?
 const resolveFavoriteDocId = (fav?: FavoriteDoc | null): string => String(fav?.id || fav?._id || '');
 
 export default function StandPage({ params }: { params: Promise<{ id: string; standId: string }> }) {
+    const { t } = useTranslation();
     const { id, standId } = use(params);
     const [stand, setStand] = useState<StandWithAliases | null>(null);
     const [eventData, setEventData] = useState<EventWithAliases | null>(null);
@@ -151,15 +153,15 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
         }
     }, [id, lifecycle?.displayState]);
 
-    if (loading) return <LoadingState message="Loading stand..." />;
-    if (!stand || !lifecycle) return <div className="text-center py-20 text-gray-500">Stand or event unavailable</div>;
+    if (loading) return <LoadingState message={t('events.standPage.loading')} />;
+    if (!stand || !lifecycle) return <div className="text-center py-20 text-gray-500">{t('events.standPage.unavailable')}</div>;
 
     if (!isApproved) {
         return (
             <div className="min-h-[70vh] flex items-center justify-center px-4">
                 <div className="max-w-2xl w-full rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-                    <h3 className="text-xl font-semibold text-amber-900">Registration Required</h3>
-                    <a href={`/events/${id}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold">Go to Event Registration</a>
+                    <h3 className="text-xl font-semibold text-amber-900">{t('events.standPage.registrationRequired.title')}</h3>
+                    <a href={`/events/${id}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold">{t('events.standPage.registrationRequired.action')}</a>
                 </div>
             </div>
         );
@@ -170,15 +172,15 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
             <div className="min-h-[70vh] flex items-center justify-center px-4">
                 <div className="max-w-2xl w-full rounded-2xl border p-6 text-center bg-white shadow-sm">
                     <h3 className="text-xl font-semibold">
-                        {lifecycle.displayState === 'IN_PROGRESS' ? 'Event In Progress' : 
-                         lifecycle.displayState === 'ENDED' ? 'Event Ended' : 'Event Not Started'}
+                        {lifecycle.displayState === 'IN_PROGRESS' ? t('events.standPage.accessState.inProgress') : 
+                         lifecycle.displayState === 'ENDED' ? t('events.standPage.accessState.ended') : t('events.standPage.accessState.notStarted')}
                     </h3>
                     <p className="mt-2 text-gray-600">
-                        {lifecycle.accessState === 'CLOSED_BETWEEN_SLOTS' ? 'Stand access is temporarily closed. Reopens at the next active slot.' : 
-                         lifecycle.accessState === 'CLOSED_AFTER_EVENT' ? 'This event has ended.' : 'Stand access opens when the event starts.'}
+                        {lifecycle.accessState === 'CLOSED_BETWEEN_SLOTS' ? t('events.standPage.accessMessage.closedBetweenSlots') : 
+                         lifecycle.accessState === 'CLOSED_AFTER_EVENT' ? t('events.standPage.accessMessage.closedAfterEvent') : t('events.standPage.accessMessage.closedBeforeStart')}
                     </p>
                     {lifecycle.nextSlot && <p className="mt-3 font-bold text-indigo-600">{formatTimeToStart(lifecycle.nextSlot.start)}</p>}
-                    <a href={`/events/${id}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold">Back to Details</a>
+                    <a href={`/events/${id}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold">{t('events.standPage.actions.backToDetails')}</a>
                 </div>
             </div>
         );
@@ -204,12 +206,12 @@ export default function StandPage({ params }: { params: Promise<{ id: string; st
                 {activeTab === 'resources' ? (
                     <div className="space-y-5"><StandResources standId={resolvedStandId} /></div>
                 ) : (
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6"><h3 className="text-lg font-semibold mb-3">About Us</h3><p className="text-gray-600 text-sm leading-relaxed">{stand.description}</p></div>
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6"><h3 className="text-lg font-semibold mb-3">{t('events.standPage.aboutUs')}</h3><p className="text-gray-600 text-sm leading-relaxed">{stand.description}</p></div>
                 )}
             </VirtualStandLayout>
 
             {isChatOpen && <ChatPanel standId={resolvedStandId} standName={stand.name} onClose={() => setIsChatOpen(false)} avatarBg={avatarBg} themeColor={themeColor} onMeetingOpen={() => setIsMeetingModalOpen(true)} eventTimeZone={eventData?.event_timezone} />}
-            {isAssistantOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-3"><div className="w-full max-w-5xl h-[88vh] bg-white rounded-2xl shadow-2xl overflow-hidden"><ChatShell scope={`stand-${resolvedStandId}`} title={`${stand.name} Assistant`} onClose={() => setIsAssistantOpen(false)} className="h-full" /></div></div>}
+            {isAssistantOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-3"><div className="w-full max-w-5xl h-[88vh] bg-white rounded-2xl shadow-2xl overflow-hidden"><ChatShell scope={`stand-${resolvedStandId}`} title={t('events.standPage.assistantTitle', { stand_name: stand.name })} onClose={() => setIsAssistantOpen(false)} className="h-full" /></div></div>}
             {isShopOpen && <ProductsPanel standId={resolvedStandId} standName={stand.name} themeColor={themeColor} onClose={() => setIsShopOpen(false)} />}
             <MeetingRequestModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} standId={resolvedStandId} standName={stand.name} eventId={String(eventData?.id || id)} eventStartDate={eventData?.start_date} eventEndDate={eventData?.end_date} scheduleDays={eventData?.schedule_days} eventTimeZone={eventData?.event_timezone} themeColor={themeColor} />
         </>

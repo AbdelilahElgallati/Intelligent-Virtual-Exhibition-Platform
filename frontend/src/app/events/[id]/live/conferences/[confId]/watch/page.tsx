@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { ParticipantStatus } from '@/lib/api/types';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 import { http } from '@/lib/http';
 
@@ -20,6 +21,7 @@ interface Props {
 }
 
 function WatchContent({ eventId, confId }: { eventId: string; confId: string }) {
+    const { t } = useTranslation();
     const router = useRouter();
     const { user } = useAuth();
     const [conf, setConf] = useState<Conference | null>(null);
@@ -56,8 +58,8 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
 
                 if (cData.status !== 'live') {
                     setError(cData.status === 'scheduled'
-                        ? 'This conference has not started yet. Come back when it goes live!'
-                        : 'This conference has ended.');
+                        ? t('events.conferenceWatch.statusMessage.scheduled')
+                        : t('events.conferenceWatch.statusMessage.ended'));
                     setLoading(false);
                     return;
                 }
@@ -68,14 +70,14 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                 if (e.status === 403 && e.message?.toLowerCase().includes('register')) {
                     setError('CONFERENCE_REGISTRATION_REQUIRED');
                 } else {
-                    setError(e.message || 'Failed to load conference');
+                    setError(e.message || t('events.conferenceWatch.errors.loadFailed'));
                 }
             } finally {
                 setLoading(false);
             }
         }
         load();
-    }, [confId, eventId]);
+    }, [confId, eventId, t]);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -85,21 +87,21 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
         return () => window.clearInterval(timer);
     }, []);
 
-    if (loading) return <LoadingState message="Joining conference…" />;
+    if (loading) return <LoadingState message={t('events.conferenceWatch.loading.joining')} />;
 
     if (!isApprovedParticipant) {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🔒</div>
-                <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">Registration Required</h2>
+                <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">{t('events.conferenceWatch.registrationRequired.title')}</h2>
                 <p className="text-zinc-500 text-sm text-center max-w-md">
-                    You need approved participation to join conference sessions.
+                    {t('events.conferenceWatch.registrationRequired.message')}
                 </p>
                 <button
                     onClick={() => router.push(`/events/${eventId}`)}
                     className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                 >
-                    Go to Event
+                    {t('events.conferenceWatch.actions.goToEvent')}
                 </button>
             </div>
         );
@@ -112,35 +114,35 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
                 <div className="text-6xl mb-5">🕒</div>
                 <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">
                     {conf?.status === 'scheduled'
-                        ? 'Conference Not Started Yet'
+                        ? t('events.conferenceWatch.statusTitle.scheduled')
                         : conf?.status === 'ended'
-                          ? 'Conference Has Ended'
+                          ? t('events.conferenceWatch.statusTitle.ended')
                           : !lifecycle?.hasScheduleSlots
-                            ? 'Timeline Not Published Yet'
+                            ? t('events.conferenceWatch.statusTitle.timelineNotPublished')
                             : lifecycle?.displayState === 'ENDED'
-                              ? 'Event Timeline Ended'
+                              ? t('events.conferenceWatch.statusTitle.eventTimelineEnded')
                               : isBetweenSlots
-                                ? 'Event In Progress'
-                                : 'Event Not Live Yet'}
+                                ? t('events.conferenceWatch.statusTitle.eventInProgress')
+                                : t('events.conferenceWatch.statusTitle.eventNotLiveYet')}
                 </h2>
                 <p className="text-zinc-500 text-sm text-center max-w-md">
                     {conf?.status === 'scheduled'
-                        ? 'This conference has not started yet. Come back when the speaker goes live!'
+                        ? t('events.conferenceWatch.statusMessage.scheduled')
                         : conf?.status === 'ended'
-                          ? 'This conference has ended.'
+                          ? t('events.conferenceWatch.statusMessage.ended')
                           : !lifecycle?.hasScheduleSlots
-                            ? 'Conference access is enabled only during published live schedule slots.'
+                            ? t('events.conferenceWatch.statusMessage.timelineNotPublished')
                             : lifecycle?.displayState === 'ENDED'
-                              ? 'This event has ended, so conference access is now closed.'
+                              ? t('events.conferenceWatch.statusMessage.eventEnded')
                               : isBetweenSlots
-                                ? 'There is no active slot right now. Access opens automatically at the next slot.'
+                                ? t('events.conferenceWatch.statusMessage.betweenSlots')
                                 : formatTimeToStart(lifecycle?.nextSlot?.start || null)}
                 </p>
                 <button
                     onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
                     className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                 >
-                    ← Back to Event
+                    {t('events.conferenceWatch.actions.backToEvent')}
                 </button>
             </div>
         );
@@ -151,15 +153,15 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
             return (
                 <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-5">📝</div>
-                    <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">Registration Required</h2>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">{t('events.conferenceWatch.sessionRegistrationRequired.title')}</h2>
                     <p className="text-zinc-500 text-sm text-center max-w-md">
-                        You are an approved participant of this event, but you haven't registered for this specific conference session yet.
+                        {t('events.conferenceWatch.sessionRegistrationRequired.message')}
                     </p>
                     <button
                         onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
                         className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                     >
-                        Register Now
+                        {t('events.conferenceWatch.actions.registerNow')}
                     </button>
                 </div>
             );
@@ -168,19 +170,19 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
             <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
                 <div className="text-6xl mb-5">🎙️</div>
                 <h2 className="text-xl font-bold text-zinc-900 mb-3 text-center">
-                    {error || 'Conference not available'}
+                    {error || t('events.conferenceWatch.errors.notAvailable')}
                 </h2>
                 <button
                     onClick={() => router.push(`/events/${eventId}/live?tab=conferences`)}
                     className="mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-sm"
                 >
-                    ← Back to Event
+                    {t('events.conferenceWatch.actions.backToEvent')}
                 </button>
             </div>
         );
     }
 
-    if (!tokenData) return <LoadingState message="Getting your access token…" />;
+    if (!tokenData) return <LoadingState message={t('events.conferenceWatch.loading.gettingToken')} />;
 
     const refreshAudienceToken = async () => {
         const tData = await http.get<ConferenceTokenResponse>(`/conferences/${confId}/token`);
@@ -208,9 +210,10 @@ function WatchContent({ eventId, confId }: { eventId: string; confId: string }) 
 }
 
 export default function WatchConferencePage({ params }: Props) {
+    const { t } = useTranslation();
     const { id, confId } = use(params);
     return (
-        <Suspense fallback={<LoadingState message="Loading…" />}>
+        <Suspense fallback={<LoadingState message={t('events.conferenceWatch.loading.default')} />}>
             <WatchContent eventId={id} confId={confId} />
         </Suspense>
     );

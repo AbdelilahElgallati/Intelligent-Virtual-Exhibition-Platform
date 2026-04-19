@@ -1,0 +1,150 @@
+1) i18n setup summary
+
+- File analyzed: frontend/src/lib/i18n.ts
+- Library stack: i18next + react-i18next + i18next-browser-languagedetector
+- Translation resources are loaded statically at startup from:
+  - frontend/messages/en.json
+  - frontend/messages/fr.json
+  - frontend/messages/ar.json
+- Resource registration pattern:
+  - resources.en.translation = en
+  - resources.fr.translation = fr
+  - resources.ar.translation = ar
+- Language defaults:
+  - lng: "en"
+  - fallbackLng: "en"
+- Detection strategy:
+  - order: localStorage -> cookie -> navigator
+  - caches: localStorage
+- Interpolation:
+  - escapeValue: false
+  - custom token delimiters: { and }
+
+Namespace strategy confirmation
+- Single namespace strategy is active:
+  - ns: ["translation"]
+  - defaultNS: "translation"
+- Usage pattern aligns with dot-path keys:
+  - t("admin.dashboard.title")
+  - t("landing.hero.heading")
+  - t("common.actions.submit")
+
+2) JSON structure explanation (frontend/messages/en.json)
+
+- The file is a nested domain-based key tree (object-of-objects), not a flat key map.
+- Dot notation in code resolves nested paths inside the single "translation" namespace.
+- Top-level domains currently present include:
+  - auth
+  - profile
+  - common
+  - dashboard
+  - landing
+  - layout
+  - events
+  - admin
+  - organizer
+  - enterprise
+  - visitor
+- Key style pattern:
+  - Domain -> Subdomain -> Field
+  - Examples:
+    - auth.login.title
+    - common.navigation.home
+    - landing.hero.title
+    - events.detail.joinNow
+- Variable interpolation uses braces in message strings:
+  - Example style: "Joined {year}", "Showing {from} to {to}"
+
+3) Files for "common interfaces" scope
+
+Pages (frontend/src/app)
+- frontend/src/app/page.tsx
+- frontend/src/app/auth/login/page.tsx
+- frontend/src/app/auth/register/page.tsx
+- frontend/src/app/events/page.tsx
+- frontend/src/app/events/[id]/page.tsx
+- frontend/src/app/events/[id]/payment/page.tsx
+- frontend/src/app/events/[id]/stands/[standId]/page.tsx
+- frontend/src/app/events/[id]/live/page.tsx
+- frontend/src/app/events/[id]/live/stands/[standId]/page.tsx
+- frontend/src/app/events/[id]/live/conferences/[confId]/watch/page.tsx
+
+***********************************************************************
+
+- frontend/src/app/marketplace/page.tsx
+- frontend/src/app/marketplace/success/page.tsx
+- frontend/src/app/marketplace/cancel/page.tsx
+- frontend/src/app/assistant/page.tsx
+- frontend/src/app/webinars/page.tsx
+- frontend/src/app/join/visitor/[eventId]/page.tsx
+- frontend/src/app/join/enterprise/[eventId]/page.tsx
+- frontend/src/app/favorites/page.tsx
+- frontend/src/app/profile/page.tsx
+- frontend/src/app/dashboard/page.tsx
+
+- frontend/src/app/dashboard/orders/page.tsx
+- frontend/src/app/meetings/[meetingId]/room/page.tsx
+- frontend/src/app/diag/page.tsx
+
+Layouts (frontend/src/app)
+- frontend/src/app/layout.tsx
+
+Components (frontend/src/components)
+- frontend/src/components/layout/ClientLayout.tsx
+- frontend/src/components/layout/Navbar.tsx
+- frontend/src/components/layout/Footer.tsx
+- frontend/src/components/common/Container.tsx
+- frontend/src/components/common/SectionTitle.tsx
+- frontend/src/components/common/ChangePassword.tsx
+
+- frontend/src/components/ui/Button.tsx
+- frontend/src/components/ui/Card.tsx
+- frontend/src/components/ui/Input.tsx
+- frontend/src/components/ui/LoadingState.tsx
+- frontend/src/components/ui/EmptyState.tsx
+- frontend/src/components/ui/Badge.tsx
+- frontend/src/components/ui/ConfirmDialog.tsx
+- frontend/src/components/ui/DataTable.tsx
+- frontend/src/components/ui/ScheduleBuilder.tsx
+- frontend/src/components/assistant/FloatingAssistant.tsx
+
+- frontend/src/components/assistant/ChatShell.tsx
+- frontend/src/components/assistant/ChatComposer.tsx
+- frontend/src/components/assistant/MessageBubble.tsx
+- frontend/src/components/assistant/TypingIndicator.tsx
+- frontend/src/components/auth/Protected.tsx
+- frontend/src/components/events/EventsGrid.tsx
+- frontend/src/components/events/EventsFilters.tsx
+- frontend/src/components/events/EventCard.tsx
+- frontend/src/components/events/EventDetailsHeader.tsx
+- frontend/src/components/events/JoinEventCard.tsx
+
+- frontend/src/components/event/EventLiveLayout.tsx
+- frontend/src/components/event/StandsGrid.tsx
+- frontend/src/components/event/StandFilterModal.tsx
+- frontend/src/components/event/ScheduleTab.tsx
+- frontend/src/components/event/NetworkingTab.tsx
+- frontend/src/components/stand/VirtualStandLayout.tsx
+- frontend/src/components/stand/StandResources.tsx
+- frontend/src/components/stand/ProductsPanel.tsx
+- frontend/src/components/stand/ChatPanel.tsx
+- frontend/src/components/stand/MeetingRequestModal.tsx
+
+- frontend/src/components/stand/StandCard.tsx
+- frontend/src/components/conferences/EventConferencesTab.tsx
+- frontend/src/components/conferences/AudienceRoom.tsx
+- frontend/src/components/conferences/QAPanel.tsx
+- frontend/src/components/conferences/ConferenceChatPanel.tsx
+- frontend/src/components/meetings/MeetingRoom.tsx
+- frontend/src/components/meetings/MediaGrid.tsx
+- frontend/src/components/dashboard/JoinedEvents.tsx
+- frontend/src/components/dashboard/RecommendedEvents.tsx
+- frontend/src/components/dashboard/NotificationsPanel.tsx
+
+- frontend/src/components/webinars/TranscriptUploader.tsx
+- frontend/src/components/hall3d/Booth.tsx
+- frontend/src/components/hall3d/HallFloor.tsx
+- frontend/src/components/hall3d/HallScene.tsx
+- frontend/src/components/hall3d/useHallLayout.ts
+- frontend/src/components/hall3d/useHallTextures.ts
+- frontend/src/components/hall3d/index.ts

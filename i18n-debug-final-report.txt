@@ -1,0 +1,47 @@
+1) Root issue
+
+`react-i18next` was being used in many client components, but `frontend/src/lib/i18n.ts` was never imported globally.  
+Result: `i18next.init(...)` never executed before `useTranslation()` calls, so `t("...")` returned raw keys.
+
+2) Files modified
+
+- frontend/src/components/layout/ClientLayout.tsx
+- frontend/src/components/layout/Navbar.tsx
+- i18n-debug-step1-report.txt
+
+3) Fixed code snippets
+
+Global one-time i18n initialization import (client wrapper):
+
+```tsx
+// frontend/src/components/layout/ClientLayout.tsx
+'use client';
+import { usePathname } from 'next/navigation';
+import '@/lib/i18n';
+```
+
+Why this fixes runtime keys:
+- `ClientLayout` is mounted app-wide on client routes.
+- Side-effect import executes `i18n.ts` once and registers resources before child components render.
+
+4) Language switcher code
+
+```tsx
+// frontend/src/components/layout/Navbar.tsx
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
+
+const { t } = useTranslation();
+
+<div className="flex items-center gap-1">
+  <button type="button" onClick={() => i18n.changeLanguage('en')} title={t('common.languages.english')}>EN</button>
+  <span>|</span>
+  <button type="button" onClick={() => i18n.changeLanguage('fr')} title={t('common.languages.french')}>FR</button>
+  <span>|</span>
+  <button type="button" onClick={() => i18n.changeLanguage('ar')} title={t('common.languages.arabic')}>AR</button>
+</div>
+```
+
+Behavior after fix:
+- `t("landing.hero.heading")` resolves to translated values (not keys).
+- Changing EN/FR/AR updates translated UI immediately via `i18n.changeLanguage(...)`.

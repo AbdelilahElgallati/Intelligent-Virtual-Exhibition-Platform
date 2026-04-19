@@ -1,0 +1,19 @@
+Is i18n initialized correctly? NO
+
+Why:
+1. `frontend/src/lib/i18n.ts` is correctly configured (resources, namespace, fallback), but it is not imported anywhere globally.
+2. Because that module never executes, `i18next.init(...)` does not run before components call `useTranslation()`.
+3. When `useTranslation()` runs without initialized resources, `t("...")` returns keys (e.g., `landing.hero.heading`).
+
+Checks:
+- Is `i18n.ts` imported globally? NO.
+- Is i18n initialized before render? NO (init module not executed).
+- Client/server boundary issue? Components using `useTranslation()` are client components, so this is not the primary failure.
+- Resources loaded in config? YES (en/fr/ar under `translation` namespace).
+- Language config valid? YES (`lng: en`, `fallbackLng: en`, detector enabled).
+
+Where is the issue:
+- Missing global one-time import of i18n init module.
+
+Exact file causing runtime gap:
+- `frontend/src/components/layout/ClientLayout.tsx` (global client wrapper used app-wide, but does not import `@/lib/i18n`).

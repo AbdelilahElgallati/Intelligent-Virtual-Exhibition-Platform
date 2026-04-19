@@ -11,8 +11,10 @@ import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Event } from '@/types/event';
 import EventConferencesTab from '@/components/conferences/EventConferencesTab';
+import { useTranslation } from 'react-i18next';
 
 function LiveEventContent({ eventId }: { eventId: string }) {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab') || 'overview';
 
@@ -69,15 +71,14 @@ function LiveEventContent({ eventId }: { eventId: string }) {
                     {tab === 'overview' && (
                         <div className="space-y-4 sm:space-y-6">
                             <Card className="p-4 sm:p-8 text-center bg-gray-50 border-dashed">
-                                <h3 className="text-lg sm:text-xl font-medium text-gray-900">Welcome to the Live Event!</h3>
+                                <h3 className="text-lg sm:text-xl font-medium text-gray-900">{t('visitor.liveEvent.welcome.title')}</h3>
                                 <p className="mt-2 text-sm sm:text-base text-gray-500">
-                                    Explore the exhibition hall, visit stands, and network with other participants.
-                                    Use the tabs above to navigate.
+                                    {t('visitor.liveEvent.welcome.subtitle')}
                                 </p>
                             </Card>
 
                             <div className="mt-4 sm:mt-8">
-                                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Recommended for You</h3>
+                                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">{t('visitor.liveEvent.recommended')}</h3>
                                 {!showOnboarding && (
                                     <StandsGrid
                                         eventId={eventId}
@@ -94,7 +95,7 @@ function LiveEventContent({ eventId }: { eventId: string }) {
 
                     {tab === 'stands' && (
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Exhibition Hall - All Stands</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">{t('visitor.liveEvent.exhibitionHall')}</h2>
                             <StandsGrid eventId={eventId} showFilters={true} showPagination={true} eventTitle={event?.title} eventBannerUrl={event?.banner_url} />
                         </div>
                     )}
@@ -117,9 +118,10 @@ function LiveEventContent({ eventId }: { eventId: string }) {
 }
 
 export default function LiveEventPage({ params }: { params: Promise<{ id: string }> }) {
+    const { t } = useTranslation();
     const { id } = use(params);
     return (
-        <Suspense fallback={<LoadingState message="Loading event..." />}>
+        <Suspense fallback={<LoadingState message={t('events.live.loading')} />}>
             <LiveEventContent eventId={id} />
         </Suspense>
     );

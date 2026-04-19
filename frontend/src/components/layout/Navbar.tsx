@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import { Button } from '@/components/ui/Button';
 import { Container } from '@/components/common/Container';
 
@@ -131,6 +133,7 @@ const roleBadge: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const Navbar: React.FC = () => {
+    const { t } = useTranslation();
     const { isAuthenticated, user, logout } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
@@ -189,6 +192,34 @@ export const Navbar: React.FC = () => {
 
                     {/* Right side */}
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={() => i18n.changeLanguage('en')}
+                                title={t('common.languages.english')}
+                                className={`text-xs ${i18n.resolvedLanguage === 'en' ? 'font-bold' : ''}`}
+                            >
+                                EN
+                            </button>
+                            <span className="text-zinc-300">|</span>
+                            <button
+                                type="button"
+                                onClick={() => i18n.changeLanguage('fr')}
+                                title={t('common.languages.french')}
+                                className={`text-xs ${i18n.resolvedLanguage === 'fr' ? 'font-bold' : ''}`}
+                            >
+                                FR
+                            </button>
+                            <span className="text-zinc-300">|</span>
+                            <button
+                                type="button"
+                                onClick={() => i18n.changeLanguage('ar')}
+                                title={t('common.languages.arabic')}
+                                className={`text-xs ${i18n.resolvedLanguage === 'ar' ? 'font-bold' : ''}`}
+                            >
+                                AR
+                            </button>
+                        </div>
                         {isAuthenticated ? (
                             <div className="relative" ref={dropdownRef}>
                                 {/* Avatar trigger */}
