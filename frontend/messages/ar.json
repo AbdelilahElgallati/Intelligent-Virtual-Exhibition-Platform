@@ -1,0 +1,4434 @@
+{
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول",
+      "subtitle": "مرحبًا بعودتك إلى منصة IVEP",
+      "email": {
+        "label": "البريد الإلكتروني",
+        "placeholder": "أدخل بريدك الإلكتروني"
+      },
+      "password": {
+        "label": "كلمة المرور",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "submitting": "جارٍ تسجيل الدخول...",
+      "noAccount": "لا تملك حسابًا؟",
+      "registerLink": "سجل هنا",
+      "error": {
+        "allFields": "يرجى تعبئة جميع الحقول.",
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+        "incorrectPassword": "كلمة المرور التي أدخلتها غير صحيحة. حاول مرة أخرى.",
+        "noAccountFound": "لم يتم العثور على حساب بهذا البريد الإلكتروني.",
+        "pendingApproval": "حسابك قيد انتظار موافقة المسؤول. ستتلقى إشعارًا عبر البريد الإلكتروني بمجرد تفعيله.",
+        "rejected": "تم رفض تسجيل حسابك. يرجى الاتصال بالدعم.",
+        "suspended": "تم تعليق حسابك. يرجى الاتصال بالدعم للمساعدة.",
+        "notActive": "حسابك غير مفعل. يرجى الاتصال بالدعم.",
+        "unauthorized": "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من بياناتك والمحاولة مرة أخرى.",
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "register": {
+      "title": "التسجيل",
+      "subtitle": "انضم إلى منصة IVEP",
+      "fullName": {
+        "label": "الاسم الكامل",
+        "placeholder": "جون دو"
+      },
+      "username": {
+        "label": "اسم المستخدم *",
+        "placeholder": "johndoe"
+      },
+      "email": {
+        "label": "البريد الإلكتروني *",
+        "placeholder": "john@example.com"
+      },
+      "password": {
+        "label": "كلمة المرور *",
+        "placeholder": "••••••••"
+      },
+      "confirmPassword": {
+        "label": "تأكيد كلمة المرور *",
+        "placeholder": "••••••••"
+      },
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور",
+      "roleLabel": "أنا:",
+      "roles": {
+        "visitor": "زائر",
+        "organizer": "منظم",
+        "enterprise": "مؤسسة"
+      },
+      "assistant": {
+        "buttonLabel": "المساعد",
+        "title": "المساعد الافتراضي",
+        "subtitles": {
+          "stand": "اسأل عن هذا الجناح وموارده.",
+          "event": "اسأل عن هذا الحدث، الجدول الزمني، والأجنحة.",
+          "platform": "اسأل عن الأحداث، المنظمات، أو كيفية التنقل."
+        },
+        "suggestedPrompts": [
+          "ما هي الأحداث التي تبث الآن؟",
+          "أرني الأجنحة التي يجب أن أزورها.",
+          "ما هي الموارد التي يمتلكها هذا الجناح؟"
+        ]
+      },
+      "organizer": {
+        "title": "تفاصيل المنظمة",
+        "approvalNote": "سيتم مراجعة حسابك من قبل المسؤول قبل التفعيل.",
+        "orgName": {
+          "label": "اسم المنظمة *",
+          "placeholder": "شركة ماسترز للأحداث"
+        },
+        "orgType": {
+          "label": "نوع المنظمة *",
+          "placeholder": "اختر النوع..."
+        },
+        "orgTypes": {
+          "company": "شركة",
+          "ngo": "منظمة غير حكومية",
+          "university": "جامعة",
+          "government": "حكومة",
+          "startup": "شركة ناشئة",
+          "association": "جمعية",
+          "other": "أخرى"
+        },
+        "professionalEmail": {
+          "label": "البريد الإلكتروني المهني *",
+          "placeholder": "contact@eventmasters.com"
+        },
+        "country": {
+          "label": "البلد *",
+          "placeholder": "فرنسا"
+        },
+        "city": {
+          "label": "المدينة *",
+          "placeholder": "باريس"
+        },
+        "phone": {
+          "label": "الهاتف",
+          "placeholder": "+33 6 12 34 56 78"
+        },
+        "website": {
+          "label": "الموقع الإلكتروني",
+          "placeholder": "https://eventmasters.com"
+        }
+      },
+      "enterprise": {
+        "title": "تفاصيل الشركة",
+        "approvalNote": "سيتم مراجعة حسابك من قبل المسؤول قبل التفعيل.",
+        "companyName": {
+          "label": "اسم الشركة *",
+          "placeholder": "شركة أكمي"
+        },
+        "professionalEmail": {
+          "label": "البريد الإلكتروني المهني *",
+          "placeholder": "contact@acme.com"
+        },
+        "industry": {
+          "label": "الصناعة *",
+          "placeholder": "تكنولوجيا"
+        },
+        "country": {
+          "label": "البلد *",
+          "placeholder": "فرنسا"
+        },
+        "city": {
+          "label": "المدينة *",
+          "placeholder": "باريس"
+        },
+        "companySize": {
+          "label": "حجم الشركة *",
+          "placeholder": "10-50"
+        }
+      },
+      "submit": "إنشاء حساب",
+      "submitting": "جارٍ إنشاء الحساب...",
+      "approvalNotice": "حسابات {role} تتطلب موافقة المسؤول قبل أن تتمكن من تسجيل الدخول.",
+      "hasAccount": "هل لديك حساب بالفعل؟",
+      "signInLink": "تسجيل الدخول",
+      "error": {
+        "allFields": "يرجى تعبئة جميع الحقول المطلوبة.",
+        "passwordMinLength": "يجب أن تكون كلمة المرور مكونة من 8 أحرف على الأقل.",
+        "passwordMismatch": "كلمات المرور غير متطابقة. يرجى التحقق والمحاولة مرة أخرى.",
+        "companyNameRequired": "اسم الشركة مطلوب لحسابات المؤسسات.",
+        "orgNameRequired": "اسم المنظمة مطلوب لحسابات المنظمين.",
+        "emailExists": "يوجد حساب مسجل بهذا البريد الإلكتروني. جرب تسجيل الدخول بدلاً من ذلك.",
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+        "registrationFailed": "فشل التسجيل أثناء إنشاء المنظمة. يرجى المحاولة مرة أخرى.",
+        "generic": "فشل التسجيل. يرجى التحقق من معلوماتك والمحاولة مرة أخرى."
+      },
+      "success": {
+        "title": "تم التسجيل بنجاح!",
+        "message": "حسابك قيد انتظار موافقة المسؤول. ستتلقى إشعارًا عبر البريد الإلكتروني بمجرد تفعيله.",
+        "goToLogin": "الذهاب إلى تسجيل الدخول"
+      }
+    },
+    "changePassword": {
+      "button": "تغيير كلمة المرور",
+      "hideButton": "إخفاء تغيير كلمة المرور",
+      "title": "تغيير كلمة المرور",
+      "currentPassword": {
+        "label": "كلمة المرور الحالية",
+        "placeholder": "أدخل كلمة المرور الحالية"
+      },
+      "newPassword": {
+        "label": "كلمة المرور الجديدة",
+        "placeholder": "أدخل كلمة مرور جديدة (6 أحرف كحد أدنى)"
+      },
+      "confirmPassword": {
+        "label": "تأكيد كلمة المرور الجديدة",
+        "placeholder": "أكد كلمة المرور الجديدة"
+      },
+      "cancel": "إلغاء",
+      "submit": "تحديث كلمة المرور",
+      "error": {
+        "mismatch": "كلمات المرور الجديدة غير متطابقة.",
+        "minLength": "يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.",
+        "generic": "فشل تغيير كلمة المرور."
+      },
+      "success": "تم تغيير كلمة المرور بنجاح!"
+    }
+  },
+  "profile": {
+    "title": "إعدادات الملف الشخصي",
+    "loading": "جارٍ تحميل الملف الشخصي…",
+    "assistant": {
+      "buttonLabel": "المساعد",
+      "title": "المساعد الافتراضي",
+      "subtitles": {
+        "stand": "اسأل عن هذا الجناح وموارده.",
+        "event": "اسأل عن هذا الحدث، الجدول الزمني، والأجنحة.",
+        "platform": "اسأل عن الأحداث، المنظمات، أو كيفية التنقل."
+      },
+      "suggestedPrompts": [
+        "ما هي الأحداث المباشرة الآن؟",
+        "أرني الأجنحة التي يجب عليّ زيارتها.",
+        "ما الموارد التي يحتوي عليها هذا الجناح؟"
+      ]
+    },
+    "organizer": {
+      "subtitle": "قم بإدارة هويتك وحضور منظمتك على IVEP.",
+      "basicInfo": "معلومات أساسية",
+      "fullName": {
+        "label": "الاسم الكامل",
+        "placeholder": "أدخل اسمك الكامل"
+      },
+      "email": {
+        "label": "البريد الإلكتروني (قراءة فقط)",
+        "note": "تغييرات البريد الإلكتروني تتطلب التحقق من الدعم."
+      },
+      "shortBio": {
+        "label": "نبذة قصيرة",
+        "placeholder": "أخبرنا قليلاً عن خلفيتك المهنية..."
+      },
+      "preferredLanguage": "اللغة المفضلة",
+      "timezone": "المنطقة الزمنية",
+      "updateProfile": "تحديث الملف الشخصي",
+      "accountVerified": "الحساب موثق",
+      "joinedYear": "انضم في {year}",
+      "success": "تم تحديث الملف الشخصي بنجاح!",
+      "error": "فشل في تحديث الملف الشخصي.",
+      "needHelp": {
+        "title": "هل تحتاج مساعدة؟",
+        "message": "للتغييرات على مستوى المنظمة أو نقل الأدوار، يرجى الاتصال بفريق الدعم لدينا."
+      },
+      "fallbackOrg": "منظم IVEP",
+      "notifications": "الإشعارات"
+    },
+    "admin": {
+      "subtitle": "إدارة إعدادات حساب المسؤول الخاص بك.",
+      "accountInfo": "معلومات الحساب",
+      "fullName": {
+        "label": "الاسم الكامل",
+        "placeholder": "أدخل اسمك الكامل"
+      },
+      "email": {
+        "label": "البريد الإلكتروني (قراءة فقط)"
+      },
+      "shortBio": {
+        "label": "نبذة قصيرة",
+        "placeholder": "أخبرنا قليلاً عن نفسك..."
+      },
+      "preferredLanguage": "اللغة المفضلة",
+      "timezone": "المنطقة الزمنية",
+      "updateProfile": "تحديث الملف الشخصي",
+      "administratorAccount": "حساب المسؤول",
+      "joinedYear": "انضم في {year}",
+      "success": "تم تحديث الملف الشخصي بنجاح!",
+      "error": "فشل في تحديث الملف الشخصي.",
+      "needHelp": {
+        "title": "هل تحتاج مساعدة؟",
+        "message": "لدعم على مستوى المنصة، يرجى الاتصال بمسؤول النظام."
+      }
+    },
+    "enterprise": {
+      "updateCoverPhoto": "تحديث صورة الغلاف",
+      "updateLogo": "تحديث الشعار",
+      "accountVerified": "الحساب موثق",
+      "primaryContact": "جهة الاتصال الرئيسية",
+      "accountEmail": "البريد الإلكتروني للحساب",
+      "registeredEntity": "الكيان المسجل",
+      "baseLocation": "الموقع الأساسي",
+      "globalLocation": "عالمي",
+      "sector": "القطاع",
+      "memberSince": "عضو منذ {year}",
+      "completionStatus": {
+        "title": "حالة الاكتمال",
+        "message": "أكمل ملفك لزيادة ظهورك في المعارض الافتراضية."
+      },
+      "aboutCompany": "عن الشركة",
+      "companyName": {
+        "label": "اسم الشركة",
+        "placeholder": "شركة أكمي"
+      },
+      "industry": {
+        "label": "الصناعة",
+        "placeholder": "تكنولوجيا"
+      },
+      "country": {
+        "label": "البلد",
+        "placeholder": "المغرب"
+      },
+      "city": {
+        "label": "المدينة",
+        "placeholder": "الدار البيضاء"
+      },
+      "companySize": {
+        "label": "حجم الشركة",
+        "placeholder": "51-200"
+      },
+      "professionalEmail": {
+        "label": "البريد الإلكتروني المهني",
+        "placeholder": "business@acme.com"
+      },
+      "companyBio": {
+        "label": "نبذة عن الشركة",
+        "note": "تُعرض في جناحك",
+        "placeholder": "أخبر الزوار عن قيمة عرض شركتك..."
+      },
+      "category": {
+        "label": "الفئة",
+        "placeholder": "اختر فئة"
+      },
+      "businessTags": {
+        "label": "علامات تجارية",
+        "placeholder": "الذكاء الاصطناعي، البلوك تشين، سااس، الطاقة الخضراء (مفصولة بفواصل)"
+      },
+      "accountTimezone": {
+        "label": "المنطقة الزمنية للحساب",
+        "note": "تُستخدم كمنطقتك الزمنية الشخصية المعروضة عبر المنصة."
+      },
+      "contactPresence": "جهات الاتصال والحضور",
+      "publicBusinessEmail": {
+        "label": "البريد الإلكتروني التجاري العام",
+        "placeholder": "contact@acme.com"
+      },
+      "phoneNumber": {
+        "label": "رقم الهاتف",
+        "placeholder": "+212 600-000000"
+      },
+      "corporateWebsite": {
+        "label": "الموقع الإلكتروني الرسمي",
+        "placeholder": "https://acme.com"
+      },
+      "linkedinProfile": {
+        "label": "ملف لينكد إن",
+        "placeholder": "https://linkedin.com/company/acme"
+      },
+      "saveChanges": "حفظ جميع التغييرات",
+      "success": "تم تحديث الملف الشخصي بنجاح!",
+      "error": "فشل في تحديث الملف الشخصي.",
+      "logoUploaded": "تم رفع الشعار!",
+      "bannerUploaded": "تم رفع البانر!",
+      "uploadFailed": "فشل في رفع {type}.",
+      "categoryOptions": {
+        "technology": "تكنولوجيا",
+        "healthcare": "الرعاية الصحية",
+        "finance": "المالية",
+        "education": "التعليم",
+        "manufacturing": "التصنيع",
+        "retail": "التجزئة",
+        "logistics": "اللوجستيات",
+        "energy": "الطاقة",
+        "telecommunications": "الاتصالات",
+        "consulting": "الاستشارات",
+        "mediaMarketing": "الإعلام والتسويق",
+        "tourismHospitality": "السياحة والضيافة",
+        "governmentPublicServices": "الحكومة والخدمات العامة",
+        "nonProfit": "منظمة غير ربحية",
+        "other": "أخرى"
+      },
+      "pageSubtitle": "قم بإدارة ملف شركتك ومنتجاتك وحضورك على IVEP."
+    },
+    "visitor": {
+      "subtitle": "إدارة بياناتك الشخصية، تفضيلاتك، وإعدادات الاكتشاف.",
+      "basicInfo": {
+        "title": "معلومات أساسية",
+        "description": "تفاصيلك الشخصية الظاهرة لمنظمي الفعاليات.",
+        "fullName": {
+          "label": "الاسم الكامل",
+          "placeholder": "جون دو"
+        },
+        "email": "البريد الإلكتروني",
+        "language": {
+          "label": "تفضيل اللغة",
+          "placeholder": "اختر اللغة…"
+        },
+        "timezone": {
+          "label": "المنطقة الزمنية"
+        },
+        "bio": {
+          "label": "نبذة قصيرة",
+          "placeholder": "أخبرنا قليلاً عن نفسك…"
+        }
+      },
+      "professionalInfo": {
+        "title": "معلومات مهنية",
+        "description": "تساعدنا في مطابقتك مع المعارض والفرص ذات الصلة.",
+        "jobTitle": {
+          "label": "المسمى الوظيفي",
+          "placeholder": "مثلاً مهندس برمجيات"
+        },
+        "industry": {
+          "label": "الصناعة",
+          "placeholder": "مثلاً تكنولوجيا"
+        },
+        "company": {
+          "label": "الشركة",
+          "placeholder": "مثلاً جوجل"
+        },
+        "experienceLevel": {
+          "label": "مستوى الخبرة",
+          "placeholder": "اختر المستوى…"
+        }
+      },
+      "interests": {
+        "title": "الاهتمامات",
+        "description": "اختر المواضيع التي تهمك — هذه تُشغل محرك التوصيات لدينا.",
+        "addCustom": "أضف مخصص…",
+        "addButton": "أضف"
+      },
+      "eventPreferences": {
+        "title": "تفضيلات الفعاليات",
+        "description": "أخبرنا عن أنواع الفعاليات التي تفضل حضورها.",
+        "types": "أنواع الفعاليات المفضلة",
+        "languages": "اللغات المفضلة",
+        "regions": "المناطق المفضلة (اختياري)"
+      },
+      "networking": {
+        "title": "تفضيلات التواصل",
+        "description": "ماذا تبحث عنه في الفعاليات؟",
+        "goals": {
+          "label": "أهداف التواصل",
+          "placeholder": "اختر أهدافك من التواصل…"
+        },
+        "experienceLevel": {
+          "label": "مستوى الخبرة",
+          "placeholder": "اختر مستواك…"
+        }
+      },
+      "notifications": {
+        "title": "الإشعارات والتوصيات",
+        "description": "تحكم في كيفية ووقت تواصلنا معك.",
+        "recommendations": "استقبال توصيات مخصصة",
+        "emailNotifications": "استقبال إشعارات عبر البريد الإلكتروني"
+      },
+      "save": "حفظ الملف الشخصي",
+      "saving": "جارٍ الحفظ…",
+      "success": {
+        "title": "تم تحديث الملف الشخصي",
+        "message": "تم حفظ ملفك الشخصي بنجاح!"
+      },
+      "error": {
+        "title": "فشل الحفظ",
+        "message": "حدث خطأ. الرجاء المحاولة مرة أخرى."
+      },
+      "authRequired": {
+        "title": "تسجيل الدخول مطلوب",
+        "message": "يرجى تسجيل الدخول لعرض ملفك الشخصي."
+      },
+      "engagement": {
+        "title": "إعدادات التفاعل",
+        "description": "تحكم في كيفية تواصلنا معك."
+      }
+    },
+    "common": {
+      "languages": {
+        "english": "الإنجليزية",
+        "spanish": "الإسبانية",
+        "french": "الفرنسية",
+        "arabic": "العربية",
+        "german": "الألمانية",
+        "chinese": "الصينية",
+        "japanese": "اليابانية"
+      },
+      "experienceLevels": {
+        "junior": "مبتدئ",
+        "mid": "متوسط",
+        "senior": "متقدم",
+        "executive": "تنفيذي"
+      },
+      "interests": {
+        "ai": "الذكاء الاصطناعي",
+        "tech": "التقنية",
+        "education": "التعليم",
+        "healthcare": "الرعاية الصحية",
+        "sustainability": "الاستدامة",
+        "finance": "المالية",
+        "startups": "الشركات الناشئة"
+      },
+      "eventTypes": {
+        "webinar": "ندوة عبر الإنترنت",
+        "exhibition": "معرض",
+        "networking": "تواصل",
+        "workshop": "ورشة عمل"
+      },
+      "regions": {
+        "northAmerica": "أمريكا الشمالية",
+        "europe": "أوروبا",
+        "asia": "آسيا",
+        "middleEast": "الشرق الأوسط",
+        "africa": "أفريقيا",
+        "latinAmerica": "أمريكا اللاتينية",
+        "southAmerica": "أمريكا الجنوبية",
+        "oceania": "أوقيانوسيا"
+      },
+      "networkingGoals": {
+        "partnerships": "شراكات",
+        "investors": "المستثمرون",
+        "clients": "العملاء",
+        "knowledge": "المعرفة",
+        "jobs": "وظائف"
+      }
+    }
+  },
+  "common": {
+    "brand": "IVEP",
+    "languages": {
+      "english": "الإنجليزية",
+      "spanish": "الإسبانية",
+      "french": "الفرنسية",
+      "arabic": "العربية",
+      "german": "الألمانية",
+      "chinese": "الصينية",
+      "japanese": "اليابانية"
+    },
+    "buttons": {
+      "submit": "إرسال",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "close": "إغلاق",
+      "back": "عودة",
+      "next": "التالي",
+      "login": "تسجيل الدخول",
+      "register": "تسجيل",
+      "signIn": "تسجيل الدخول",
+      "signOut": "تسجيل الخروج",
+      "createAccount": "إنشاء حساب",
+      "goToLogin": "الذهاب إلى تسجيل الدخول"
+    },
+    "actions": {
+      "cancel": "إلغاء",
+      "confirmSure": "هل أنت متأكد؟",
+      "yesProceed": "نعم، تابع",
+      "viewAll": "عرض الكل",
+      "saveAll": "حفظ كل التغييرات",
+      "search": "بحث",
+      "refresh": "تحديث",
+      "clear": "مسح",
+      "clearSearch": "مسح البحث",
+      "retry": "إعادة المحاولة",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "approve": "الموافقة",
+      "reject": "رفض",
+      "processing": "جاري المعالجة"
+    },
+    "filters": {
+      "all": "الكل"
+    },
+    "status": {
+      "optional": "اختياري"
+    },
+    "help": {
+      "title": "هل تحتاج مساعدة؟"
+    },
+    "errors": {
+      "actionFailed": "فشل الإجراء. الرجاء المحاولة مرة أخرى."
+    },
+    "navigation": {
+      "home": "الرئيسية",
+      "events": "الفعاليات",
+      "orders": "الطلبات",
+      "favorites": "المفضلة",
+      "adminPanel": "لوحة الإدارة",
+      "dashboard": "لوحة التحكم",
+      "myEvents": "فعالياتي",
+      "products": "المنتجات",
+      "requests": "الطلبات",
+      "leads": "العملاء المحتملون",
+      "myProfile": "ملفي الشخصي",
+      "myOrders": "طلباتي",
+      "manageProducts": "إدارة المنتجات",
+      "allRequests": "جميع الطلبات",
+      "organizerPanel": "لوحة المنظم",
+      "openMenu": "فتح القائمة الرئيسية"
+    },
+    "footer": {
+      "tagline": "منصة المعارض الافتراضية الذكية للفعاليات الغامرة، والتواصل، والتجارة.",
+      "platform": "المنصة",
+      "eventsDirectory": "دليل الفعاليات",
+      "globalMarketplace": "السوق العالمية",
+      "aiAssistant": "مساعد الفعاليات بالذكاء الاصطناعي",
+      "account": "الحساب",
+      "signIn": "تسجيل الدخول",
+      "createAccount": "إنشاء حساب",
+      "myFavorites": "المفضلات الخاصة بي",
+      "connectWithUs": "تواصل معنا",
+      "allRightsReserved": "جميع الحقوق محفوظة.",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "copyright": "© {year} IVEP. جميع الحقوق محفوظة."
+    },
+    "messages": {
+      "loading": "جارٍ التحميل…",
+      "checkingAuth": "جاري التحقق من التفويض...",
+      "noResults": "لم يتم العثور على نتائج.",
+      "error": "حدث خطأ.",
+      "success": "تمت العملية بنجاح.",
+      "unauthorized": "غير مصرح",
+      "notFound": "غير موجود."
+    },
+    "roles": {
+      "admin": "مسؤول",
+      "organizer": "منظم",
+      "enterprise": "مؤسسة",
+      "visitor": "زائر",
+      "platform": "المنصة"
+    },
+    "states": {
+      "loading": "جارٍ التحميل...",
+      "error": "خطأ"
+    },
+    "ui": {
+      "dataTable": {
+        "noData": "لا توجد بيانات متاحة"
+      },
+      "pagination": {
+        "previous": "السابق",
+        "next": "التالي",
+        "pageInfo": "صفحة {current} من {total}",
+        "showingRange": "عرض {from} إلى {to} من {total} {entity}",
+        "entities": {
+          "users": "حسابات",
+          "organizations": "منظمات",
+          "enterprises": "مؤسسات",
+          "entries": "مدخلات",
+          "subscriptions": "اشتراكات",
+          "requests": "طلبات",
+          "incidents": "حوادث",
+          "events": "فعاليات",
+          "sessions": "جلسات",
+          "transactions": "معاملات",
+          "records": "سجلات"
+        }
+      },
+      "scheduleBuilder": {
+        "startTimeTooltip": "استخدم صيغة 24 ساعة (HH:mm)",
+        "endTimeTooltip": "استخدم صيغة 24 ساعة (HH:mm). إذا كان وقت النهاية أبكر من وقت البداية، يستمر الحجز إلى اليوم التالي.",
+        "nextDayBadge": "+1 يوم",
+        "slotPlaceholder": "النشاط / الوصف...",
+        "removeSlotTooltip": "إزالة الحجز",
+        "dayLabel": "اليوم {day_number}",
+        "emptySlots": "لا توجد أوقات مجدولة بعد -- اضغط + لإضافة حجز أدناه",
+        "addSlot": "+ إضافة فترة زمنية",
+        "noDatesPlaceholder": "حدد تاريخ البدء والنهاية أعلاه",
+        "noDatesHelper": "سيتم إنشاء أيام الجدول تلقائيًا من نطاق التواريخ."
+      }
+    }
+  },
+  "dashboard": {
+    "visitor": {
+      "joinedEvents": {
+        "title": "الأحداث التي انضممت إليها",
+        "subtitle": "الأحداث التي تشارك فيها",
+        "empty": {
+          "title": "لم تنضم إلى أي أحداث بعد",
+          "message": "لم تنضم إلى أي أحداث. استكشف الأحداث الموصى بها للبدء!",
+          "browseLink": "تصفح جميع الأحداث"
+        }
+      },
+      "recommended": {
+        "title": "موصى به لك",
+        "subtitle": "الأحداث بناءً على اهتماماتك",
+        "highMatch": "مطابقة عالية",
+        "empty": "لا توجد توصيات متاحة بعد.",
+        "viewDetails": "عرض التفاصيل"
+      }
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "markAllRead": "وضع الكل في القراءة",
+      "markAsRead": "وضع كمقروء",
+      "empty": "لا توجد إشعارات",
+      "unread": "غير مقروءة"
+    },
+    "orders": {
+      "title": "طلباتي",
+      "subtitle": "تتبع جميع عمليات شراء الأجنحة الخاصة بك في طلبات موحدة. يتم تجميع منتجات وخدمات من نفس عملية الدفع معًا.",
+      "loading": "جارٍ تحميل طلباتك...",
+      "noOrders": "لا توجد طلبات حتى الآن.",
+      "noOrdersHint": "قم بزيارة أجنحة الحدث واستخدم السوق لتقديم طلبك الأول.",
+      "orderRef": "مرجع الطلب",
+      "total": "الإجمالي",
+      "shipping": "الشحن",
+      "notes": "ملاحظات",
+      "receipt": "الإيصال",
+      "revisitStand": "زيارة الجناح مرة أخرى",
+      "product": "منتج",
+      "service": "خدمة",
+      "paidOrdersHint": "لديك {count} طلب مدفوع{plural}. كل بطاقة تجمع بين المنتجات والخدمات من نفس الدفع.",
+      "payment": {
+        "stripe": "سترايب",
+        "cod": "الدفع عند الاستلام"
+      }
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "منصة العرض الافتراضي الذكية",
+      "heading": "بناء معارض غامرة تحول الزوار إلى أعمال تجارية.",
+      "subtitle": "توفر IVEP للمنظمين والشركات والحضور مكانًا رقميًا متميزًا واحدًا للفعاليات والأجنحة والشبكات ونتائج السوق.",
+      "exploreEvents": "استكشاف الفعاليات",
+      "createEvent": "إنشاء فعالية",
+      "visitorWarning": "يتطلب إنشاء الفعاليات حساب منظم. يرجى الاتصال بمسؤول لترقية حسابك، أو تسجيل الخروج والتسجيل كمنظم إذا لم تكن مؤسستك على المنصة بعد.",
+      "badges": {
+        "secureAccess": "وصول آمن",
+        "liveInteractions": "تفاعلات مباشرة",
+        "aiPowered": "مدعوم بالذكاء الاصطناعي",
+        "b2bReady": "جاهز للأعمال بين الشركات"
+      },
+      "preview": {
+        "label": "معاينة المنصة الحية",
+        "heading": "مركز تحكم الفعالية الغامر",
+        "stats": {
+          "activeStands": {
+            "label": "الأجنحة النشطة",
+            "value": "120+"
+          },
+          "liveAttendees": {
+            "label": "الحضور المباشر",
+            "value": "8.4 ألف"
+          },
+          "meetingsScheduled": {
+            "label": "الاجتماعات المجدولة",
+            "value": "2.1 ألف"
+          },
+          "conversionRate": {
+            "label": "معدل التحويل",
+            "value": "37%"
+          }
+        }
+      }
+    },
+    "features": {
+      "title": "الميزات الأساسية للمنصة",
+      "subtitle": "مجموعة أدوات كاملة لإطلاق وإدارة وتوسيع المعارض الافتراضية العالمية المستوى.",
+      "items": {
+        "virtualStands": {
+          "title": "الأجنحة الافتراضية",
+          "description": "أجنحة مميزة غامرة تعرض فيها الشركات منتجاتها ووسائطها وتفاعلاتها المباشرة."
+        },
+        "aiAssistant": {
+          "title": "المساعد الذكي",
+          "description": "إرشاد الزوار فورًا من خلال أسئلة وأجوبة ذكية حول الفعالية، وتوصيات، ودعم متعدد اللغات."
+        },
+        "networking": {
+          "title": "التواصل الشبكي",
+          "description": "خلق فرص أعمال حقيقية عبر الدردشة، وطلبات التواصل، وسير الاجتماعات."
+        },
+        "liveEvents": {
+          "title": "الفعاليات المباشرة",
+          "description": "إدارة المؤتمرات، والكلمات الرئيسية، وجلسات المنتجات مع تفاعل الحضور في الوقت الفعلي."
+        },
+        "marketplace": {
+          "title": "السوق",
+          "description": "تمكين عمليات الشراء المباشرة من الأجنحة مع دفع آمن وتتبع شفاف للطلبات."
+        },
+        "analytics": {
+          "title": "التحليلات",
+          "description": "قياس أداء الجناح، وجودة العملاء المتوقعين، وسلوك الحضور مع رؤى قابلة للتنفيذ."
+        }
+      }
+    },
+    "experience": {
+      "title": "تجربة المنصة",
+      "subtitle": "مصممة للاكتشاف الغامر، والتواصل السلس، والنتائج القابلة للقياس.",
+      "items": {
+        "hallNavigation": {
+          "title": "التنقل في القاعات ثنائية وثلاثية الأبعاد",
+          "description": "يتنقل الزوار بشكل طبيعي عبر فعاليتك باستخدام استكشاف القاعة السلس واكتشاف الأجنحة."
+        },
+        "standExperience": {
+          "title": "تجربة الجناح التفاعلية",
+          "description": "عرض المنتجات والوسائط والموارد وملفات تعريف الأعمال في بيئة جناح رقمي مصقولة."
+        },
+        "chatInteraction": {
+          "title": "الدردشة والتفاعل المباشر",
+          "description": "ربط الزوار والعارضين من خلال المراسلة الفورية وأدوات التواصل السياقية."
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "كيف تعمل",
+      "subtitle": "رحلة بسيطة من دخول الفعالية إلى التفاعل التجاري عالي القيمة.",
+      "steps": {
+        "joinEvent": {
+          "title": "الانضمام إلى الفعالية",
+          "description": "تسجيل الدخول كزائر أو شركة ودخول فعاليتك المختارة خلال ثوانٍ."
+        },
+        "exploreStands": {
+          "title": "استكشاف الأجنحة",
+          "description": "اكتشاف العارضين الأقوياء، والمنتجات، والجلسات الحية من خلال عرض القاعة البديهي."
+        },
+        "interact": {
+          "title": "التفاعل",
+          "description": "بدء محادثات ذات معنى، طلب اجتماعات، والتفاعل مباشرة مع العلامات التجارية."
+        },
+        "buyConnect": {
+          "title": "الشراء / التواصل",
+          "description": "إتمام عمليات الشراء بسلاسة أو جمع العملاء المتوقعين لتحويل التفاعل إلى نتائج."
+        }
+      }
+    },
+    "socialProof": {
+      "title": "موثوق به من فرق الفعاليات الحديثة",
+      "subtitle": "مصمم للمنظمين والشركات التي تهتم بتجارب الحضور المميزة.",
+      "stats": {
+        "eventsHosted": {
+          "label": "الفعاليات المستضافة",
+          "value": "1,200+"
+        },
+        "registeredUsers": {
+          "label": "المستخدمين المسجلين",
+          "value": "95 ألف+"
+        },
+        "enterpriseExhibitors": {
+          "label": "عارضي الشركات",
+          "value": "3,400+"
+        }
+      }
+    },
+    "cta": {
+      "title": "ابدأ معرضك الافتراضي اليوم",
+      "subtitle": "أطلق تجربة فعالية متميزة للزوار والعارضين والشركاء بمنصة موحدة واحدة.",
+      "joinVisitor": "انضم كزائر",
+      "hostEvent": "استضافة فعالية"
+    },
+    "testimonials": {
+      "items": {
+        "opsLead": {
+          "quote": "ساعدتنا IVEP على إطلاق تجربة معرض عالمية خلال أيام، مع تفاعل أفضل بكثير مما توقعنا.",
+          "author": "قائد عمليات الفعالية",
+          "company": "منتدى Apex للأعمال"
+        },
+        "expManager": {
+          "quote": "أحب عارضونا أدوات الأجنحة وكان تدفق تحويل السوق سلسًا من البداية للنهاية.",
+          "author": "مدير تجربة رقمية",
+          "company": "قمة FutureTech"
+        },
+        "progDirector": {
+          "quote": "تشعر المنصة بالفخامة، سهلة التصفح، وعملية جدًا لكل من الزوار والشركات.",
+          "author": "مدير البرامج",
+          "company": "أسبوع الابتكار العالمي"
+        }
+      }
+    }
+  },
+  "layout": {
+    "navbar": {
+      "home": "الرئيسية",
+      "events": "الفعاليات",
+      "login": "تسجيل الدخول",
+      "register": "التسجيل",
+      "orders": "الطلبات",
+      "favorites": "المفضلات",
+      "dashboard": "لوحة التحكم",
+      "adminPanel": "لوحة المسؤول",
+      "organizerPanel": "لوحة المنظم",
+      "myEvents": "فعالياتي",
+      "products": "المنتجات",
+      "requests": "الطلبات",
+      "leads": "العملاء المحتملين",
+      "myProfile": "ملفي الشخصي",
+      "myOrders": "طلباتي",
+      "manageProducts": "إدارة المنتجات",
+      "allRequests": "جميع الطلبات",
+      "signOut": "تسجيل الخروج",
+      "openMenu": "فتح القائمة الرئيسية"
+    },
+    "footer": {
+      "tagline": "منصة المعرض الافتراضي الذكية للفعاليات التفاعلية، الشبكات، والتجارة.",
+      "platform": "المنصة",
+      "eventsDirectory": "دليل الفعاليات",
+      "globalMarketplace": "السوق العالمية",
+      "aiAssistant": "مساعد الفعاليات الذكي",
+      "account": "الحساب",
+      "signIn": "تسجيل الدخول",
+      "createAccount": "إنشاء حساب",
+      "myFavorites": "مفضلتي",
+      "connectWithUs": "تواصل معنا",
+      "allRightsReserved": "جميع الحقوق محفوظة.",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "copyright": "© {year} IVEP. جميع الحقوق محفوظة."
+    },
+    "common": {
+      "loading": "جارِ التحميل...",
+      "error": "حدث خطأ.",
+      "noResults": "لم يتم العثور على نتائج."
+    },
+    "assistant": {
+      "buttonLabel": "المساعد",
+      "title": "المساعد الافتراضي",
+      "subtitles": {
+        "stand": "اسأل عن هذا الجناح وموارده.",
+        "event": "اسأل عن هذا الحدث، جدوله، والأجنحة.",
+        "platform": "اسأل عن الفعاليات، المنظمات، أو كيفية التنقل."
+      },
+      "suggestedPrompts": [
+        "ما الفعاليات المباشرة الآن؟",
+        "أرني الأجنحة التي يجب علي زيارتها.",
+        "ما الموارد المتوفرة في هذا الجناح؟"
+      ]
+    },
+    "organizer": {
+      "sidebar": {
+        "brand": "IVEP",
+        "suffix": "ORG",
+        "dashboard": "لوحة التحكم",
+        "myEvents": "فعالياتي",
+        "profile": "الملف الشخصي",
+        "signOut": "تسجيل الخروج"
+      },
+      "breadcrumb": "المنظم",
+      "workspace": "مساحة عمل المنظم",
+      "checkingAuth": "جارِ التحقق من التفويض...",
+      "notifications": "الإشعارات"
+    },
+    "enterprise": {
+      "sidebar": {
+        "title": "لوحة المؤسسة",
+        "subtitle": "رحلة الأعمال",
+        "dashboard": "لوحة التحكم",
+        "events": "الفعاليات",
+        "requests": "الطلبات",
+        "analytics": "التحليلات",
+        "products": "المنتجات",
+        "profile": "الملف الشخصي",
+        "notifications": "الإشعارات",
+        "signOut": "تسجيل الخروج"
+      },
+      "breadcrumb": "المؤسسة",
+      "workspace": "مساحة عمل المؤسسة",
+      "loading": "جارِ التحميل...",
+      "fallbackUser": "مستخدم المؤسسة"
+    },
+    "admin": {
+      "sidebar": {
+        "title": "لوحة المسؤول",
+        "dashboard": "لوحة التحكم",
+        "events": "الفعاليات",
+        "users": "المستخدمون",
+        "organizations": "المنظمات",
+        "enterprises": "المؤسسات",
+        "organizerApprovals": "موافقات المنظمين",
+        "enterpriseApprovals": "موافقات المؤسسات",
+        "finance": "المالية",
+        "monitoring": "المراقبة",
+        "auditLogs": "سجلات التدقيق",
+        "incidents": "الحوادث",
+        "profile": "الملف الشخصي",
+        "signOut": "تسجيل الخروج"
+      },
+      "breadcrumb": "المسؤول",
+      "workspace": "مساحة عمل المسؤول",
+      "checkingAuth": "جارِ التحقق من التفويض...",
+      "fallbackUser": "المسؤول"
+    }
+  },
+  "events": {
+    "listing": {
+      "title": "الأحداث",
+      "subtitle": "تابع المعارض القادمة والمباشرة والمنتهية مع وصول مدرك للجدول الزمني.",
+      "timelineLabel": "الجدول الزمني",
+      "timelineFilters": {
+        "all": "الكل",
+        "live": "مباشر",
+        "inProgress": "جاري التنفيذ",
+        "upcoming": "قادم",
+        "ended": "منتهي",
+        "timelineTbd": "الجدول الزمني لم يحدد بعد"
+      },
+      "errorLoad": "تعذر تحميل الأحداث."
+    },
+    "detail": {
+      "loading": "جارٍ تحميل تفاصيل الحدث...",
+      "notFound": "الحدث غير موجود",
+      "tryAgain": "حاول مرة أخرى",
+      "organizerFallback": "منظم IVEP",
+      "exhibitionFallback": "المعرض",
+      "liveAccessClosed": {
+        "title": "تم إغلاق الوصول المباشر",
+        "message": "هذا الحدث قد انتهى، لذا تم نقلك خارج المنطقة المباشرة."
+      },
+      "aboutThisEvent": "حول هذا الحدث",
+      "downloadReceipt": "تحميل الإيصال",
+      "favorited": "مفضل",
+      "addToFavorites": "أضف إلى المفضلات",
+      "insights": {
+        "title": "رؤى الحدث",
+        "attendingEnterprises": {
+          "label": "الشركات المشاركة",
+          "description": "الشركات المستعدة للتواصل أثناء الحدث."
+        },
+        "scheduleSessions": {
+          "label": "جلسات الجدول",
+          "description": "الأنشطة المخططة عبر الجدول الزمني للحدث."
+        },
+        "experienceFocus": {
+          "label": "تركيز التجربة",
+          "description": "التواصل الشبكي، العروض، وجلسات المعرفة المباشرة",
+          "subtitle": "مصممة للاكتشاف والمحادثات التجارية الحقيقية."
+        }
+      },
+      "whoYouCanMeet": {
+        "title": "من يمكن أن تلتقي به",
+        "lineupFinalized": "جاري الانتهاء من تشكيل قائمة الشركات. تحقق مرة أخرى قريبًا لمعرفة الشركات والأكشاك المشاركة.",
+        "unlockFullList": "قم بالتسجيل لفتح القائمة الكاملة للمشاركين والوصول المباشر المباشر."
+      },
+      "scheduleHighlights": {
+        "title": "أبرز الجدول",
+        "dayLabel": "اليوم {day_number}",
+        "nextDayBadge": "+1 يوم",
+        "noSchedule": "سيتم عرض تفاصيل الجدول الكامل هنا بمجرد نشر فترات الجدول الزمني.",
+        "unlockFullSchedule": "قم بالتسجيل لفتح الجدول الكامل وكل الأقسام المباشرة."
+      },
+      "joinCard": {
+        "title": "المشاركة",
+        "footer": "بالمشاركة، أنت توافق على قواعد السلوك.",
+        "approved": {
+          "noTimeline": {
+            "message": "تمت الموافقة على تسجيلك، لكن الجدول الزمني للحدث لم يُنشر بعد.",
+            "action": "سيفتح الدخول عند نشر فترات الجدول.",
+            "button": "انتظار الجدول الزمني"
+          },
+          "accessOpen": {
+            "message": "تمت الموافقة على تسجيلك. يمكنك الآن الدخول إلى الحدث المباشر.",
+            "button": "ادخل الحدث"
+          },
+          "closedBeforeEvent": {
+            "message": "أنت موافق. يفتح الدخول عند نشر الجدول الزمني.",
+            "button": "يفتح الدخول قريبًا"
+          },
+          "closedBetweenSlots": {
+            "message": "الحدث قيد التنفيذ. سيفتح الوصول المباشر في الفترة النشطة القادمة.",
+            "button": "الفترة القادمة قريبًا"
+          },
+          "ended": {
+            "message": "هذا الجدول الزمني للحدث قد انتهى. تم إغلاق الوصول المباشر الآن.",
+            "button": "انتهى الحدث"
+          }
+        },
+        "paymentRequired": {
+          "ended": {
+            "message": "هذا الحدث قد انتهى. تم إغلاق الوصول المدفوع الجديد.",
+            "button": "انتهى الحدث"
+          },
+          "active": {
+            "message": "يتطلب هذا الحدث الدفع.",
+            "ticketPrice": "سعر التذكرة: {price} {currency}",
+            "button": "ادفع الآن"
+          }
+        },
+        "paymentPending": {
+          "message": "جارٍ معالجة دفعتك. سيتم منحك الوصول قريبًا.",
+          "button": "تحقق من الحالة"
+        },
+        "pending": {
+          "message": "طلبك قيد الموافقة. ستتلقى إشعارًا بمجرد مراجعته.",
+          "button": "قيد الموافقة"
+        },
+        "rejected": {
+          "message": "لم تتم الموافقة على طلبك."
+        },
+        "notJoined": {
+          "description": "انضم إلى هذا الحدث للوصول إلى الأكشاك والجدول والموارد.",
+          "buttonPaid": "سجل وادفع",
+          "buttonFree": "سجل الآن"
+        },
+        "badges": {
+          "ended": "انتهى",
+          "timelinePending": "الجدول الزمني قيد الانتظار",
+          "liveAccess": "الوصول المباشر",
+          "inProgress": "جاري التنفيذ",
+          "upcoming": "قادم",
+          "approved": "موافق عليه",
+          "paymentRequired": "الدفع مطلوب",
+          "paymentPending": "الدفع قيد الانتظار",
+          "pending": "قيد الانتظار",
+          "rejected": "مرفوض",
+          "notJoined": "لم ينضم"
+        }
+      },
+      "receiptDownload": {
+        "payerDefault": "زائر",
+        "paymentMethod": "سترايب (دفع عبر البطاقة الإلكترونية)",
+        "error": "تعذر تحميل الإيصال. قد لا يكون لديك إيصال مدفوع لهذا الحدث."
+      },
+      "joinAlert": {
+        "failed": "فشل الانضمام إلى الحدث. يرجى المحاولة مرة أخرى.",
+        "notFound": "الحدث غير موجود."
+      }
+    }
+  },
+  "admin": {
+    "navigation": {
+      "dashboard": "لوحة التحكم",
+      "events": "الأحداث",
+      "users": "المستخدمون",
+      "organizations": "المنظمات",
+      "enterprises": "المؤسسات",
+      "organizerApprovals": "موافقات المنظمين",
+      "enterpriseApprovals": "موافقات المؤسسات",
+      "finance": "المالية",
+      "monitoring": "المراقبة",
+      "auditLogs": "سجلات التدقيق",
+      "incidents": "الحوادث",
+      "profile": "الملف الشخصي"
+    },
+    "common": {
+      "currency": "MAD",
+      "actions": {
+        "processingIndicator": "…"
+      },
+      "ui": {
+        "emptyValue": "—"
+      }
+    },
+    "dashboard": {
+      "title": "لوحة تحكم المدير",
+      "description": "إدارة الفعاليات، المستخدمين، المنظمات، الاشتراكات، التحليلات، المراقبة، والحوكمة.",
+      "goTo": "الذهاب إلى {title}",
+      "cards": {
+        "events": {
+          "description": "مراجعة، الموافقة، وإدارة جميع فعاليات المنصة.",
+          "tag": "الفعاليات"
+        },
+        "users": {
+          "description": "إدارة حسابات المستخدمين، الأدوار، والصلاحيات.",
+          "tag": "المستخدمون"
+        },
+        "organizations": {
+          "description": "مراجعة وإدارة حسابات المنظمات.",
+          "tag": "المنظمات"
+        },
+        "enterprises": {
+          "description": "إدارة المشاركين والشركات العارضة.",
+          "tag": "الشركات"
+        },
+        "organizerApprovals": {
+          "description": "الموافقة أو الرفض لطلبات تسجيل المنظمين.",
+          "tag": "الموافقات"
+        },
+        "enterpriseApprovals": {
+          "description": "مراجعة طلبات انضمام الشركات للفعاليات.",
+          "tag": "طلبات الانضمام"
+        },
+        "finance": {
+          "description": "متابعة المعاملات، المدفوعات، والسجلات المالية.",
+          "tag": "المالية"
+        },
+        "monitoring": {
+          "description": "مراقبة صحة المنصة، الخدمات، والحوادث.",
+          "tag": "المراقبة"
+        },
+        "auditLogs": {
+          "description": "عرض السجل الكامل لتدقيق إجراءات المدير.",
+          "tag": "التدقيق"
+        },
+        "incidents": {
+          "description": "التحقيق، التخفيف، وحل حوادث المنصة.",
+          "tag": "الحوادث"
+        }
+      }
+    },
+    "analytics": {
+      "title": "لوحة تحليلات البيانات",
+      "description": "مقاييس على مستوى المنصة واتجاهات التفاعل.",
+      "failedToLoad": "فشل في تحميل بيانات التحليلات.",
+      "kpi": {
+        "totalUsers": "إجمالي المستخدمين",
+        "activeEvents": "الأحداث النشطة",
+        "totalStands": "إجمالي الأجنحة",
+        "totalEvents": "إجمالي الأحداث",
+        "organizations": "المنظمات",
+        "pending": "في انتظار الموافقة",
+        "pendingApproval": "قيد الانتظار"
+      },
+      "charts": {
+        "thirtyDayTrend": "اتجاه إنشاء الأحداث خلال 30 يومًا",
+        "eventDistribution": "توزيع الأحداث",
+        "eventsCreated": "الأحداث التي تم إنشاؤها",
+        "fourteenDayTrend": "اتجاه النشاط خلال 14 يومًا",
+        "interactionBreakdown": "تحليل التفاعل"
+      },
+      "eventDetail": {
+        "title": "مقاييس متعمقة للحدث"
+      },
+      "eventsTable": {
+        "title": "الأحداث الأخيرة — انقر للمقاييس المتعمقة",
+        "noEvents": "لم يتم العثور على أحداث."
+      },
+      "export": {
+        "exportPdf": "تصدير PDF",
+        "exportCsv": "تصدير CSV",
+        "generating": "جارٍ الإنشاء…",
+        "exporting": "جارٍ التصدير…"
+      },
+      "refresh": "تحديث",
+      "deepMetrics": {
+        "title": "مقاييس متعمقة للحدث",
+        "breadcrumb": "التحليلات",
+        "kpi": {
+          "eventViews": "مشاهدات الحدث",
+          "standVisits": "زيارات الأجنحة",
+          "chatsOpened": "الدردشات المفتوحة",
+          "leadsGenerated": "العملاء المتوقعين الذين تم توليدهم",
+          "participants": "المشاركون",
+          "activeStands": "الأجنحة النشطة"
+        },
+        "charts": {
+          "activityTrend": "اتجاه النشاط خلال 14 يومًا",
+          "interactionBreakdown": "تحليل التفاعل",
+          "activity": "النشاط"
+        }
+      }
+    },
+    "events": {
+      "title": "مراجعة الحدث",
+      "description": "الموافقة أو رفض طلبات الأحداث المعلقة من المنظمين.",
+      "allEvents": "كل الأحداث",
+      "refresh": "تحديث",
+      "report": "تقرير",
+      "manage": "إدارة",
+      "viewEventPage": "عرض صفحة الحدث الكاملة",
+      "viewOrganizerReport": "عرض تقرير المنظم",
+      "inProgress": "جارٍ التنفيذ",
+      "upcoming": "قادم",
+      "loading": "جارٍ تحميل الأحداث…",
+      "noEvents": "لم يتم العثور على أحداث.",
+      "searchPlaceholder": "البحث بالاسم، المنظم، أو الحالة…",
+      "failedToLoad": "فشل في تحميل الأحداث.",
+      "pricing": {
+        "perEnterprise": "/ لكل مؤسسة"
+      },
+      "filters": {
+        "all": "كل الحالات"
+      },
+      "actions": {
+        "approve": "موافقة",
+        "reject": "رفض",
+        "report": "تقرير",
+        "manage": "إدارة",
+        "joinRequests": "طلبات الانضمام",
+        "forceStart": "بدء بالقوة",
+        "closeEvent": "إغلاق الحدث",
+        "confirmActivate": "تأكيد وتفعيل",
+        "approveConfirm": "الموافقة على هذا الحدث وتحديد مبلغ الدفع:",
+        "rejectConfirm": "رفض هذا الحدث وذكر سبب:",
+        "confirmApprove": "تأكيد الموافقة",
+        "confirmReject": "تأكيد الرفض",
+        "approving": "جارٍ الموافقة…",
+        "rejecting": "جارٍ الرفض…",
+        "paymentAmountPlaceholder": "مبلغ الدفع (MAD)",
+        "rejectReasonPlaceholder": "سبب الرفض (اختياري)…"
+      },
+      "errors": {
+        "paymentRequired": "مطلوب مبلغ الدفع ويجب أن يكون 0 أو أكثر.",
+        "paymentInvalid": "يجب أن يكون مبلغ الدفع رقمًا صالحًا غير سالب."
+      },
+      "success": {
+        "paymentConfirmed": "تم تأكيد الدفع وتفعيل الحدث.",
+        "eventLive": "الحدث مباشر الآن.",
+        "eventClosed": "تم إغلاق الحدث.",
+        "eventApproved": "تمت الموافقة على الحدث بنجاح.",
+        "eventRejected": "تم رفض الحدث بنجاح."
+      },
+      "detail": {
+        "backToEvents": "كل الأحداث",
+        "refresh": "تحديث",
+        "timelineTitle": "مخطط زمني للحدث",
+        "timelineNodes": {
+          "pending": "قيد الانتظار",
+          "paymentDue": "المبلغ مستحق",
+          "verifying": "جارٍ التحقق",
+          "paymentDone": "تم الدفع",
+          "live": "مباشر",
+          "closed": "مغلق"
+        },
+        "countdown": {
+          "startsIn": "يبدأ الحدث خلال",
+          "endsIn": "ينتهي الحدث خلال",
+          "startPassed": "تجاوز موعد البداية المحدد — جارٍ بدء تلقائي",
+          "endPassed": "تجاوز موعد الانتهاء المحدد — جارٍ إغلاق تلقائي"
+        },
+        "actions": {
+          "forceStart": "بدء بالقوة",
+          "forceClose": "إغلاق بالقوة",
+          "verifyPayment": "التحقق من الدفع",
+          "organizerReport": "تقرير المنظم",
+          "liveMonitor": "المراقبة المباشرة"
+        },
+        "confirm": {
+          "startTitle": "بدء الحدث بالقوة",
+          "startMessage": "هل أنت متأكد أنك تريد بدء هذا الحدث بالقوة؟ سيصبح مباشراً فورًا.",
+          "startLabel": "بدء بالقوة",
+          "closeTitle": "إغلاق الحدث بالقوة",
+          "closeMessage": "هل أنت متأكد أنك تريد إغلاق هذا الحدث بالقوة؟ سينتهي على الفور.",
+          "closeLabel": "إغلاق بالقوة",
+          "paymentTitle": "تأكيد الدفع",
+          "paymentMessage": "هل أنت متأكد أنك تريد تأكيد هذا الدفع وتفعيل الحدث؟",
+          "paymentLabel": "تأكيد الدفع"
+        },
+        "toast": {
+          "startSuccess": "تم بدء الحدث بنجاح",
+          "closeSuccess": "تم إغلاق الحدث بنجاح",
+          "paymentSuccess": "تم تأكيد الدفع وتفعيل الحدث",
+          "startFailed": "فشل بدء الحدث",
+          "closeFailed": "فشل إغلاق الحدث",
+          "paymentFailed": "فشل تأكيد الدفع"
+        },
+        "eventNotFound": "لم يتم العثور على الحدث",
+        "failedToLoad": "فشل تحميل الحدث. يرجى المحاولة مرة أخرى."
+      },
+      "table": {
+        "event": "الحدث",
+        "dates": "التواريخ",
+        "organizer": "المنظم",
+        "status": "الحالة",
+        "actions": "الإجراءات",
+        "title": "الحدث",
+        "date": "التاريخ",
+        "location": "الموقع",
+        "category": "الفئة",
+        "state": "الحالة",
+        "payment": "الدفع"
+      },
+      "states": {
+        "pending_approval": "في انتظار الموافقة",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض",
+        "waiting_for_payment": "في انتظار الدفع",
+        "payment_proof_submitted": "جارٍ مراجعة الدفعة",
+        "payment_done": "تم الدفع",
+        "live": "مباشر",
+        "closed": "مغلق",
+        "upcoming": "قادم",
+        "in_progress": "جارٍ التنفيذ",
+        "pendingApproval": "في انتظار الموافقة",
+        "waitingForPayment": "في انتظار الدفع",
+        "paymentProofSubmitted": "جارٍ مراجعة الدفعة",
+        "paymentDone": "تم الدفع",
+        "inProgress": "جارٍ التنفيذ"
+      },
+      "panel": {
+        "eventDetails": "تفاصيل الحدث",
+        "timezoneLabel": "العرض بالمنطقة الزمنية",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "location": "الموقع",
+        "category": "الفئة",
+        "enterprises": "المؤسسات",
+        "payment": "الدفع",
+        "autoCalc": "حساب تلقائي",
+        "paymentProof": "دليل الدفع",
+        "paymentProofMessage": "قام المنظم بتقديم دليل على الدفع.",
+        "viewProof": "عرض الدليل / الإيصال",
+        "pricing": "التسعير",
+        "standPrice": "سعر الكشك",
+        "visitorAccess": "وصول الزائر",
+        "paid": "مدفوع",
+        "free": "مجاناً",
+        "perTicket": "/ لكل تذكرة",
+        "perEnterprise": "/ لكل مؤسسة",
+        "description": "الوصف",
+        "extendedDetails": "تفاصيل موسعة",
+        "schedule": "جدول الحدث",
+        "additionalInfo": "معلومات إضافية",
+        "tags": "الوسوم",
+        "enterpriseLink": "رابط المؤسسة",
+        "visitorLink": "رابط الزائر",
+        "rejectionReason": "سبب الرفض",
+        "approveQuestion": "هل توافق على هذا الحدث؟",
+        "rejectQuestion": "هل ترفض هذا الحدث؟",
+        "paymentAmount": "مبلغ الدفع (مطلوب)",
+        "paymentRequiredError": "الدفع مطلوب. يرجى إدخال المبلغ.",
+        "paymentInvalidError": "مطلوب مبلغ دفع ويجب أن يكون 0 أو أكثر.",
+        "rejectReasonPlaceholder": "سبب الرفض (موصى به)…",
+        "confirmApprove": "تأكيد الموافقة",
+        "confirmReject": "تأكيد الرفض",
+        "approveLoading": "جارٍ الموافقة…",
+        "rejectLoading": "جارٍ الرفض…",
+        "startQuestion": "هل تريد بدء هذا الحدث فورًا؟",
+        "closeQuestion": "هل تريد إغلاق هذا الحدث الآن؟",
+        "confirmStart": "تأكيد البدء",
+        "confirmClose": "تأكيد الإغلاق",
+        "startLoading": "جارٍ البدء…",
+        "closeLoading": "جارٍ الإغلاق…",
+        "confirmPaymentQuestion": "هل تأكيد هذا الدفع؟",
+        "verifyAndActivate": "تحقق وفعل",
+        "verifyingLoading": "جارٍ التحقق…",
+        "noSchedule": "لا يوجد جدول مرفق",
+        "noSlots": "لا توجد فترات محددة",
+        "noDescription": "لا يوجد وصف",
+        "dayLabel": "اليوم"
+      }
+    },
+    "eventDetail": {
+      "states": {
+        "pendingApproval": "بانتظار الموافقة",
+        "approved": "معتمد",
+        "waitingForPayment": "في انتظار الدفع",
+        "reviewingPayment": "جارٍ مراجعة الدفع",
+        "paymentDone": "تم الدفع",
+        "live": "مباشر",
+        "closed": "مغلق",
+        "rejected": "مرفوض",
+        "upcoming": "قريباً",
+        "inProgress": "جارٍ التنفيذ"
+      },
+      "countdown": {
+        "startsIn": "يبدأ خلال",
+        "endsIn": "ينتهي خلال",
+        "startPassed": "تاريخ البدء المجدول قد مر — بدء تلقائي معلق",
+        "endPassed": "تاريخ الانتهاء المجدول قد مر — إغلاق تلقائي معلق"
+      },
+      "timeline": {
+        "title": "جدول أحداث الفعالية",
+        "pending": "بانتظار",
+        "paymentDue": "الدفع مستحق",
+        "verifying": "جارٍ التحقق",
+        "paymentDone": "تم الدفع",
+        "live": "مباشر",
+        "closed": "مغلق"
+      },
+      "actions": {
+        "organizerReport": "تقرير المنظم",
+        "liveMonitor": "مراقبة مباشرة",
+        "verifyPayment": "تحقق من الدفع",
+        "forceStart": "بدء بالقوة",
+        "forceClose": "إغلاق بالقوة",
+        "viewProof": "عرض إثبات الدفع المقدم",
+        "tryAgain": "حاول مرة أخرى",
+        "viewEnterpriseRequests": "عرض طلبات الشركات →"
+      },
+      "sections": {
+        "eventDetails": "تفاصيل الفعالية",
+        "lifecycleInfo": "معلومات دورة الحياة",
+        "paymentProof": "إثبات الدفع"
+      },
+      "info": {
+        "autoStartScheduled": "⏰ تم جدولة بدء تلقائي عند الوصول إلى {date}.",
+        "autoCloseScheduled": "🟢 الفعالية مباشرة. تم جدولة إغلاق تلقائي عند مرور {date}.",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء"
+      },
+      "confirm": {
+        "paymentTitle": "تأكيد إثبات الدفع",
+        "paymentMessage": "هل أنت متأكد أنك تريد التحقق من إثبات الدفع لـ \"{title}\"؟ هذا سيقوم بتفعيل الفعالية وتوليد روابط الدخول.",
+        "paymentLabel": "نعم، أكد الدفع",
+        "startTitle": "بدء الفعالية بالقوة",
+        "startMessage": "هذا سينقل \"{title}\" فوراً من تم الدفع → مباشر، متجاوزًا وقت البدء المجدول. يتم تسجيل هذا الإجراء.",
+        "startLabel": "نعم، ابدأ الآن",
+        "closeTitle": "إغلاق الفعالية بالقوة",
+        "closeMessage": "هذا سيغلق \"{title}\" فوراً وينقله من مباشر → مغلق. لا يمكن التراجع عن هذا الإجراء ويتم تسجيله.",
+        "closeLabel": "نعم، أغلق الآن"
+      },
+      "toast": {
+        "startSuccess": "تم بدء الفعالية بنجاح",
+        "closeSuccess": "تم إغلاق الفعالية بنجاح",
+        "paymentSuccess": "تم تأكيد الدفع وتفعيل الفعالية",
+        "startFailed": "فشل في بدء الفعالية",
+        "closeFailed": "فشل في إغلاق الفعالية",
+        "paymentFailed": "فشل في تأكيد الدفع"
+      },
+      "errors": {
+        "failedToLoad": "فشل في تحميل الفعالية. يرجى المحاولة مرة أخرى.",
+        "eventNotFound": "الفعالية غير موجودة"
+      }
+    },
+    "users": {
+      "title": "حوكمة المستخدم",
+      "description": "التحكم في الوصول والسجل العالمي",
+      "initialsFallback": "م",
+      "anonymousUser": "مستخدم مجهول",
+      "failedToLoad": "فشل في تحميل سجل المستخدمين",
+      "addAdministrator": "إضافة مسؤول",
+      "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني…",
+      "filters": {
+        "allRoles": "كل الأدوار",
+        "administrators": "المسؤولون",
+        "organizers": "المنظمون",
+        "visitors": "الزوار",
+        "enterprise": "المؤسسة"
+      },
+      "table": {
+        "identity": "الهوية",
+        "role": "الدور",
+        "status": "الحالة",
+        "active": "نشط",
+        "blocked": "محظور",
+        "noAccounts": "لم تطابق أي حسابات بحثك"
+      },
+      "status": {
+        "active": "نشط",
+        "suspended": "معلق",
+        "blocked": "محظور"
+      },
+      "newAdministrator": "مسؤول جديد",
+      "fullName": "الاسم الكامل",
+      "emailAddress": "عنوان البريد الإلكتروني",
+      "username": "اسم المستخدم",
+      "password": "كلمة المرور",
+      "cancel": "إلغاء",
+      "create": "إنشاء",
+      "identityGovernance": "الهوية والحوكمة",
+      "usernameHandle": "معرف اسم المستخدم",
+      "affiliationDate": "تاريخ الانتماء",
+      "professionalProfile": "الملف المهني",
+      "corporateCredentials": "الاعتمادات المؤسسية",
+      "jobTitle": "المسمى الوظيفي",
+      "organization": "المنظمة",
+      "industry": "الصناعة",
+      "experience": "الخبرة",
+      "ecosystemEngagement": "المشاركة في النظام البيئي",
+      "networkingObjectives": "أهداف التواصل",
+      "revokePermissions": "إلغاء الصلاحيات",
+      "restoreAccess": "استعادة الوصول",
+      "error": {
+        "load": "فشل في تحميل سجل المستخدمين",
+        "actionFailed": "فشلت العملية",
+        "createAdmin": "فشل في إنشاء حساب المسؤول"
+      },
+      "success": {
+        "revoke": "تم إلغاء امتيازات المستخدم.",
+        "restore": "تم استعادة امتيازات المستخدم.",
+        "create": "تم إنشاء حساب مسؤول جديد."
+      },
+      "modals": {
+        "create": {
+          "placeholders": {
+            "fullName": "جون دو",
+            "email": "admin@ivep.platform",
+            "username": "jdoe_admin"
+          }
+        }
+      }
+    },
+    "organizations": {
+      "title": "مراجعة المؤسسة",
+      "description": "الشركاء المؤسساتيون وهويات الشركات",
+      "partnerLabel": "شريك {role}",
+      "initialsFallback": "م",
+      "loadingRegistry": "جارٍ تحميل السجل…",
+      "noOrganizations": "لم يتم العثور على مؤسسات",
+      "noDescription": "لم يتم تقديم وصف",
+      "table": {
+        "organization": "المؤسسة",
+        "onboarding": "التسجيل",
+        "status": "الحالة"
+      },
+      "detail": {
+        "performanceOverview": "نظرة عامة على الأداء",
+        "visitors": "الزائرون",
+        "events": "الفعاليات",
+        "revenue": "الإيرادات",
+        "organizationIdentity": "هوية المؤسسة",
+        "registeredName": "الاسم المسجل",
+        "onboardingDate": "تاريخ التسجيل",
+        "industrySector": "الصناعة / القطاع",
+        "businessWebsite": "موقع العمل",
+        "contactEmail": "البريد الإلكتروني للاتصال",
+        "primaryContact": "جهة الاتصال الأساسية (المالك)",
+        "ownerName": "اسم المالك",
+        "ownerEmail": "البريد الإلكتروني للمالك",
+        "organizationProfile": "ملف تعريف المؤسسة",
+        "administrativeGovernance": "الحوكمة الإدارية",
+        "verificationStatus": "حالة التحقق",
+        "verifiedPartner": "شريك موثّق",
+        "pendingReview": "قيد المراجعة",
+        "flaggedContent": "محتوى مُبلغ عنه",
+        "restricted": "مقيّد",
+        "clear": "مسح",
+        "operationalStatus": "الحالة التشغيلية",
+        "operational": "تشغيلي",
+        "verifyAccount": "تحقق من حساب المؤسسة",
+        "flag": "وضع علامة",
+        "unflag": "إزالة العلامة",
+        "suspend": "تعليق",
+        "unsuspend": "رفع التعليق",
+        "verified": "تم التحقق",
+        "flagged": "تم الإبلاغ",
+        "suspended": "مُعلّق"
+      },
+      "toast": {
+        "verified": "{name} تم التحقق.",
+        "flagToggled": "تم تبديل علامة {name}.",
+        "suspensionToggled": "تم تبديل تعليق {name}."
+      }
+    },
+    "enterprises": {
+      "title": "سجل الشركات",
+      "description": "العارضون والمشاركون من الشركات",
+      "loadingRegistry": "جارٍ تحميل السجل…",
+      "noEnterprises": "لا توجد شركات",
+      "exhibition": "المعرض",
+      "table": {
+        "company": "الشركة",
+        "industry": "الصناعة",
+        "status": "الحالة"
+      },
+      "detail": {
+        "engagementOverview": "نظرة عامة على التفاعل",
+        "stands": "الأكشاك",
+        "leads": "العملاء المحتملون",
+        "meetings": "الاجتماعات",
+        "exhibitorProfile": "ملف العارض",
+        "companyName": "اسم الشركة",
+        "joinDate": "تاريخ الانضمام",
+        "brandWebsite": "موقع العلامة التجارية",
+        "businessEmail": "البريد الإلكتروني التجاري",
+        "authorizedRepresentative": "الممثل المفوض",
+        "fullName": "الاسم الكامل",
+        "directEmail": "البريد الإلكتروني المباشر",
+        "aboutEnterprise": "حول المؤسسة",
+        "administrativeGovernance": "الحوكمة الإدارية",
+        "verificationStatus": "حالة التحقق",
+        "verifiedPartner": "شريك موثوق",
+        "pendingReview": "قيد المراجعة",
+        "flaggedContent": "محتوى م flagged",
+        "restricted": "مقيد",
+        "clear": "مسح",
+        "operationalStatus": "الحالة التشغيلية",
+        "active": "نشط",
+        "verifyAccount": "تحقق من حساب المؤسسة",
+        "flag": "وضع علامة",
+        "unflag": "إزالة العلامة",
+        "suspend": "تعليق",
+        "unsuspend": "رفع التعليق",
+        "verified": "موثق",
+        "flagged": "معلم",
+        "suspended": "معلق",
+        "enterprisePartner": "شريك المؤسسة"
+      }
+    },
+    "approvals": {
+      "organizer": {
+        "title": "تسجيلات المنظمين",
+        "description": "مراجعة والموافقة على طلبات حسابات المنظمين.",
+        "loading": "جارٍ التحميل…",
+        "tabs": {
+          "all": "الكل",
+          "pending": "قيد الانتظار",
+          "approved": "معتمد",
+          "rejected": "مرفوض"
+        },
+        "totalCount": "{count} مجموع",
+        "noRegistrations": "لم يتم العثور على تسجيلات منظمين لهذه الحالة.",
+        "field": {
+          "organization": "المنظمة",
+          "type": "النوع",
+          "location": "الموقع",
+          "phone": "الهاتف",
+          "proEmail": "البريد الإلكتروني المهني",
+          "website": "الموقع الإلكتروني"
+        },
+        "status": {
+          "pending_approval": "في انتظار الموافقة",
+          "approved": "معتمد",
+          "rejected": "مرفوض"
+        },
+        "error": {
+          "loadFailed": "فشل في تحميل التسجيلات",
+          "approveFailed": "فشل في الموافقة",
+          "rejectFailed": "فشل في الرفض"
+        },
+        "rejectionReasonPrompt": "سبب الرفض (اختياري):"
+      },
+      "enterprise": {
+        "title": "تسجيلات المؤسسات",
+        "description": "مراجعة والموافقة على طلبات حسابات المؤسسات.",
+        "loading": "جارٍ التحميل…",
+        "tabs": {
+          "all": "الكل",
+          "pending": "قيد الانتظار",
+          "approved": "معتمد",
+          "rejected": "مرفوض"
+        },
+        "totalCount": "{count} مجموع",
+        "noRegistrations": "لم يتم العثور على تسجيلات مؤسسات لهذه الحالة.",
+        "field": {
+          "contact": "جهة الاتصال",
+          "employees": "{count} موظف",
+          "founded": "تأسست في {year}",
+          "linkedin": "لينكدإن"
+        },
+        "status": {
+          "pending_approval": "في انتظار الموافقة",
+          "approved": "معتمد",
+          "rejected": "مرفوض"
+        },
+        "registeredOn": "مسجل في {date}",
+        "error": {
+          "loadFailed": "فشل في تحميل التسجيلات",
+          "approveFailed": "فشل في الموافقة",
+          "rejectFailed": "فشل في الرفض"
+        },
+        "rejectionReasonPrompt": "سبب الرفض (اختياري):"
+      }
+    },
+    "enterpriseJoinRequests": {
+      "title": "طلبات انضمام المؤسسات",
+      "eventPlaceholder": "الفعالية {id}",
+      "error": {
+        "loadFailed": "فشل في تحميل الطلبات"
+      },
+      "tabs": {
+        "awaitingApproval": "في انتظار الموافقة",
+        "pendingPayment": "في انتظار الدفع",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوضة"
+      },
+      "searchPlaceholder": "ابحث بالاسم المؤسسة أو البريد الإلكتروني…",
+      "requestsFound": "تم العثور على {total} طلب",
+      "noRequests": "لا توجد طلبات {status} موجودة",
+      "table": {
+        "enterprise": "المؤسسة",
+        "contact": "جهة الاتصال",
+        "industry": "الصناعة",
+        "history": "التاريخ",
+        "historyApproved": "موافق عليها",
+        "status": "الحالة",
+        "actions": "الإجراءات",
+        "approvedCount": "{count} تمت الموافقة عليها",
+        "suspended": "موقوفة"
+      },
+      "approve": "الموافقة",
+      "reject": "رفض",
+      "approvedToast": "تمت الموافقة على {name}",
+      "rejectedToast": "تم رفض {name}",
+      "approveFailed": "فشل في الموافقة",
+      "rejectFailed": "فشل في الرفض",
+      "failedToLoad": "فشل في تحميل الطلبات",
+      "rejectModal": {
+        "title": "رفض الطلب",
+        "description": "رفض طلب انضمام {name}",
+        "reasonLabel": "السبب",
+        "reasonOptional": "(اختياري)",
+        "reasonPlaceholder": "اشرح سبب رفض الطلب…",
+        "reject": "رفض"
+      },
+      "statusBadges": {
+        "pendingPayment": "في انتظار الدفع",
+        "pendingAdminApproval": "في انتظار الموافقة",
+        "requested": "مطلوب",
+        "approved": "تمت الموافقة",
+        "rejected": "مرفوض"
+      }
+    },
+    "finance": {
+      "title": "لوحة التحكم المالية",
+      "description": "المعاملات الموحدة، تسوية المدفوعات، وتاريخ مراجعة المدفوعات.",
+      "stats": {
+        "totalVolume": "إجمالي الحجم",
+        "settled": "مسوى",
+        "unpaid": "غير مدفوع"
+      },
+      "actions": {
+        "markAsPaid": "تمييز كمدفوع"
+      },
+      "summary": {
+        "totalVolume": "إجمالي الحجم",
+        "settled": "مسوى",
+        "unpaid": "غير مدفوع"
+      },
+      "filters": {
+        "sourceType": "نوع المصدر",
+        "payoutStatus": "حالة الدفع",
+        "receiverType": "نوع المتلقي",
+        "all": "الكل",
+        "eventTicket": "تذكرة الحدث",
+        "marketplace": "السوق",
+        "standFee": "رسوم الكشك",
+        "unpaid": "غير مدفوع",
+        "processing": "قيد المعالجة",
+        "paid": "مدفوع",
+        "pending": "قيد الانتظار",
+        "completed": "مكتمل",
+        "failed": "فشل",
+        "organizer": "المنظم",
+        "enterprise": "المؤسسة",
+        "platform": "المنصة"
+      },
+      "transactionsTable": {
+        "type": "النوع",
+        "amount": "المبلغ",
+        "payer": "الدافع",
+        "receiver": "المتلقي",
+        "status": "الحالة",
+        "payoutStatus": "حالة الدفع",
+        "date": "التاريخ",
+        "actions": "الإجراءات",
+        "markAsPaid": "تمييز كمدفوع",
+        "noAction": "لا توجد إجراءات",
+        "noTransactions": "لا توجد معاملات للمرشحات المختارة."
+      },
+      "payouts": {
+        "title": "تاريخ المدفوعات",
+        "receiver": "المتلقي",
+        "amount": "المبلغ",
+        "admin": "المسؤول",
+        "date": "التاريخ",
+        "note": "ملاحظة",
+        "actions": "الإجراءات",
+        "noRecords": "لا توجد سجلات للمدفوعات حتى الآن.",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "deleteConfirm": "هل تريد حذف سجل تاريخ الدفع هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+        "deleteSuccess": "تم حذف تاريخ الدفع بنجاح",
+        "deleteFailed": "فشل في حذف تاريخ الدفع",
+        "editSuccess": "تم تحديث تاريخ الدفع بنجاح",
+        "editFailed": "فشل في تحديث تاريخ الدفع",
+        "invalidId": "معرف دفع غير صالح",
+        "confirmTitle": "تأكيد تسوية الدفع",
+        "confirmDescription": "أنت تقوم بتسوية {source} بمبلغ {amount}.",
+        "optionalNote": "ملاحظة اختيارية",
+        "notePlaceholder": "ملاحظة التسوية (اختياري)",
+        "editTitle": "تعديل تاريخ الدفع",
+        "statusLabel": "الحالة",
+        "completed": "مكتمل",
+        "pending": "قيد الانتظار"
+      }
+    },
+    "subscriptions": {
+      "title": "الاشتراكات",
+      "description": "عرض وتجاوز خطط الفوترة لأي منظمة",
+      "stats": {
+        "totalOrganizations": "إجمالي المنظمات",
+        "proPlans": "خطط PRO",
+        "freePlans": "خطط FREE"
+      },
+      "table": {
+        "organization": "المنظمة",
+        "plan": "الخطة",
+        "status": "الحالة",
+        "actions": "الإجراءات"
+      },
+      "loading": "جارٍ تحميل الاشتراكات…",
+      "noSubscriptions": "لم يتم العثور على اشتراكات",
+      "upgrade": "ترقية",
+      "downgrade": "تخفيض",
+      "cancel": "إلغاء",
+      "alreadyFree": "تعمل بالفعل على الخطة المجانية",
+      "cancelToFree": "الإلغاء إلى الخطة المجانية",
+      "failedToLoad": "فشل تحميل الاشتراكات",
+      "actionFailed": "فشل الإجراء",
+      "toast": {
+        "switched": "{name} تم التبديل إلى {plan}.",
+        "cancelled": "تم إلغاء اشتراك {name}."
+      }
+    },
+    "monitoring": {
+      "title": "مراقبة المنصة",
+      "description": "صحة الخادم، حالة قاعدة البيانات، والحوادث.",
+      "lastRefresh": "آخر تحديث: {time}",
+      "degradedAlert": {
+        "title": "تدهور المنصة",
+        "message": "تبلغ خدمة أو أكثر عن مشاكل. يُرجى التفكير في إنشاء حادث."
+      },
+      "health": {
+        "overall": "الصحة العامة",
+        "mongodb": "مونغو دي بي",
+        "redis": "ريديس",
+        "apiProcess": "عملية API",
+        "uptime": "مدة التشغيل: {uptime}",
+        "latency": "الكمون: {ms} ملليثانية",
+        "notConfigured": "غير مكون",
+        "pidLabel": "معرّف العملية: {pid}",
+        "status": {
+          "healthy": "سليم",
+          "ok": "جيد",
+          "degraded": "متدهور",
+          "error": "خطأ",
+          "notConfigured": "غير مكون"
+        }
+      },
+      "incidents": {
+        "title": "الحوادث الأخيرة",
+        "count": "{count} حوادث",
+        "noIncidents": "لا توجد حوادث مسجلة."
+      },
+      "createIncident": {
+        "title": "إنشاء حادث",
+        "titleLabel": "العنوان",
+        "titleRequired": "العنوان مطلوب",
+        "titlePlaceholder": "عنوان مختصر للحادث",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "ماذا حدث؟",
+        "severityLabel": "الشدة",
+        "low": "منخفضة",
+        "medium": "متوسطة",
+        "high": "عالية",
+        "critical": "حرجة",
+        "create": "إنشاء حادث",
+        "creating": "جارٍ الإنشاء…",
+        "failed": "فشل في إنشاء الحادث"
+      },
+      "kpi": {
+        "activeVisitors": "الزوار النشطون",
+        "activeStands": "الأجنحة النشطة",
+        "ongoingMeetings": "الاجتماعات الجارية",
+        "messagesPerMin": "الرسائل / دقيقة"
+      },
+      "charts": {
+        "userDistribution": "توزيع المستخدمين"
+      },
+      "failedToLoad": "فشل في تحميل بيانات المراقبة"
+    },
+    "audit": {
+      "title": "سجلات التدقيق",
+      "description": "مسار الحوكمة الكامل — كل إجراء إداري، مع ختم زمني.",
+      "filters": {
+        "action": "الإجراء",
+        "entityType": "نوع الكيان",
+        "actorId": "معرّف الفاعل",
+        "actorPlaceholder": "معرّف المستخدم…",
+        "from": "من",
+        "to": "إلى",
+        "allActions": "كل الإجراءات",
+        "allEntities": "كل الكيانات",
+        "event": "الحدث",
+        "user": "المستخدم",
+        "organization": "المنظمة",
+        "subscription": "الاشتراك",
+        "incident": "الحادث",
+        "apply": "تطبيق"
+      },
+      "table": {
+        "title": "سجلات الإدخالات",
+        "entriesCount": "{count} إدخالات",
+        "timestamp": "الطابع الزمني",
+        "action": "الإجراء",
+        "entity": "الكيان",
+        "actorId": "معرّف الفاعل",
+        "details": "التفاصيل",
+        "noEntries": "لم يتم العثور على سجلات تدقيق."
+      },
+      "failedToLoad": "فشل في تحميل سجلات التدقيق"
+    },
+    "incidents": {
+      "title": "إدارة الحوادث",
+      "description": "التحقيق، التخفيف، وحل حوادث المنصة.",
+      "loading": "جار التحميل…",
+      "genericError": "خطأ",
+      "tabs": {
+        "all": "الكل",
+        "open": "مفتوحة",
+        "investigating": "قيد التحقيق",
+        "mitigating": "جار التخفيف",
+        "resolved": "تم الحل"
+      },
+      "list": {
+        "title": "الحوادث",
+        "total": "إجمالي {count}",
+        "noIncidents": "لم يتم العثور على حوادث."
+      },
+      "create": {
+        "newIncident": "حادثة جديدة",
+        "titleLabel": "العنوان",
+        "titleRequired": "العنوان مطلوب",
+        "titlePlaceholder": "مثال: انتهاء مهلة اتصال قاعدة البيانات",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "ما الذي يحدث؟",
+        "severityLabel": "الخطورة",
+        "low": "منخفض",
+        "medium": "متوسط",
+        "high": "عالي",
+        "critical": "حرج",
+        "create": "إنشاء",
+        "creating": "جار الإنشاء…"
+      },
+      "detail": {
+        "adminNotes": "ملاحظات المسؤول",
+        "notesPlaceholder": "أضف ملاحظات التحقيق، خطوات التخفيف…",
+        "saveNotes": "حفظ الملاحظات",
+        "investigate": "تحقيق",
+        "mitigate": "تخفيف",
+        "markResolved": "تحديد كمُحَل",
+        "resolved": "تم الحل ✓",
+        "saving": "جارِ الحفظ…"
+      },
+      "failedToLoad": "فشل في تحميل الحوادث"
+    },
+    "payments": {
+      "title": "مراجعات الدفع",
+      "disabledMessage": "تم تعطيل هذه الصفحة مؤقتًا بينما يتم استقرار سير العمل الخاص بمراجعة الدفع."
+    },
+    "sessions": {
+      "managementTitle": "إدارة الجلسات",
+      "description": "استورد من جدول أحداثك أو أنشئ يدويًا — ثم اضغط بدء على أي جلسة مجدولة للبث المباشر.",
+      "importFromSchedule": "استيراد من الجدول",
+      "newSession": "جلسة جديدة",
+      "form": {
+        "titleLabel": "العنوان",
+        "titlePlaceholder": "الكلمة الافتتاحية",
+        "speakerLabel": "المتحدث",
+        "speakerPlaceholder": "د. جين سميث",
+        "startTime": "وقت البدء",
+        "endTime": "وقت الانتهاء",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "وصف اختياري...",
+        "createSession": "إنشاء جلسة",
+        "creating": "جارٍ الإنشاء…",
+        "syncing": "جارٍ المزامنة…"
+      },
+      "validation": {
+        "requiredFields": "العنوان، ووقت البدء، ووقت الانتهاء مطلوبة.",
+        "timeOrder": "يجب أن يكون وقت البدء قبل وقت الانتهاء.",
+        "createFailed": "فشل في إنشاء الجلسة. تحقق من أن التواريخ ضمن نطاق الحدث."
+      },
+      "status": {
+        "scheduled": "مجدولة",
+        "live": "مباشر",
+        "ended": "انتهت",
+        "transcriptActive": "النص المنسوخ فعال"
+      },
+      "actions": {
+        "start": "ابدأ",
+        "end": "إنهاء"
+      },
+      "timeline": {
+        "legend": {
+          "scheduled": "مجدولة",
+          "live": "مباشر",
+          "ended": "انتهت"
+        }
+      },
+      "confirm": {
+        "startTitle": "بدء الجلسة",
+        "startMessage": "هل تريد بدء الجلسة \"{name}\" الآن؟ سيتم إعلام المشاهدين.",
+        "startLabel": "ابدأ الآن",
+        "endTitle": "إنهاء الجلسة",
+        "endMessage": "هل تريد إنهاء الجلسة \"{name}\" الآن؟ لا يمكن التراجع عن ذلك.",
+        "endLabel": "انهِ الآن"
+      },
+      "toast": {
+        "startSuccess": "تم بدء الجلسة \"{name}\"",
+        "endSuccess": "تم إنهاء الجلسة \"{name}\"",
+        "startFailed": "فشل في بدء الجلسة",
+        "endFailed": "فشل في إنهاء الجلسة",
+        "syncSuccess": "تم استيراد {count} جلسة من الجدول",
+        "syncFailed": "لم يتم العثور على جدول لهذا الحدث. يرجى إضافة فترات المؤتمر في منشئ جدول الحدث أولاً."
+      },
+      "noSessions": "لا توجد جلسات بعد."
+    },
+    "organizerReport": {
+      "title": "تقرير المنظم",
+      "description": "الاستخبارات التجارية وأداء الحدث · تم التحديث {time}",
+      "keyMetrics": "المقاييس الرئيسية",
+      "kpi": {
+        "totalVisitors": "إجمالي الزوار",
+        "enterpriseRate": "معدل المؤسسة",
+        "engagementScore": "درجة التفاعل",
+        "leadsGenerated": "العملاء المحتملين المتولدين",
+        "meetingsBooked": "الاجتماعات المحجوزة",
+        "chatInteractions": "تفاعلات الدردشة"
+      },
+      "revenue": {
+        "title": "أداء الإيرادات",
+        "ticketRevenue": "إيرادات التذاكر",
+        "standRevenue": "إيرادات الأجنحة",
+        "totalGross": "إجمالي الإيرادات الإجمالية",
+        "verifiedIncome": "الدخل المؤكد",
+        "revenueMix": "مزيج الإيرادات",
+        "donutCenter": {
+          "share": "الحصة",
+          "mixPercent": "النسبة المئوية للمزيج"
+        },
+        "stand": "الجناح",
+        "ticket": "التذكرة",
+        "noRevenueData": "لا توجد بيانات إيرادات متاحة حتى الآن.",
+        "vsEventAvg": "+12% مقارنة بمتوسط الحدث"
+      },
+      "trends": {
+        "title": "اتجاهات الأداء",
+        "visitorsOverTime": "الزوار عبر الزمن",
+        "engagementOverTime": "التفاعل عبر الزمن",
+        "leadGeneration": "أداء توليد العملاء المحتملين",
+        "noVisitorData": "لا توجد بيانات زوار حتى الآن.",
+        "noEngagementData": "لا توجد بيانات تفاعل حتى الآن.",
+        "noLeadData": "لا توجد بيانات عملاء محتملين حتى الآن."
+      },
+      "safety": {
+        "title": "السلامة والمراقبة",
+        "totalFlags": "إجمالي الإشارات",
+        "resolved": "تم الحل",
+        "resolutionRate": "معدل الحل",
+        "greatModeration": "معدل مراقبة ممتاز",
+        "needsAttention": "بعض الإشارات تحتاج إلى انتباه"
+      },
+      "export": {
+        "exporting": "جارِ التصدير…",
+        "retry": "حاول مرة أخرى",
+        "exportFailed": "فشل تصدير ملف PDF."
+      }
+    },
+    "eventLiveMonitoring": {
+      "title": "المراقب المباشر",
+      "backToEvent": "العودة إلى الحدث",
+      "eventFallback": "الحدث",
+      "live": "مباشر",
+      "updated": "تم التحديث {time}",
+      "kpis": {
+        "activeUsers": "المستخدمون النشطون",
+        "messagesPerMin": "الرسائل / دقيقة",
+        "standVisits": "زيارات الأجنحة",
+        "chatSessions": "جلسات الدردشة",
+        "safetyFlags": "علامات السلامة"
+      },
+      "charts": {
+        "messagesPerMin": "الرسائل / دقيقة (آخر 15 دقيقة)",
+        "collectingData": "جارٍ جمع البيانات…",
+        "topActiveStands": "الأجنحة النشطة الأعلى",
+        "userDistribution": "توزيع المستخدمين",
+        "noActivity": "لا توجد نشاطات",
+        "noActiveUsers": "لا يوجد مستخدمون نشطون"
+      },
+      "activeUsers": {
+        "title": "المستخدمون النشطون ({count})",
+        "online": "متصل",
+        "noUsers": "لا يوجد مستخدمون نشطون",
+        "since": "منذ {time}"
+      },
+      "safetyFlags": {
+        "title": "علامات السلامة ({count} حديثة)",
+        "attention": "انتباه",
+        "allClear": "لا توجد علامات مفتوحة — الوضع آمن",
+        "highPriority": "أولوية عالية",
+        "investigate": "التحقيق"
+      },
+      "error": {
+        "failedToFetch": "فشل في جلب المقاييس",
+        "back": "عودة"
+      }
+    },
+    "reports": {
+      "description": "ذكاء الأعمال وأداء الفعالية",
+      "sections": {
+        "keyMetrics": "المقاييس الرئيسية",
+        "revenuePerformance": "أداء الإيرادات"
+      },
+      "kpi": {
+        "totalVisitors": "إجمالي الزوار"
+      },
+      "charts": {
+        "leadGenPerformance": "أداء توليد العملاء المحتملين"
+      }
+    }
+  },
+  "organizer": {
+    "dashboard": {
+      "welcome": "مرحبًا بعودتك، {name}",
+      "subtitle": "إليك ما يحدث في أحداثك اليوم.",
+      "lastSynced": "آخر تزامن: {time}",
+      "waitingSync": "في انتظار أول تزامن...",
+      "refresh": "تحديث",
+      "exportPdf": "تصدير الأداء العام (PDF)",
+      "errorRefresh": "غير قادر على تحديث بيانات لوحة التحكم الآن.",
+      "errorExport": "فشل في تصدير التقرير العام.",
+      "exportSuccess": "تم تصدير تقرير الأداء العام بنجاح!",
+      "stats": {
+        "totalEvents": "إجمالي الأحداث",
+        "activeEvents": "الأحداث النشطة",
+        "pendingApproval": "بانتظار الموافقة",
+        "totalVisitors": "إجمالي الزوار"
+      },
+      "engagementScore": "مؤشر التفاعل",
+      "leadsGenerated": "العملاء المحتملون المتولدون",
+      "safetyResolution": "حل السلامة",
+      "recentEvents": {
+        "title": "الأحداث الأخيرة",
+        "searchPlaceholder": "ابحث عن حدث",
+        "filters": {
+          "all": "الكل",
+          "active": "نشط",
+          "pending": "معلق",
+          "closed": "مغلق"
+        },
+        "loading": "جارٍ تحميل الأحداث...",
+        "empty": "لم يتم العثور على أحداث. ابدأ بإنشاء واحد!",
+        "noMatch": "لا توجد أحداث تطابق مرشحك."
+      },
+      "performanceSpotlight": {
+        "title": "تسليط الضوء على الأداء",
+        "tip": "أضف جداول زمنية مفصلة واكمل ملفات الأجنحة لزيادة التحويل من الزوار إلى عملاء محتملين.",
+        "enterpriseParticipation": "مشاركة الشركات",
+        "chatInteractions": "تفاعلات الدردشة",
+        "improveEvents": "تحسين الأحداث"
+      }
+    },
+    "events": {
+      "title": "فعالياتي",
+      "subtitle": "إدارة وتتبع طلبات فعالياتك.",
+      "newEvent": "طلب فعالية جديدة",
+      "searchPlaceholder": "ابحث بالعنوان أو الحالة…",
+      "empty": "لم تقدم أي طلبات فعاليات بعد.",
+      "noMatch": "لا توجد فعاليات تطابق بحثك.",
+      "table": {
+        "event": "الفعالية",
+        "dates": "التواريخ",
+        "enterprises": "الشركات",
+        "payment": "الدفع",
+        "status": "الحالة",
+        "actions": "الإجراءات"
+      },
+      "actions": {
+        "view": "عرض",
+        "payNow": "ادفع الآن",
+        "start": "ابدأ",
+        "analytics": "التحليلات"
+      },
+      "states": {
+        "approved": "معتمد",
+        "rejected": "مرفوض",
+        "paymentDone": "تم الدفع",
+        "live": "مباشر",
+        "closed": "مغلق",
+        "inProgress": "قيد التنفيذ",
+        "upcoming": "قادم",
+        "pendingApproval": "في انتظار الموافقة",
+        "waitingForPayment": "في انتظار الدفع",
+        "paymentProofSubmitted": "جارِ مراجعة الدفع"
+      },
+      "confirm": {
+        "closeTitle": "إغلاق الفعالية",
+        "closeMessage": "هل أنت متأكد من رغبتك في إغلاق هذه الفعالية؟"
+      },
+      "toast": {
+        "startFailed": "فشل في بدء الفعالية",
+        "closeFailed": "فشل في إغلاق الفعالية"
+      }
+    },
+    "newEvent": {
+      "title": "تقديم طلب فعالية",
+      "subtitle": "املأ التفاصيل أدناه. سيتم مراجعة طلبك من قبل المسؤول.",
+      "infoBanner": "بمجرد تقديم الطلب، سيقوم المسؤول بمراجعته. إذا تم الموافقة، ستتلقى فاتورة دفع. بعد تأكيد الدفع، سيتم إنشاء روابط وصول للمؤسسات والزوار تلقائيًا.",
+      "sections": {
+        "basicInfo": "معلومات أساسية",
+        "participationDetails": "تفاصيل المشاركة",
+        "pricing": "التسعير",
+        "schedule": "جدول الفعالية *",
+        "additionalInfo": "معلومات إضافية",
+        "additionalInfoOptional": "(اختياري)"
+      },
+      "labels": {
+        "eventTitle": "عنوان الفعالية *",
+        "description": "الوصف",
+        "category": "الفئة",
+        "startDate": "تاريخ البدء *",
+        "endDate": "تاريخ الانتهاء *",
+        "timezone": "المنطقة الزمنية للفعالية",
+        "timezoneHint": "يتم تفسير فترات الجدول الزمني في هذه المنطقة الزمنية لجميع المستخدمين.",
+        "location": "المكان",
+        "tags": "العلامات (مفصولة بفواصل)",
+        "bannerImage": "رابط صورة البانر",
+        "uploadBanner": "رفع صورة البانر",
+        "selectedFile": "المحدد: {filename} (سيتم رفعها عند التقديم)",
+        "fileHint": "يمكنك رفع ملف أو لصق رابط خارجي.",
+        "scheduleHint": "تستخدم فترات الجدول الزمني تنسيق 24 ساعة (HH:mm). إذا انتهت الفترة قبل أن تبدأ، تستمر في اليوم التالي.",
+        "daysGenerated": "{count} يوم/أيام · أضف فترات زمنية في قسم الجدول أدناه",
+        "numEnterprises": "عدد المؤسسات المشاركة *",
+        "extendedDetails": "تفاصيل الفعالية الموسعة *",
+        "standPrice": "سعر الكشك لكل مؤسسة (MAD) *",
+        "standPriceHint": "المبلغ الذي يدفعه كل مؤسسة لاستضافة كشك في هذه الفعالية.",
+        "eventType": "نوع الفعالية للزوار *",
+        "eventTypeFree": "مجاني — يحضر الزوار بدون تكلفة",
+        "eventTypePaid": "مدفوع — يشتري الزوار تذكرة",
+        "visitorPrice": "سعر تذكرة الزائر (MAD) *",
+        "visitorPriceHint": "السعر الذي يدفعه الزوار لدخول الفعالية.",
+        "scheduleDescription": "يتم إنشاء الأيام تلقائيًا من تواريخ البدء والانتهاء الخاصة بك. أضف فترات زمنية لكل يوم.",
+        "additionalInfoPlaceholder": "أي معلومات ذات صلة أخرى للمسؤول...",
+        "scheduleAutoGenerated": "سيتم إنشاء أيام الجدول تلقائيًا من نطاق التواريخ."
+      },
+      "placeholders": {
+        "eventTitle": "مثال: معرض ابتكار التقنية 2026",
+        "description": "صف ما يمكن أن يتوقعه الحضور...",
+        "category": "المنصة الافتراضية",
+        "tags": "مثال: الذكاء الاصطناعي، التقنية، الشركات الناشئة",
+        "bannerUrl": "https://example.com/banner.jpg أو /uploads/event_banners/...",
+        "numEnterprises": "مثال: 20",
+        "extendedDetails": "قدّم معلومات مفصلة: الأهداف، الجمهور المستهدف، الميزات الخاصة، إلخ.",
+        "standPrice": "مثال: 500",
+        "ticketPrice": "مثال: 25.00"
+      },
+      "buttons": {
+        "submit": "تقديم الطلب",
+        "submitting": "جارٍ التقديم…",
+        "back": "عودة"
+      },
+      "validation": {
+        "titleRequired": "عنوان الفعالية مطلوب.",
+        "enterprisesMin": "يجب أن يكون عدد المؤسسات المشاركة على الأقل 1.",
+        "standPriceRequired": "سعر الكشك مطلوب ويجب أن يكون ≥ 0.",
+        "ticketPriceRequired": "سعر التذكرة مطلوب للفعاليات المدفوعة ويجب أن يكون ≥ 0.",
+        "endDateInvalid": "يجب أن يكون تاريخ الانتهاء في نفس اليوم أو بعد تاريخ البدء.",
+        "startDatePast": "لا يمكن أن يكون تاريخ البدء في الماضي بالنسبة للمنطقة الزمنية المحددة.",
+        "dateRequired": "يرجى اختيار تاريخ بدء وتاريخ انتهاء.",
+        "scheduleEmpty": "جدول الفعالية فارغ.",
+        "daySlotsRequired": "اليوم {N} يجب أن يحتوي على فترة زمنية واحدة على الأقل.",
+        "daySlotsTimeMissing": "اليوم {N}: كل فترة تحتاج إلى وقت بدء ووقت انتهاء.",
+        "daySlotsFormatInvalid": "اليوم {N}: استخدم تنسيق 24 ساعة (HH:mm) لجميع الفترات.",
+        "daySlotsIdentical": "اليوم {N}: لا يمكن أن يكون وقت البدء ونهاية الفترة متماثلين.",
+        "dayOneSlotPast": "اليوم 1: {time} في الماضي. يرجى اختيار وقت مستقبلي لجدول اليوم.",
+        "daySlotDescriptionMissing": "اليوم {N}: يرجى وصف النشاط للفترة من {start} إلى {end}.",
+        "extendedDetailsRequired": "تفاصيل الفعالية الموسعة مطلوبة (على الأقل 10 أحرف).",
+        "submitFailed": "فشل في تقديم طلب الفعالية. يرجى المحاولة مرة أخرى."
+      },
+      "categories": {
+        "exhibition": "معرض",
+        "conference": "مؤتمر",
+        "webinar": "ندوة عبر الإنترنت",
+        "networking": "تواصل مهني",
+        "workshop": "ورشة عمل",
+        "hackathon": "هاكاثون"
+      }
+    },
+    "eventDetail": {
+      "states": {
+        "pendingReview": "قيد المراجعة",
+        "approvedPendingPayment": "موافق عليه وينتظر الدفع",
+        "rejected": "مرفوض",
+        "approvedWaitingPayment": "موافق عليه - في انتظار الدفع",
+        "proofUnderReview": "دليل الدفع قيد المراجعة",
+        "paymentConfirmed": "تم تأكيد الدفع",
+        "eventLive": "الفعالية مباشرة",
+        "eventEnded": "انتهت الفعالية"
+      },
+      "editEvent": "تعديل معلومات الفعالية",
+      "form": {
+        "eventTitle": "عنوان الفعالية",
+        "urlSlug": "رابط URL (معرف سهل)",
+        "timezone": "المنطقة الزمنية للفعالية",
+        "registrationDeadline": "موعد انتهاء التسجيل",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "category": "الفئة",
+        "description": "الوصف",
+        "location": "الموقع",
+        "tags": "الوسوم (مفصولة بفواصل)",
+        "standPrice": "سعر الجناح (درهم)",
+        "paidEvent": "فعالية مدفوعة للزوار",
+        "ticketPrice": "سعر التذكرة",
+        "currency": "درهم",
+        "extendedDetails": "تفاصيل موسعة",
+        "additionalInfo": "معلومات إضافية"
+      },
+      "buttons": {
+        "save": "حفظ التغييرات",
+        "cancel": "إلغاء",
+        "editInfo": "تعديل المعلومات",
+        "analytics": "التحليلات",
+        "report": "تقرير",
+        "start": "بدء الفعالية",
+        "close": "إغلاق الفعالية"
+      },
+      "toast": {
+        "updateFailed": "فشل في تحديث الفعالية",
+        "startFailed": "فشل في بدء الفعالية.",
+        "closeFailed": "فشل في إغلاق الفعالية.",
+        "proofFailed": "فشل في إرسال إثبات الدفع.",
+        "reportFailed": "فشل في تحميل التقرير."
+      },
+      "tabs": {
+        "overview": "نظرة عامة",
+        "schedule": "الجدول الزمني",
+        "conferences": "المؤتمرات",
+        "links": "الروابط"
+      },
+      "approvalWorkflow": {
+        "title": "سير عمل الموافقة",
+        "steps": {
+          "requestSubmitted": {
+            "label": "تم تقديم الطلب",
+            "description": "في انتظار مراجعة المسؤول"
+          },
+          "adminApproved": {
+            "label": "تمت الموافقة من قبل المسؤول",
+            "description": "الدفع المطلوب: {amount} درهم",
+            "descriptionNoAmount": "الدفع مطلوب"
+          },
+          "paymentConfirmed": {
+            "label": "تم تأكيد الدفع",
+            "description": "تم إنشاء روابط الوصول"
+          },
+          "eventLive": {
+            "label": "الفعالية مباشرة",
+            "description": "الفعالية جارية حالياً"
+          },
+          "eventClosed": {
+            "label": "الفعالية مغلقة",
+            "description": "انتهت الفعالية"
+          }
+        }
+      },
+      "payment": {
+        "actionRequired": "مطلوب إجراء",
+        "finalizePayment": "استكمال الدفع",
+        "instruction": "لتفعيل فعاليتم وإنشاء روابط الضيوف، يرجى إرسال {amount} درهم إلى رقم الحساب البنكي للمنصة أدناه.",
+        "ribLabel": "رقم الحساب البنكي للمنصة",
+        "uploadProof": "تحميل الإثبات (صورة/بي دي إف)",
+        "chooseFile": "اختر ملفاً أو اسحبه هنا",
+        "fileHint": "PDF, JPG, PNG حتى 10 ميجابايت",
+        "urlPlaceholder": "...أو لصق رابط الإثبات هنا",
+        "submitProof": "إرسال إثبات الدفع",
+        "confirmMessage": "تأكيد أنك قد أرسلت الدفع إلى رقم الحساب المعروض وترغب في تقديم هذا الإثبات؟"
+      },
+      "banners": {
+        "proofUnderReview": {
+          "title": "دليل الدفع قيد المراجعة",
+          "message": "تم استلام إثبات الدفع الخاص بك وهو قيد المراجعة من قبل المسؤول. سيتم إعلامك بمجرد تأكيده."
+        },
+        "paymentConfirmed": {
+          "title": "تم تأكيد الدفع",
+          "message": "تم تأكيد الدفع الخاص بك. يمكنك الآن بدء فعاليتك."
+        },
+        "rejected": {
+          "title": "تم رفض طلب الفعالية",
+          "message": "لم تتم الموافقة على طلب الفعالية الخاص بك. يرجى التواصل مع المسؤول للمزيد من المعلومات."
+        }
+      },
+      "confirm": {
+        "startTitle": "بدء الفعالية",
+        "startMessage": "هل أنت متأكد من أنك تريد بدء هذه الفعالية؟ ستصبح مباشرة ومرئية للزوار.",
+        "closeTitle": "إغلاق الفعالية",
+        "closeMessage": "هل أنت متأكد من أنك تريد إغلاق هذه الفعالية؟ هذا الإجراء دائم."
+      },
+      "notFound": "الفعالية غير موجودة.",
+      "backToEvents": "العودة إلى الفعاليات",
+      "loadFailed": "تعذر تحميل تفاصيل الفعالية.",
+      "overview": {
+        "eventInformation": "معلومات الفعالية",
+        "pricing": "التسعير",
+        "inviteLinks": "روابط الدعوة",
+        "enterpriseInvite": "رابط دعوة الشركات",
+        "visitorInvite": "رابط دعوة الزوار",
+        "publicPage": "الصفحة العامة للفعالية",
+        "copy": "نسخ",
+        "copied": "تم النسخ!"
+      },
+      "schedule": {
+        "title": "جدول الفعالية",
+        "editSchedule": "تعديل الجدول",
+        "save": "حفظ الجدول",
+        "cancel": "إلغاء",
+        "noSchedule": "لا يوجد جدول مقدم",
+        "noDescription": "لا يوجد وصف",
+        "noSlots": "لا توجد فترات محددة لهذا اليوم.",
+        "past": "ماضي",
+        "crossDay": "يمتد إلى يوم آخر",
+        "nextDayBadge": "+1د",
+        "conferenceRoom": "قاعة المؤتمرات",
+        "beforeStart": "قبل البدء",
+        "overlapSpillover": "تداخل من اليوم {N}"
+      },
+      "conferences": {
+        "title": "جلسات المؤتمر",
+        "empty": "لا توجد جلسات مؤتمر مضبوطة.",
+        "subtitle": "إدارة قاعات المؤتمرات والتعيينات لهذه الفعالية."
+      },
+      "links": {
+        "title": "روابط الفعالية",
+        "subtitle": "الوصول و روابط المشاركة لفعاليتك.",
+        "enterpriseAccess": "وصول الشركات",
+        "visitorAccess": "وصول الزوار",
+        "noEnterpriseLink": "لم يتم إنشاء رابط للشركات بعد.",
+        "noVisitorLink": "لم يتم إنشاء رابط للزوار بعد.",
+        "linkNotAvailable": "الرابط غير متوفر"
+      },
+      "eventEnded": "انتهت الفعالية"
+    },
+    "eventAnalytics": {
+      "backToDetail": "العودة إلى تفاصيل الحدث",
+      "title": "مقاييس الأداء والتحليل",
+      "lastRefresh": "آخر تحديث: {time}",
+      "waitingRefresh": "في انتظار أول تحديث للبيانات...",
+      "coverage": "التغطية: {count} مقاييس · {count} مراحل القمع",
+      "export": "تصدير البيانات",
+      "exporting": "جارٍ الإنشاء...",
+      "exportSuccess": "تم تصدير التقرير بنجاح! يجب أن يبدأ التنزيل الخاص بك قريبًا.",
+      "errorLoad": "تعذر تحميل بيانات التحليلات.",
+      "errorExport": "فشل في تصدير التقرير. يرجى التحقق من الاتصال الخاص بك.",
+      "loading": "جارٍ تحليل بيانات الحدث...",
+      "notFound": "لم يتم العثور على الحدث",
+      "backToEvents": "العودة إلى قائمة الأحداث",
+      "insightNotReached": {
+        "title": "لم يتم الوصول إلى أفق الرؤية",
+        "message": "ستظهر التحليلات بمجرد انتقال الحدث إلى الحالة الحية وبدء المشاركين في التفاعل."
+      },
+      "viewTabs": {
+        "overview": "نظرة عامة",
+        "engagement": "التفاعل",
+        "enterprises": "الشركات"
+      },
+      "kpi": {
+        "participatingEnterprises": "الشركات المشاركة",
+        "uniqueVisitors": "الزوار الفريدون",
+        "engagementEvents": "فعاليات التفاعل",
+        "engagementRate": "معدل التفاعل",
+        "leadsCaptured": "العملاء المحتملين المقبوض عليهم",
+        "meetingsInitiated": "الاجتماعات المباشرة"
+      },
+      "keyPerformanceIndicators": "مؤشرات الأداء الرئيسية",
+      "searchMetrics": "ابحث في المقاييس…",
+      "funnel": {
+        "title": "توزيع القمع",
+        "absolute": "مطلق",
+        "percentage": "نسبة مئوية"
+      },
+      "enterpriseRoster": {
+        "title": "قائمة الشركات",
+        "searchPlaceholder": "ابحث عن الشركات…",
+        "showingCount": "عرض {count} من أصل {total} شركات",
+        "viewProfile": "عرض الملف الشخصي"
+      },
+      "enterpriseModal": {
+        "loading": "جلب الملف الشخصي...",
+        "verified": "تم التحقق",
+        "description": "الوصف",
+        "contactEmail": "البريد الإلكتروني للتواصل",
+        "website": "الموقع الإلكتروني",
+        "notAvailable": "غير متوفر",
+        "noDescription": "لم تقدم هذه الشركة وصفًا بعد.",
+        "close": "إغلاق الملف الشخصي",
+        "loadFailed": "فشل في تحميل ملف المنظمة."
+      },
+      "unnamedEnterprise": "شركة بدون اسم",
+      "generalCategory": "عام",
+      "timelineLabel": "الجدول الزمني",
+      "notScheduled": "غير مجدول",
+      "dataRecencyLabel": "حداثة البيانات",
+      "realTimeActive": "التحديث الآني مفعل"
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "unreadCount": "{count} غير مقروء",
+      "allCaughtUp": "تم الاطلاع على الجميع!",
+      "markAllRead": "وضع علامة مقروء للجميع",
+      "empty": "لا توجد إشعارات بعد.",
+      "markRead": "وضع علامة مقروء",
+      "timeLabels": {
+        "daysAgo": "منذ {X} أيام",
+        "hoursAgo": "منذ {X} ساعات",
+        "minutesAgo": "منذ {X} دقائق",
+        "justNow": "الآن فقط"
+      },
+      "types": {
+        "paymentRequired": "مطلوب الدفع",
+        "paymentConfirmed": "تم تأكيد الدفع",
+        "linksGenerated": "تم إنشاء الروابط",
+        "eventApproved": "تمت الموافقة على الحدث",
+        "eventRejected": "تم رفض الحدث",
+        "invitationSent": "تم إرسال الدعوة"
+      }
+    },
+    "subscription": {
+      "title": "خطط الاشتراك",
+      "subtitle": "اختر الخطة الأنسب لاحتياجات التنظيم الخاصة بك.",
+      "plans": {
+        "basic": {
+          "name": "أساسي",
+          "price": "$0/شهر",
+          "features": {
+            "events": "حدث واحد",
+            "visitors": "حتى 50 زائرًا",
+            "publicEvents": "الأحداث العامة فقط"
+          },
+          "currentPlan": "الخطة الحالية"
+        },
+        "pro": {
+          "name": "محترف",
+          "price": "$49/شهر",
+          "features": {
+            "events": "أحداث غير محدودة",
+            "visitors": "حتى 500 زائر",
+            "privateEvents": "الأحداث الخاصة",
+            "analytics": "تحليلات أساسية"
+          },
+          "upgrade": "الترقية إلى المحترف",
+          "recommended": "موصى به"
+        },
+        "enterprise": {
+          "name": "مؤسسي",
+          "price": "مخصص",
+          "features": {
+            "customLimits": "حدود زوار مخصصة",
+            "whiteLabeling": "علامة بيضاء",
+            "support": "دعم مخصص",
+            "apiAccess": "الوصول إلى API"
+          },
+          "contactSales": "اتصل بالمبيعات"
+        }
+      },
+      "perMonth": "/شهر"
+    },
+    "profile": {
+      "title": "إعدادات الملف الشخصي",
+      "subtitle": "قم بإدارة هويتك ووجود منظمتك على منصة IVEP.",
+      "sections": {
+        "basicInfo": "المعلومات الأساسية"
+      },
+      "fullName": {
+        "label": "الاسم الكامل",
+        "placeholder": "أدخل اسمك الكامل"
+      },
+      "email": {
+        "label": "البريد الإلكتروني (للقراءة فقط)",
+        "hint": "تتطلب تغييرات البريد الإلكتروني التحقق من الدعم."
+      },
+      "bio": {
+        "label": "نبذة قصيرة",
+        "placeholder": "أخبرنا قليلاً عن خلفيتك المهنية..."
+      },
+      "language": {
+        "label": "اللغة المفضلة"
+      },
+      "languages": {
+        "english": "الإنجليزية",
+        "spanish": "الإسبانية",
+        "french": "الفرنسية",
+        "arabic": "العربية"
+      },
+      "timezone": {
+        "label": "المنطقة الزمنية"
+      },
+      "actions": {
+        "update": "تحديث الملف الشخصي"
+      },
+      "messages": {
+        "updateSuccess": "تم تحديث الملف الشخصي بنجاح!",
+        "updateFailed": "فشل في تحديث الملف الشخصي."
+      },
+      "accountVerified": "تم التحقق من الحساب",
+      "fallbackOrgName": "منظم IVEP",
+      "joined": "انضم في {year}",
+      "help": {
+        "title": "هل تحتاج إلى مساعدة؟",
+        "description": "للتغييرات على مستوى المنظمة أو نقل الأدوار، يرجى الاتصال بفريق الدعم لدينا."
+      }
+    }
+  },
+  "enterprise": {
+    "dashboard": {
+      "workspaceLabel": "مساحة عمل المؤسسة",
+      "welcomeBack": "مرحبًا بعودتك،",
+      "welcome": "مرحبًا بعودتك، {name}",
+      "fallbackOrgName": "مؤسستك",
+      "summary": "لديك {count} عنصرًا ينتظرون انتباهك.",
+      "stat": {
+        "viewDetails": "عرض التفاصيل"
+      },
+      "pills": {
+        "live": "مباشر",
+        "upcoming": "قادم"
+      },
+      "kpi": {
+        "catalogItems": "عناصر الكتالوج",
+        "catalogSub": "{products} منتجات · {services} خدمات",
+        "activeStands": "الأجنحة النشطة",
+        "activeStandsSub": "عبر {count} فعالية/فعاليات",
+        "pendingRequests": "الطلبات المعلقة",
+        "pendingRequestsSub": "{count} استفسارًا إجماليًا",
+        "totalInquiries": "مجموع الاستفسارات",
+        "totalInquiriesSub": "تم التعامل مع {count}"
+      },
+      "eventParticipations": {
+        "title": "مشاركاتي في الفعاليات",
+        "viewAll": "عرض الكل",
+        "empty": "لا توجد مشاركات في الفعاليات حتى الآن",
+        "emptyAction": "تصفح الفعاليات",
+        "tbd": "سيتم تحديده"
+      },
+      "eventStatus": {
+        "approved": "موافق عليه",
+        "payFee": "دفع الرسوم",
+        "awaiting": "في انتظار",
+        "rejected": "مرفوض",
+        "unknown": "غير معروف"
+      },
+      "tooltips": {
+        "configureStand": "تكوين الجناح",
+        "analytics": "التحليلات"
+      },
+      "quickActions": {
+        "title": "الإجراءات السريعة",
+        "browseEvents": {
+          "title": "تصفح الفعاليات",
+          "subtitle": "انضم لفعاليات جديدة وأدر الأجنحة"
+        },
+        "manageCatalog": {
+          "title": "إدارة الكتالوج",
+          "subtitle": "أضف المنتجات والخدمات"
+        },
+        "viewAnalytics": {
+          "title": "عرض التحليلات",
+          "subtitle": "أداء الجناح وبيانات الزوار"
+        },
+        "communications": {
+          "title": "التواصل",
+          "subtitle": "دردشة B2B والمتابعات"
+        },
+        "leadsContacts": {
+          "title": "العملاء المتوقعون وجهات الاتصال",
+          "subtitle": "تفاعلات الزوار والفرص"
+        }
+      },
+      "requestsAwaiting": {
+        "title": "{count} طلب(طلبات) في انتظار الرد",
+        "subtitle": "يقوم الزوار بالاستفسار عن منتجاتك. قم بالرد بسرعة لتحويل العملاء المحتملين.",
+        "action": "معالجة الآن"
+      },
+      "allCaughtUp": {
+        "title": "تم الانتهاء من كل شيء!",
+        "subtitle": "تم التعامل مع {count} استفسار(استفسارات). عمل رائع."
+      },
+      "catalogHealth": {
+        "title": "صحة الكتالوج",
+        "manage": "إدارة",
+        "products": "منتجات",
+        "services": "خدمات",
+        "activeStands": "الأجنحة النشطة",
+        "inquiries": "الاستفسارات"
+      }
+    },
+    "profile": {
+      "updateCoverPhoto": "تحديث صورة الغلاف",
+      "accountVerified": "تم تأكيد الحساب",
+      "primaryContact": "جهة الاتصال الأساسية",
+      "accountEmail": "بريد الحساب الإلكتروني",
+      "registeredEntity": "الكيان المسجل",
+      "baseLocation": "الموقع الأساسي",
+      "sector": "القطاع",
+      "global": "عالمي",
+      "memberSince": "عضو منذ {year}",
+      "completionStatus": {
+        "title": "حالة الإكمال",
+        "description": "أكمل ملفك الشخصي لزيادة رؤيتك في المعارض الافتراضية."
+      },
+      "aboutCompany": "عن الشركة",
+      "companyName": "اسم الشركة",
+      "industry": "الصناعة",
+      "country": "البلد",
+      "city": "المدينة",
+      "companySize": "حجم الشركة",
+      "professionalEmail": "البريد الإلكتروني المهني",
+      "companyBio": "نبذة عن الشركة",
+      "displayedOnBooth": "معروض في جناحك",
+      "companyBioPlaceholder": "أخبر الزوار عن قيمة عرض شركتك...",
+      "category": {
+        "label": "الفئة",
+        "selectPlaceholder": "اختر فئة"
+      },
+      "businessTags": "علامات الأعمال",
+      "accountTimezone": "المنطقة الزمنية للحساب",
+      "accountTimezoneHelp": "تُستخدم كمنطقة زمنية للعرض الشخصي عبر المنصة.",
+      "contactPresence": "الاتصال والحضور",
+      "publicBusinessEmail": "البريد الإلكتروني التجاري العام",
+      "phoneNumber": "رقم الهاتف",
+      "corporateWebsite": "الموقع الإلكتروني الرسمي",
+      "linkedinProfile": "حساب لينكدإن",
+      "saveAllChanges": "حفظ جميع التغييرات",
+      "updateLogo": "تحديث الشعار",
+      "placeholders": {
+        "companyName": "شركة أكمي",
+        "industry": "التكنولوجيا",
+        "country": "المغرب",
+        "city": "الدار البيضاء",
+        "companySize": "51-200",
+        "professionalEmail": "business@acme.com",
+        "businessTags": "الذكاء الاصطناعي، البلوك تشين، SaaS، الطاقة الخضراء (مفصولة بفواصل)",
+        "contactEmail": "contact@acme.com",
+        "contactPhone": "+212 600-000000",
+        "website": "https://acme.com",
+        "linkedin": "https://linkedin.com/company/acme"
+      },
+      "logoAlt": "الشعار",
+      "categories": {
+        "technology": "تكنولوجيا",
+        "healthcare": "الرعاية الصحية",
+        "finance": "المالية",
+        "education": "التعليم",
+        "manufacturing": "التصنيع",
+        "retail": "التجزئة",
+        "logistics": "اللوجستيات",
+        "energy": "الطاقة",
+        "telecommunications": "الاتصالات",
+        "consulting": "الاستشارات",
+        "mediaMarketing": "الإعلام والتسويق",
+        "tourismHospitality": "السياحة والضيافة",
+        "governmentPublicServices": "الحكومة والخدمات العامة",
+        "nonProfit": "غير ربحية",
+        "other": "أخرى"
+      },
+      "messages": {
+        "logoUploaded": "تم رفع الشعار!",
+        "bannerUploaded": "تم رفع البانر!",
+        "uploadFailed": "فشل في رفع الملف.",
+        "profileUpdated": "تم تحديث الملف الشخصي بنجاح!",
+        "profileUpdateFailed": "فشل في تحديث الملف الشخصي."
+      }
+    },
+    "events": {
+      "notifications": {
+        "paymentSuccess": "تم دفع رسوم الجناح بنجاح!",
+        "paymentSuccessMessage": "تم تأكيد الدفع الخاص بك. تم الموافقة على مشاركتك ويمكنك الوصول إلى جناحك الآن.",
+        "paymentCancelled": "تم إلغاء الدفع",
+        "paymentCancelledMessage": "تم إلغاء دفع رسوم الجناح. يمكنك المحاولة مرة أخرى من تفاصيل الحدث."
+      },
+      "browseTitle": "تصفح وإدارة الأحداث",
+      "title": "تصفح وإدارة الأحداث",
+      "subtitle": "اكتشف المعارض، انضم كعارض، وأدر جناحك.",
+      "searchPlaceholder": "ابحث عن الأحداث…",
+      "loading": "جاري تحميل الأحداث…",
+      "empty": "لم يتم العثور على أحداث.",
+      "emptyAction": "تصفح الأحداث العامة",
+      "table": {
+        "event": "الحدث",
+        "date": "التاريخ",
+        "enterprises": "المؤسسات",
+        "standFee": "رسوم الجناح",
+        "status": "الحالة",
+        "actions": "الإجراءات"
+      },
+      "status": {
+        "payStandFee": "ادفع رسوم الجناح",
+        "awaitingApproval": "بانتظار الموافقة",
+        "standApproved": "تم الموافقة على الجناح",
+        "guestApproved": "تمت الموافقة على الضيف",
+        "standRejected": "تم رفض الجناح",
+        "live": "مباشر",
+        "inProgress": "جار التنفيذ",
+        "upcoming": "قريبًا",
+        "ended": "انتهى",
+        "notRegistered": "غير مسجل",
+        "fullyBooked": "محجوز بالكامل",
+        "rejected": "مرفوض"
+      },
+      "actions": {
+        "requestToJoin": "طلب الانضمام",
+        "joinEvent": "انضم إلى الحدث",
+        "confirm": "تأكيد",
+        "confirmFreeStand": "تأكيد جناح مجاني",
+        "configureStand": "تهيئة الجناح",
+        "manage": "إدارة",
+        "manageEvent": "إدارة الحدث",
+        "details": "تفاصيل",
+        "close": "إغلاق",
+        "viewAnalytics": "عرض التحليلات",
+        "payFee": "دفع رسوم الجناح",
+        "payNow": "ادفع الآن",
+        "viewDetails": "عرض التفاصيل",
+        "downloadReceipt": "تحميل الإيصال",
+        "receipt": "الإيصال",
+        "waitingForAdminApproval": "بانتظار موافقة المسؤول"
+      },
+      "detail": {
+        "liveNow": "مباشر الآن",
+        "inProgress": "جار التنفيذ",
+        "upcoming": "قريبًا",
+        "ended": "انتهى",
+        "schedule": "الجدول الزمني",
+        "detailedSchedule": "الجدول التفصيلي",
+        "noSlots": "لا توجد فترات محددة لهذا اليوم.",
+        "activityFallback": "النشاط",
+        "overnight": "فترة ليلية",
+        "category": "الفئة",
+        "date": "التاريخ",
+        "enterprises": "المؤسسات",
+        "standFee": "رسوم الجناح",
+        "description": "الوصف",
+        "participationStatus": "حالة المشاركة",
+        "payment": {
+          "actionRequired": "الإجراء مطلوب",
+          "title": "دفع رسوم الجناح",
+          "instruction": "لحجز جناحك، يرجى دفع {amount} {currency}.",
+          "payNow": "ادفع الآن"
+        },
+        "approved": {
+          "title": "تمت الموافقة على الجناح",
+          "message": "تمت الموافقة على جناحك. قم بتهيئته قبل بدء الحدث.",
+          "action": "تهيئة الجناح"
+        },
+        "rejected": {
+          "title": "تم رفض الجناح",
+          "message": "لم يتم قبول طلب جناحك. تواصل مع المنظم لمزيد من التفاصيل."
+        },
+        "registrationOpens": "فتح التسجيل",
+        "registrationDeadline": "موعد انتهاء التسجيل",
+        "eventStarts": "بدء الحدث",
+        "eventEnds": "انتهاء الحدث",
+        "past": "ماضي",
+        "nextSlot": "الفترة التالية: {time}",
+        "countdown": "{time}",
+        "organizer": "المنظم",
+        "location": "الموقع",
+        "enterpriseSlots": "فترات المؤسسات",
+        "standsLeft": "{left} من {total} متبقية",
+        "standsTotal": "{total} أجنحة",
+        "free": "مجاني",
+        "rejectionReason": "سبب الرفض",
+        "liveSlot": "الفترة المباشرة: {slot}"
+      },
+      "modal": {
+        "configureStand": "تهيئة الجناح",
+        "manageEvent": "إدارة الحدث",
+        "viewAnalytics": "عرض التحليلات",
+        "receiptError": "تعذر إنشاء الإيصال."
+      },
+      "filters": {
+        "all": "كل الأحداث",
+        "live": "مباشر الآن",
+        "inProgress": "جار التنفيذ",
+        "upcoming": "قريبًا",
+        "ended": "انتهى",
+        "mine": "أحداثي"
+      },
+      "banner": {
+        "liveSessionEndedTitle": "انتهت الجلسة المباشرة",
+        "liveSessionEndedDescription": "تم إخراجك من غرفة الإدارة المباشرة لأن الجدول الزمني لهذا الحدث قد انتهى.",
+        "browseDescription": "تصفح الأحداث المتاحة وأدر مشاركتك."
+      }
+    },
+    "stand": {
+      "title": "قم بتكوين جناحك",
+      "subtitle": "خصص مساحة معرضك الافتراضي لـ {eventTitle}.",
+      "tabs": {
+        "branding": "العلامة التجارية",
+        "products": "المنتجات",
+        "resources": "الموارد",
+        "aiAssistant": "مساعد الذكاء الاصطناعي"
+      },
+      "save": "حفظ التغييرات",
+      "saving": "جارٍ الحفظ…",
+      "savedSuccess": "تم حفظ جناحك.",
+      "saveFailed": "فشل في حفظ الجناح.",
+      "branding": {
+        "title": "مظهر الجناح",
+        "standName": {
+          "label": "اسم الجناح",
+          "help": "اسم الجناح المرئي للزوار"
+        },
+        "tagline": {
+          "label": "شعار مختصر",
+          "help": "شعار قصير يظهر تحت اسم جناحك"
+        },
+        "companyBio": {
+          "label": "نبذة عن الشركة",
+          "placeholder": "أخبر الزوار عن شركتك…"
+        },
+        "coverPhoto": {
+          "label": "صورة الغلاف",
+          "upload": "تحميل الغلاف",
+          "remove": "إزالة",
+          "change": "تغيير"
+        },
+        "logo": {
+          "label": "الشعار",
+          "upload": "تحميل الشعار",
+          "current": "الشعار الحالي",
+          "remove": "إزالة الشعار"
+        },
+        "presenterName": "اسم المقدم"
+      },
+      "products": {
+        "title": "المنتجات المميزة",
+        "subtitle": "اختر منتجات من كتالوجك لعرضها في جناحك.",
+        "empty": "لا توجد منتجات. الرجاء إضافة منتجات أولاً.",
+        "addProduct": "إضافة منتج",
+        "selected": "المنتجات المختارة",
+        "remove": "إزالة من الجناح"
+      },
+      "resources": {
+        "title": "موارد الجناح",
+        "subtitle": "قم بتحميل المستندات التي يمكن للزوار تنزيلها (كتيبات، كتالوجات، إلخ).",
+        "resourceName": "اسم المورد",
+        "file": "الملف",
+        "upload": "تحميل المورد",
+        "empty": "لم يتم تحميل أي موارد بعد.",
+        "download": "تنزيل",
+        "delete": "حذف"
+      },
+      "aiAssistant": {
+        "title": "مساعد الذكاء الاصطناعي للجناح",
+        "subtitle": "قم بتكوين وكيل ذكاء اصطناعي للرد على أسئلة الزوار حول جناحك.",
+        "enable": "تمكين مساعد الذكاء الاصطناعي",
+        "description": "سيرد مساعد الذكاء الاصطناعي على أسئلة الزوار حول جناحك ومنتجاتك وخدماتك.",
+        "instructions": {
+          "title": "تعليمات وكيل الذكاء الاصطناعي",
+          "subtitle": "قدم سياقًا للذكاء الاصطناعي. هذا يشكل طريقة رده على الزوار.",
+          "placeholder": "مثال: نحن مزود رائد لتحليلات السحابة. منتجنا الرئيسي هو DataVision Pro. نخدم المؤسسات في الرعاية الصحية والمالية."
+        },
+        "save": "حفظ تكوين الذكاء الاصطناعي"
+      },
+      "messages": {
+        "brandingSaved": "تم حفظ العلامة التجارية!",
+        "logoChooseError": "يرجى اختيار ملف صورة للشعار.",
+        "logoUploadError": "تم التحميل ولكن لم يتم إرجاع رابط الشعار.",
+        "logoUploadSuccess": "تم تحميل الشعار. اضغط حفظ العلامة التجارية لتطبيقه على هذا الجناح.",
+        "logoUploadFailed": "فشل تحميل صورة الشعار.",
+        "productsLinked": "تم ربط المنتجات!",
+        "resourceTitleRequired": "يرجى تقديم عنوان للمورد.",
+        "resourceUrlRequired": "يرجى تقديم رابط صالح لهذا النوع من الموارد.",
+        "resourceFileRequired": "يرجى اختيار ملف للتحميل.",
+        "standConfigNotLoaded": "لم يتم تحميل تكوين الجناح بالكامل بعد.",
+        "aiActivationSuccess": "تم تمكين مساعد الذكاء الاصطناعي! تم فهرسة {indexed_documents} مستند(ات).",
+        "aiActivationFailed": "فشل تفعيل RAG",
+        "loadingStandConfig": "جارٍ تحميل تكوين الجناح...",
+        "accessDenied": "تم رفض الدخول",
+        "accessDeniedReason": "يجب الموافقة على طلب الانضمام ودفع رسوم الجناح قبل تكوين الجناح."
+      },
+      "labels": {
+        "configureYourStand": "قم بتكوين جناحك",
+        "manageEvent": "إدارة الحدث",
+        "analytics": "التحليلات",
+        "allEvents": "جميع الفعاليات",
+        "companyBioPlaceholder": "ماذا سيجد الزوار في جناحك؟",
+        "logoUrl": "رابط الشعار",
+        "logoUrlPlaceholder": "https://...",
+        "uploadLogoImage": "تحميل صورة الشعار",
+        "uploadLogoHelper": "استخدم رابط URL أو قم بتحميل ملف.",
+        "standBackgroundPresets": "إعدادات خلفية الجناح الجاهزة",
+        "saveBranding": "حفظ العلامة التجارية",
+        "selectProductsDescription": "اختر المنتجات من كتالوجك لعرضها في هذا الجناح.",
+        "noProductsInCatalog": "لا توجد منتجات في كتالوجك بعد.",
+        "addProductsFirst": "أضف منتجات أولاً.",
+        "productTypeService": "خدمة",
+        "productTypeProduct": "منتج",
+        "productStatusAvailable": "متوفر",
+        "productOutOfStock": "غير متوفر — لا يمكن اختياره",
+        "quantityLabel": "الكمية",
+        "quantityMaxLabel": "الحد الأقصى",
+        "saveSelectionButton": "حفظ الاختيار ({count})",
+        "addResource": "إضافة مورد",
+        "resourcePlaceholder": "كتيب المنتج",
+        "resourceTypeLabel": "النوع",
+        "resourceTypePdf": "بي دي إف",
+        "resourceTypeImage": "صورة",
+        "resourceTypeVideo": "رابط فيديو",
+        "resourceTypeLink": "رابط",
+        "urlPlaceholder": "https://...",
+        "uploadFileLabel": "تحميل ملف",
+        "addResourceButton": "إضافة مورد",
+        "noResourcesUploaded": "لم يتم تحميل أي موارد بعد.",
+        "aiAssistantHeading": "مساعد الذكاء الاصطناعي",
+        "statusActive": "نشط",
+        "statusInactive": "غير نشط",
+        "indexedDocuments": "المستندات المفهرسة",
+        "lastIndexed": "آخر فهرسة",
+        "never": "أبداً",
+        "aiDescription": "تمكين مساعد الذكاء الاصطناعي يقوم بفهرسة جميع موارد جناحك في قاعدة بيانات المتجهات. يمكن للزوار بعد ذلك طرح الأسئلة والحصول على إجابات بناءً على مستنداتك المحمّلة.",
+        "reindexRefreshAi": "إعادة الفهرسة وتحديث الذكاء الاصطناعي",
+        "enableAiAssistant": "تمكين مساعد الذكاء الاصطناعي"
+      }
+    },
+    "eventManagement": {
+      "title": "مركز إدارة الفعاليات",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "chats": "المحادثات",
+        "meetings": "الاجتماعات",
+        "conferences": "المؤتمرات",
+        "partners": "الشركاء"
+      },
+      "gating": {
+        "pending": {
+          "title": "في انتظار الموافقة",
+          "description": "يتم حالياً مراجعة مشاركتكم كمؤسسة من قبل منظمي المعرض. سيكون لديك وصول كامل إلى هذا المركز الإداري بمجرد الموافقة على جناحكم."
+        },
+        "notStarted": {
+          "title": "لم يبدأ الحدث بعد",
+          "description": "لم يتم فتح هذا الحدث بعد. ستكون كافة الميزات — الاجتماعات، المحادثات، المؤتمرات، وتفاعلات الشركاء — متاحة بمجرد بدء الحدث."
+        },
+        "betweenSlots": {
+          "title": "الحدث جاري",
+          "description": "الحدث حالياً بين فترات الجدول الزمني. الميزات الإدارية مغلقة مؤقتاً وتفتح تلقائياً عند الفتحة الحية التالية."
+        },
+        "timelineMissing": {
+          "title": "الجدول الزمني لم يُنشر بعد",
+          "description": "لا يملك هذا الحدث فترات جدول زمني منشورة بعد. الاجتماعات، المؤتمرات، والتفاعلات الحية تُفتح فقط خلال الفترات الحية."
+        },
+        "ended": {
+          "title": "انتهى الحدث",
+          "description": "انتهى هذا المعرض. لم تعد غرف الاجتماعات، المحادثات الحية، وجلسات المؤتمرات متاحة. نشكركم على مشاركتكم.",
+          "redirecting": "يتم إعادة توجيهك إلى لوحة أحداث مؤسستك..."
+        },
+        "rejected": {
+          "title": "تم رفض الحدث",
+          "description": "لم يوافق مسؤولو المنصة على هذا الحدث. الوصول إلى جميع ميزات الحدث غير متاح.",
+          "reasonLabel": "السبب:"
+        },
+        "notReady": {
+          "title": "الحدث غير متاح",
+          "description": "يتم حالياً إعداد هذا الحدث. ستصبح كافة الميزات التفاعلية متاحة بمجرد إعداد الحدث بالكامل وبدءه.",
+          "states": {
+            "pendingApproval": "في انتظار موافقة المنصة",
+            "waitingForPayment": "انتظار دفعة المنظم",
+            "paymentVerification": "جارٍ التحقق من الدفع",
+            "inProgress": "جارٍ إعداد الحدث"
+          }
+        }
+      },
+      "actions": {
+        "backToEvents": "العودة إلى الأحداث",
+        "refreshStatus": "تحديث الحالة",
+        "refresh": "تحديث",
+        "viewAnalytics": "عرض التحليلات",
+        "analytics": "التحليلات",
+        "requests": "الطلبات",
+        "config": "الإعدادات",
+        "sendMessage": "إرسال رسالة",
+        "requestMeeting": "طلب اجتماع"
+      },
+      "eventFallback": "حدث",
+      "chats": {
+        "empty": "لا توجد محادثات نشطة.",
+        "selectConversation": "اختر محادثة",
+        "subtitle": "اختر زائرًا أو مؤسسة من القائمة لبدء أو متابعة محادثتك.",
+        "emptyB2B": "لا توجد محادثات مؤسسات حتى الآن. ابدأ واحدة من تبويب الشركاء.",
+        "emptyVisitors": "لا توجد محادثات مع الزائرين لهذا الحدث حتى الآن."
+      },
+      "meetings": {
+        "title": "طلبات الاجتماعات",
+        "empty": "لا توجد اجتماعات مجدولة",
+        "subtitle": "عندما يطلب الزائرون اجتماعات مع أجنحتكم، ستظهر هنا.",
+        "approve": "موافقة",
+        "decline": "رفض",
+        "ended": "انتهى الاجتماع",
+        "approvedStarts": "موافقة · يبدأ {time}",
+        "join": "انضمام",
+        "filters": {
+          "all": "الكل",
+          "liveSoon": "مباشر وقريب",
+          "upcoming": "قادم",
+          "past": "ماضي"
+        },
+        "awaitingResponse": "{count} في انتظار ردك",
+        "visitorFallback": "زائر",
+        "partnerFallback": "شريك",
+        "toPartner": "إلى: {name}",
+        "received": "تم الاستلام",
+        "sent": "تم الإرسال",
+        "generalDiscussion": "نقاش عام",
+        "individual": "فردي",
+        "awaitingPartnerApproval": "في انتظار موافقة الشريك",
+        "timeSlotPassed": "انقضت الفترة الزمنية",
+        "joinLive": "انضم للبث المباشر",
+        "joinNow": "انضم الآن",
+        "availableIn": "متاح {slot}",
+        "meetingWindowPassed": "فترة الاجتماع انتهت",
+        "emptyStates": {
+          "all": "لا توجد اجتماعات مجدولة",
+          "live": "لا توجد اجتماعات مباشرة",
+          "upcoming": "لا توجد اجتماعات قادمة",
+          "past": "لا توجد اجتماعات سابقة",
+          "subtitleAll": "عندما يطلب الزائرون أو الشركاء اجتماعات، ستظهر هنا.",
+          "subtitleFiltered": "حاول التبديل إلى فلتر مختلف."
+        }
+      },
+      "conferences": {
+        "title": "المؤتمرات المعينة",
+        "empty": "لا توجد جلسات مؤتمرات معينة.",
+        "subtitle": "عند تعيينك إلى مؤتمر من قبل المنظمين، سيظهر هنا.",
+        "goLive": "بدء البث المباشر",
+        "enterStudio": "دخول الاستوديو",
+        "eventConferencesTitle": "مؤتمرات الحدث",
+        "eventConferencesSubtitle": "عرض جميع الجلسات المباشرة المجدولة. يمكنك استضافة محادثاتك المعينة أو الانضمام إلى الآخرين.",
+        "hostingBadge": "أنت المستضيف",
+        "liveBadge": "مباشر",
+        "ended": "انتهى",
+        "attendeesCount": "{count} مشارك",
+        "conferenceEnded": "انتهى المؤتمر",
+        "joinConference": "انضم إلى المؤتمر",
+        "notStartedYet": "لم يبدأ بعد",
+        "speakersCanGoLive": "يمكن للمتحدثين بدء البث المباشر حتى 15 دقيقة قبل الوقت المحدد.",
+        "noConferences": "لا توجد مؤتمرات",
+        "noConferencesSubtitle": "لا توجد مؤتمرات مجدولة لهذا الحدث حتى الآن.",
+        "live": {
+          "loading": "جارٍ التحميل...",
+          "setupBroadcast": "يتم إعداد البث الخاص بك...",
+          "checkingTimeline": "جارٍ التحقق من الجدول الزمني للحدث...",
+          "timelineNotPublished": "لم يُنشر الجدول الزمني بعد. يفتح استوديو المتحدث فقط خلال فترات الجدول الحية.",
+          "timelineEnded": "انتهى الجدول الزمني للحدث. تم إغلاق الوصول للبث.",
+          "loadingDetails": "جارٍ تحميل تفاصيل المؤتمر...",
+          "startingRoom": "بدء غرفة المؤتمر...",
+          "requestingToken": "جاري طلب رمز الوصول للبث المباشر...",
+          "failedConnect": "فشل الاتصال",
+          "startFailed": "تعذر بدء البث",
+          "startFailedHint": "يرجى التحقق من اتصالك والتأكد من أنك المتحدث المعين لهذا المؤتمر. حاول مرة أخرى بعد قليل.",
+          "retrySetup": "إعادة محاولة الإعداد",
+          "backToEvent": "العودة إلى الحدث"
+        }
+      },
+      "partners": {
+        "title": "شركات الشركاء",
+        "empty": "لا توجد شركات شركاء حتى الآن.",
+        "subtitle": "تواصل مع مؤسسات أخرى تشارك في هذا الحدث.",
+        "approvedParticipant": "مشارك معتمد",
+        "details": "التفاصيل",
+        "meeting": "الاجتماع",
+        "emptyTitle": "لا توجد شركاء متاحين",
+        "emptySubtitle": "ستظهر هنا المؤسسات الأخرى المشاركة في هذا الحدث بمجرد الموافقة عليها.",
+        "partnerDetails": "تفاصيل الشريك",
+        "approved": "معتمد",
+        "pending": "قيد الانتظار",
+        "total": "الإجمالي",
+        "b2bEventPartner": "شريك حدث بين الشركات",
+        "meetingStatus": "حالة الاجتماع",
+        "currentEvent": "الحدث الحالي",
+        "analyzingMeetings": "جارٍ تحليل الاجتماعات...",
+        "meetingsWithPartner": "الاجتماعات مع هذا الشريك",
+        "youSent": "أرسلت",
+        "theySent": "أرسلوا",
+        "awaitingTheirApproval": "في انتظار موافقتهم",
+        "approvedStarts": "معتمد · يبدأ {time}",
+        "companyOverview": "نظرة عامة على الشركة",
+        "overviewFallback": "تشارك هذه المؤسسة في الحدث ومتاحة للمناقشات الشراكة المباشرة وطلبات الاجتماعات.",
+        "contactLinks": "جهات الاتصال والروابط",
+        "emailNotShared": "البريد الإلكتروني غير مشارك",
+        "phoneNotShared": "رقم الهاتف غير مشارك",
+        "locationInfo": "معلومات الموقع",
+        "primaryOffice": "المكتب الرئيسي",
+        "globalHeadquarters": "المقر الرئيسي العالمي",
+        "eventAvailability": "توافر الحدث",
+        "eventAvailabilitySubtitle": "متاح للتواصل بين الشركات خلال جميع أيام الحدث."
+      }
+    },
+    "eventRequests": {
+      "productsTitle": "طلبات المنتجات والخدمات",
+      "title": "طلبات المنتج والخدمة",
+      "eventLabel": "{eventTitle}",
+      "tabs": {
+        "products": "المنتجات",
+        "services": "الخدمات"
+      },
+      "timeFilters": {
+        "all": "جميع التواريخ",
+        "today": "اليوم",
+        "last7Days": "آخر 7 أيام",
+        "last30Days": "آخر 30 يومًا"
+      },
+      "filters": {
+        "byEvent": {
+          "label": "تصفية حسب الحدث",
+          "all": "جميع الأحداث"
+        },
+        "orderStatus": "حالة الطلب",
+        "orderFulfillment": "إتمام الطلب",
+        "allStatuses": "جميع الحالات",
+        "requestStatus": "حالة الطلب",
+        "pending": "قيد الانتظار",
+        "contacted": "تم الاتصال",
+        "closed": "مغلق",
+        "timePeriod": "الفترة الزمنية"
+      },
+      "checkoutOrders": {
+        "title": "طلبات الدفع",
+        "count": "{count}",
+        "empty": "لا توجد طلبات دفع تطابق عوامل التصفية الحالية."
+      },
+      "directInquiries": {
+        "title": "الاستفسارات المباشرة",
+        "count": "{count}",
+        "empty": "لا توجد استفسارات مباشرة تطابق عوامل التصفية الحالية."
+      },
+      "orderStatus": {
+        "requested": "تم الطلب",
+        "processing": "قيد المعالجة",
+        "packed": "معبأ",
+        "shipped": "تم الشحن",
+        "delivered": "تم التسليم",
+        "completed": "مكتمل",
+        "cancelled": "ملغى"
+      },
+      "order": {
+        "label": "طلب #{id}",
+        "qty": "الكمية: {count}",
+        "total": "الإجمالي",
+        "advance": "الانتقال إلى المرحلة التالية",
+        "addNote": "إضافة ملاحظة",
+        "cancel": "إلغاء الطلب",
+        "cancelConfirm": "هل ترغب في إلغاء الطلب لـ \"{product}\"؟ سيؤدي ذلك إلى وضع علامة على الطلب كملغى واستعادة المخزون لعناصر المنتج.",
+        "cancelNote": "ملاحظة إلغاء اختيارية"
+      },
+      "refresh": "تحديث البيانات",
+      "syncing": "جاري مزامنة السجلات...",
+      "kpi": {
+        "eventsActive": "الأحداث النشطة",
+        "totalOrders": "إجمالي الطلبات",
+        "directRequests": "الطلبات المباشرة"
+      },
+      "refineView": "تحسين العرض"
+    },
+    "eventAnalytics": {
+      "header": {
+        "subtitle": "رؤى الأداء لهذا الحدث المحدد."
+      },
+      "metrics": {
+        "impressions": "الظهورات",
+        "impressionsSub": "إجمالي المشاهدات",
+        "engagement": "التفاعل",
+        "engagementSub": "التفاعلات",
+        "uniqueLeads": "العملاء المحتملون الفريدون",
+        "uniqueLeadsSub": "الزوار"
+      },
+      "title": "تحليلات الجناح",
+      "eventLabel": "{eventTitle}",
+      "backToManagement": "العودة إلى الإدارة",
+      "performance": "أداء الجناح",
+      "kpi": {
+        "totalVisits": "إجمالي زيارات الجناح",
+        "uniqueVisitors": "الزوار الفريدون",
+        "totalInteractions": "إجمالي التفاعلات"
+      },
+      "engagementRate": "معدل التفاعل",
+      "interactionBreakdown": "تفصيل التفاعل",
+      "noData": "لا توجد بيانات تفاعل متاحة حتى الآن",
+      "activityTrend": "اتجاه النشاط (آخر 30 يومًا)",
+      "insufficientData": "بيانات غير كافية لتحليل الاتجاه",
+      "peakDay": "يوم الذروة",
+      "dailyAvg": "المتوسط اليومي",
+      "views": "مشاهدات",
+      "actionsLabel": "الإجراءات",
+      "interactionStatus": "حالة التفاعل",
+      "pulseTitle": "نبض الزوار في الوقت الحقيقي",
+      "interactionSummary": "إجمالي التفاعلات المسجلة في جناحكم خلال هذا الحدث.",
+      "recentActivityEmpty": "لا يوجد نشاط حديث",
+      "visitTooltip": "{hour}: {count} زيارات",
+      "pending": {
+        "title": "التحليلات قيد الانتظار",
+        "subtitle": "ستكون تحليلات جناحك متاحة بمجرد الموافقة على مشاركتك من قبل المنظمين."
+      },
+      "actions": {
+        "backToEvents": "العودة إلى الفعاليات",
+        "refreshStatus": "تحديث الحالة",
+        "manageHub": "إدارة المحور"
+      },
+      "noStand": "لا يوجد جناح معتمد لهذا الحدث بعد.",
+      "noStandHint": "قم بتكوين جناحك لفتح التحليلات.",
+      "loading": "جارٍ تحميل التحليلات..."
+    },
+    "eventConferences": {
+      "title": "مؤتمراتي",
+      "eventLabel": "{eventTitle}",
+      "speakingSessions": "جلسات التحدث",
+      "empty": "لا توجد جلسات مؤتمر مخصصة لجناحك.",
+      "subtitle": "عندما يقوم المنظمون بتعيينك كمتحدث في مؤتمر، ستظهر هنا.",
+      "live": "مباشر",
+      "scheduled": "مجدول",
+      "goLive": "ابدأ البث المباشر",
+      "enterStudio": "دخول الاستوديو"
+    },
+    "liveConference": {
+      "title": "استوديو المتحدث",
+      "joining": "جارٍ الانضمام إلى الجلسة...",
+      "connecting": "جارٍ الاتصال بغرفة المؤتمر...",
+      "failedConnect": "فشل الاتصال بالجــلسة.",
+      "reconnect": "إعادة الاتصال",
+      "leave": "مغادرة الجلسة",
+      "liveNow": "أنت مباشر الآن.",
+      "sessionEnded": "انتهت الجلسة."
+    },
+    "paymentSuccess": {
+      "standApproved": "المساحة معتمدة!",
+      "title": "تم الدفع بنجاح",
+      "subtitle": "تمت معالجة رسوم المساحة الخاصة بك.",
+      "paymentLabel": "دفع رسوم المساحة",
+      "paymentStatus": "حالة الدفع: مؤكد",
+      "amountPaid": "المبلغ المدفوع",
+      "amount": "{amount} {currency}",
+      "amountPaidLabel": "رسوم المساحة: {amount} {currency}",
+      "paymentReference": "مرجع الدفع",
+      "transactionDate": "تاريخ المعاملة",
+      "viewReceipt": "عرض الإيصال",
+      "generatingPdf": "جاري إنشاء ملف PDF…",
+      "backToEvents": "العودة إلى الفعاليات",
+      "processing": "جارٍ معالجة دفعتك.",
+      "confirmed": "تم تأكيد دفعتك. سيتم منح الوصول بمجرد أن يقوم المنظم بتنشيط الحدث.",
+      "successMessage": "تم دفع رسوم المساحة بنجاح. تمت الموافقة على مشاركتك.",
+      "statusPaid": "مدفوع",
+      "eventLoadingHint": "تفاصيل الحدث لا تزال قيد التحميل. يمكنك تنزيل إيصالك — وهو مطابق لملف PDF من صفحة الفعاليات المؤسسية.",
+      "downloadReceipt": "تنزيل الإيصال (PDF)"
+    },
+    "leads": {
+      "title": "العملاء المحتملون وجهات الاتصال",
+      "subtitle": "تتبع تفاعلات الزوار والعملاء المحتملين المسجلين عبر جميع أجنحتك.",
+      "kpi": {
+        "totalLeads": "إجمالي العملاء المحتملين",
+        "visits": "الزيارات",
+        "chatInquiries": "استفسارات الدردشة",
+        "actionRate": "معدل التفاعل"
+      },
+      "searchPlaceholder": "ابحث عن العملاء المحتملين...",
+      "allStands": "جميع الأجنحة",
+      "exportCsv": "تصدير CSV",
+      "table": {
+        "visitor": "الزائر",
+        "interaction": "التفاعل",
+        "standEvent": "الجناح / الحدث",
+        "time": "الوقت",
+        "actions": "الإجراءات"
+      },
+      "empty": "لم يتم العثور على عملاء محتملين يطابقون معاييرك.",
+      "visitorLabel": "الزائر #{id}",
+      "noEmail": "لم يتم تقديم بريد إلكتروني",
+      "unknownStand": "جناح غير معروف",
+      "viewDetails": "عرض التفاصيل",
+      "loading": "جارٍ تحميل العملاء المحتملين...",
+      "interactionTypes": {
+        "standVisit": "stand_visit",
+        "chatMessage": "chat_message",
+        "productRequest": "product_request",
+        "eventView": "event_view"
+      }
+    },
+    "productRequests": {
+      "allInquiriesTitle": "جميع الاستفسارات والطلبات",
+      "title": "جميع الاستفسارات والطلبات",
+      "subtitle": "عرض موحد لجميع طلبات الزوار وعمليات الدفع في السوق عبر كل حدث تشارك فيه.",
+      "kpi": {
+        "eventsActive": "الأحداث النشطة",
+        "totalOrders": "إجمالي الطلبات",
+        "directRequests": "الطلبات المباشرة"
+      },
+      "tabs": {
+        "products": "المنتجات",
+        "services": "الخدمات"
+      },
+      "refineView": "تصفية العرض",
+      "filters": {
+        "byEvent": {
+          "label": "تصفية حسب الحدث",
+          "all": "جميع الأحداث"
+        },
+        "orderFulfillment": "تنفيذ الطلب",
+        "allStatuses": "جميع الحالات",
+        "orderStatuses": {
+          "requested": "تم الطلب",
+          "processing": "جارٍ المعالجة",
+          "packed": "تم التعبئة",
+          "shipped": "تم الشحن",
+          "delivered": "تم التسليم",
+          "completed": "مكتمل",
+          "cancelled": "ملغي"
+        },
+        "requestStatus": "حالة الطلب",
+        "requestStatuses": {
+          "all": "جميع الحالات",
+          "pending": "قيد الانتظار",
+          "contacted": "تم الاتصال",
+          "closed": "مغلق"
+        },
+        "timePeriod": "الفترة الزمنية",
+        "timeOptions": {
+          "all": "جميع التواريخ",
+          "today": "اليوم",
+          "last7Days": "آخر 7 أيام",
+          "last30Days": "آخر 30 يومًا"
+        }
+      },
+      "checkoutOrders": {
+        "title": "طلبات الدفع",
+        "empty": "لا توجد طلبات دفع تطابق عوامل التصفية الحالية."
+      },
+      "directInquiries": {
+        "title": "الاستفسارات المباشرة",
+        "empty": "لا توجد استفسارات مباشرة تطابق عوامل التصفية الحالية."
+      },
+      "syncing": "جارٍ مزامنة السجلات...",
+      "retry": "إعادة تحميل",
+      "order": {
+        "label": "طلب #{id}",
+        "qty": "الكمية: {count}",
+        "amount": "{amount} {currency}",
+        "advance": "التقدم إلى المرحلة التالية",
+        "addNote": "إضافة ملاحظة",
+        "notePlaceholder": "ملاحظة (اختياري)",
+        "cancelConfirm": "هل تريد إلغاء الطلب الخاص بـ \"{product}\"؟ هذا سيؤدي إلى وضع علامة ملغى على الطلب واستعادة المخزون لعناصر المنتج.",
+        "cancelNote": "ملاحظة إلغاء اختيارية",
+        "cancelledNote": "ملغي بواسطة المؤسسة: طلب مزيف"
+      },
+      "inquiry": {
+        "visitorInfo": "معلومات الزائر",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "location": "الموقع",
+        "message": "الرسالة",
+        "markContacted": "وضع علامة تم الاتصال",
+        "markClosed": "وضع علامة مغلق"
+      }
+    },
+    "products": {
+      "subtitle": "إدارة الكتالوج الخاص بك من المنتجات والخدمات.",
+      "addButton": "إضافة منتج / خدمة",
+      "form": {
+        "nameLabel": "اسم المنتج / الخدمة *",
+        "addProduct": "إضافة منتج جديد",
+        "addService": "إضافة خدمة جديدة",
+        "editProduct": "تعديل المنتج",
+        "editService": "تعديل الخدمة",
+        "name": {
+          "label": "اسم المنتج / الخدمة *",
+          "placeholder": "مثال: مجموعة تحليلات السحابة"
+        },
+        "description": {
+          "label": "الوصف",
+          "placeholder": "صف بإيجاز ما هو هذا..."
+        },
+        "price": {
+          "label": "السعر *",
+          "placeholder": "99.99"
+        },
+        "currency": {
+          "label": "العملة",
+          "mad": "درهم"
+        },
+        "stock": {
+          "label": "المخزون (الكمية المتوفرة)",
+          "placeholder": "100",
+          "note": "لا ينطبق على الخدمات"
+        },
+        "type": {
+          "label": "النوع *",
+          "product": "منتج",
+          "service": "خدمة"
+        },
+        "image": {
+          "label": "الصورة",
+          "uploadHint": "انقر للتحميل أو اسحب وأفلت",
+          "selected": "تم اختيار صورة — انقر للاستبدال",
+          "current": "الحالية"
+        },
+        "cancel": "إلغاء",
+        "createProduct": "إنشاء منتج",
+        "createService": "إنشاء خدمة",
+        "updateProduct": "تحديث المنتج",
+        "updateService": "تحديث الخدمة"
+      },
+      "empty": {
+        "title": "لا توجد منتجات حتى الآن",
+        "subtitle": "ابدأ بإضافة منتجك أو خدمتك الأولى.",
+        "action": "إضافة المنتج الأول"
+      },
+      "badges": {
+        "inStock": "متوفر في المخزون",
+        "noPrice": "لا يوجد سعر",
+        "service": "خدمة",
+        "product": "منتج"
+      },
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا المنتج؟",
+      "loading": "جارٍ تحميل الكتالوج..."
+    },
+    "analytics": {
+      "header": {
+        "title": "أداء الجناح"
+      },
+      "filters": {
+        "combined": "نظرة عامة مجمعة"
+      },
+      "title": "أداء الجناح",
+      "subtitle": "رؤى فورية عبر حضورك في المعرض الافتراضي.",
+      "standSelector": {
+        "combined": "📊 نظرة عامة مجمعة ({count} أجنحة)",
+        "stand": "🗂 {eventTitle} — {standName}"
+      },
+      "showing": "عرض: {eventTitle} · {standName}",
+      "kpi": {
+        "impressions": "المرات التي تم الظهور فيها",
+        "impressionsSub": "إجمالي المشاهدات",
+        "engagement": "التفاعل",
+        "engagementSub": "التفاعلات",
+        "uniqueLeads": "عملاء محتملون فريدون",
+        "uniqueLeadsSub": "الزوار"
+      },
+      "interactionBreakdown": "تفصيل التفاعل",
+      "noData": "لا توجد بيانات تفاعلية متاحة بعد",
+      "totalInteractions": "إجمالي التفاعلات",
+      "activityTrend": "اتجاه النشاط (آخر 30 يومًا)",
+      "insufficientData": "بيانات غير كافية لتحليل الاتجاه",
+      "peakDay": "ذروة اليوم",
+      "dailyAvg": "المتوسط اليومي",
+      "views": "{count} مشاهدة",
+      "actions": {
+        "refresh": "تحديث"
+      },
+      "labels": {
+        "today": "اليوم",
+        "thirtyDaysAgo": "منذ 30 يومًا"
+      },
+      "defaults": {
+        "unnamedStand": "جناح بدون اسم",
+        "unnamedEvent": "حدث بدون اسم"
+      },
+      "empty": {
+        "title": "لا توجد مشاركات معتمدة في الأحداث بعد",
+        "subtitle": "بمجرد الموافقة على جناحك لحدث ما، ستظهر التحليلات هنا."
+      },
+      "loading": "جارٍ تحميل التحليلات..."
+    },
+    "conferences": {
+      "allSessions": {
+        "title": "جلسات التحدث"
+      },
+      "card": {
+        "goLive": "ابدأ البث المباشر",
+        "back": "عودة",
+        "sessionEnded": "انتهت الجلسة"
+      },
+      "title": "جلسات التحدث",
+      "subtitle": "قم بإدارة الويبينارات والمؤتمرات المباشرة عبر جميع الفعاليات.",
+      "live": "مباشر",
+      "scheduled": "مجدول",
+      "enterStudio": "دخول الاستوديو",
+      "goLive": "ابدأ البث المباشر",
+      "empty": {
+        "title": "لا توجد جلسات مخصصة",
+        "subtitle": "عندما يحددك منظمو الفعالية كمتحدث في مؤتمر أو ويبينار، سيظهر هنا."
+      },
+      "fetchFailed": "فشل في جلب المؤتمرات"
+    },
+    "communications": {
+      "meeting": {
+        "requestLabel": "طلب الزائر #"
+      },
+      "tabs": {
+        "chats": "الدردشات",
+        "chatsUnread": "{unread}",
+        "chatsCount": "{count}",
+        "meetings": "الاجتماعات",
+        "meetingsPending": "{count} قيد الانتظار"
+      },
+      "searchPlaceholder": "ابحث عن محادثة...",
+      "chats": {
+        "empty": "لا توجد دردشات نشطة بعد.",
+        "selectTitle": "اختر محادثة",
+        "subtitle": "اختر زائرًا أو مؤسسة من القائمة لبدء المحادثة أو الاستمرار فيها.",
+        "conversation": "المحادثة",
+        "member": "عضو",
+        "noMessages": "لا توجد رسائل بعد"
+      },
+      "meetings": {
+        "requestLabel": "طلب الزائر #{id}",
+        "submitted": "تم الإرسال {date}",
+        "duration": "المدة: 30 دقيقة",
+        "status": {
+          "pending": "قيد الانتظار",
+          "approved": "موافق عليه",
+          "rejected": "مرفوض",
+          "canceled": "ملغي",
+          "completed": "مكتمل"
+        },
+        "approve": "موافقة",
+        "decline": "رفض",
+        "join": "انضم",
+        "ended": "انتهى الاجتماع",
+        "approvedStarts": "موافق عليه · يبدأ في {time}",
+        "declined": "مرفوض",
+        "empty": {
+          "title": "لا توجد اجتماعات محددة",
+          "subtitle": "عندما يطلب الزوار اجتماعات مع أجنحتك، ستظهر هنا."
+        }
+      },
+      "loading": "جارٍ تحميل الاتصالات..."
+    },
+    "notifications": {
+      "title": "الإشعارات",
+      "unreadCount": "{count} غير مقروء",
+      "allCaughtUp": "لقد اطلعت على كل الجديد!",
+      "markAllRead": "وضع الكل كمقروء",
+      "markRead": "وضع كمقروء",
+      "empty": "لا توجد إشعارات حتى الآن.",
+      "timeLabels": {
+        "daysAgo": "منذ {X} يوم",
+        "hoursAgo": "منذ {X} ساعة",
+        "minutesAgo": "منذ {X} دقيقة",
+        "justNow": "الآن"
+      },
+      "types": {
+        "paymentRequired": "الدفع_مطلوب",
+        "paymentConfirmed": "تم_تأكيد_الدفع",
+        "standApproved": "تم_الموافقة_على_الجناح",
+        "standRejected": "تم_رفض_الجناح",
+        "eventApproved": "تم_الموافقة_على_الفعالية",
+        "eventRejected": "تم_رفض_الفعالية",
+        "productRequest": "طلب_المنتج",
+        "joinApproved": "تم_الموافقة_على_الانضمام",
+        "joinRejected": "تم_رفض_الانضمام",
+        "invitationSent": "تم_إرسال_الدعوة",
+        "linksGenerated": "تم_إنشاء_الروابط"
+      }
+    },
+    "joinAcceptance": {
+      "title": "انضم إلى الحدث كمؤسسة",
+      "subtitle": "لقد تم دعوتك للمشاركة في {eventTitle}.",
+      "eventDetails": "تفاصيل الحدث",
+      "acceptButton": "قبول الدعوة",
+      "accepting": "جارٍ قبول الدعوة…",
+      "success": {
+        "title": "تم قبول دعوتك! يمكنك الآن تكوين جناحك.",
+        "action": "تكوين الجناح"
+      },
+      "error": "فشل في قبول الدعوة.",
+      "enterpriseOnly": {
+        "title": "هذه الدعوة مخصصة لحسابات المؤسسات فقط.",
+        "subtitle": "يرجى تسجيل الدخول بحساب مؤسسة.",
+        "action": "تسجيل الدخول كمؤسسة"
+      },
+      "invalidInvite": {
+        "title": "دعوة غير صالحة أو منتهية الصلاحية.",
+        "subtitle": "رابط هذه الدعوة لم يعد صالحًا.",
+        "action": "العودة إلى الصفحة الرئيسية"
+      }
+    }
+  },
+  "visitor": {
+    "orders": {
+      "title": "طلباتي",
+      "subtitle": "تابع جميع مشترياتك من الأجنحة في طلبات موحدة. يتم تجميع عناصر المنتجات والخدمات من نفس السلة معًا.",
+      "loading": "جارٍ تحميل طلباتك…",
+      "empty": {
+        "title": "لا توجد طلبات حتى الآن.",
+        "subtitle": "زر أجنحة الفعالية واستخدم السوق لتقديم طلبك الأول."
+      },
+      "enterpriseFallback": "جناح الشركات",
+      "orderRef": "مرجع الطلب:",
+      "status": {
+        "paid": "مدفوع",
+        "pending": "قيد الانتظار",
+        "cancelled": "ملغى"
+      },
+      "paymentMethod": {
+        "cod": "الدفع عند الاستلام",
+        "stripe": "سترايب"
+      },
+      "fulfillment": {
+        "requested": "تم الطلب",
+        "processing": "قيد المعالجة",
+        "packed": "معبأ",
+        "shipped": "مشحون",
+        "delivered": "تم التوصيل",
+        "completed": "مكتمل",
+        "cancelled": "ملغى",
+        "approved": "تمت الموافقة"
+      },
+      "itemType": {
+        "product": "منتج",
+        "service": "خدمة"
+      },
+      "labels": {
+        "total": "الإجمالي:",
+        "shipping": "الشحن:",
+        "notes": "ملاحظات:"
+      },
+      "actions": {
+        "receipt": "الإيصال",
+        "revisitStand": "زيارة الجناح مجددًا"
+      },
+      "summary": "لديك {count} طلب(طلبات) مدفوع. كل بطاقة تجمع بين المنتجات والخدمات من نفس السلة.",
+      "paymentLabels": {
+        "cashOnReception": "الدفع نقدًا عند الاستلام",
+        "stripePayment": "دفع عبر سترايب"
+      }
+    },
+    "favorites": {
+      "title": "مجموعتك",
+      "sectionTitle": "المفضلات المحفوظة",
+      "countLabel": "{count} عنصر(عناصر) موجود",
+      "empty": {
+        "unauthenticated": {
+          "title": "تسجيل الدخول لعرض المفضلات",
+          "subtitle": "قم بتسجيل الدخول لرؤية الأحداث والأجنحة والموارد التي حفظتها بعناية لاحقًا.",
+          "login": "تسجيل الدخول",
+          "createAccount": "إنشاء حساب"
+        },
+        "authenticated": {
+          "title": "مجموعتك فارغة",
+          "subtitle": "ابدأ في استكشاف الأحداث، الأجنحة، والمنظمات لبناء دليلك المخصص.",
+          "action": "تصفح الأحداث المباشرة"
+        }
+      },
+      "sections": {
+        "events": "الأحداث",
+        "stands": "الأجنحة والاكشاك",
+        "organizations": "المنظمات"
+      },
+      "badge": "مضاف للمفضلات",
+      "removeTooltip": "إزالة من المفضلات",
+      "viewDetails": "عرض التفاصيل",
+      "fallbacks": {
+        "unreachableRoute": "مسار غير متاح",
+        "eventRemoved": "تمت إزالة هوية الحدث",
+        "standRemoved": "تمت إزالة هوية الجناح",
+        "organizationRemoved": "تمت إزالة هوية المنظمة"
+      },
+      "errors": {
+        "loadFailed": "فشل تحميل المفضلات",
+        "removeFailed": "فشل في إزالة المفضل"
+      }
+    },
+    "marketplace": {
+      "success": {
+        "title": "تم الدفع بنجاح!",
+        "subtitle": "شكرًا لشرائك. تم تأكيد طلبك.",
+        "paymentLabels": {
+          "cashOnReception": "نقدًا عند الاستلام",
+          "stripePayment": "دفع عبر Stripe"
+        },
+        "grandTotal": "الإجمالي الكلي",
+        "downloadReceipt": "تحميل الإيصال (PDF)",
+        "goBackToStand": "العودة إلى الجناح",
+        "browseEvents": "تصفح الفعاليات",
+        "statusOverride": "مؤكد",
+        "statusLabels": {
+          "paid": "مدفوع",
+          "pending": "قيد الانتظار"
+        }
+      },
+      "cancel": {
+        "title": "تم إلغاء الدفع",
+        "subtitle": "تم إلغاء دفعتك. لم يتم تحصيل أي رسوم. يمكنك العودة إلى الجناح والمحاولة مرة أخرى.",
+        "goBackToStand": "العودة إلى الجناح",
+        "goToDashboard": "الذهاب إلى لوحة التحكم"
+      }
+    },
+    "liveEvent": {
+      "welcome": {
+        "title": "مرحبًا بك في الحدث المباشر!",
+        "subtitle": "استكشف قاعة المعرض، زر الأجنحة، وتواصل مع المشاركين الآخرين. استخدم الألسنة أعلاه للتنقل."
+      },
+      "recommended": "موصى به لك",
+      "exhibitionHall": "قاعة المعرض - جميع الأجنحة",
+      "tabs": {
+        "recommended": "موصى به",
+        "allStands": "جميع الأجنحة",
+        "schedule": "الجدول الزمني",
+        "conferences": "المؤتمرات",
+        "networking": "التواصل"
+      }
+    },
+    "standFilter": {
+      "title": "خصص تجربتك",
+      "subtitle": "سوف نوصي بأجنحة بناءً على اهتماماتك.",
+      "interestLabel": "بماذا تهتم؟",
+      "searchPlaceholder": "ابحث في الأجنحة...",
+      "apply": "تطبيق التفضيلات",
+      "skip": "تخطي الآن"
+    },
+    "standsGrid": {
+      "searchPlaceholder": "ابحث عن الأجنحة…",
+      "filterButton": "تصفية",
+      "allCategories": "كل الفئات",
+      "viewToggle": {
+        "grid": "عرض الشبكة",
+        "hall3d": "صالة ثلاثية الأبعاد"
+      },
+      "empty": {
+        "title": "لم يتم العثور على أجنحة",
+        "subtitle": "حاول تعديل الفلاتر أو مصطلحات البحث."
+      },
+      "loading": "جار تحميل الأجنحة…",
+      "pagination": {
+        "previous": "السابق",
+        "next": "التالي",
+        "showing": "عرض {from}–{to} من أصل {total} جناح"
+      },
+      "categoryLabel": "الفئة:",
+      "all": "الكل",
+      "activeLabel": "نشط:",
+      "reset": "إعادة تعيين",
+      "view3D": "عرض الصالة ثلاثية الأبعاد",
+      "viewGrid": "عرض الشبكة",
+      "noMatching": "لا توجد أجنحة مطابقة",
+      "noStands": "لا توجد أجنحة حتى الآن",
+      "adjustFilters": "حاول تعديل الفلاتر...",
+      "emptyHall": "صالة المعرض فارغة حالياً. تحقق لاحقًا!",
+      "sponsor": "الراعي",
+      "favorite": "مفضل",
+      "goToPage": "اذهب إلى الصفحة"
+    },
+    "conferencesTab": {
+      "title": "المؤتمرات والجلسات",
+      "status": {
+        "live": "مباشر",
+        "upcoming": "قادم",
+        "ended": "انتهى"
+      },
+      "actions": {
+        "join": "انضم",
+        "startingSoon": "سيبدأ قريبًا",
+        "ended": "انتهى"
+      },
+      "empty": {
+        "title": "لا توجد مؤتمرات مجدولة",
+        "subtitle": "تحقق مرة أخرى لاحقًا للجلسات القادمة."
+      }
+    },
+    "scheduleTab": {
+      "title": "جدول الفعاليات",
+      "daysLabel": "أيام الجدول",
+      "dayLabel": "اليوم {day}",
+      "status": {
+        "liveNow": "يُبث الآن",
+        "upcoming": "قادم",
+        "ended": "انتهى"
+      },
+      "startsIn": "يبدأ خلال {time}",
+      "empty": "لا يوجد جدول متاح"
+    },
+    "networkingTab": {
+      "title": "التواصل الشبكي",
+      "subtitle": "تواصل مع الحضور الآخرين",
+      "searchPlaceholder": "ابحث عن الحضور...",
+      "empty": "لم يتم العثور على حضور",
+      "total": "المجموع {n}",
+      "visitors": "الزوار {n}",
+      "enterprises": "الشركات {n}",
+      "attendees": "الحضور",
+      "visible": "{n} ظاهرين",
+      "tryAdjustingSearch": "حاول تعديل مصطلحات البحث الخاصة بك.",
+      "waitMorePeople": "انتظر المزيد من الأشخاص للانضمام إلى الحدث!",
+      "companyFallback": "محترف مستقل",
+      "attendeeFallback": "حاضر",
+      "anonymousUser": "مستخدم مجهول",
+      "viewProfile": "عرض الملف الشخصي",
+      "roles": {
+        "visitor": "زائر",
+        "enterprise": "شركة",
+        "organizer": "منظم",
+        "admin": "مسؤول",
+        "participant": "مشارك"
+      },
+      "labels": {
+        "industry": "الصناعة",
+        "experience": "الخبرة",
+        "orgType": "نوع المنظمة",
+        "website": "الموقع الإلكتروني"
+      },
+      "modal": {
+        "currentRole": "الدور الحالي",
+        "contact": "الاتصال",
+        "business": "الأعمال",
+        "organizationType": "نوع المنظمة",
+        "location": "الموقع",
+        "language": "اللغة",
+        "timezone": "المنطقة الزمنية",
+        "organization": "المنظمة",
+        "about": "حول",
+        "interests": "الاهتمامات",
+        "networkingGoals": "أهداف التواصل الشبكي",
+        "profilePreferences": "تفضيلات الملف الشخصي",
+        "preferredEventTypes": "أنواع الأحداث المفضلة",
+        "preferredLanguages": "اللغات المفضلة",
+        "preferredRegions": "المناطق المفضلة",
+        "sendEmail": "إرسال بريد إلكتروني"
+      },
+      "reachOutModal": {
+        "title": "إرسال طلب تواصل",
+        "messageLabel": "أضف رسالة (اختياري)",
+        "submit": "إرسال الطلب",
+        "cancel": "إلغاء"
+      },
+      "toast": {
+        "sent": "تم إرسال طلب التواصل!",
+        "alreadyConnected": "متصل بالفعل"
+      }
+    },
+    "virtualStand": {
+      "actionBar": {
+        "resources": "الموارد",
+        "about": "حول",
+        "shop": "المتجر",
+        "chat": "دردشة",
+        "meeting": "اجتماع",
+        "assistant": "المساعد"
+      },
+      "messageLimit": "تم الوصول إلى حد الرسائل لهذا الجناح."
+    },
+    "standResources": {
+      "title": "الموارد",
+      "empty": "لا توجد موارد متاحة",
+      "download": "تحميل",
+      "fileTypeFallback": "ملف",
+      "views": "مشاهدات",
+      "downloads": "تنزيلات",
+      "watch": "مشاهدة",
+      "open": "فتح"
+    },
+    "productsPanel": {
+      "shop": "المتجر",
+      "store": "المتجر",
+      "specializedServices": "خدمات متخصصة",
+      "checkoutCart": "عربة الدفع",
+      "myCart": "عربتي",
+      "browseStore": "تصفح المتجر",
+      "inCart": "{n} في العربة",
+      "availability": "التوفر",
+      "soldOut": "غير متوفر",
+      "units": "{n} وحدة",
+      "orderPlacedTitle": "تم تقديم الطلب بنجاح!",
+      "orderPlacedMessage": "تم استلام طلبك. ستقوم بالدفع عند الاستلام.",
+      "downloadReceipt": "تحميل الإيصال",
+      "continueShopping": "متابعة التسوق",
+      "browseProducts": "تصفح المنتجات",
+      "deliveryInfoRequired": "معلومات التوصيل (مطلوبة)",
+      "shippingAddressPlaceholder": "أدخل عنوان الشحن الكامل",
+      "phoneNumber": "رقم الهاتف",
+      "deliveryNotesRequired": "ملاحظات التوصيل",
+      "deliveryNotesPlaceholder": "أي تعليمات خاصة بالتوصيل...",
+      "payNowCreditCard": "ادفع الآن (بطاقة ائتمان)",
+      "securePaymentStripe": "دفع آمن عبر Stripe",
+      "payOnReception": "الدفع عند الاستلام",
+      "cashOnDeliveryCod": "الدفع نقداً عند التسليم (COD)",
+      "totalSummary": "الإجمالي ({n} عناصر)",
+      "processing": "جارٍ المعالجة",
+      "completeOrder": "إكمال الطلب",
+      "reviewCart": "مراجعة العربة",
+      "pricePerUnit": "{price} / الوحدة",
+      "fixedService": "خدمة ثابتة",
+      "noTypeAvailable": "لا يوجد {type} متاحة",
+      "loadFailed": "فشل تحميل المنتجات",
+      "errors": {
+        "fillRequiredDeliveryInfo": "يرجى ملء جميع حقول معلومات التوصيل المطلوبة.",
+        "checkoutFailed": "فشل إتمام عملية الدفع. يرجى المحاولة مرة أخرى.",
+        "noOrderReceipt": "لا يوجد إيصال للطلب متاح بعد.",
+        "fetchReceiptFailed": "تعذر جلب تفاصيل الإيصال. يرجى المحاولة لاحقاً."
+      },
+      "cart": {
+        "label": "العربة",
+        "count": "({count} عناصر)"
+      },
+      "actions": {
+        "addToCart": "أضف إلى العربة",
+        "addAnother": "إضافة أخرى",
+        "remove": "إزالة",
+        "checkout": "الدفع",
+        "proceedToCheckout": "المتابعة إلى الدفع"
+      },
+      "checkout": {
+        "shippingAddress": "عنوان الشحن",
+        "deliveryNotes": "ملاحظات التوصيل (اختياري)",
+        "paymentMethod": "طريقة الدفع",
+        "payWithStripe": "الدفع عبر Stripe",
+        "cashOnDelivery": "الدفع نقداً عند التسليم"
+      },
+      "cartEmpty": {
+        "title": "العربة فارغة",
+        "subtitle": "تصفح الكتالوج لإضافة العناصر."
+      },
+      "orderSummary": "ملخص الطلب",
+      "total": "الإجمالي",
+      "placingOrder": "جارٍ تقديم الطلب...",
+      "orderPlaced": "تم تقديم الطلب بنجاح!",
+      "orderFailed": "فشل الطلب. يرجى المحاولة مرة أخرى.",
+      "itemType": {
+        "product": "منتج",
+        "service": "خدمة"
+      },
+      "columns": {
+        "price": "السعر",
+        "quantity": "الكمية"
+      },
+      "empty": {
+        "title": "لا توجد منتجات متاحة",
+        "subtitle": "هذا الجناح لا يحتوي على منتجات أو خدمات حتى الآن."
+      }
+    },
+    "chatPanel": {
+      "title": "الدردشة مع {standName}",
+      "placeholder": "اكتب رسالة...",
+      "messageLimit": "تم الوصول إلى حد الرسائل ({count}/15). يرجى طلب اجتماع لمواصلة المحادثة.",
+      "empty": {
+        "title": "ابدأ محادثة",
+        "subtitle": "أرسل رسالة لبدء الدردشة مع ممثل الجناح."
+      },
+      "senderLabel": "أنت",
+      "requestMeeting": "طلب اجتماع",
+      "loginRequired": "يرجى تسجيل الدخول للدردشة.",
+      "syncActive": "المزامنة نشطة",
+      "connecting": "جارٍ الاتصال...",
+      "limitedMessages": "محدود بـ {n} رسائل...",
+      "syncingService": "جارٍ الاتصال بخدمة المزامنة...",
+      "noMessages": "لا توجد رسائل حتى الآن",
+      "limitReached": "تم الوصول إلى الحد",
+      "limitMessage": "لقد استخدمت جميع {n} الرسائل. يرجى طلب اجتماع رسمي...",
+      "messagesRemaining": "تبقى {n} رسالة(رسائل)",
+      "chatLimitReached": "تم الوصول إلى حد الدردشة",
+      "requestMeetingInstead": "اطلب اجتماعًا بدلاً من ذلك",
+      "typePlaceholder": "اكتب شيئًا...",
+      "reconnecting": "إعادة الاتصال...",
+      "remainingShort": "باقي {n}"
+    },
+    "meetingRequestModal": {
+      "title": "طلب اجتماع",
+      "purposeLabel": "الغرض (اختياري)",
+      "dateLabel": "اختر تاريخًا",
+      "timeLabel": "اختر وقتًا",
+      "busySlots": "الأوقات المشغولة",
+      "submit": "إرسال الطلب",
+      "success": "تم طلب الاجتماع!",
+      "alreadyScheduled": "لديك اجتماع مجدول بالفعل.",
+      "error": "حدث خطأ. يرجى المحاولة مرة أخرى.",
+      "status": {
+        "rejected": "مرفوض",
+        "canceled": "ملغي",
+        "completed": "مكتمل",
+        "liveNow": "مباشر الآن",
+        "expired": "منتهي الصلاحية",
+        "readyToJoin": "جاهز للانضمام",
+        "inMinutes": "خلال {n} دقيقة",
+        "inHours": "خلال {n} ساعة",
+        "inDays": "خلال {n} يوم"
+      },
+      "errors": {
+        "updateFailed": "فشل في تحديث الاجتماع",
+        "missingEventId": "معرف الحدث مفقود لطلب الاجتماع",
+        "selectDateTime": "يرجى اختيار التاريخ والوقت",
+        "invalidStartTime": "وقت بدء الاجتماع غير صالح",
+        "futureOnly": "يجب أن يكون وقت الاجتماع في المستقبل",
+        "endAfterStart": "يجب أن يكون وقت الانتهاء بعد وقت البدء",
+        "withinScheduleDates": "يجب أن يكون الاجتماع ضمن مواعيد جدول الحدث",
+        "sendFailed": "فشل في إرسال الطلب. يرجى المحاولة مرة أخرى."
+      },
+      "headerTitle": "الاجتماعات مع {standName}",
+      "headerSubtitle": "جدولة ضمن الحدث مع قيود التوفر • الأوقات معروضة بالتوقيت {tz}",
+      "myMeetings": "اجتماعاتي",
+      "requestNew": "طلب جديد",
+      "loadingMeetings": "جارٍ تحميل اجتماعاتك...",
+      "empty": "لا توجد اجتماعات مع هذه المؤسسة في هذا الحدث بعد.",
+      "requestMeeting": "طلب اجتماع",
+      "generalDiscussion": "مناقشة عامة",
+      "generalInquiry": "استعلام عام",
+      "awaitingApproval": "في انتظار الموافقة",
+      "noActions": "لا توجد إجراءات متاحة",
+      "eventDay": "يوم الحدث",
+      "noSchedule": "لا يوجد جدول متاح لهذا الحدث.",
+      "startTime": "وقت البدء",
+      "noStartSlots": "لا توجد أوقات بدء متاحة.",
+      "duration": "المدة",
+      "noValidDurations": "لا توجد مدد صالحة لوقت البدء هذا.",
+      "messageOptional": "رسالة (اختياري)",
+      "messagePlaceholder": "صف باختصار ما ترغب في مناقشته...",
+      "backToMeetings": "العودة إلى الاجتماعات",
+      "sendingRequest": "جارٍ إرسال الطلب...",
+      "sendRequest": "إرسال الطلب",
+      "actions": {
+        "approve": "الموافقة",
+        "reject": "الرفض",
+        "join": "الانضمام",
+        "cancel": "إلغاء"
+      }
+    },
+    "audienceRoom": {
+      "title": "غرفة المؤتمر",
+      "watching": "أنت تشاهد:",
+      "qa": "الأسئلة والأجوبة",
+      "askPlaceholder": "اطرح سؤالاً...",
+      "submitQuestion": "إرسال السؤال",
+      "chat": "الدردشة",
+      "leaveRoom": "مغادرة الغرفة",
+      "waitingForSession": "في انتظار بدء الجلسة...",
+      "sessionEnded": "انتهت الجلسة.",
+      "noQuestions": "لا توجد أسئلة حتى الآن.",
+      "liveSession": "جلسة مباشرة",
+      "startsIn": "تبدأ خلال {time}",
+      "endsIn": "تنتهي خلال {time}",
+      "endedAgo": "انتهت منذ {time}",
+      "audienceChat": "دردشة الجمهور",
+      "qaDisabled": "قسم الأسئلة والأجوبة معطل حالياً",
+      "liveEvent": "حدث مباشر",
+      "reconnecting": "إعادة الاتصال…",
+      "peopleWatching": "الأشخاص الذين يشاهدون",
+      "sessionDisconnected": "تم قطع الاتصال بالجلسة",
+      "disconnectedMessage": "تم قطع اتصالك بالبث المباشر. انقر أدناه للعودة.",
+      "reconnectStream": "إعادة الاتصال بالبث",
+      "stage": "المنصة",
+      "assignedSpeaker": "المتحدث المعين",
+      "muteMicrophone": "كتم الميكروفون",
+      "unmuteMicrophone": "إلغاء كتم الميكروفون",
+      "turnOffCamera": "إيقاف تشغيل الكاميرا",
+      "turnOnCamera": "تشغيل الكاميرا",
+      "leave": "مغادرة",
+      "conferenceIntel": "معلومات المؤتمر",
+      "audiencePanel": "لوحة الجمهور",
+      "realtimeInteraction": "تفاعل في الوقت الحقيقي",
+      "speaker": "المتحدث",
+      "active": "نشط",
+      "notSpecified": "غير محدد",
+      "defaultDescription": "انضم إلى جلستنا المباشرة مع الخبراء وشارك في الأسئلة والأجوبة في الوقت الحقيقي.",
+      "liveAttendees": "الحضور المباشر",
+      "onlineCount": "{n} متصل",
+      "noOtherAttendees": "لا يوجد حضور آخر حتى الآن",
+      "chatPlaceholder": "اكتب رسالة",
+      "sending": "جارٍ الإرسال",
+      "send": "إرسال",
+      "liveChat": "الدردشة المباشرة",
+      "notSet": "غير محدد"
+    },
+    "qaPanel": {
+      "title": "الأسئلة والأجوبة",
+      "note": "سوف يكون سؤالك مرئيًا للمتحدث.",
+      "submit": "إرسال",
+      "empty": "لم يتم طرح أي أسئلة بعد.",
+      "live": "الأسئلة والأجوبة المباشرة",
+      "askPlaceholder": "اكتب سؤالك هنا...",
+      "sending": "جارٍ الإرسال...",
+      "postQuestion": "طرح السؤال",
+      "resolved": "تم الحل",
+      "speakerAnswer": "إجابة المتحدث",
+      "replyToQuestion": "الرد على السؤال",
+      "typeAnswer": "اكتب الإجابة...",
+      "send": "إرسال",
+      "time": {
+        "justNow": "الآن",
+        "daysAgo": "منذ {n} يوم",
+        "hoursAgo": "منذ {n} ساعة",
+        "minutesAgo": "منذ {n} دقيقة",
+        "secondsAgo": "منذ {n} ثانية"
+      }
+    },
+    "meetingRoom": {
+      "title": "غرفة الاجتماع",
+      "connecting": "جارٍ الاتصال...",
+      "joinMeeting": "انضم إلى الاجتماع",
+      "leaveMeeting": "غادر الاجتماع",
+      "mute": "كتم الصوت",
+      "unmute": "إلغاء كتم الصوت",
+      "turnOnCamera": "تشغيل الكاميرا",
+      "turnOffCamera": "إيقاف الكاميرا",
+      "meetingEnded": "انتهى الاجتماع.",
+      "cannotJoin": "لا يمكن الانضمام إلى هذا الاجتماع",
+      "timeRestriction": "يمكنك الانضمام فقط خلال وقت الاجتماع المحدد...",
+      "approvalRequired": "يجب اعتماد الاجتماع...",
+      "goBack": "ارجع",
+      "reconnecting": "إعادة الاتصال",
+      "cameraOff": "إيقاف تشغيل الكاميرا",
+      "cameraOn": "تشغيل الكاميرا",
+      "screenShareOff": "إيقاف المشاركة",
+      "screenShareOn": "مشاركة الشاشة",
+      "endCall": "إنهاء المكالمة",
+      "connectionFailed": "فشل الاتصال",
+      "returnToStand": "العودة إلى الوضع الطبيعي",
+      "establishing": "جارٍ إنشاء اتصال مشفر",
+      "rejoinPrompt": "أعد الانضمام الآن",
+      "waitingParticipant": "في انتظار المشارك الآخر...",
+      "rejoin": "أعد الانضمام",
+      "join": "انضم إلى الاجتماع",
+      "quietRoom": "الغرفة هادئة حاليًا",
+      "waitingStreams": "في انتظار بدء البث",
+      "switchMainPip": "تبديل الفيديو الرئيسي وفيديو الصورة داخل الصورة",
+      "screenShared": "تمت مشاركة الشاشة",
+      "streamPaused": "تم إيقاف البث مؤقتًا"
+    },
+    "inviteAccept": {
+      "title": "دعوة الزائر",
+      "processing": "جاري معالجة دعوتك...",
+      "missingEventId": "معرف الحدث مفقود في رابط الدعوة.",
+      "visitorOnly": "هذه الدعوة مخصصة لحسابات الزائر فقط. يرجى تسجيل الدخول بحساب زائر.",
+      "success": "لقد تم قبولك الآن كزائر ضيف لهذا الحدث.",
+      "error": "تعذر قبول الدعوة. قد تكون غير صالحة أو منتهية الصلاحية.",
+      "actions": {
+        "goToEvent": "اذهب إلى صفحة الحدث",
+        "enterLive": "ادخل التجربة المباشرة",
+        "backToEvents": "العودة إلى الأحداث"
+      }
+    },
+    "aiAssistant": {
+      "title": "المساعد الذكي",
+      "placeholder": "اسألني عن أي شيء يخص الفعاليات، الأجنحة، أو المنصة.",
+      "inputPlaceholder": "اكتب رسالتك...",
+      "greeting": "كيف يمكنني مساعدتك اليوم؟",
+      "suggestions": "الأسئلة المقترحة"
+    },
+    "eventDetail": {
+      "schedule": {
+        "title": "جدول الأحداث",
+        "dayLabel": "اليوم {day}",
+        "phases": {
+          "registrationOpens": "فترة التسجيل تبدأ",
+          "registrationDeadline": "موعد انتهاء التسجيل",
+          "eventStarts": "بداية الحدث",
+          "eventEnds": "نهاية الحدث"
+        },
+        "detailedSchedule": "الجدول التفصيلي",
+        "activityFallback": "نشاط",
+        "overnightBadge": "ليلي",
+        "noSlots": "لا توجد فترات محددة لهذا اليوم."
+      }
+    },
+    "liveStand": {
+      "title": "صف الجناح",
+      "subtitle": "يتم إعداد مسار الجناح المخصص هذا...",
+      "backToLive": "العودة إلى الحدث المباشر"
+    },
+    "webinars": {
+      "title": "الندوات عبر الويب",
+      "subtitle": "شاهد الجلسات وقم بتحميل التسجيلات...",
+      "transcriptViewer": "عارض النصوص المكتوبة",
+      "transcriptUpload": "قم بتحميل تسجيل صوتي لإنشاء نص مكتوب."
+    },
+    "eventPayment": {
+      "loading": "جارٍ تحميل تفاصيل الدفع...",
+      "freeEvent": "هذا الحدث مجاني",
+      "noPaymentRequired": "لا يتطلب دفعاً...",
+      "backToEvent": "العودة إلى الحدث",
+      "title": "دفع الحدث",
+      "securePaymentFor": "دفع آمن لـ...",
+      "ticketPrice": "سعر التذكرة",
+      "verifying": "جارٍ التحقق من الدفع...",
+      "verifyingMessage": "يرجى الانتظار أثناء التأكيد...",
+      "confirmed": "تم تأكيد الدفع!",
+      "confirmedMessage": "تم التحقق من الدفع الخاص بك...",
+      "enterEvent": "ادخل الحدث",
+      "downloadInvoice": "تحميل الفاتورة (PDF)",
+      "securePaymentTitle": "دفع آمن",
+      "securePaymentDesc": "انقر على الزر أدناه...",
+      "payNow": "ادفع الآن",
+      "redirecting": "إعادة التوجيه إلى Stripe...",
+      "poweredBy": "مدعوم من Stripe..."
+    },
+    "eventCard": {
+      "paidEvent": "حدث مدفوع",
+      "enterprisesCount": "{n} مؤسسات",
+      "enterLiveEvent": "دخول الحدث المباشر",
+      "viewDetails": "عرض التفاصيل",
+      "viewSummary": "عرض الملخص",
+      "nextSlot": "الفقرة التالية:",
+      "currentSlot": "الحالي: {label}"
+    },
+    "eventsGrid": {
+      "noEvents": "لم يتم العثور على فعاليات",
+      "checkBackLater": "تفقد لاحقًا لفرص معرض جديدة."
+    },
+    "eventsFilters": {
+      "searchPlaceholder": "ابحث عن الأحداث بالعنوان أو الوصف...",
+      "categoryLabel": "الفئة",
+      "allCategories": "كل الفئات"
+    },
+    "eventDetailsHeader": {
+      "organizedBy": "من تنظيم {name}",
+      "virtualPlatform": "المنصة الافتراضية"
+    },
+    "eventLiveLayout": {
+      "loading": "جاري تحميل الحدث...",
+      "unavailable": "الحدث غير متوفر",
+      "liveNow": "مباشر الآن",
+      "inProgress": "جارٍ التنفيذ",
+      "upcoming": "قادم",
+      "closed": "مغلق",
+      "registrationRequired": "التسجيل مطلوب",
+      "registerNow": "سجل الآن",
+      "accessNextSlot": "يفتح الوصول في الفاصل الزمني النشط التالي.",
+      "eventConcluded": "لقد انتهت هذه المعرض.",
+      "accessOpens": "يفتح الوصول عند بدء الحدث.",
+      "backToDetails": "العودة إلى التفاصيل"
+    },
+    "standFilterModal": {
+      "title": "خصص تجربتك",
+      "subtitle": "اختر اهتماماتك لرؤية الأجنحة الأكثر صلة.",
+      "domainCategory": "المجال / الفئة",
+      "topicsLabel": "المواضيع التي تهتم بها",
+      "exploreButton": "استكشاف الأجنحة",
+      "skip": "تخطى",
+      "topicsSelected": "تم اختيار {n} موضوع(مواضيع)"
+    },
+    "virtualStandLayout": {
+      "sponsorBadge": "راعٍ",
+      "welcome": "مرحباً",
+      "welcomeMessage": "مرحباً بكم في جناحنا الافتراضي. استكشف مواردنا...",
+      "visitWebsite": "زيارة الموقع الإلكتروني",
+      "website": "الموقع الإلكتروني",
+      "backToEvent": "العودة إلى الحدث",
+      "favorite": "مُفضّل",
+      "favorited": "تمت الإضافة إلى المفضلة",
+      "resourcesTab": "الوثائق والموارد",
+      "aboutTab": "حول الجناح"
+    },
+    "eventConferencesTab": {
+      "errors": {
+        "loadFailed": "فشل تحميل الجدول الزمني"
+      },
+      "status": {
+        "pending": "قيد الانتظار",
+        "canceled": "ملغى"
+      },
+      "enterpriseRepresentative": "ممثل الشركة",
+      "meetingSession": "جلسة الاجتماع",
+      "conferenceSession": "جلسة المؤتمر",
+      "enterpriseHost": "مضيف الشركة",
+      "speakerNotSet": "المتحدث غير محدد",
+      "timelineTitle": "الجدول الزمني للجلسات",
+      "timelineSubtitle": "عرض منفصل لاجتماعاتك والمؤتمرات الخاصة بك، مع حالات واضحة للبث المباشر، والقادمة، والمنتهية.",
+      "liveSessionsCount": "{n} جلسة مباشرة",
+      "myMeetings": "اجتماعاتي",
+      "myMeetingsSubtitle": "يتضمن من ستلتقي بهم، وقت البدء، المدة، العد التنازلي، والانضمام المباشر.",
+      "noMeetings": "لا توجد اجتماعات لهذا الحدث بعد.",
+      "with": "مع",
+      "start": "البدء",
+      "duration": "المدة",
+      "inProgressNow": "جارية الآن",
+      "timeWindowClosed": "نافذة الوقت مغلقة",
+      "joinMeeting": "انضم للاجتماع",
+      "wait": "انتظر",
+      "conferencesSubtitle": "يتضمن مضيف الشركة، المتحدث، وقت البدء، المدة، العد التنازلي، والانضمام المباشر.",
+      "noConferences": "لا توجد مؤتمرات لهذا الحدث بعد.",
+      "host": "المضيف",
+      "speaker": "المتحدث",
+      "conferenceIsLive": "المؤتمر مباشر",
+      "joinConference": "انضم للمؤتمر",
+      "na": "غير متوفر",
+      "durationHoursMinutes": "{h}س {m}د",
+      "durationHours": "{h}س",
+      "durationMinutes": "{m}د",
+      "invalidStartTime": "وقت البدء غير صالح",
+      "startingNow": "يبدأ الآن",
+      "startsInDaysHours": "يبدأ خلال {d}ي {h}س",
+      "startsInHoursMinutes": "يبدأ خلال {h}س {m}د",
+      "startsInMinutes": "يبدأ خلال {m}د"
+    },
+    "floatingAssistant": {
+      "buttonLabel": "المساعد",
+      "title": "المساعد الافتراضي",
+      "suggestedPrompts": [
+        "ما هي الفعاليات المباشرة الآن؟",
+        "أرني الأجنحة التي يجب أن أزورها.",
+        "ما هي الموارد التي يحتويها هذا الجناح؟"
+      ]
+    }
+  }
+}
