@@ -4117,6 +4117,22 @@
         "subtitle": "Check back later for upcoming sessions."
       }
     },
+    "conferenceCard": {
+      "status": {
+        "scheduled": "Scheduled",
+        "canceled": "Canceled"
+      },
+      "attendeeCountRegistered": "{count} registered",
+      "features": {
+        "chatEnabled": "Chat Enabled",
+        "qaOpen": "Q&A Open"
+      },
+      "actions": {
+        "joinLive": "Join Live",
+        "registerSession": "Register for Session",
+        "registered": "Registered"
+      }
+    },
     "scheduleTab": {
       "title": "Event Schedule",
       "daysLabel": "Schedule Days",

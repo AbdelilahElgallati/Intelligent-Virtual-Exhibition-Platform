@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Users, Clock } from 'lucide-react';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface ConferenceCardProps {
     conference: Conference;
@@ -23,6 +24,7 @@ const statusColors: Record<string, { bg: string; text: string; label: string }> 
 };
 
 export default function ConferenceCard({ conference, eventId, eventTimeZone = 'UTC', onRegister, onUnregister }: ConferenceCardProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const sc = statusColors[conference.status] || statusColors.scheduled;
     const viewerTimeZone = getUserTimezone();
@@ -50,10 +52,18 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
                         conference.status === 'scheduled' ? "bg-indigo-100 text-indigo-700" :
                             "bg-zinc-100 text-zinc-500"
                 )}>
-                    {conference.status === 'live' ? '🔴 Live Now' : conference.status}
+                    {conference.status === 'live'
+                        ? `🔴 ${t('visitor.conferencesTab.status.live')}`
+                        : conference.status === 'scheduled'
+                            ? t('visitor.conferenceCard.status.scheduled')
+                            : conference.status === 'ended'
+                                ? t('visitor.conferencesTab.status.ended')
+                                : conference.status === 'canceled'
+                                    ? t('visitor.conferenceCard.status.canceled')
+                                    : conference.status}
                 </span>
                 <span className="text-xs font-bold text-zinc-400 flex items-center gap-1">
-                    <Users size={14} className="opacity-50" /> {conference.attendee_count} registered
+                    <Users size={14} className="opacity-50" /> {t('visitor.conferenceCard.attendeeCountRegistered', { count: conference.attendee_count })}
                 </span>
             </div>
 
@@ -96,12 +106,12 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
                 <div className="flex items-center gap-2">
                     {conference.chat_enabled && (
                         <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-tighter flex items-center gap-1">
-                            Chat Enabled
+                            {t('visitor.conferenceCard.features.chatEnabled')}
                         </span>
                     )}
                     {conference.qa_enabled && (
                         <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-tighter flex items-center gap-1">
-                            Q&A Open
+                            {t('visitor.conferenceCard.features.qaOpen')}
                         </span>
                     )}
                 </div>
@@ -114,7 +124,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
                         onClick={() => router.push(`/events/${eventId}/live/conferences/${conference.id}/watch`)}
                         className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
-                        Join Live &rarr;
+                        {t('visitor.conferenceCard.actions.joinLive')} &rarr;
                     </button>
                 )}
 
@@ -123,7 +133,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
                         onClick={() => onRegister(conference.id)}
                         className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-indigo-200 transition-all active:scale-95"
                     >
-                        Register for Session
+                        {t('visitor.conferenceCard.actions.registerSession')}
                     </button>
                 )}
 
@@ -132,7 +142,7 @@ export default function ConferenceCard({ conference, eventId, eventTimeZone = 'U
                         onClick={() => onUnregister(conference.id)}
                         className="w-full py-3.5 bg-white border border-zinc-200 text-zinc-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50 rounded-2xl font-bold text-sm transition-all"
                     >
-                        &check; Registered &mdash; Cancel
+                        &check; {t('visitor.conferenceCard.actions.registered')} &mdash; {t('common.actions.cancel')}
                     </button>
                 )}
             </div>

@@ -1,0 +1,58 @@
+1) i18n setup summary
+
+- File analyzed: frontend/src/lib/i18n.ts
+- Translations are loaded statically at init time via JSON imports:
+  - frontend/messages/en.json
+  - frontend/messages/fr.json
+  - frontend/messages/ar.json
+- Resources mapping:
+  - resources.en.translation = en
+  - resources.fr.translation = fr
+  - resources.ar.translation = ar
+- Default language:
+  - lng: "en"
+  - fallbackLng: "en"
+- Detection strategy:
+  - order: localStorage -> cookie -> navigator
+  - caches: localStorage
+- Interpolation:
+  - escapeValue: false
+  - custom delimiters: { ... }
+
+Namespace strategy confirmation
+- Single namespace strategy is used:
+  - ns: ["translation"]
+  - defaultNS: "translation"
+
+Key structure pattern confirmation (frontend/messages/en.json)
+- Nested domain-based JSON object tree (not a flat key map).
+- Keys are accessed in dot notation from the "translation" namespace.
+- Pattern examples:
+  - admin.dashboard.title
+  - landing.hero.heading
+  - common.actions.submit
+
+
+2) Authenticated visitor scope discovery
+
+Compared against the previously completed scope list, and restricted to visitor-facing authenticated interfaces.
+
+Grouped file discovery:
+
+Pages
+- No additional authenticated visitor pages found outside the previous scope.
+
+Layouts
+- No additional authenticated visitor layouts found outside the previous scope.
+
+Components
+- frontend/src/components/conferences/ConferenceCard.tsx
+
+Notes
+- The following extra component files exist but are currently empty placeholders, so they are not active UI surfaces for i18n integration at this stage:
+  - frontend/src/components/modals/ChatModal.tsx
+  - frontend/src/components/modals/MeetingModal.tsx
+  - frontend/src/components/cards/StandCard.tsx
+  - frontend/src/components/layout/Sidebar.tsx
+- Role-specific files discovered and excluded from visitor scope:
+  - Organizer/Enterprise speaker-management components (e.g., ScheduleEditor, SpeakerRoom, OrganizerEventConferences).

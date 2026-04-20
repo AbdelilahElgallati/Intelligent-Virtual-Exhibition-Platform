@@ -108,3 +108,26 @@ All new keys added to frontend/messages/en.json (exact JSON path):
 - visitor.scheduleTab.kind.activity
 - visitor.meetingRequestModal.constraintNotice
 - visitor.meetingRequestModal.checkingAvailability
+
+---
+
+File: frontend/src/components/conferences/ConferenceCard.tsx
+- NEW keys added:
+  - visitor.conferenceCard.status.scheduled
+  - visitor.conferenceCard.status.canceled
+  - visitor.conferenceCard.attendeeCountRegistered
+  - visitor.conferenceCard.features.chatEnabled
+  - visitor.conferenceCard.features.qaOpen
+  - visitor.conferenceCard.actions.joinLive
+  - visitor.conferenceCard.actions.registerSession
+  - visitor.conferenceCard.actions.registered
+
+All new keys added to frontend/messages/en.json (exact JSON path):
+- visitor.conferenceCard.status.scheduled
+- visitor.conferenceCard.status.canceled
+- visitor.conferenceCard.attendeeCountRegistered
+- visitor.conferenceCard.features.chatEnabled
+- visitor.conferenceCard.features.qaOpen
+- visitor.conferenceCard.actions.joinLive
+- visitor.conferenceCard.actions.registerSession
+- visitor.conferenceCard.actions.registered
