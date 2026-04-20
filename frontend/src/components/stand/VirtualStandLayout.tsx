@@ -16,6 +16,7 @@ import {
     X,
 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/media';
+import { useTranslation } from 'react-i18next';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -87,6 +88,7 @@ export function VirtualStandLayout({
     hasUnreadChat,
     children,
 }: VirtualStandLayoutProps) {
+    const { t } = useTranslation();
     const [showPanel, setShowPanel] = useState(false);
     const [favoritePulse, setFavoritePulse] = useState(false);
     const panelRef = useRef<HTMLDivElement | null>(null);
@@ -242,7 +244,7 @@ export function VirtualStandLayout({
                     {stand.stand_type === 'sponsor' && (
                         <div className="flex justify-center mb-2">
                             <span className="px-2.5 py-0.5 text-[9px] font-semibold rounded-full text-amber-700 bg-amber-500/10 border border-amber-500/20">
-                                ★ SPONSOR
+                                ★ {t('visitor.virtualStandLayout.sponsorBadge')}
                             </span>
                         </div>
                     )}
@@ -269,11 +271,11 @@ export function VirtualStandLayout({
             <div className="absolute top-[22%] sm:top-[20%] right-3 sm:right-5 lg:right-12 z-10 w-40 sm:w-48 lg:w-56 hidden md:block">
                 <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_24px_rgba(0,0,0,0.1)] p-5 lg:p-6 border border-white/50">
                     <h3 className="font-semibold text-gray-500 mb-3 text-[10px] tracking-wide opacity-70">
-                        Welcome
+                        {t('visitor.virtualStandLayout.welcome')}
                     </h3>
                     <p className="text-[12px] text-gray-600 font-normal leading-relaxed line-clamp-6">
                         {stand.description ||
-                            'Welcome to our virtual stand. Explore our resources and connect with our team.'}
+                            t('visitor.virtualStandLayout.welcomeMessage')}
                     </p>
                     {stand.website_url && (
                         <a
@@ -283,7 +285,7 @@ export function VirtualStandLayout({
                             className="text-[10px] mt-4 inline-flex items-center font-semibold hover:opacity-80 transition-opacity"
                             style={{ color: themeColor }}
                         >
-                            Visit website <span className="ml-1 text-xs">→</span>
+                            {t('visitor.virtualStandLayout.visitWebsite')} <span className="ml-1 text-xs">→</span>
                         </a>
                     )}
                 </div>
@@ -332,7 +334,7 @@ export function VirtualStandLayout({
                             className="text-[10px] font-semibold block text-center"
                             style={{ color: themeColor }}
                         >
-                            Website →
+                            {t('visitor.virtualStandLayout.website')} →
                         </a>
                     )}
                 </div>
@@ -371,7 +373,7 @@ export function VirtualStandLayout({
                 className="absolute top-5 left-5 z-30 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/70 backdrop-blur-xl shadow-md text-[11px] font-semibold text-gray-700 hover:bg-white active:scale-95 transition-all border border-white/40"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Back to Event</span>
+                <span className="hidden sm:inline">{t('visitor.virtualStandLayout.backToEvent')}</span>
             </Link>
 
             {/* Favorite button */}
@@ -387,7 +389,7 @@ export function VirtualStandLayout({
                         }`}
                 />
                 <span className="hidden sm:inline">
-                    {favoriteId ? 'Favorited' : 'Favorite'}
+                    {favoriteId ? t('visitor.virtualStandLayout.favorited') : t('visitor.virtualStandLayout.favorite')}
                 </span>
             </button>
 
@@ -405,7 +407,7 @@ export function VirtualStandLayout({
                         <div className="flex items-center gap-4">
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: themeColor }} />
                             <h3 className="text-sm font-semibold text-gray-900 tracking-wide">
-                                {activeTab === 'resources' ? 'Documents & Resources' : 'About Stand'}
+                                {activeTab === 'resources' ? t('visitor.virtualStandLayout.resourcesTab') : t('visitor.virtualStandLayout.aboutTab')}
                             </h3>
                         </div>
                         <button
@@ -431,7 +433,7 @@ export function VirtualStandLayout({
                         themeColor={themeColor}
                         onClick={() => handleTabClick('resources')}
                         icon={<FileText className="w-4 h-4" />}
-                        label="Resources"
+                        label={t('visitor.virtualStand.actionBar.resources')}
                     />
                     {/* About */}
                     <ActionBarBtn
@@ -439,7 +441,7 @@ export function VirtualStandLayout({
                         themeColor={themeColor}
                         onClick={() => handleTabClick('about')}
                         icon={<Info className="w-4 h-4" />}
-                        label="About"
+                        label={t('visitor.virtualStand.actionBar.about')}
                     />
 
                     {/* Shop */}
@@ -449,7 +451,7 @@ export function VirtualStandLayout({
                             themeColor={themeColor}
                             onClick={onShopOpen}
                             icon={<ShoppingBag className="w-4 h-4" />}
-                            label="Shop"
+                            label={t('visitor.virtualStand.actionBar.shop')}
                         />
                     )}
 
@@ -463,7 +465,7 @@ export function VirtualStandLayout({
                             themeColor={themeColor}
                             onClick={onChatOpen}
                             icon={<MessageSquare className="w-4 h-4" />}
-                            label="Chat"
+                            label={t('visitor.virtualStand.actionBar.chat')}
                         />
                         {hasUnreadChat && (
                             <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow-sm z-50 translate-x-1/3 -translate-y-1/3" />
@@ -474,14 +476,14 @@ export function VirtualStandLayout({
                         themeColor={themeColor}
                         onClick={onMeetingOpen}
                         icon={<CalendarDays className="w-4 h-4" />}
-                        label="Meeting"
+                        label={t('visitor.virtualStand.actionBar.meeting')}
                     />
                     {/* Assistant */}
                     <ActionBarBtn
                         themeColor={themeColor}
                         onClick={onAssistantOpen}
                         icon={<Sparkles className="w-4 h-4" />}
-                        label="Assistant"
+                        label={t('visitor.virtualStand.actionBar.assistant')}
                     />
                 </div>
             </div>

@@ -608,6 +608,21 @@
     "diag": {
       "apiUrl": "NEXT_PUBLIC_API_URL = \"{value}\""
     },
+    "assistant": {
+      "openAssistantAria": "Open assistant",
+      "chat": {
+        "authRequired": "Please log in to use the assistant.",
+        "requestFailed": "Assistant request failed",
+        "emptyTitle": "How can I help you?",
+        "emptySubtitle": "Ask anything about the platform or this event.",
+        "loginPromptPrefix": "Please",
+        "loginPromptSuffix": "to chat with the assistant.",
+        "composerPlaceholder": "Ask the assistant...",
+        "composerStopAria": "Stop",
+        "composerSendAria": "Send",
+        "composerHint": "Enter to send · Shift+Enter for new line"
+      }
+    },
     "roles": {
       "admin": "admin",
       "organizer": "organizer",
@@ -649,6 +664,10 @@
         "slotPlaceholder": "Activity / description...",
         "removeSlotTooltip": "Remove slot",
         "dayLabel": "Day {day_number}",
+        "summary": "{range} · {count} slot{plural}",
+        "emptySlotsPrefix": "No time slots yet -- click",
+        "emptySlotsCta": "+ Add Slot",
+        "emptySlotsSuffix": "below",
         "emptySlots": "No time slots yet -- click + Add Slot below",
         "addSlot": "+ Add Time Slot",
         "noDatesPlaceholder": "Select a start & end date above",
@@ -1103,7 +1122,8 @@
           "pending": "PENDING",
           "rejected": "REJECTED",
           "notJoined": "NOT JOINED"
-        }
+        },
+        "nextSlotIn": "Next slot in {time}"
       },
       "receiptDownload": {
         "payerDefault": "Visitor",
@@ -4072,6 +4092,12 @@
       "emptyHall": "The exhibition hall is currently empty. Check back later!",
       "sponsor": "Sponsor",
       "favorite": "Favorite",
+      "favorited": "Favorited",
+      "addFavorite": "Add stand to favorites",
+      "removeFavorite": "Remove stand from favorites",
+      "loadingHall": "Loading Exhibition Hall...",
+      "loadFailed": "Failed to load stands. Please try again later.",
+      "pageOf": "Page {current} of {total}",
       "goToPage": "Go to page"
     },
     "conferencesTab": {
@@ -4095,6 +4121,28 @@
       "title": "Event Schedule",
       "daysLabel": "Schedule Days",
       "dayLabel": "Day {day}",
+      "visitorTimeline": "Visitor Timeline",
+      "activitySchedule": "Event Activity Schedule",
+      "followActivity": "Follow each activity by timeline and track what is happening live.",
+      "timesShown": "Times shown in your timezone: {tz}",
+      "happeningNow": "Happening Now",
+      "nextUp": "Next Up",
+      "noLiveSession": "No session is currently live.",
+      "noUpcoming": "No upcoming activity available.",
+      "sessionsCount": "{n} sessions",
+      "liveCount": "{n} live",
+      "upcomingCount": "{n} upcoming",
+      "noSessionsDay": "No sessions scheduled for this day yet.",
+      "loadingDetails": "Loading event details...",
+      "notPublished": "The event schedule has not been published yet. Check back later for updates.",
+      "toLabel": "to",
+      "untitledSession": "Untitled Session",
+      "nextDayBadge": "(+1 day)",
+      "kind": {
+        "conference": "Conference",
+        "talk": "Talk",
+        "activity": "Activity"
+      },
       "status": {
         "liveNow": "Live Now",
         "upcoming": "Upcoming",
@@ -4336,6 +4384,8 @@
       "noValidDurations": "No valid durations for this start time.",
       "messageOptional": "Message (Optional)",
       "messagePlaceholder": "Briefly describe what you'd like to discuss...",
+      "constraintNotice": "Meeting requests are constrained by event schedule, your availability, enterprise availability, and conference overlaps.",
+      "checkingAvailability": "Checking availability...",
       "backToMeetings": "Back to Meetings",
       "sendingRequest": "Sending Request...",
       "sendRequest": "Send Request",
@@ -4547,7 +4597,9 @@
       "viewDetails": "View Details",
       "viewSummary": "View Summary",
       "nextSlot": "Next slot:",
-      "currentSlot": "Current: {label}"
+      "currentSlot": "Current: {label}",
+      "virtual": "Virtual",
+      "defaultCategory": "Exhibition"
     },
     "eventsGrid": {
       "noEvents": "No events found",

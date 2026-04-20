@@ -24,6 +24,7 @@ import { EventScheduleDay } from '@/types/event';
 import { Meeting } from '@/types/meeting';
 import { fromZonedTime } from 'date-fns-tz';
 import { formatInTZ, getUserTimezone, toYmdInEventTz } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface MeetingRequestModalProps {
     isOpen: boolean;
@@ -56,23 +57,23 @@ interface BusySlot {
 
 type TimelineStatus = 'upcoming' | 'starting-soon' | 'live' | 'ended' | 'expired';
 
-function getMeetingTimeline(m: Meeting): { status: TimelineStatus; label: string; color: string; bgColor: string; icon: typeof Clock } {
+function getMeetingTimeline(m: Meeting): { status: TimelineStatus; labelKey: string; color: string; bgColor: string; icon: typeof Clock; labelParams?: Record<string, number> } {
     const now = Date.now();
     const start = new Date(m.start_time).getTime();
     const end = new Date(m.end_time).getTime();
     const minsUntilStart = Math.round((start - now) / 60000);
 
-    if (m.status === 'rejected') return { status: 'ended', label: 'Rejected', color: 'text-red-600', bgColor: 'bg-red-50 border-red-100', icon: Ban };
-    if (m.status === 'canceled') return { status: 'ended', label: 'Canceled', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: Ban };
-    if (m.status === 'completed' || m.session_status === 'ended') return { status: 'ended', label: 'Completed', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: CheckCircle2 };
-    if (m.session_status === 'live') return { status: 'live', label: 'Live Now', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: CircleDot };
-    if (now > end) return { status: 'expired', label: 'Expired', color: 'text-red-500', bgColor: 'bg-red-50/50 border-red-100', icon: Timer };
-    if (now >= start && now <= end) return { status: 'live', label: 'Ready to Join', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: Video };
-    if (minsUntilStart <= 15 && minsUntilStart > 0) return { status: 'starting-soon', label: `In ${minsUntilStart} min`, color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: Hourglass };
-    if (minsUntilStart <= 60) return { status: 'upcoming', label: `In ${minsUntilStart} min`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    if (m.status === 'rejected') return { status: 'ended', labelKey: 'visitor.meetingRequestModal.status.rejected', color: 'text-red-600', bgColor: 'bg-red-50 border-red-100', icon: Ban };
+    if (m.status === 'canceled') return { status: 'ended', labelKey: 'visitor.meetingRequestModal.status.canceled', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: Ban };
+    if (m.status === 'completed' || m.session_status === 'ended') return { status: 'ended', labelKey: 'visitor.meetingRequestModal.status.completed', color: 'text-zinc-500', bgColor: 'bg-zinc-50 border-zinc-200', icon: CheckCircle2 };
+    if (m.session_status === 'live') return { status: 'live', labelKey: 'visitor.meetingRequestModal.status.liveNow', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: CircleDot };
+    if (now > end) return { status: 'expired', labelKey: 'visitor.meetingRequestModal.status.expired', color: 'text-red-500', bgColor: 'bg-red-50/50 border-red-100', icon: Timer };
+    if (now >= start && now <= end) return { status: 'live', labelKey: 'visitor.meetingRequestModal.status.readyToJoin', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200', icon: Video };
+    if (minsUntilStart <= 15 && minsUntilStart > 0) return { status: 'starting-soon', labelKey: 'visitor.meetingRequestModal.status.inMinutes', labelParams: { n: minsUntilStart }, color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200', icon: Hourglass };
+    if (minsUntilStart <= 60) return { status: 'upcoming', labelKey: 'visitor.meetingRequestModal.status.inMinutes', labelParams: { n: minsUntilStart }, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
     const hoursUntil = Math.floor(minsUntilStart / 60);
-    if (hoursUntil < 24) return { status: 'upcoming', label: `In ${hoursUntil}h`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
-    return { status: 'upcoming', label: `In ${Math.floor(hoursUntil / 24)}d`, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    if (hoursUntil < 24) return { status: 'upcoming', labelKey: 'visitor.meetingRequestModal.status.inHours', labelParams: { n: hoursUntil }, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
+    return { status: 'upcoming', labelKey: 'visitor.meetingRequestModal.status.inDays', labelParams: { n: Math.floor(hoursUntil / 24) }, color: 'text-indigo-600', bgColor: 'bg-indigo-50 border-indigo-200', icon: Clock };
 }
 
 function formatLocalDate(date: Date): string {
@@ -176,6 +177,7 @@ export function MeetingRequestModal({
     onUpdateStatus,
     initialView = 'list',
 }: MeetingRequestModalProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const [activeView, setActiveView] = useState<'list' | 'request'>(initialView);
     const viewerTimeZone = getUserTimezone();
@@ -307,7 +309,7 @@ export function MeetingRequestModal({
             const endAnchor = new Date(`${endYmd}T12:00:00Z`);
 
             const eventDateLabel = (d: Date, index: number) =>
-                `Day ${index} — ${new Intl.DateTimeFormat('en-US', {
+                `${t('visitor.scheduleTab.dayLabel', { day: index })} — ${new Intl.DateTimeFormat('en-US', {
                     weekday: 'short',
                     month: 'short',
                     day: 'numeric',
@@ -454,7 +456,7 @@ export function MeetingRequestModal({
             if (onSuccess) onSuccess();
         } catch (error) {
             console.error('Failed to update meeting status', error);
-            setMeetingError((error as Error)?.message || 'Failed to update meeting');
+            setMeetingError((error as Error)?.message || t('visitor.meetingRequestModal.errors.updateFailed'));
         }
     };
 
@@ -467,11 +469,11 @@ export function MeetingRequestModal({
 
         try {
             if (!eventId) {
-                throw new Error('Missing event id for meeting request');
+                throw new Error(t('visitor.meetingRequestModal.errors.missingEventId'));
             }
 
             if (!meetingForm.date || !meetingForm.startTime || !meetingForm.endTime) {
-                throw new Error('Please select date and time');
+                throw new Error(t('visitor.meetingRequestModal.errors.selectDateTime'));
             }
 
             const startTime = fromZonedTime(`${meetingForm.date}T${meetingForm.startTime}:00`, eventTimeZone);
@@ -479,21 +481,21 @@ export function MeetingRequestModal({
             const now = Date.now();
 
             if (!startTime || Number.isNaN(startTime.getTime())) {
-                throw new Error('Invalid meeting start time');
+                throw new Error(t('visitor.meetingRequestModal.errors.invalidStartTime'));
             }
             if (startTime.getTime() <= now + 30000) {
-                throw new Error('Meeting time must be in the future');
+                throw new Error(t('visitor.meetingRequestModal.errors.futureOnly'));
             }
 
             if (endTime <= startTime) {
-                throw new Error('End time must be after start time');
+                throw new Error(t('visitor.meetingRequestModal.errors.endAfterStart'));
             }
 
             if (eventStartDate && eventEndDate) {
                 const eventStart = new Date(eventStartDate);
                 const eventEnd = new Date(eventEndDate);
                 if (startTime < eventStart || endTime > eventEnd) {
-                    throw new Error('Meeting must be within event schedule dates');
+                    throw new Error(t('visitor.meetingRequestModal.errors.withinScheduleDates'));
                 }
             }
 
@@ -503,7 +505,7 @@ export function MeetingRequestModal({
                 event_id: eventId,
                 start_time: startTime.toISOString(),
                 end_time: endTime.toISOString(),
-                purpose: meetingForm.purpose || 'General Inquiry',
+                purpose: meetingForm.purpose || t('visitor.meetingRequestModal.generalInquiry'),
             });
 
             setMeetingForm({ date: '', startTime: '', endTime: '', durationMinutes: 0, purpose: '' });
@@ -518,7 +520,7 @@ export function MeetingRequestModal({
             setActiveView('list');
         } catch (error) {
             console.error('Failed to request meeting', error);
-            setMeetingError((error as Error)?.message || 'Failed to send request. Please try again.');
+            setMeetingError((error as Error)?.message || t('visitor.meetingRequestModal.errors.sendFailed'));
         } finally {
             setLoading(false);
         }
@@ -547,8 +549,8 @@ export function MeetingRequestModal({
                     }}
                 >
                     <div>
-                        <h3 className="font-bold text-gray-900">Meetings with {standName}</h3>
-                        <p className="text-xs text-gray-500">Event-scoped scheduling with availability constraints • Times shown in {viewerTimeZone}</p>
+                        <h3 className="font-bold text-gray-900">{t('visitor.meetingRequestModal.headerTitle', { standName })}</h3>
+                        <p className="text-xs text-gray-500">{t('visitor.meetingRequestModal.headerSubtitle', { tz: viewerTimeZone })}</p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X size={20} />
@@ -572,7 +574,7 @@ export function MeetingRequestModal({
                             )}
                             style={activeView === 'list' ? { color: themeColor } : undefined}
                         >
-                            <MessageSquare size={14} className="inline mr-1.5 -mt-0.5" /> My Meetings
+                            <MessageSquare size={14} className="inline mr-1.5 -mt-0.5" /> {t('visitor.meetingRequestModal.myMeetings')}
                         </button>
                         <button
                             onClick={() => {
@@ -585,7 +587,7 @@ export function MeetingRequestModal({
                             )}
                             style={activeView === 'request' ? { color: themeColor } : undefined}
                         >
-                            <Calendar size={14} className="inline mr-1.5 -mt-0.5" /> Request New
+                            <Calendar size={14} className="inline mr-1.5 -mt-0.5" /> {t('visitor.meetingRequestModal.requestNew')}
                         </button>
                     </div>
 
@@ -600,18 +602,18 @@ export function MeetingRequestModal({
                         <div className="space-y-3">
                             {loadingMeetings && activeView === 'list' ? (
                                 <div className="h-40 flex items-center justify-center text-zinc-400 text-sm">
-                                    <Loader2 size={18} className="mr-2 animate-spin" /> Loading your meetings...
+                                    <Loader2 size={18} className="mr-2 animate-spin" /> {t('visitor.meetingRequestModal.loadingMeetings')}
                                 </div>
                             ) : categorizedMeetings.length === 0 ? (
                                 <div className="h-40 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-2xl border border-zinc-200">
                                     <Calendar size={36} className="text-zinc-300 mb-2" />
-                                    <p className="font-semibold text-zinc-500">No meetings with this enterprise in this event yet.</p>
+                                    <p className="font-semibold text-zinc-500">{t('visitor.meetingRequestModal.empty')}</p>
                                     <Button
                                         className="mt-3 text-white"
                                         style={{ backgroundColor: themeColor }}
                                         onClick={() => setActiveView('request')}
                                     >
-                                        Request a Meeting
+                                        {t('visitor.meetingRequestModal.requestMeeting')}
                                     </Button>
                                 </div>
                             ) : (
@@ -627,7 +629,7 @@ export function MeetingRequestModal({
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                                         <span className={clsx('text-[11px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wide', tl.bgColor, tl.color)}>
-                                                            <TlIcon size={12} className="inline mr-1 -mt-0.5" /> {tl.label}
+                                                            <TlIcon size={12} className="inline mr-1 -mt-0.5" /> {t(tl.labelKey, tl.labelParams)}
                                                         </span>
                                                         {m.status !== 'canceled' && m.status !== 'rejected' && m.status !== 'completed' && (
                                                             <span className={clsx(
@@ -640,7 +642,7 @@ export function MeetingRequestModal({
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm font-semibold text-zinc-900">{m.purpose || 'General discussion'}</p>
+                                                    <p className="text-sm font-semibold text-zinc-900">{m.purpose || t('visitor.meetingRequestModal.generalDiscussion')}</p>
                                                     <p className="text-xs text-zinc-500 mt-1">
                                                         {formatInTZ(m.start_time, viewerTimeZone, 'MMM d, yyyy')}
                                                         {' · '}
@@ -656,17 +658,17 @@ export function MeetingRequestModal({
                                                                 <Button size="sm" variant="outline"
                                                                     className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
                                                                     onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'approved')}>
-                                                                    <CheckCircle2 size={13} className="mr-1.5" /> Approve
+                                                                    <CheckCircle2 size={13} className="mr-1.5" /> {t('visitor.meetingRequestModal.actions.approve')}
                                                                 </Button>
                                                                 <Button size="sm" variant="outline"
                                                                     className="border-red-200 text-red-600 hover:bg-red-50"
                                                                     onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'rejected')}>
-                                                                    <X size={13} className="mr-1.5" /> Reject
+                                                                    <X size={13} className="mr-1.5" /> {t('visitor.meetingRequestModal.actions.reject')}
                                                                 </Button>
                                                             </>
                                                         ) : (
                                                             <span className="text-xs text-amber-600 flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
-                                                                <Hourglass size={13} className="shrink-0" /> Awaiting approval
+                                                                <Hourglass size={13} className="shrink-0" /> {t('visitor.meetingRequestModal.awaitingApproval')}
                                                             </span>
                                                         )
                                                     )}
@@ -676,7 +678,7 @@ export function MeetingRequestModal({
                                                             className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                                             onClick={() => router.push(`/meetings/${m.id || m._id}/room`)}
                                                         >
-                                                            <Video size={13} className="mr-1.5" /> Join
+                                                            <Video size={13} className="mr-1.5" /> {t('visitor.meetingRequestModal.actions.join')}
                                                         </Button>
                                                     )}
                                                     {canCancel && m.status !== 'pending' && (
@@ -686,12 +688,12 @@ export function MeetingRequestModal({
                                                             className="border-red-200 text-red-600 hover:bg-red-50"
                                                             onClick={() => handleUpdateMeetingStatus(m.id || m._id, 'canceled')}
                                                         >
-                                                            <Ban size={13} className="mr-1.5" /> Cancel
+                                                            <Ban size={13} className="mr-1.5" /> {t('visitor.meetingRequestModal.actions.cancel')}
                                                         </Button>
                                                     )}
                                                     {!canJoin && !canCancel && m.status !== 'pending' && (
                                                         <span className="text-xs text-zinc-400 flex items-center">
-                                                            <CheckCircle2 size={13} className="mr-1.5" /> No actions available
+                                                            <CheckCircle2 size={13} className="mr-1.5" /> {t('visitor.meetingRequestModal.noActions')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -712,12 +714,12 @@ export function MeetingRequestModal({
                             >
                                 <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                 <span>
-                                    Meeting requests are constrained by event schedule, your availability, enterprise availability, and conference overlaps.
+                                    {t('visitor.meetingRequestModal.constraintNotice')}
                                 </span>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-black uppercase text-zinc-400">Event Day</label>
+                                <label className="text-xs font-black uppercase text-zinc-400">{t('visitor.meetingRequestModal.eventDay')}</label>
                                 {dayAvailability.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                         {dayAvailability.map((day) => (
@@ -746,16 +748,16 @@ export function MeetingRequestModal({
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-zinc-400 italic">No schedule available for this event.</p>
+                                    <p className="text-xs text-zinc-400 italic">{t('visitor.meetingRequestModal.noSchedule')}</p>
                                 )}
                             </div>
 
                             {meetingForm.date && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">Start Time</label>
+                                    <label className="text-xs font-black uppercase text-zinc-400">{t('visitor.meetingRequestModal.startTime')}</label>
                                     {loadingSlots ? (
                                         <div className="flex items-center gap-2 text-xs text-zinc-400">
-                                            <Loader2 size={14} className="animate-spin" /> Checking availability...
+                                            <Loader2 size={14} className="animate-spin" /> {t('visitor.meetingRequestModal.checkingAvailability')}
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto pr-1">
@@ -790,7 +792,7 @@ export function MeetingRequestModal({
                                                     </button>
                                                 );
                                             })}
-                                            {startTimeOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">No start slots available.</p>}
+                                            {startTimeOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">{t('visitor.meetingRequestModal.noStartSlots')}</p>}
                                         </div>
                                     )}
                                 </div>
@@ -798,7 +800,7 @@ export function MeetingRequestModal({
 
                             {meetingForm.startTime && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase text-zinc-400">Duration</label>
+                                    <label className="text-xs font-black uppercase text-zinc-400">{t('visitor.meetingRequestModal.duration')}</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {durationOptions.map(({ duration, endTime, disabled, conflict }) => {
                                             return (
@@ -829,7 +831,7 @@ export function MeetingRequestModal({
                                                 </button>
                                             );
                                         })}
-                                        {durationOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">No valid durations for this start time.</p>}
+                                        {durationOptions.length === 0 && <p className="col-span-full text-xs text-zinc-400 italic">{t('visitor.meetingRequestModal.noValidDurations')}</p>}
                                     </div>
                                 </div>
                             )}
@@ -848,12 +850,12 @@ export function MeetingRequestModal({
                             )}
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Message (Optional)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('visitor.meetingRequestModal.messageOptional')}</label>
                                 <textarea
                                     rows={3}
                                     value={meetingForm.purpose}
                                     onChange={(e) => setMeetingForm((f) => ({ ...f, purpose: e.target.value }))}
-                                    placeholder="Briefly describe what you'd like to discuss..."
+                                    placeholder={t('visitor.meetingRequestModal.messagePlaceholder')}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent resize-none"
                                     style={{ ['--tw-ring-color' as string]: `${themeColor}44` }}
                                 />
@@ -866,7 +868,7 @@ export function MeetingRequestModal({
                                     className="w-40"
                                     onClick={() => setActiveView('list')}
                                 >
-                                    Back to Meetings
+                                    {t('visitor.meetingRequestModal.backToMeetings')}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -874,7 +876,7 @@ export function MeetingRequestModal({
                                     style={{ backgroundColor: themeColor }}
                                     disabled={loading}
                                 >
-                                    {loading ? 'Sending Request...' : 'Send Request'}
+                                    {loading ? t('visitor.meetingRequestModal.sendingRequest') : t('visitor.meetingRequestModal.sendRequest')}
                                 </Button>
                             </div>
                         </form>

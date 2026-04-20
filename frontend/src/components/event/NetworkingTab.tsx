@@ -5,6 +5,7 @@ import { ENDPOINTS } from '@/lib/api/endpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { resolveMediaUrl } from '@/lib/media';
 import { Briefcase, Building2, ExternalLink, Globe, Mail, MapPin, Search, Target, Users, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /* ── Types ── */
 
@@ -52,6 +53,7 @@ function toExternalUrl(raw?: string): string | null {
 /* ── Main Component ── */
 
 export function NetworkingTab({ eventId }: NetworkingTabProps) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [attendees, setAttendees] = useState<Attendee[]>([]);
     const [loadingAttendees, setLoadingAttendees] = useState(true);
@@ -122,22 +124,22 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
                             <div className="p-2.5 rounded-xl bg-indigo-600 text-white">
                                 <Users size={20} />
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-900">Networking</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('visitor.networkingTab.title')}</h2>
                         </div>
                         <p className="text-gray-600 max-w-2xl text-sm leading-relaxed">
-                            Connect with fellow attendees, discover shared interests, and build professional relationships in real-time.
+                            {t('visitor.networkingTab.subtitle')}
                         </p>
                     </div>
                     {!loadingAttendees && (
                         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
                             <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-                                Total {attendees.length}
+                                {t('visitor.networkingTab.total', { n: attendees.length })}
                             </span>
                             <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                                Visitors {roleStats.visitor || 0}
+                                {t('visitor.networkingTab.visitors', { n: roleStats.visitor || 0 })}
                             </span>
                             <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Enterprises {roleStats.enterprise || 0}
+                                {t('visitor.networkingTab.enterprises', { n: roleStats.enterprise || 0 })}
                             </span>
                         </div>
                     )}
@@ -149,10 +151,10 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-bold text-gray-900">Attendees</h3>
+                            <h3 className="text-lg font-bold text-gray-900">{t('visitor.networkingTab.attendees')}</h3>
                             {!loadingAttendees && (
                                 <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full font-semibold border border-indigo-200">
-                                    {filtered.length} visible
+                                    {t('visitor.networkingTab.visible', { n: filtered.length })}
                                 </span>
                             )}
                         </div>
@@ -162,7 +164,7 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search industry, name, role..."
+                                placeholder={t('visitor.networkingTab.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all text-gray-700"
@@ -191,11 +193,11 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
                     ) : filtered.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {filtered.map((attendee) => (
-                                <AttendeeCard
-                                    key={attendee.id || attendee.email}
-                                    attendee={attendee}
-                                    onReachOut={() => setSelectedAttendee(attendee)}
-                                />
+                                 <AttendeeCard
+                                     key={attendee.id || attendee.email}
+                                     attendee={attendee}
+                                     onReachOut={() => setSelectedAttendee(attendee)}
+                                 />
                             ))}
                         </div>
                     ) : (
@@ -203,9 +205,9 @@ export function NetworkingTab({ eventId }: NetworkingTabProps) {
                             <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                 <Users className="h-7 w-7 text-gray-400" />
                             </div>
-                            <h4 className="text-gray-900 font-semibold mb-1">No attendees found</h4>
+                            <h4 className="text-gray-900 font-semibold mb-1">{t('visitor.networkingTab.empty')}</h4>
                             <p className="text-gray-500 text-sm">
-                                {searchQuery ? 'Try adjusting your search terms.' : 'Wait for more people to join the event!'}
+                                {searchQuery ? t('visitor.networkingTab.tryAdjustingSearch') : t('visitor.networkingTab.waitMorePeople')}
                             </p>
                         </div>
                     )}
@@ -291,15 +293,16 @@ function NetworkingAvatar({
 }
 
 function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut: () => void }) {
+    const { t } = useTranslation();
     const roleBadge: Record<string, { label: string; cls: string }> = {
-        visitor: { label: 'Visitor', cls: 'bg-blue-50 text-blue-600 border-blue-100' },
-        enterprise: { label: 'Enterprise', cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        organizer: { label: 'Organizer', cls: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-        admin: { label: 'Admin', cls: 'bg-slate-50 text-slate-600 border-slate-100' },
+        visitor: { label: t('visitor.networkingTab.roles.visitor'), cls: 'bg-blue-50 text-blue-600 border-blue-100' },
+        enterprise: { label: t('visitor.networkingTab.roles.enterprise'), cls: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        organizer: { label: t('visitor.networkingTab.roles.organizer'), cls: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+        admin: { label: t('visitor.networkingTab.roles.admin'), cls: 'bg-slate-50 text-slate-600 border-slate-100' },
     };
     const badge = roleBadge[attendee.role || 'visitor'] || roleBadge.visitor;
 
-    const companyLabel = attendee.company || attendee.org_name || 'Independent professional';
+    const companyLabel = attendee.company || attendee.org_name || t('visitor.networkingTab.companyFallback');
     const location = [attendee.org_city, attendee.org_country].filter(Boolean).join(', ');
     const hasEnterpriseDetails = String(attendee.role || '').toLowerCase() === 'enterprise';
     const hasVisitorDetails = String(attendee.role || '').toLowerCase() === 'visitor';
@@ -327,13 +330,13 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
                 <div className="flex-1 min-w-0 pt-1">
                     <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-semibold text-gray-900 truncate text-base leading-none">
-                            {attendee.full_name || 'Anonymous User'}
+                            {attendee.full_name || t('visitor.networkingTab.anonymousUser')}
                         </h4>
                     </div>
                     
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
                         <Briefcase size={12} className="shrink-0" />
-                        <span className="truncate">{attendee.job_title || 'Attendee'}</span>
+                        <span className="truncate">{attendee.job_title || t('visitor.networkingTab.attendeeFallback')}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
                         <Building2 size={12} className="shrink-0" />
@@ -350,7 +353,7 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
             <div className="mt-6 space-y-4 flex-1 flex flex-col">
                 {attendee.industry && (
                     <div className="text-xs text-gray-600 line-clamp-1">
-                        <span className="font-semibold text-gray-700">Industry:</span> {attendee.industry}
+                        <span className="font-semibold text-gray-700">{t('visitor.networkingTab.labels.industry')}:</span> {attendee.industry}
                     </div>
                 )}
                 {location && (
@@ -392,13 +395,13 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
 
                 {profileTag && (
                     <div className="text-xs text-gray-500 line-clamp-1">
-                        <span className="font-semibold text-gray-700">{hasEnterpriseDetails ? 'Org Type:' : 'Experience:'}</span> {profileTag}
+                        <span className="font-semibold text-gray-700">{hasEnterpriseDetails ? `${t('visitor.networkingTab.labels.orgType')}:` : `${t('visitor.networkingTab.labels.experience')}:`}</span> {profileTag}
                     </div>
                 )}
 
                 {hasEnterpriseDetails && attendee.org_website && (
                     <div className="text-xs text-gray-500 truncate">
-                        <span className="font-semibold text-gray-700">Website:</span> {attendee.org_website}
+                        <span className="font-semibold text-gray-700">{t('visitor.networkingTab.labels.website')}:</span> {attendee.org_website}
                     </div>
                 )}
                 {hasVisitorDetails && attendee.bio && (
@@ -411,7 +414,7 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
                     onClick={onReachOut}
                     className="w-full py-2.5 rounded-xl bg-white text-indigo-600 text-xs font-semibold border border-indigo-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
                 >
-                    View Profile
+                    {t('visitor.networkingTab.viewProfile')}
                 </button>
             </div>
         </div>
@@ -419,10 +422,11 @@ function AttendeeCard({ attendee, onReachOut }: { attendee: Attendee; onReachOut
 }
 
 function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onClose: () => void }) {
+    const { t } = useTranslation();
     const identity = attendee.full_name || attendee.company || attendee.email;
     const location = [attendee.org_city, attendee.org_country].filter(Boolean).join(', ');
     const role = String(attendee.role || 'participant').toLowerCase();
-    const companyLabel = attendee.company || attendee.org_name || 'Independent professional';
+    const companyLabel = attendee.company || attendee.org_name || t('visitor.networkingTab.companyFallback');
     const websiteUrl = toExternalUrl(attendee.org_website);
 
     return (
@@ -450,15 +454,15 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Current Role</p>
-                            <p className="text-sm font-semibold text-slate-700">{attendee.job_title || 'Attendee'}</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.currentRole')}</p>
+                            <p className="text-sm font-semibold text-slate-700">{attendee.job_title || t('visitor.networkingTab.attendeeFallback')}</p>
                             <p className="text-sm text-slate-500 mt-0.5">{companyLabel}</p>
                         </div>
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Contact</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.contact')}</p>
                             <p className="text-sm text-slate-700 truncate">{attendee.email}</p>
                             {attendee.org_contact_email && attendee.org_contact_email !== attendee.email && (
-                                <p className="text-xs text-slate-500 truncate mt-0.5">Business: {attendee.org_contact_email}</p>
+                                <p className="text-xs text-slate-500 truncate mt-0.5">{t('visitor.networkingTab.modal.business')}: {attendee.org_contact_email}</p>
                             )}
                         </div>
                     </div>
@@ -466,49 +470,49 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         {attendee.industry && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Industry</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.labels.industry')}</p>
                                 <p className="text-sm text-slate-700">{attendee.industry}</p>
                             </div>
                         )}
                         {attendee.experience_level && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Experience</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.labels.experience')}</p>
                                 <p className="text-sm text-slate-700">{attendee.experience_level}</p>
                             </div>
                         )}
                         {attendee.org_type && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Organization Type</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.organizationType')}</p>
                                 <p className="text-sm text-slate-700">{attendee.org_type}</p>
                             </div>
                         )}
                         {location && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Location</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.location')}</p>
                                 <p className="text-sm text-slate-700 inline-flex items-center gap-1.5"><MapPin size={13} /> {location}</p>
                             </div>
                         )}
                         {attendee.language && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Language</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.language')}</p>
                                 <p className="text-sm text-slate-700">{attendee.language}</p>
                             </div>
                         )}
                         {attendee.timezone && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Timezone</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.timezone')}</p>
                                 <p className="text-sm text-slate-700">{attendee.timezone}</p>
                             </div>
                         )}
                         {attendee.org_name && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Organization</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.modal.organization')}</p>
                                 <p className="text-sm text-slate-700 inline-flex items-center gap-1.5"><Building2 size={13} /> {attendee.org_name}</p>
                             </div>
                         )}
                         {attendee.org_website && websiteUrl && (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Website</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{t('visitor.networkingTab.labels.website')}</p>
                                 <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1.5 truncate"><Globe size={13} /> {attendee.org_website}</a>
                             </div>
                         )}
@@ -516,7 +520,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
 
                     {attendee.bio && (
                         <div className="mb-6">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">About</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">{t('visitor.networkingTab.modal.about')}</p>
                             <p className="text-sm text-slate-600 leading-relaxed">{attendee.bio}</p>
                         </div>
                     )}
@@ -525,7 +529,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                         <div className="mb-6 space-y-3">
                             {attendee.interests && attendee.interests.length > 0 && (
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Interests</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">{t('visitor.networkingTab.modal.interests')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {attendee.interests.map((tag, i) => (
                                             <span key={`${tag}-${i}`} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs border border-slate-200">{tag}</span>
@@ -535,7 +539,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                             )}
                             {attendee.networking_goals && attendee.networking_goals.length > 0 && (
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Networking Goals</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">{t('visitor.networkingTab.modal.networkingGoals')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {attendee.networking_goals.map((goal, i) => (
                                             <span key={`${goal}-${i}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs border border-indigo-200"><Target size={10} /> {goal}</span>
@@ -548,10 +552,10 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
 
                     {(attendee.preferred_event_types?.length || attendee.preferred_languages?.length || attendee.preferred_regions?.length) ? (
                         <div className="mb-6 space-y-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Profile Preferences</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{t('visitor.networkingTab.modal.profilePreferences')}</p>
                             {attendee.preferred_event_types && attendee.preferred_event_types.length > 0 && (
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1.5">Preferred Event Types</p>
+                                    <p className="text-xs text-slate-500 mb-1.5">{t('visitor.networkingTab.modal.preferredEventTypes')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {attendee.preferred_event_types.map((value, i) => (
                                             <span key={`evt-${value}-${i}`} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs border border-slate-200">{value}</span>
@@ -561,7 +565,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                             )}
                             {attendee.preferred_languages && attendee.preferred_languages.length > 0 && (
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1.5">Preferred Languages</p>
+                                    <p className="text-xs text-slate-500 mb-1.5">{t('visitor.networkingTab.modal.preferredLanguages')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {attendee.preferred_languages.map((value, i) => (
                                             <span key={`lang-${value}-${i}`} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs border border-slate-200">{value}</span>
@@ -571,7 +575,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                             )}
                             {attendee.preferred_regions && attendee.preferred_regions.length > 0 && (
                                 <div>
-                                    <p className="text-xs text-slate-500 mb-1.5">Preferred Regions</p>
+                                    <p className="text-xs text-slate-500 mb-1.5">{t('visitor.networkingTab.modal.preferredRegions')}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {attendee.preferred_regions.map((value, i) => (
                                             <span key={`region-${value}-${i}`} className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs border border-slate-200">{value}</span>
@@ -587,7 +591,7 @@ function AttendeeReachOutModal({ attendee, onClose }: { attendee: Attendee; onCl
                             href={`mailto:${attendee.email}`}
                             className="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-xs font-semibold flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all"
                         >
-                            <Mail size={16} /> Send Email
+                            <Mail size={16} /> {t('visitor.networkingTab.modal.sendEmail')}
                         </a>
                         {attendee.org_website && websiteUrl && (
                             <a

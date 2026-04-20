@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { MessageBubble } from './MessageBubble';
 import { ChatComposer } from './ChatComposer';
 import { TypingIndicator } from './TypingIndicator';
+import { useTranslation } from 'react-i18next';
 
 interface ChatShellProps {
     scope: string;
@@ -27,6 +28,7 @@ const createMessage = (role: AssistantMessage['role'], content: string): Assista
 });
 
 export const ChatShell: React.FC<ChatShellProps> = ({ scope, title, subtitle, suggestedPrompts = [], onClose, className }) => {
+    const { t } = useTranslation();
     const { tokens, isAuthenticated } = useAuth();
     const [messages, setMessages] = useState<AssistantMessage[]>([]);
     const [input, setInput] = useState('');
@@ -57,7 +59,7 @@ export const ChatShell: React.FC<ChatShellProps> = ({ scope, title, subtitle, su
         if (!content || isStreaming) return;
 
         if (!authToken) {
-            setError('Please log in to use the assistant.');
+            setError(t('common.assistant.chat.authRequired'));
             return;
         }
 
@@ -89,7 +91,7 @@ export const ChatShell: React.FC<ChatShellProps> = ({ scope, title, subtitle, su
                 },
             });
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Assistant request failed';
+            const message = err instanceof Error ? err.message : t('common.assistant.chat.requestFailed');
             setError(message);
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -133,7 +135,7 @@ export const ChatShell: React.FC<ChatShellProps> = ({ scope, title, subtitle, su
                             onClick={handleClear}
                             className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
                         >
-                            Clear
+                            {t('common.actions.clear')}
                         </button>
                     )}
                     {onClose && (
@@ -160,13 +162,13 @@ export const ChatShell: React.FC<ChatShellProps> = ({ scope, title, subtitle, su
                             <MessageCircle className="w-7 h-7 text-indigo-400" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-700">How can I help you?</p>
-                            <p className="text-xs text-gray-400 mt-1">Ask anything about the platform or this event.</p>
+                            <p className="text-sm font-medium text-gray-700">{t('common.assistant.chat.emptyTitle')}</p>
+                            <p className="text-xs text-gray-400 mt-1">{t('common.assistant.chat.emptySubtitle')}</p>
                         </div>
 
                         {!isAuthenticated ? (
                             <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 max-w-xs">
-                                Please <Link href="/auth/login" className="underline font-medium">log in</Link> to chat with the assistant.
+                                {t('common.assistant.chat.loginPromptPrefix')} <Link href="/auth/login" className="underline font-medium">{t('common.buttons.login')}</Link> {t('common.assistant.chat.loginPromptSuffix')}
                             </div>
                         ) : suggestedPrompts.length > 0 ? (
                             <div className="flex flex-col gap-2 w-full max-w-xs">

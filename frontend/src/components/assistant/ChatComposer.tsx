@@ -1,5 +1,6 @@
 import React from 'react';
 import { Send, Square } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ChatComposerProps {
     value: string;
@@ -18,6 +19,8 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     isStreaming,
     disabled,
 }) => {
+    const { t } = useTranslation();
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
@@ -39,7 +42,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                         e.target.style.height = `${e.target.scrollHeight}px`;
                     }}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask the assistant..."
+                    placeholder={t('common.assistant.chat.composerPlaceholder')}
                     disabled={disabled}
                 />
                 {isStreaming && onStop ? (
@@ -47,7 +50,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                         type="button"
                         onClick={onStop}
                         className="flex-shrink-0 mb-0.5 p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                        aria-label="Stop"
+                        aria-label={t('common.assistant.chat.composerStopAria')}
                     >
                         <Square className="w-4 h-4" />
                     </button>
@@ -57,14 +60,14 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                         onClick={onSend}
                         disabled={disabled || !value.trim() || !!isStreaming}
                         className="flex-shrink-0 mb-0.5 p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        aria-label="Send"
+                        aria-label={t('common.assistant.chat.composerSendAria')}
                     >
                         <Send className="w-4 h-4" />
                     </button>
                 )}
             </div>
             <p className="text-[10px] text-gray-400 mt-1.5 text-center">
-                Enter to send · Shift+Enter for new line
+                {t('common.assistant.chat.composerHint')}
             </p>
         </div>
     );

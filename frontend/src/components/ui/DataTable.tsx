@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Column<T> {
     header: string;
@@ -19,8 +22,11 @@ export function DataTable<T>({
     data,
     onRowClick,
     isLoading,
-    emptyMessage = "No data available"
+    emptyMessage
 }: DataTableProps<T>) {
+    const { t } = useTranslation();
+    const resolvedEmptyMessage = emptyMessage ?? t('common.ui.dataTable.noData');
+
     if (isLoading) {
         return (
             <div className="w-full flex justify-center py-10">
@@ -32,7 +38,7 @@ export function DataTable<T>({
     if (data.length === 0) {
         return (
             <div className="text-center py-10 text-gray-500 bg-white rounded-lg border border-gray-200">
-                {emptyMessage}
+                {resolvedEmptyMessage}
             </div>
         );
     }

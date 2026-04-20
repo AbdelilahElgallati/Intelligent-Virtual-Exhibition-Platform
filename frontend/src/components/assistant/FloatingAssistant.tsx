@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { ChatShell } from '@/components/assistant/ChatShell';
+import { useTranslation } from 'react-i18next';
 
 // Floating assistant launcher that adapts its scope to the current page.
 // - Home/other: platform scope
@@ -15,16 +16,17 @@ const getScopeFromPath = (pathname: string): { scope: string; subtitle: string }
     const parts = pathname.split('/').filter(Boolean);
     // /events/[id]/stands/[standId]
     if (parts[0] === 'events' && parts[2] === 'stands' && parts[3]) {
-        return { scope: `stand-${parts[3]}`, subtitle: 'Ask about this stand and its resources.' };
+        return { scope: `stand-${parts[3]}`, subtitle: 'layout.assistant.subtitles.stand' };
     }
     // /events/[id]
     if (parts[0] === 'events' && parts[1]) {
-        return { scope: `event-${parts[1]}`, subtitle: 'Ask about this event, schedule, and stands.' };
+        return { scope: `event-${parts[1]}`, subtitle: 'layout.assistant.subtitles.event' };
     }
-    return { scope: 'platform', subtitle: 'Ask about events, organizations, or how to navigate.' };
+    return { scope: 'platform', subtitle: 'layout.assistant.subtitles.platform' };
 };
 
 export const FloatingAssistant: React.FC = () => {
+    const { t } = useTranslation();
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
 
@@ -39,10 +41,10 @@ export const FloatingAssistant: React.FC = () => {
                     'fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full px-4 py-3 shadow-xl transition-colors',
                     'bg-indigo-600 text-white hover:bg-indigo-700'
                 )}
-                aria-label="Open assistant"
+                aria-label={t('common.assistant.openAssistantAria')}
             >
                 <MessageCircle className="w-5 h-5" />
-                <span className="text-sm font-semibold">Assistant</span>
+                <span className="text-sm font-semibold">{t('layout.assistant.buttonLabel')}</span>
             </button>
 
             {open && (
@@ -50,12 +52,12 @@ export const FloatingAssistant: React.FC = () => {
                     <div className="h-full rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
                         <ChatShell
                             scope={scope}
-                            title="Virtual Assistant"
-                            subtitle={subtitle}
+                            title={t('layout.assistant.title')}
+                            subtitle={t(subtitle)}
                             suggestedPrompts={[
-                                'What events are live now?',
-                                'Show me stands I should visit.',
-                                'What resources does this stand have?',
+                                t('layout.assistant.suggestedPrompts.0'),
+                                t('layout.assistant.suggestedPrompts.1'),
+                                t('layout.assistant.suggestedPrompts.2'),
                             ]}
                             onClose={() => setOpen(false)}
                             className="h-full"

@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Button } from './Button';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -17,13 +20,17 @@ export function ConfirmDialog({
     isOpen,
     title,
     message,
-    confirmLabel = "Confirm",
-    cancelLabel = "Cancel",
+    confirmLabel,
+    cancelLabel,
     onConfirm,
     onCancel,
     isLoading,
     variant = 'primary'
 }: ConfirmDialogProps) {
+    const { t } = useTranslation();
+    const resolvedConfirmLabel = confirmLabel ?? t('common.buttons.confirm');
+    const resolvedCancelLabel = cancelLabel ?? t('common.buttons.cancel');
+
     if (!isOpen) return null;
 
     return (
@@ -43,14 +50,14 @@ export function ConfirmDialog({
                         onClick={onCancel}
                         disabled={isLoading}
                     >
-                        {cancelLabel}
+                        {resolvedCancelLabel}
                     </Button>
                     <Button
                         onClick={onConfirm}
                         isLoading={isLoading}
                         className={variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}
                     >
-                        {confirmLabel}
+                        {resolvedConfirmLabel}
                     </Button>
                 </div>
             </div>

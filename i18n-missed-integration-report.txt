@@ -1,41 +1,110 @@
 I18n Integration Report (react-i18next)
 
-File: frontend/src/app/dashboard/orders/page.tsx
+File: frontend/src/components/events/EventsGrid.tsx
+- NEW keys added: None
+
+File: frontend/src/components/events/EventsFilters.tsx
+- NEW keys added: None
+
+File: frontend/src/components/events/EventCard.tsx
 - NEW keys added:
-  - dashboard.orders.quantityShort
+  - visitor.eventCard.virtual
+  - visitor.eventCard.defaultCategory
 
-File: frontend/src/app/meetings/[meetingId]/room/page.tsx
+File: frontend/src/components/events/EventDetailsHeader.tsx
 - NEW keys added: None
 
-File: frontend/src/app/diag/page.tsx
+File: frontend/src/components/events/JoinEventCard.tsx
 - NEW keys added:
-  - common.diag.apiUrl
+  - visitor.joinCard.nextSlotIn
 
-File: frontend/src/app/layout.tsx
+File: frontend/src/components/event/EventLiveLayout.tsx
+- NEW keys added: None
+
+File: frontend/src/components/event/StandsGrid.tsx
 - NEW keys added:
-  - layout.metadata.title
-  - layout.metadata.description
+  - visitor.standsGrid.favorited
+  - visitor.standsGrid.addFavorite
+  - visitor.standsGrid.removeFavorite
+  - visitor.standsGrid.loadingHall
+  - visitor.standsGrid.loadFailed
+  - visitor.standsGrid.pageOf
 
-File: frontend/src/components/layout/ClientLayout.tsx
+File: frontend/src/components/event/StandFilterModal.tsx
 - NEW keys added: None
 
-File: frontend/src/components/layout/Navbar.tsx
+File: frontend/src/components/event/ScheduleTab.tsx
+- NEW keys added:
+  - visitor.scheduleTab.visitorTimeline
+  - visitor.scheduleTab.activitySchedule
+  - visitor.scheduleTab.followActivity
+  - visitor.scheduleTab.timesShown
+  - visitor.scheduleTab.happeningNow
+  - visitor.scheduleTab.nextUp
+  - visitor.scheduleTab.noLiveSession
+  - visitor.scheduleTab.noUpcoming
+  - visitor.scheduleTab.sessionsCount
+  - visitor.scheduleTab.liveCount
+  - visitor.scheduleTab.upcomingCount
+  - visitor.scheduleTab.noSessionsDay
+  - visitor.scheduleTab.loadingDetails
+  - visitor.scheduleTab.notPublished
+  - visitor.scheduleTab.toLabel
+  - visitor.scheduleTab.untitledSession
+  - visitor.scheduleTab.nextDayBadge
+  - visitor.scheduleTab.kind.conference
+  - visitor.scheduleTab.kind.talk
+  - visitor.scheduleTab.kind.activity
+
+File: frontend/src/components/event/NetworkingTab.tsx
 - NEW keys added: None
 
-File: frontend/src/components/layout/Footer.tsx
+File: frontend/src/components/stand/VirtualStandLayout.tsx
 - NEW keys added: None
 
-File: frontend/src/components/common/Container.tsx
+File: frontend/src/components/stand/StandResources.tsx
 - NEW keys added: None
 
-File: frontend/src/components/common/SectionTitle.tsx
+File: frontend/src/components/stand/ProductsPanel.tsx
 - NEW keys added: None
 
-File: frontend/src/components/common/ChangePassword.tsx
+File: frontend/src/components/stand/ChatPanel.tsx
 - NEW keys added: None
+
+File: frontend/src/components/stand/MeetingRequestModal.tsx
+- NEW keys added:
+  - visitor.meetingRequestModal.constraintNotice
+  - visitor.meetingRequestModal.checkingAvailability
 
 All new keys added to frontend/messages/en.json (exact JSON path):
-- dashboard.orders.quantityShort
-- common.diag.apiUrl
-- layout.metadata.title
-- layout.metadata.description
+- visitor.eventCard.virtual
+- visitor.eventCard.defaultCategory
+- visitor.joinCard.nextSlotIn
+- visitor.standsGrid.favorited
+- visitor.standsGrid.addFavorite
+- visitor.standsGrid.removeFavorite
+- visitor.standsGrid.loadingHall
+- visitor.standsGrid.loadFailed
+- visitor.standsGrid.pageOf
+- visitor.scheduleTab.visitorTimeline
+- visitor.scheduleTab.activitySchedule
+- visitor.scheduleTab.followActivity
+- visitor.scheduleTab.timesShown
+- visitor.scheduleTab.happeningNow
+- visitor.scheduleTab.nextUp
+- visitor.scheduleTab.noLiveSession
+- visitor.scheduleTab.noUpcoming
+- visitor.scheduleTab.sessionsCount
+- visitor.scheduleTab.liveCount
+- visitor.scheduleTab.upcomingCount
+- visitor.scheduleTab.noSessionsDay
+- visitor.scheduleTab.loadingDetails
+- visitor.scheduleTab.notPublished
+- visitor.scheduleTab.toLabel
+- visitor.scheduleTab.untitledSession
+- visitor.scheduleTab.nextDayBadge
+- visitor.scheduleTab.kind.conference
+- visitor.scheduleTab.kind.talk
+- visitor.scheduleTab.kind.activity
+- visitor.meetingRequestModal.constraintNotice
+- visitor.meetingRequestModal.checkingAvailability

@@ -135,7 +135,7 @@ Components (frontend/src/components)
 - frontend/src/components/stand/ChatPanel.tsx
 - frontend/src/components/stand/MeetingRequestModal.tsx
 
-
+***********************************************************************
 
 - frontend/src/components/stand/StandCard.tsx
 - frontend/src/components/conferences/EventConferencesTab.tsx
@@ -147,7 +147,6 @@ Components (frontend/src/components)
 - frontend/src/components/dashboard/JoinedEvents.tsx
 - frontend/src/components/dashboard/RecommendedEvents.tsx
 - frontend/src/components/dashboard/NotificationsPanel.tsx
-
 - frontend/src/components/webinars/TranscriptUploader.tsx
 - frontend/src/components/hall3d/Booth.tsx
 - frontend/src/components/hall3d/HallFloor.tsx

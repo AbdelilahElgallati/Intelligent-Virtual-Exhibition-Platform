@@ -13,6 +13,7 @@ import clsx from 'clsx';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface EventLiveLayoutProps {
     eventId: string;
@@ -20,6 +21,7 @@ interface EventLiveLayoutProps {
 }
 
 export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const [event, setEvent] = useState<Event | null>(null);
     const [participantStatus, setParticipantStatus] = useState<ParticipantStatus>('NOT_JOINED');
@@ -64,25 +66,25 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
         }
     }, [eventId, lifecycle, router]);
 
-    if (loading) return <LoadingState message="Loading event..." />;
-    if (!event || !lifecycle) return <div className="text-center py-20 text-gray-500">Event unavailable</div>;
+    if (loading) return <LoadingState message={t('visitor.eventLiveLayout.loading')} />;
+    if (!event || !lifecycle) return <div className="text-center py-20 text-gray-500">{t('visitor.eventLiveLayout.unavailable')}</div>;
 
     const isApproved = participantStatus === 'APPROVED' || participantStatus === 'GUEST_APPROVED';
     const canAccessLive = isApproved && lifecycle.accessState === 'OPEN_SLOT_ACTIVE';
 
     const statusPill = {
-        LIVE: { class: 'bg-green-100 text-green-800', label: 'Live Now' },
-        IN_PROGRESS: { class: 'bg-blue-100 text-blue-800', label: 'In Progress' },
-        UPCOMING: { class: 'bg-cyan-100 text-cyan-800', label: 'Upcoming' },
-        ENDED: { class: 'bg-slate-200 text-slate-700', label: 'Closed' },
+        LIVE: { class: 'bg-green-100 text-green-800', label: t('visitor.eventLiveLayout.liveNow') },
+        IN_PROGRESS: { class: 'bg-blue-100 text-blue-800', label: t('visitor.eventLiveLayout.inProgress') },
+        UPCOMING: { class: 'bg-cyan-100 text-cyan-800', label: t('visitor.eventLiveLayout.upcoming') },
+        ENDED: { class: 'bg-slate-200 text-slate-700', label: t('visitor.eventLiveLayout.closed') },
     }[lifecycle.displayState];
 
     const tabs = [
-        { name: 'Recommended', id: 'overview', href: `/events/${eventId}/live` },
-        { name: 'All Stands', id: 'stands', href: `/events/${eventId}/live?tab=stands` },
-        { name: 'Schedule', id: 'schedule', href: `/events/${eventId}/live?tab=schedule` },
-        { name: 'Conferences', id: 'conferences', href: `/events/${eventId}/live?tab=conferences` },
-        { name: 'Networking', id: 'networking', href: `/events/${eventId}/live?tab=networking` },
+        { name: t('visitor.liveEvent.tabs.recommended'), id: 'overview', href: `/events/${eventId}/live` },
+        { name: t('visitor.liveEvent.tabs.allStands'), id: 'stands', href: `/events/${eventId}/live?tab=stands` },
+        { name: t('visitor.liveEvent.tabs.schedule'), id: 'schedule', href: `/events/${eventId}/live?tab=schedule` },
+        { name: t('visitor.liveEvent.tabs.conferences'), id: 'conferences', href: `/events/${eventId}/live?tab=conferences` },
+        { name: t('visitor.liveEvent.tabs.networking'), id: 'networking', href: `/events/${eventId}/live?tab=networking` },
     ];
 
     return (
@@ -117,23 +119,23 @@ export function EventLiveLayout({ eventId, children }: EventLiveLayoutProps) {
                 <Container>
                     {!isApproved ? (
                         <div className="max-w-2xl mx-auto rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-                            <h3 className="text-xl font-semibold text-amber-900">Registration Required</h3>
-                            <Link href={`/events/${eventId}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold">Register Now</Link>
+                            <h3 className="text-xl font-semibold text-amber-900">{t('visitor.eventLiveLayout.registrationRequired')}</h3>
+                            <Link href={`/events/${eventId}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold">{t('visitor.eventLiveLayout.registerNow')}</Link>
                         </div>
                     ) : lifecycle.accessState === 'OPEN_SLOT_ACTIVE' ? (
                         <>{typeof children === 'function' ? children(event) : children}</>
                     ) : (
                         <div className="max-w-2xl mx-auto rounded-2xl border p-6 text-center bg-white">
                             <h3 className="text-xl font-semibold">
-                                {lifecycle.displayState === 'IN_PROGRESS' ? 'Event In Progress' : 
-                                 lifecycle.displayState === 'ENDED' ? 'Event Ended' : 'Event Not Started'}
+                                {lifecycle.displayState === 'IN_PROGRESS' ? t('visitor.standPage.accessState.inProgress') : 
+                                 lifecycle.displayState === 'ENDED' ? t('visitor.standPage.accessState.ended') : t('visitor.standPage.accessState.notStarted')}
                             </h3>
                             <p className="mt-2 text-gray-600">
-                                {lifecycle.accessState === 'CLOSED_BETWEEN_SLOTS' ? 'Access opens at the next active slot.' : 
-                                 lifecycle.accessState === 'CLOSED_AFTER_EVENT' ? 'This exhibition has concluded.' : 'Access opens when the event starts.'}
+                                {lifecycle.accessState === 'CLOSED_BETWEEN_SLOTS' ? t('visitor.eventLiveLayout.accessNextSlot') : 
+                                 lifecycle.accessState === 'CLOSED_AFTER_EVENT' ? t('visitor.eventLiveLayout.eventConcluded') : t('visitor.eventLiveLayout.accessOpens')}
                             </p>
                             {lifecycle.nextSlot && <p className="mt-3 font-bold text-indigo-600">{formatTimeToStart(lifecycle.nextSlot.start)}</p>}
-                            <Link href={`/events/${eventId}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold">Back to Details</Link>
+                            <Link href={`/events/${eventId}`} className="inline-flex mt-4 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold">{t('visitor.eventLiveLayout.backToDetails')}</Link>
                         </div>
                     )}
                 </Container>

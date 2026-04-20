@@ -4,6 +4,7 @@ import { Plus, Trash2, Clock, GripVertical, CalendarDays } from 'lucide-react';
 import { formatSlotRangeLabel } from '@/lib/schedule';
 import { useAuth } from '@/context/AuthContext';
 import { getUserTimezone, formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 // ── Default slot ─────────────────────────────────────────────────────────────
 const emptySlot = (): EventScheduleSlot => ({ start_time: '09:00', end_time: '17:00', label: '' });
@@ -50,6 +51,7 @@ function SlotRow({
     canRemove: boolean;
     minStartTime?: string;
 }) {
+    const { t } = useTranslation();
     const set = (patch: Partial<EventScheduleSlot>) => onChange({ ...slot, ...patch });
     const startMin = minStartTime;
     const isCrossDay = slot.start_time && slot.end_time && slot.end_time < slot.start_time;
@@ -74,7 +76,7 @@ function SlotRow({
                         min={startMin}
                         lang="en-GB"
                         step={60}
-                        title="Use 24-hour format (HH:mm)"
+                        title={t('common.ui.scheduleBuilder.startTimeTooltip')}
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
@@ -89,13 +91,13 @@ function SlotRow({
                         }}
                         lang="en-GB"
                         step={60}
-                        title="Use 24-hour format (HH:mm). If end is earlier than start, the slot continues to the next day."
+                        title={t('common.ui.scheduleBuilder.endTimeTooltip')}
                         className="text-sm font-medium text-zinc-700 focus:outline-none w-[80px] bg-transparent"
                     />
                 </div>
                 {isCrossDay && (
                     <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5 whitespace-nowrap">
-                        +1 day
+                        {t('common.ui.scheduleBuilder.nextDayBadge')}
                     </span>
                 )}
             </div>
@@ -103,7 +105,7 @@ function SlotRow({
             {/* Activity label */}
             <input
                 type="text"
-                placeholder="Activity / description…"
+                placeholder={t('common.ui.scheduleBuilder.slotPlaceholder')}
                 value={slot.label}
                 onChange={e => set({ label: e.target.value })}
                 className="flex-1 min-w-0 text-sm bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-zinc-400"
@@ -115,7 +117,7 @@ function SlotRow({
                     type="button"
                     onClick={onRemove}
                     className="p-1.5 rounded-lg text-zinc-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-                    title="Remove slot"
+                    title={t('common.ui.scheduleBuilder.removeSlotTooltip')}
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -134,6 +136,7 @@ function DayCard({
     onUpdate: (updated: EventScheduleDay) => void;
     minStartTime?: string;
 }) {
+    const { t } = useTranslation();
     const addSlot = () => {
         const last = day.slots[day.slots.length - 1];
         const startSeed = last?.end_time ?? '09:00';
@@ -158,7 +161,11 @@ function DayCard({
 
     const summary =
         day.slots.length > 0
-            ? `${formatSlotRangeLabel(day.slots[0].start_time, day.slots[day.slots.length - 1].end_time)} · ${day.slots.length} slot${day.slots.length !== 1 ? 's' : ''}`
+            ? t('common.ui.scheduleBuilder.summary', {
+                range: formatSlotRangeLabel(day.slots[0].start_time, day.slots[day.slots.length - 1].end_time),
+                count: day.slots.length,
+                plural: day.slots.length !== 1 ? 's' : '',
+            })
             : null;
 
     return (
@@ -171,7 +178,7 @@ function DayCard({
                     </span>
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-zinc-800">Day {day.day_number}</span>
+                            <span className="text-sm font-bold text-zinc-800">{t('common.ui.scheduleBuilder.dayLabel', { day_number: day.day_number })}</span>
                             {day.date_label && (
                                 <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md px-2 py-0.5">
                                     {day.date_label}
@@ -189,7 +196,7 @@ function DayCard({
             <div className="p-4 space-y-2">
                 {day.slots.length === 0 && (
                     <p className="text-xs text-zinc-400 text-center py-1.5">
-                        No time slots yet — click <strong>+ Add Slot</strong> below
+                        {t('common.ui.scheduleBuilder.emptySlotsPrefix')} <strong>{t('common.ui.scheduleBuilder.emptySlotsCta')}</strong> {t('common.ui.scheduleBuilder.emptySlotsSuffix')}
                     </p>
                 )}
                 {day.slots.map((slot, idx) => (
@@ -209,7 +216,7 @@ function DayCard({
                     onClick={addSlot}
                     className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-zinc-300 text-xs font-medium text-zinc-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                 >
-                    <Plus className="w-3.5 h-3.5" /> Add Time Slot
+                    <Plus className="w-3.5 h-3.5" /> {t('common.ui.scheduleBuilder.addSlot')}
                 </button>
             </div>
         </div>
@@ -228,6 +235,7 @@ interface ScheduleBuilderProps {
 }
 
 export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTimeForDay1 }: ScheduleBuilderProps) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
@@ -265,8 +273,8 @@ export function ScheduleBuilder({ days, onChange, startDate, endDate, minStartTi
         return (
             <div className="rounded-xl border-2 border-dashed border-zinc-200 py-10 flex flex-col items-center gap-2 text-zinc-400">
                 <CalendarDays className="w-8 h-8 opacity-40" />
-                <p className="text-sm font-medium">Select a start &amp; end date above</p>
-                <p className="text-xs">Schedule days will be generated automatically from the date range.</p>
+                <p className="text-sm font-medium">{t('common.ui.scheduleBuilder.noDatesPlaceholder')}</p>
+                <p className="text-xs">{t('common.ui.scheduleBuilder.noDatesHelper')}</p>
             </div>
         );
     }

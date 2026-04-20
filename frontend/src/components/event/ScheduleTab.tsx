@@ -5,6 +5,7 @@ import { Event, EventScheduleDay, EventScheduleSlot } from '@/types/event';
 import { Calendar, Clock, Dot, Flame, Mic2, Sparkles } from 'lucide-react';
 import { formatInTZ, getUserTimezone, zonedToUtc } from '@/lib/timezone';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ScheduleTabProps {
     event: Event | null;
@@ -203,11 +204,12 @@ function compareTimelineSlots(a: TimelineSlot, b: TimelineSlot): number {
 }
 
 export function ScheduleTab({ event }: ScheduleTabProps) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     if (!event) {
         return (
             <div className="bg-white rounded-xl shadow p-12 text-center">
-                <p className="text-gray-500">Loading event details...</p>
+                <p className="text-gray-500">{t('visitor.scheduleTab.loadingDetails')}</p>
             </div>
         );
     }
@@ -238,16 +240,16 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide uppercase">
                                 <Sparkles className="h-3.5 w-3.5" />
-                                Visitor Timeline
+                                {t('visitor.scheduleTab.visitorTimeline')}
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-bold mt-3">Event Activity Schedule</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold mt-3">{t('visitor.scheduleTab.activitySchedule')}</h2>
                             <p className="text-white/80 mt-2 text-sm md:text-base">
-                                Follow each activity by timeline and track what is happening live.
+                                {t('visitor.scheduleTab.followActivity')}
                             </p>
-                            <p className="text-white/75 mt-1 text-xs">Times shown in your timezone: {viewerTimeZone}</p>
+                            <p className="text-white/75 mt-1 text-xs">{t('visitor.scheduleTab.timesShown', { tz: viewerTimeZone })}</p>
                         </div>
                         <div className="rounded-xl bg-black/20 border border-white/20 px-4 py-3 min-w-[220px]">
-                            <p className="text-xs uppercase tracking-wide text-white/70">Schedule Days</p>
+                            <p className="text-xs uppercase tracking-wide text-white/70">{t('visitor.scheduleTab.daysLabel')}</p>
                             <p className="text-2xl font-bold mt-1">{days.length}</p>
                         </div>
                     </div>
@@ -255,18 +257,20 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <StatusCard
-                        title="Happening Now"
+                        title={t('visitor.scheduleTab.happeningNow')}
                         icon={<Flame className="h-4 w-4" />}
                         tone={liveNow ? 'live' : 'neutral'}
                         item={liveNow}
-                        emptyText="No session is currently live."
+                        emptyText={t('visitor.scheduleTab.noLiveSession')}
+                        t={t}
                     />
                     <StatusCard
-                        title="Next Up"
+                        title={t('visitor.scheduleTab.nextUp')}
                         icon={<Calendar className="h-4 w-4" />}
                         tone={nextUp ? 'upcoming' : 'neutral'}
                         item={nextUp}
-                        emptyText="No upcoming activity available."
+                        emptyText={t('visitor.scheduleTab.noUpcoming')}
+                        t={t}
                     />
                 </div>
 
@@ -289,7 +293,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-semibold text-slate-900">
-                                            Day {dayNumber}
+                                            {t('visitor.scheduleTab.dayLabel', { day: dayNumber })}
                                         </h3>
                                         {dayLabel && <p className="text-sm text-slate-500">{dayLabel}</p>}
                                     </div>
@@ -297,16 +301,16 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
 
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                                        {day.slots?.length || 0} sessions
+                                        {t('visitor.scheduleTab.sessionsCount', { n: day.slots?.length || 0 })}
                                     </span>
                                     {liveCount > 0 && (
                                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                                            {liveCount} live
+                                            {t('visitor.scheduleTab.liveCount', { n: liveCount })}
                                         </span>
                                     )}
                                     {upcomingCount > 0 && (
                                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-700">
-                                            {upcomingCount} upcoming
+                                            {t('visitor.scheduleTab.upcomingCount', { n: upcomingCount })}
                                         </span>
                                     )}
                                 </div>
@@ -314,7 +318,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
 
                             {(!day.slots || day.slots.length === 0) ? (
                                 <p className="text-slate-500 italic text-center py-4">
-                                    No sessions scheduled for this day yet.
+                                    {t('visitor.scheduleTab.noSessionsDay')}
                                 </p>
                             ) : (
                                 <div className="space-y-3">
@@ -334,6 +338,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
                                                 kind={timelineItem?.kind || getSlotKind(slot)}
                                                 startDisplay={timelineItem?.startDisplay}
                                                 endDisplay={timelineItem?.endDisplay}
+                                                t={t}
                                             />
                                         );
                                     })}
@@ -352,7 +357,7 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
             <div className="max-w-6xl mx-auto py-8 space-y-8">
                 <div className="flex items-center gap-3 mb-6">
                     <Calendar className="h-6 w-6 text-indigo-600" />
-                    <h2 className="text-2xl font-bold text-gray-900">Event Schedule</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">{t('visitor.scheduleTab.title')}</h2>
                 </div>
 
                 <div className="bg-white rounded-xl shadow p-6">
@@ -372,10 +377,10 @@ export function ScheduleTab({ event }: ScheduleTabProps) {
             <div className="bg-white rounded-xl shadow p-12 text-center">
                 <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No schedule available
+                    {t('visitor.scheduleTab.empty')}
                 </h3>
                 <p className="text-gray-500">
-                    The event schedule has not been published yet. Check back later for updates.
+                    {t('visitor.scheduleTab.notPublished')}
                 </p>
             </div>
         </div>
@@ -388,12 +393,14 @@ function SessionSlot({
     kind,
     startDisplay,
     endDisplay,
+    t,
 }: {
     slot: EventScheduleSlot;
     status: SlotStatus;
     kind: 'conference' | 'talk' | 'activity';
     startDisplay?: string;
     endDisplay?: string;
+    t: (key: string, options?: Record<string, unknown>) => string;
 }) {
     const statusStyle =
         status === 'live'
@@ -402,7 +409,7 @@ function SessionSlot({
                   line: 'bg-red-200',
                   card: 'border-red-300 bg-gradient-to-r from-red-50 to-rose-50',
                   badge: 'bg-red-100 text-red-700',
-                  text: 'Live now',
+                  text: t('visitor.scheduleTab.status.liveNow'),
               }
             : status === 'past'
               ? {
@@ -410,18 +417,18 @@ function SessionSlot({
                     line: 'bg-slate-200',
                     card: 'border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100/80',
                     badge: 'bg-slate-200 text-slate-700',
-                    text: 'Completed',
+                     text: t('visitor.scheduleTab.status.ended'),
                 }
               : {
                     dot: 'bg-cyan-500',
                     line: 'bg-cyan-200',
                     card: 'border-cyan-300 bg-gradient-to-r from-cyan-50 to-sky-50/80',
                     badge: 'bg-cyan-100 text-cyan-700',
-                    text: 'Upcoming',
+                     text: t('visitor.scheduleTab.status.upcoming'),
                 };
 
     const kindLabel =
-        kind === 'conference' ? 'Conference' : kind === 'talk' ? 'Talk' : 'Activity';
+        kind === 'conference' ? t('visitor.scheduleTab.kind.conference') : kind === 'talk' ? t('visitor.scheduleTab.kind.talk') : t('visitor.scheduleTab.kind.activity');
     const duration = getDurationLabel(slot.start_time, slot.end_time);
     const crossesMidnight = (() => {
         const s = toMinutes(slot.start_time);
@@ -438,7 +445,7 @@ function SessionSlot({
                 </div>
                 {slot.end_time && (
                     <div className="text-xs text-slate-400 mt-1">
-                        to {endDisplay || formatTime(slot.end_time)}{crossesMidnight ? ' (+1 day)' : ''}
+                        {t('visitor.scheduleTab.toLabel')} {endDisplay || formatTime(slot.end_time)}{crossesMidnight ? ` ${t('visitor.scheduleTab.nextDayBadge')}` : ''}
                     </div>
                 )}
                 {duration && (
@@ -464,12 +471,12 @@ function SessionSlot({
                     </div>
 
                     <h4 className="font-semibold text-slate-900 text-lg leading-snug">
-                        {slot.label || 'Untitled Session'}
+                        {slot.label || t('visitor.scheduleTab.untitledSession')}
                     </h4>
 
                     <div className="mt-2 text-xs text-slate-500 font-medium">
                         {startDisplay || formatTime(slot.start_time)}
-                        {slot.end_time ? ` - ${endDisplay || formatTime(slot.end_time)}${crossesMidnight ? ' (+1 day)' : ''}` : ''}
+                        {slot.end_time ? ` - ${endDisplay || formatTime(slot.end_time)}${crossesMidnight ? ` ${t('visitor.scheduleTab.nextDayBadge')}` : ''}` : ''}
                     </div>
 
                     {(slot.speaker_name || slot.assigned_enterprise_name) && (
@@ -490,12 +497,14 @@ function StatusCard({
     tone,
     item,
     emptyText,
+    t,
 }: {
     title: string;
     icon: ReactNode;
     tone: 'live' | 'upcoming' | 'neutral';
     item: TimelineSlot | null;
     emptyText: string;
+    t: (key: string, options?: Record<string, unknown>) => string;
 }) {
     const toneClass =
         tone === 'live'
@@ -512,13 +521,13 @@ function StatusCard({
             </p>
             {item ? (
                 <>
-                    <p className="mt-2 font-semibold text-slate-900 text-base">{item.slot.label || 'Untitled Session'}</p>
+                    <p className="mt-2 font-semibold text-slate-900 text-base">{item.slot.label || t('visitor.scheduleTab.untitledSession')}</p>
                     <p className="mt-1 text-sm text-slate-600">
-                        Day {item.dayNumber} {item.dayLabel ? `• ${item.dayLabel}` : ''} • {item.startDisplay || formatTime(item.slot.start_time)}
+                        {t('visitor.scheduleTab.dayLabel', { day: item.dayNumber })} {item.dayLabel ? `• ${item.dayLabel}` : ''} • {item.startDisplay || formatTime(item.slot.start_time)}
                         {item.slot.end_time ? ` - ${item.endDisplay || formatTime(item.slot.end_time)}${(() => {
                             const s = toMinutes(item.slot.start_time);
                             const e = toMinutes(item.slot.end_time);
-                            return s !== null && e !== null && e < s ? ' (+1 day)' : '';
+                            return s !== null && e !== null && e < s ? ` ${t('visitor.scheduleTab.nextDayBadge')}` : '';
                         })()}` : ''}
                     </p>
                 </>

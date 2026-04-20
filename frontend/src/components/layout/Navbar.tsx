@@ -137,13 +137,18 @@ export const Navbar: React.FC = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const pathname = usePathname();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [languageOpen, setLanguageOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const languageDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setProfileOpen(false);
+            }
+            if (languageDropdownRef.current && !languageDropdownRef.current.contains(e.target as Node)) {
+                setLanguageOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -153,6 +158,8 @@ export const Navbar: React.FC = () => {
     const role = user?.role;
     const navLinks = isAuthenticated ? getNavLinks(role) : GUEST_NAV;
     const dropdownItems = getDropdownItems(role);
+    const currentLanguage = (i18n.resolvedLanguage || 'en').split('-')[0] as 'en' | 'fr' | 'ar';
+    const languageCodeLabel: Record<'en' | 'fr' | 'ar', string> = { en: 'EN', fr: 'FR', ar: 'AR' };
 
     const initials = (user?.full_name || user?.username || 'U')
         .split(' ')
@@ -192,33 +199,47 @@ export const Navbar: React.FC = () => {
 
                     {/* Right side */}
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
+                        <div className="relative" ref={languageDropdownRef}>
                             <button
                                 type="button"
-                                onClick={() => i18n.changeLanguage('en')}
-                                title={t('common.languages.english')}
-                                className={`text-xs ${i18n.resolvedLanguage === 'en' ? 'font-bold' : ''}`}
+                                onClick={() => setLanguageOpen((prev) => !prev)}
+                                className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                                aria-haspopup="true"
+                                aria-expanded={languageOpen}
                             >
-                                EN
+                                <svg className="h-3.5 w-3.5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9Zm0 0c2.3 2.5 3.5 5.55 3.5 9S14.3 18.5 12 21m0-18c-2.3 2.5-3.5 5.55-3.5 9S9.7 18.5 12 21m-8.25-9h16.5" />
+                                </svg>
+                                {languageCodeLabel[currentLanguage] || 'EN'}
+                                <svg className={`h-3 w-3 transition-transform ${languageOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                                </svg>
                             </button>
-                            <span className="text-zinc-300">|</span>
-                            <button
-                                type="button"
-                                onClick={() => i18n.changeLanguage('fr')}
-                                title={t('common.languages.french')}
-                                className={`text-xs ${i18n.resolvedLanguage === 'fr' ? 'font-bold' : ''}`}
-                            >
-                                FR
-                            </button>
-                            <span className="text-zinc-300">|</span>
-                            <button
-                                type="button"
-                                onClick={() => i18n.changeLanguage('ar')}
-                                title={t('common.languages.arabic')}
-                                className={`text-xs ${i18n.resolvedLanguage === 'ar' ? 'font-bold' : ''}`}
-                            >
-                                AR
-                            </button>
+                            {languageOpen && (
+                                <div className="absolute right-0 mt-1 w-36 rounded-md border border-zinc-200 bg-white shadow-lg z-50 py-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('en'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'en' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {t('common.languages.english')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('fr'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'fr' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {t('common.languages.french')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('ar'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'ar' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {t('common.languages.arabic')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         {isAuthenticated ? (
                             <div className="relative" ref={dropdownRef}>

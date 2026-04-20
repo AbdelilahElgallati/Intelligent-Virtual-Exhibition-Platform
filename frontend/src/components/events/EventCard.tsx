@@ -8,12 +8,14 @@ import { Event } from '@/lib/api/types';
 import { resolveMediaUrl } from '@/lib/media';
 import { getEventLifecycle, formatTimeToStart } from '@/lib/eventLifecycle';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface EventCardProps {
   event: Event;
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event }) => {
+  const { t } = useTranslation();
   const lifecycle = getEventLifecycle(event);
   const routeEventKey = event.slug || (event as any).id || (event as any)._id;
 
@@ -36,7 +38,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
       : 'bg-cyan-500';
 
   const actionHref = lifecycle.accessState === 'OPEN_SLOT_ACTIVE' ? `/events/${routeEventKey}/live` : `/events/${routeEventKey}`;
-  const actionLabel = lifecycle.accessState === 'OPEN_SLOT_ACTIVE' ? 'Enter Live Event' : lifecycle.displayState === 'UPCOMING' ? 'View Details' : 'View Summary';
+  const actionLabel = lifecycle.accessState === 'OPEN_SLOT_ACTIVE'
+    ? t('visitor.eventCard.enterLiveEvent')
+    : lifecycle.displayState === 'UPCOMING'
+      ? t('visitor.eventCard.viewDetails')
+      : t('visitor.eventCard.viewSummary');
 
   return (
     <Card className="group flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-muted/40">
@@ -61,7 +67,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
         {event.is_paid && (
           <div className="absolute top-4 right-4">
             <Badge className="bg-black/60 backdrop-blur-md text-white border-none font-bold">
-              PAID EVENT
+              {t('visitor.eventCard.paidEvent')}
             </Badge>
           </div>
         )}
@@ -70,7 +76,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
       <CardContent className="p-6 flex-grow">
         <div className="flex items-center gap-2 mb-3">
           <Badge variant="outline" className="text-[10px] font-bold tracking-wider uppercase">
-            {event.category || 'Exhibition'}
+            {event.category || t('visitor.eventCard.defaultCategory')}
           </Badge>
         </div>
         <h3 className="text-xl font-bold line-clamp-1 group-hover:text-primary transition-colors mb-2">
@@ -89,12 +95,12 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           </div>
           <div className="flex items-center gap-3 text-sm text-zinc-600">
             <MapPin size={16} className="text-primary/60 shrink-0" />
-            <span className="font-medium truncate">{event.location || 'Virtual'}</span>
+            <span className="font-medium truncate">{event.location || t('visitor.eventCard.virtual')}</span>
           </div>
           <div className="flex items-center gap-3 text-sm text-zinc-600">
             <Users size={16} className="text-primary/60 shrink-0" />
             <span className="font-medium">
-              {event.num_enterprises || 0} Enterprises
+              {t('visitor.eventCard.enterprisesCount', { n: event.num_enterprises || 0 })}
             </span>
           </div>
         </div>
@@ -105,13 +111,16 @@ export const EventCard: React.FC<EventCardProps> = ({ event }) => {
           {(lifecycle.displayState === 'UPCOMING' || lifecycle.displayState === 'IN_PROGRESS') && lifecycle.nextSlot && (
             <div className="flex items-center gap-2 text-xs font-bold text-primary animate-in fade-in duration-500">
               <Clock size={12} />
-              <span>{lifecycle.displayState === 'IN_PROGRESS' ? 'Next slot: ' : ''}{formatTimeToStart(lifecycle.nextSlot.start)}</span>
+              <span>
+                {lifecycle.displayState === 'IN_PROGRESS' ? `${t('visitor.eventCard.nextSlot')} ` : ''}
+                {formatTimeToStart(lifecycle.nextSlot.start)}
+              </span>
             </div>
           )}
           {lifecycle.displayState === 'LIVE' && lifecycle.currentSlot && (
             <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
               <Clock size={12} />
-              <span>Current: {lifecycle.currentSlot.label}</span>
+              <span>{t('visitor.eventCard.currentSlot', { label: lifecycle.currentSlot.label })}</span>
             </div>
           )}
         </div>
