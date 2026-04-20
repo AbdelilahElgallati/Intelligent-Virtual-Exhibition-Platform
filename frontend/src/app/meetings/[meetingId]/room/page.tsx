@@ -6,8 +6,10 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import MeetingRoom from '@/components/meetings/MeetingRoom';
 import { MeetingJoinResponse } from '@/types/meeting';
 import { apiClient } from '@/lib/api/client';
+import { useTranslation } from 'react-i18next';
 
 function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
+    const { t } = useTranslation();
     const router = useRouter();
     const [tokenData, setTokenData] = useState<MeetingJoinResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -19,9 +21,9 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
         } catch {
             // Best-effort, server may already have auto-closed this meeting.
         }
-        setError('Meeting timeslot ended automatically.');
+        setError(t('visitor.meetingRoom.meetingEnded'));
         setTimeout(() => router.back(), 1200);
-    }, [meetingId, router]);
+    }, [meetingId, router, t]);
 
     useEffect(() => {
         async function load() {
@@ -33,13 +35,13 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
                 // Start the session (marks as live)
                 await apiClient.post(`/meetings/${meetingId}/start`);
             } catch (e: unknown) {
-                setError(e instanceof Error ? e.message : 'Failed to join meeting');
+                setError(e instanceof Error ? e.message : t('visitor.meetingRoom.connectionFailed'));
             } finally {
                 setLoading(false);
             }
         }
         load();
-    }, [meetingId]);
+    }, [meetingId, t]);
 
     useEffect(() => {
         const endsAt = tokenData?.ends_at;
@@ -67,7 +69,7 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
         router.back();
     };
 
-    if (loading) return <LoadingState message="Connecting to meeting room…" />;
+    if (loading) return <LoadingState message={t('visitor.meetingRoom.connecting')} />;
 
     if (error || !tokenData) {
         return (
@@ -78,12 +80,12 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
             }}>
                 <div style={{ fontSize: 56 }}>🔒</div>
                 <h2 style={{ fontSize: 20, fontWeight: 700, textAlign: 'center' }}>
-                    {error || 'Cannot join this meeting'}
+                    {error || t('visitor.meetingRoom.cannotJoin')}
                 </h2>
                 <p style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', maxWidth: 380 }}>
                     {error && /not started yet/i.test(error)
-                        ? 'You can join only during the scheduled meeting time. Please wait until the start time shown in your calendar or invitation.'
-                        : 'The meeting must be approved, fall within its scheduled time, and you must be a participant to join.'}
+                        ? t('visitor.meetingRoom.timeRestriction')
+                        : t('visitor.meetingRoom.approvalRequired')}
                 </p>
                 <button
                     onClick={() => router.back()}
@@ -93,7 +95,7 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
                         fontWeight: 600, cursor: 'pointer', fontSize: 14,
                     }}
                 >
-                    ← Go Back
+                    {`← ${t('visitor.meetingRoom.goBack')}`}
                 </button>
             </div>
         );
@@ -111,9 +113,10 @@ function MeetingRoomContent({ meetingId }: Readonly<{ meetingId: string }>) {
 }
 
 export default function MeetingRoomPage({ params }: Readonly<{ params: Promise<{ meetingId: string }> }>) {
+    const { t } = useTranslation();
     const { meetingId } = use(params);
     return (
-        <Suspense fallback={<LoadingState message="Loading…" />}>
+        <Suspense fallback={<LoadingState message={t('common.messages.loading')} />}>
             <MeetingRoomContent meetingId={meetingId} />
         </Suspense>
     );

@@ -1,0 +1,41 @@
+I18n Integration Report (react-i18next)
+
+File: frontend/src/app/dashboard/orders/page.tsx
+- NEW keys added:
+  - dashboard.orders.quantityShort
+
+File: frontend/src/app/meetings/[meetingId]/room/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/diag/page.tsx
+- NEW keys added:
+  - common.diag.apiUrl
+
+File: frontend/src/app/layout.tsx
+- NEW keys added:
+  - layout.metadata.title
+  - layout.metadata.description
+
+File: frontend/src/components/layout/ClientLayout.tsx
+- NEW keys added: None
+
+File: frontend/src/components/layout/Navbar.tsx
+- NEW keys added: None
+
+File: frontend/src/components/layout/Footer.tsx
+- NEW keys added: None
+
+File: frontend/src/components/common/Container.tsx
+- NEW keys added: None
+
+File: frontend/src/components/common/SectionTitle.tsx
+- NEW keys added: None
+
+File: frontend/src/components/common/ChangePassword.tsx
+- NEW keys added: None
+
+All new keys added to frontend/messages/en.json (exact JSON path):
+- dashboard.orders.quantityShort
+- common.diag.apiUrl
+- layout.metadata.title
+- layout.metadata.description

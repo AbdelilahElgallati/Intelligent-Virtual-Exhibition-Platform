@@ -14,16 +14,16 @@ import { Container } from '@/components/common/Container';
 type NavLink = { label: string; href: string };
 
 const GUEST_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
+    { label: 'common.navigation.home', href: '/' },
+    { label: 'common.navigation.events', href: '/events' },
 ];
 
 const VISITOR_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
+    { label: 'common.navigation.home', href: '/' },
+    { label: 'common.navigation.events', href: '/events' },
     // { label: 'Webinars', href: '/webinars' },
-    { label: 'Orders', href: '/dashboard/orders' },
-    { label: 'Favorites', href: '/favorites' },
+    { label: 'common.navigation.orders', href: '/dashboard/orders' },
+    { label: 'common.navigation.favorites', href: '/favorites' },
 ];
 
 const ORGANIZER_NAV: NavLink[] = [
@@ -33,17 +33,17 @@ const ORGANIZER_NAV: NavLink[] = [
 ];
 
 const ADMIN_NAV: NavLink[] = [
-    { label: 'Home', href: '/' },
-    { label: 'Events', href: '/events' },
-    { label: 'Admin Panel', href: '/admin' },
+    { label: 'common.navigation.home', href: '/' },
+    { label: 'common.navigation.events', href: '/events' },
+    { label: 'common.navigation.adminPanel', href: '/admin' },
 ];
 
 const ENTERPRISE_NAV: NavLink[] = [
-    { label: 'Dashboard', href: '/enterprise' },
-    { label: 'My Events', href: '/enterprise/events' },
-    { label: 'Products', href: '/enterprise/products' },
-    { label: 'Requests', href: '/enterprise/product-requests' },
-    { label: 'Leads', href: '/enterprise/leads' },
+    { label: 'common.navigation.dashboard', href: '/enterprise' },
+    { label: 'common.navigation.myEvents', href: '/enterprise/events' },
+    { label: 'common.navigation.products', href: '/enterprise/products' },
+    { label: 'common.navigation.requests', href: '/enterprise/product-requests' },
+    { label: 'common.navigation.leads', href: '/enterprise/leads' },
 ];
 
 // ── Per-role dropdown menu items ──────────────────────────────────────────────
@@ -84,33 +84,33 @@ const ShieldIcon = (
 function getDropdownItems(role?: string): DropdownItem[] {
     if (role === 'visitor') {
         return [
-            { label: 'My Profile', href: '/profile', icon: ProfileIcon },
-            { label: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
-            { label: 'My Orders', href: '/dashboard/orders', icon: ReceiptIcon },
-            { label: 'Favorites', href: '/favorites', icon: FavIcon },
+            { label: 'common.navigation.myProfile', href: '/profile', icon: ProfileIcon },
+            { label: 'common.navigation.dashboard', href: '/dashboard', icon: DashboardIcon },
+            { label: 'common.navigation.myOrders', href: '/dashboard/orders', icon: ReceiptIcon },
+            { label: 'common.navigation.favorites', href: '/favorites', icon: FavIcon },
         ];
     }
     if (role === 'enterprise') {
         return [
-            { label: 'My Profile', href: '/enterprise/profile', icon: ProfileIcon },
-            { label: 'Dashboard', href: '/enterprise', icon: DashboardIcon },
-            { label: 'Manage Products', href: '/enterprise/products', icon: ReceiptIcon },
-            { label: 'All Requests', href: '/enterprise/product-requests', icon: FavIcon },
+            { label: 'common.navigation.myProfile', href: '/enterprise/profile', icon: ProfileIcon },
+            { label: 'common.navigation.dashboard', href: '/enterprise', icon: DashboardIcon },
+            { label: 'common.navigation.manageProducts', href: '/enterprise/products', icon: ReceiptIcon },
+            { label: 'common.navigation.allRequests', href: '/enterprise/product-requests', icon: FavIcon },
         ];
     }
     if (role === 'organizer') {
         return [
-            { label: 'My Profile', href: '/organizer/profile', icon: ProfileIcon },
-            { label: 'Organizer Panel', href: '/organizer', icon: CalendarIcon },
+            { label: 'common.navigation.myProfile', href: '/organizer/profile', icon: ProfileIcon },
+            { label: 'common.navigation.organizerPanel', href: '/organizer', icon: CalendarIcon },
         ];
     }
     if (role === 'admin') {
         return [
-            { label: 'My Profile', href: '/profile', icon: ProfileIcon },
-            { label: 'Admin Panel', href: '/admin', icon: ShieldIcon },
+            { label: 'common.navigation.myProfile', href: '/profile', icon: ProfileIcon },
+            { label: 'common.navigation.adminPanel', href: '/admin', icon: ShieldIcon },
         ];
     }
-    return [{ label: 'My Profile', href: '/profile', icon: ProfileIcon }];
+    return [{ label: 'common.navigation.myProfile', href: '/profile', icon: ProfileIcon }];
 }
 
 function getNavLinks(role?: string): NavLink[] {
@@ -168,7 +168,7 @@ export const Navbar: React.FC = () => {
                     {/* Logo + Nav links */}
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2">
-                            <span className="text-xl font-bold tracking-tight text-indigo-600">IVEP</span>
+                            <span className="text-xl font-bold tracking-tight text-indigo-600">{t('common.brand')}</span>
                         </Link>
 
                         <div className="hidden md:flex items-center gap-6">
@@ -183,7 +183,7 @@ export const Navbar: React.FC = () => {
                                                 : 'text-zinc-600 hover:text-indigo-600'
                                             }`}
                                     >
-                                        {link.label}
+                                        {t(link.label)}
                                     </Link>
                                 );
                             })}
@@ -252,7 +252,7 @@ export const Navbar: React.FC = () => {
                                                     </p>
                                                     <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
                                                     <span className={`inline-block mt-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full capitalize ${roleBadge[role ?? ''] ?? 'bg-zinc-100 text-zinc-600'}`}>
-                                                        {role}
+                                                        {role ? t(`common.roles.${role}`) : ''}
                                                     </span>
                                                 </div>
                                             </div>
@@ -268,7 +268,7 @@ export const Navbar: React.FC = () => {
                                                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
                                                 >
                                                     {item.icon}
-                                                    {item.label}
+                                                    {t(item.label)}
                                                 </Link>
                                             ))}
                                         </div>
@@ -282,7 +282,7 @@ export const Navbar: React.FC = () => {
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                                 </svg>
-                                                Sign Out
+                                                {t('common.buttons.signOut')}
                                             </button>
                                         </div>
                                     </div>
@@ -291,10 +291,10 @@ export const Navbar: React.FC = () => {
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link href="/auth/login">
-                                    <Button variant="ghost" size="sm">Login</Button>
+                                    <Button variant="ghost" size="sm">{t('common.buttons.login')}</Button>
                                 </Link>
                                 <Link href="/auth/register">
-                                    <Button size="sm">Register</Button>
+                                    <Button size="sm">{t('common.buttons.register')}</Button>
                                 </Link>
                             </div>
                         )}
@@ -304,7 +304,7 @@ export const Navbar: React.FC = () => {
                             className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
                             aria-expanded={mobileMenuOpen}
                         >
-                            <span className="sr-only">Open main menu</span>
+                            <span className="sr-only">{t('common.navigation.openMenu')}</span>
                             {mobileMenuOpen ? (
                                 <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -333,7 +333,7 @@ export const Navbar: React.FC = () => {
                                             : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
                                         }`}
                                 >
-                                    {link.label}
+                                    {t(link.label)}
                                 </Link>
                             );
                         })}

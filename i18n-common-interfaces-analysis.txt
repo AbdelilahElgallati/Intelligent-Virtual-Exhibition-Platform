@@ -82,6 +82,8 @@ Pages (frontend/src/app)
 - frontend/src/app/profile/page.tsx
 - frontend/src/app/dashboard/page.tsx
 
+***********************************************************************
+
 - frontend/src/app/dashboard/orders/page.tsx
 - frontend/src/app/meetings/[meetingId]/room/page.tsx
 - frontend/src/app/diag/page.tsx
@@ -97,6 +99,8 @@ Components (frontend/src/components)
 - frontend/src/components/common/SectionTitle.tsx
 - frontend/src/components/common/ChangePassword.tsx
 
+***********************************************************************
+
 - frontend/src/components/ui/Button.tsx
 - frontend/src/components/ui/Card.tsx
 - frontend/src/components/ui/Input.tsx
@@ -107,18 +111,19 @@ Components (frontend/src/components)
 - frontend/src/components/ui/DataTable.tsx
 - frontend/src/components/ui/ScheduleBuilder.tsx
 - frontend/src/components/assistant/FloatingAssistant.tsx
-
 - frontend/src/components/assistant/ChatShell.tsx
 - frontend/src/components/assistant/ChatComposer.tsx
 - frontend/src/components/assistant/MessageBubble.tsx
 - frontend/src/components/assistant/TypingIndicator.tsx
 - frontend/src/components/auth/Protected.tsx
+
+***********************************************************************
+
 - frontend/src/components/events/EventsGrid.tsx
 - frontend/src/components/events/EventsFilters.tsx
 - frontend/src/components/events/EventCard.tsx
 - frontend/src/components/events/EventDetailsHeader.tsx
 - frontend/src/components/events/JoinEventCard.tsx
-
 - frontend/src/components/event/EventLiveLayout.tsx
 - frontend/src/components/event/StandsGrid.tsx
 - frontend/src/components/event/StandFilterModal.tsx
@@ -129,6 +134,8 @@ Components (frontend/src/components)
 - frontend/src/components/stand/ProductsPanel.tsx
 - frontend/src/components/stand/ChatPanel.tsx
 - frontend/src/components/stand/MeetingRequestModal.tsx
+
+
 
 - frontend/src/components/stand/StandCard.tsx
 - frontend/src/components/conferences/EventConferencesTab.tsx

@@ -2,29 +2,31 @@
 
 import { TranscriptUploader } from '@/components/webinars/TranscriptUploader';
 import { Container } from '@/components/common/Container';
-
-const webinars = [
-  {
-    id: 'future-tech-expo',
-    title: 'Future Tech Expo Keynote',
-    date: 'Feb 17, 2026',
-    description: 'Highlights from AI, cloud, and XR demos across virtual stands.',
-  },
-  {
-    id: 'healthcare-innovations',
-    title: 'Healthcare Innovations Summit',
-    date: 'Feb 17, 2026',
-    description: 'Digital health and biotech sessions with Q&A.',
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function WebinarsPage() {
+  const { t } = useTranslation();
+  const webinars = [
+    {
+      id: 'future-tech-expo',
+      title: t('visitor.webinars.items.futureTechExpo.title'),
+      date: t('visitor.webinars.items.futureTechExpo.date'),
+      description: t('visitor.webinars.items.futureTechExpo.description'),
+    },
+    {
+      id: 'healthcare-innovations',
+      title: t('visitor.webinars.items.healthcareInnovations.title'),
+      date: t('visitor.webinars.items.healthcareInnovations.date'),
+      description: t('visitor.webinars.items.healthcareInnovations.description'),
+    },
+  ];
+
   return (
     <div className="py-10 bg-gray-50 min-h-screen">
       <Container className="space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Webinars</h1>
-          <p className="text-gray-600">Watch sessions and upload recordings to get instant transcripts.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('visitor.webinars.title')}</h1>
+          <p className="text-gray-600">{t('visitor.webinars.subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -38,8 +40,8 @@ export default function WebinarsPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xl font-semibold text-gray-900">Transcript Viewer</h2>
-          <p className="text-sm text-gray-600">Upload an audio recording to generate a transcript.</p>
+          <h2 className="text-xl font-semibold text-gray-900">{t('visitor.webinars.transcriptViewer')}</h2>
+          <p className="text-sm text-gray-600">{t('visitor.webinars.transcriptUpload')}</p>
           <TranscriptUploader />
         </div>
       </Container>

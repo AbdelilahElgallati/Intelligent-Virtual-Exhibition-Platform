@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import ChangePassword from '@/components/common/ChangePassword';
+import { useTranslation } from 'react-i18next';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -40,11 +41,17 @@ function ChipSelect({
     selected,
     onChange,
     allowCustom = false,
+    getLabel,
+    customPlaceholder,
+    addButtonLabel,
 }: {
     options: string[];
     selected: string[];
     onChange: (v: string[]) => void;
     allowCustom?: boolean;
+    getLabel?: (value: string) => string;
+    customPlaceholder?: string;
+    addButtonLabel?: string;
 }) {
     const [customValue, setCustomValue] = useState('');
 
@@ -77,7 +84,7 @@ function ChipSelect({
                             : 'bg-white text-zinc-600 border-zinc-300 hover:border-indigo-400 hover:text-indigo-600'
                             }`}
                     >
-                        {opt}
+                        {getLabel ? getLabel(opt) : opt}
                     </button>
                 ))}
                 {/* Show custom values not in the predefined list */}
@@ -90,20 +97,20 @@ function ChipSelect({
                             onClick={() => toggle(v)}
                             className="px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-600 text-white border border-indigo-600 shadow-sm transition-all"
                         >
-                            {v} ×
+                            {(getLabel ? getLabel(v) : v)} ×
                         </button>
                     ))}
             </div>
             {allowCustom && (
                 <div className="flex gap-2 items-end max-w-xs">
                     <Input
-                        placeholder="Add custom…"
+                        placeholder={customPlaceholder}
                         value={customValue}
                         onChange={(e) => setCustomValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustom())}
                     />
                     <Button type="button" variant="outline" size="sm" onClick={addCustom}>
-                        Add
+                        {addButtonLabel}
                     </Button>
                 </div>
             )}
@@ -173,6 +180,7 @@ function ProfileSection({
 // ── Main Profile Page ────────────────────────────────────────────────
 
 export default function ProfilePage() {
+    const { t } = useTranslation();
     const { user: authUser, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
     const [profile, setProfile] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -196,6 +204,57 @@ export default function ProfilePage() {
     const [networkingGoals, setNetworkingGoals] = useState<string[]>([]);
     const [recommendationsEnabled, setRecommendationsEnabled] = useState(true);
     const [emailNotifications, setEmailNotifications] = useState(true);
+
+    const interestKeyMap: Record<string, string> = {
+        AI: 'ai',
+        Tech: 'tech',
+        Education: 'education',
+        Healthcare: 'healthcare',
+        Sustainability: 'sustainability',
+        Finance: 'finance',
+        Startups: 'startups',
+    };
+    const eventTypeKeyMap: Record<string, string> = {
+        Webinar: 'webinar',
+        Exhibition: 'exhibition',
+        Networking: 'networking',
+        Workshop: 'workshop',
+    };
+    const languageKeyMap: Record<string, string> = {
+        English: 'english',
+        French: 'french',
+        Arabic: 'arabic',
+        Spanish: 'spanish',
+        German: 'german',
+        Chinese: 'chinese',
+        Japanese: 'japanese',
+    };
+    const networkingGoalKeyMap: Record<string, string> = {
+        Partnerships: 'partnerships',
+        Investors: 'investors',
+        Clients: 'clients',
+        Knowledge: 'knowledge',
+        Jobs: 'jobs',
+    };
+    const experienceLevelKeyMap: Record<string, string> = {
+        Junior: 'junior',
+        Mid: 'mid',
+        Senior: 'senior',
+        Executive: 'executive',
+    };
+    const regionKeyMap: Record<string, string> = {
+        'North America': 'northAmerica',
+        Europe: 'europe',
+        Asia: 'asia',
+        'Middle East': 'middleEast',
+        Africa: 'africa',
+        'Latin America': 'latinAmerica',
+    };
+
+    const getLocalizedFromMap = (value: string, map: Record<string, string>, keyRoot: string): string => {
+        const key = map[value];
+        return key ? t(`${keyRoot}.${key}`) : value;
+    };
 
     const populateForm = useCallback((user: User) => {
         setFullName(user.full_name || '');
@@ -265,7 +324,7 @@ export default function ProfilePage() {
             const updated = await apiClient.put<User>(ENDPOINTS.USERS.ME, payload);
             setProfile(updated);
             populateForm(updated);
-            setSaveMessage({ type: 'success', text: 'Your profile has been saved successfully!' });
+            setSaveMessage({ type: 'success', text: t('profile.visitor.success.message') });
             // Ensure the user's timezone preference is immediately applied across the app.
             try {
                 if (typeof window !== 'undefined') {
@@ -296,7 +355,7 @@ export default function ProfilePage() {
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(() => setSaveMessage(null), 5000);
         } catch (err: any) {
-            setSaveMessage({ type: 'error', text: err.message || 'Something went wrong. Please try again.' });
+            setSaveMessage({ type: 'error', text: err.message || t('profile.visitor.error.message') });
             topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } finally {
             setSaving(false);
@@ -310,7 +369,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="flex flex-col items-center gap-4">
                         <div className="h-10 w-10 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin" />
-                        <p className="text-zinc-500 text-sm">Loading profile…</p>
+                        <p className="text-zinc-500 text-sm">{t('profile.loading')}</p>
                     </div>
                 </div>
             </Container>
@@ -321,8 +380,8 @@ export default function ProfilePage() {
         return (
             <Container className="py-16">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-zinc-900">Sign in required</h2>
-                    <p className="text-zinc-500 mt-2">Please log in to view your profile.</p>
+                    <h2 className="text-2xl font-bold text-zinc-900">{t('profile.visitor.authRequired.title')}</h2>
+                    <p className="text-zinc-500 mt-2">{t('profile.visitor.authRequired.message')}</p>
                 </div>
             </Container>
         );
@@ -379,7 +438,7 @@ export default function ProfilePage() {
                             <div className="flex-1 pt-0.5">
                                 <p className={`text-sm font-semibold ${saveMessage.type === 'success' ? 'text-emerald-900' : 'text-red-900'
                                     }`}>
-                                    {saveMessage.type === 'success' ? 'Profile Updated' : 'Save Failed'}
+                                    {saveMessage.type === 'success' ? t('profile.visitor.success.title') : t('profile.visitor.error.title')}
                                 </p>
                                 <p className={`text-sm mt-0.5 ${saveMessage.type === 'success' ? 'text-emerald-700' : 'text-red-700'
                                     }`}>
@@ -402,26 +461,26 @@ export default function ProfilePage() {
                     )}
 
                     {/* ── 1. Basic Information ───────────────────────────── */}
-                    <ProfileSection icon="👤" title="Basic Information" description="Your personal details visible to event organizers.">
+                    <ProfileSection icon="👤" title={t('profile.visitor.basicInfo.title')} description={t('profile.visitor.basicInfo.description')}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <Input label="Full Name" id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" />
-                            <Input label="Email" id="email" value={profile?.email || ''} disabled className="bg-zinc-50 cursor-not-allowed" />
+                            <Input label={t('profile.visitor.basicInfo.fullName.label')} id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('profile.visitor.basicInfo.fullName.placeholder')} />
+                            <Input label={t('profile.visitor.basicInfo.email')} id="email" value={profile?.email || ''} disabled className="bg-zinc-50 cursor-not-allowed" />
                             <div className="flex flex-col gap-1.5 w-full">
-                                <label htmlFor="language" className="text-sm font-medium text-zinc-700">Language Preference</label>
+                                <label htmlFor="language" className="text-sm font-medium text-zinc-700">{t('profile.visitor.basicInfo.language.label')}</label>
                                 <select
                                     id="language"
                                     value={language}
                                     onChange={(e) => setLanguage(e.target.value)}
                                     className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                 >
-                                    <option value="">Select language…</option>
+                                    <option value="">{t('profile.visitor.basicInfo.language.placeholder')}</option>
                                     {LANGUAGE_OPTIONS.map((l) => (
-                                        <option key={l} value={l}>{l}</option>
+                                        <option key={l} value={l}>{getLocalizedFromMap(l, languageKeyMap, 'profile.common.languages')}</option>
                                     ))}
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5 w-full">
-                                <label htmlFor="timezone" className="text-sm font-medium text-zinc-700">Timezone</label>
+                                <label htmlFor="timezone" className="text-sm font-medium text-zinc-700">{t('profile.visitor.basicInfo.timezone.label')}</label>
                                 <select
                                     id="timezone"
                                     value={timezone}
@@ -435,13 +494,13 @@ export default function ProfilePage() {
                             </div>
                             <div className="sm:col-span-2">
                                 <div className="flex flex-col gap-1.5 w-full">
-                                    <label htmlFor="bio" className="text-sm font-medium text-zinc-700">Short Bio</label>
+                                    <label htmlFor="bio" className="text-sm font-medium text-zinc-700">{t('profile.visitor.basicInfo.bio.label')}</label>
                                     <textarea
                                         id="bio"
                                         value={bio}
                                         onChange={(e) => setBio(e.target.value)}
                                         rows={3}
-                                        placeholder="Tell us a little about yourself…"
+                                        placeholder={t('profile.visitor.basicInfo.bio.placeholder')}
                                         className="flex w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
                                     />
                                 </div>
@@ -450,22 +509,22 @@ export default function ProfilePage() {
                     </ProfileSection>
 
                     {/* ── 2. Professional Information ────────────────────── */}
-                    <ProfileSection icon="🎯" title="Professional Information" description="Helps us match you with relevant exhibitions and opportunities.">
+                    <ProfileSection icon="🎯" title={t('profile.visitor.professionalInfo.title')} description={t('profile.visitor.professionalInfo.description')}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <Input label="Job Title" id="jobTitle" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Software Engineer" />
-                            <Input label="Industry" id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Technology" />
-                            <Input label="Company" id="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Google" />
+                            <Input label={t('profile.visitor.professionalInfo.jobTitle.label')} id="jobTitle" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder={t('profile.visitor.professionalInfo.jobTitle.placeholder')} />
+                            <Input label={t('profile.visitor.professionalInfo.industry.label')} id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder={t('profile.visitor.professionalInfo.industry.placeholder')} />
+                            <Input label={t('profile.visitor.professionalInfo.company.label')} id="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder={t('profile.visitor.professionalInfo.company.placeholder')} />
                             <div className="flex flex-col gap-1.5 w-full">
-                                <label htmlFor="experienceLevel" className="text-sm font-medium text-zinc-700">Experience Level</label>
+                                <label htmlFor="experienceLevel" className="text-sm font-medium text-zinc-700">{t('profile.visitor.professionalInfo.experienceLevel.label')}</label>
                                 <select
                                     id="experienceLevel"
                                     value={experienceLevel}
                                     onChange={(e) => setExperienceLevel(e.target.value)}
                                     className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                 >
-                                    <option value="">Select level…</option>
+                                    <option value="">{t('profile.visitor.professionalInfo.experienceLevel.placeholder')}</option>
                                     {EXPERIENCE_LEVELS.map((l) => (
-                                        <option key={l} value={l}>{l}</option>
+                                        <option key={l} value={l}>{getLocalizedFromMap(l, experienceLevelKeyMap, 'profile.common.experienceLevels')}</option>
                                     ))}
                                 </select>
                             </div>
@@ -473,43 +532,54 @@ export default function ProfilePage() {
                     </ProfileSection>
 
                     {/* ── 3. Interests ───────────────────────────────────── */}
-                    <ProfileSection icon="🌍" title="Interests" description="Select topics you're interested in — these power our recommendation engine.">
-                        <ChipSelect options={INTEREST_OPTIONS} selected={interests} onChange={setInterests} allowCustom />
+                    <ProfileSection icon="🌍" title={t('profile.visitor.interests.title')} description={t('profile.visitor.interests.description')}>
+                        <ChipSelect
+                            options={INTEREST_OPTIONS}
+                            selected={interests}
+                            onChange={setInterests}
+                            allowCustom
+                            getLabel={(value) => getLocalizedFromMap(value, interestKeyMap, 'profile.common.interests')}
+                            customPlaceholder={t('profile.visitor.interests.addCustom')}
+                            addButtonLabel={t('profile.visitor.interests.addButton')}
+                        />
                     </ProfileSection>
 
                     {/* ── 4. Event Preferences ───────────────────────────── */}
-                    <ProfileSection icon="🎪" title="Event Preferences" description="Tell us what kind of events you prefer to attend.">
+                    <ProfileSection icon="🎪" title={t('profile.visitor.eventPreferences.title')} description={t('profile.visitor.eventPreferences.description')}>
                         <div className="space-y-6">
                             <div>
-                                <p className="text-sm font-medium text-zinc-700 mb-3">Preferred Event Types</p>
-                                <ChipSelect options={EVENT_TYPE_OPTIONS} selected={eventTypes} onChange={setEventTypes} />
+                                <p className="text-sm font-medium text-zinc-700 mb-3">{t('profile.visitor.eventPreferences.types')}</p>
+                                <ChipSelect options={EVENT_TYPE_OPTIONS} selected={eventTypes} onChange={setEventTypes} getLabel={(value) => getLocalizedFromMap(value, eventTypeKeyMap, 'profile.common.eventTypes')} />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-zinc-700 mb-3">Preferred Languages</p>
-                                <ChipSelect options={LANGUAGE_OPTIONS} selected={eventLanguages} onChange={setEventLanguages} />
+                                <p className="text-sm font-medium text-zinc-700 mb-3">{t('profile.visitor.eventPreferences.languages')}</p>
+                                <ChipSelect options={LANGUAGE_OPTIONS} selected={eventLanguages} onChange={setEventLanguages} getLabel={(value) => getLocalizedFromMap(value, languageKeyMap, 'profile.common.languages')} />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-zinc-700 mb-3">Preferred Regions (Optional)</p>
+                                <p className="text-sm font-medium text-zinc-700 mb-3">{t('profile.visitor.eventPreferences.regions')}</p>
                                 <ChipSelect
                                     options={['North America', 'Europe', 'Asia', 'Middle East', 'Africa', 'Latin America']}
                                     selected={eventRegions}
                                     onChange={setEventRegions}
                                     allowCustom
+                                    getLabel={(value) => getLocalizedFromMap(value, regionKeyMap, 'profile.common.regions')}
+                                    customPlaceholder={t('profile.visitor.interests.addCustom')}
+                                    addButtonLabel={t('profile.visitor.interests.addButton')}
                                 />
                             </div>
                         </div>
                     </ProfileSection>
 
                     {/* ── 5. Networking Goals ─────────────────────────────── */}
-                    <ProfileSection icon="🤝" title="Networking Goals" description="What are you looking for at events?">
-                        <ChipSelect options={NETWORKING_OPTIONS} selected={networkingGoals} onChange={setNetworkingGoals} />
+                    <ProfileSection icon="🤝" title={t('profile.visitor.networking.title')} description={t('profile.visitor.networking.description')}>
+                        <ChipSelect options={NETWORKING_OPTIONS} selected={networkingGoals} onChange={setNetworkingGoals} getLabel={(value) => getLocalizedFromMap(value, networkingGoalKeyMap, 'profile.common.networkingGoals')} />
                     </ProfileSection>
 
                     {/* ── 6. Engagement Settings ──────────────────────────── */}
-                    <ProfileSection icon="📊" title="Engagement Settings" description="Control how we communicate with you.">
+                    <ProfileSection icon="📊" title={t('profile.visitor.engagement.title')} description={t('profile.visitor.engagement.description')}>
                         <div className="space-y-5 max-w-md">
-                            <Toggle label="Receive personalized recommendations" enabled={recommendationsEnabled} onChange={setRecommendationsEnabled} />
-                            <Toggle label="Receive email notifications" enabled={emailNotifications} onChange={setEmailNotifications} />
+                            <Toggle label={t('profile.visitor.notifications.recommendations')} enabled={recommendationsEnabled} onChange={setRecommendationsEnabled} />
+                            <Toggle label={t('profile.visitor.notifications.emailNotifications')} enabled={emailNotifications} onChange={setEmailNotifications} />
                         </div>
                     </ProfileSection>
 
@@ -518,7 +588,7 @@ export default function ProfilePage() {
                         <ChangePassword />
                         <div className="flex justify-end pt-2">
                             <Button size="lg" onClick={handleSave} isLoading={saving} className="px-10">
-                                {saving ? 'Saving…' : 'Save Profile'}
+                                {saving ? t('profile.visitor.saving') : t('profile.visitor.save')}
                             </Button>
                         </div>
                     </div>

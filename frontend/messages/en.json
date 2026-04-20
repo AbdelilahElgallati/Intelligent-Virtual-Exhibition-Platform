@@ -605,6 +605,9 @@
       "unauthorized": "Unauthorized",
       "notFound": "Not found."
     },
+    "diag": {
+      "apiUrl": "NEXT_PUBLIC_API_URL = \"{value}\""
+    },
     "roles": {
       "admin": "admin",
       "organizer": "organizer",
@@ -693,6 +696,7 @@
       "revisitStand": "Revisit Stand",
       "product": "Product",
       "service": "Service",
+      "quantityShort": "Qty {count}",
       "paidOrdersHint": "You have {count} paid order{plural}. Each card groups products and services from the same checkout.",
       "payment": {
         "stripe": "Stripe",
@@ -860,6 +864,10 @@
     }
   },
   "layout": {
+    "metadata": {
+      "title": "IVEP - Intelligent Virtual Exhibition Platform",
+      "description": "Experience the future of exhibitions with IVEP."
+    },
     "navbar": {
       "home": "Home",
       "events": "Events",
@@ -3871,6 +3879,19 @@
         "subtitle": "This invitation link is no longer valid.",
         "action": "Return to Home"
       }
+    },
+    "inviteAccept": {
+      "title": "Enterprise Invite",
+      "processing": "Processing your enterprise invite...",
+      "missingEventId": "Missing event identifier in the invite link.",
+      "enterpriseOnly": "This invite is for enterprise accounts. Please log in with an enterprise account.",
+      "success": "Your enterprise is now accepted as a guest participant with stand access.",
+      "error": "Could not accept the invite. It may be invalid or expired.",
+      "actions": {
+        "configureStand": "Configure Your Stand",
+        "goToEvents": "Go to Enterprise Events",
+        "backToEvents": "Back to Enterprise Events"
+      }
     }
   },
   "visitor": {
@@ -3951,7 +3972,13 @@
         "unreachableRoute": "Unreachable Route",
         "eventRemoved": "Event Identity Removed",
         "standRemoved": "Stand Identity Removed",
-        "organizationRemoved": "Organization Identity Removed"
+        "organizationRemoved": "Organization Identity Removed",
+        "unknownEvent": "Unknown Event",
+        "unknownStand": "Unknown Stand",
+        "unknownOrganization": "Unknown Organization",
+        "noDescription": "No description provided.",
+        "identityRemoved": "{type} Identity Removed",
+        "idPrefix": "ID: {id}"
       },
       "errors": {
         "loadFailed": "Failed to load favorites",
@@ -3959,9 +3986,18 @@
       }
     },
     "marketplace": {
+      "landing": {
+        "title": "Marketplace",
+        "subtitle": "Browse products and services offered by enterprise stands across all events. Visit a live event to explore stand marketplaces.",
+        "actions": {
+          "browseEvents": "Browse Events"
+        }
+      },
       "success": {
         "title": "Payment Successful!",
         "subtitle": "Thank you for your purchase. Your order has been confirmed.",
+        "buyerFallback": "Visitor",
+        "moreItemsSuffix": " + {count} more",
         "paymentLabels": {
           "cashOnReception": "Cash on Reception",
           "stripePayment": "Stripe Payment"
@@ -4424,6 +4460,20 @@
         "backToEvents": "Back to Events"
       }
     },
+    "assistantPage": {
+      "badge": "AI-powered guidance",
+      "title": "Platform Assistant",
+      "subtitle": "Ask anything about the exhibition. The assistant can help you discover events, stands, and resources tailored to your interests.",
+      "chat": {
+        "title": "Platform Assistant",
+        "subtitle": "Get instant answers with live updates from our knowledge base."
+      },
+      "suggestedPrompts": {
+        "trendingEvents": "What events are trending today?",
+        "navigateExhibition": "Help me navigate this exhibition.",
+        "recommendStands": "Recommend stands based on my interests."
+      }
+    },
     "aiAssistant": {
       "title": "AI Assistant",
       "placeholder": "Ask me anything about events, stands, or the platform.",
@@ -4456,7 +4506,19 @@
       "title": "Webinars",
       "subtitle": "Watch sessions and upload recordings...",
       "transcriptViewer": "Transcript Viewer",
-      "transcriptUpload": "Upload an audio recording to generate a transcript."
+      "transcriptUpload": "Upload an audio recording to generate a transcript.",
+      "items": {
+        "futureTechExpo": {
+          "title": "Future Tech Expo Keynote",
+          "date": "Feb 17, 2026",
+          "description": "Highlights from AI, cloud, and XR demos across virtual stands."
+        },
+        "healthcareInnovations": {
+          "title": "Healthcare Innovations Summit",
+          "date": "Feb 17, 2026",
+          "description": "Digital health and biotech sessions with Q&A."
+        }
+      }
     },
     "eventPayment": {
       "loading": "Loading payment details...",

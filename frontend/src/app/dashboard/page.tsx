@@ -10,8 +10,10 @@ import { Event, Recommendation, Notification } from '@/lib/api/types';
 import { EventsResponse } from '@/types/event';
 import { SectionTitle } from '@/components/common/SectionTitle';
 import { Container } from '@/components/common/Container';
+import { useTranslation } from 'react-i18next';
 
 export default function VisitorDashboard() {
+  const { t } = useTranslation();
   const [joinedEvents, setJoinedEvents] = useState<Event[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -96,14 +98,14 @@ export default function VisitorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3 space-y-8">
           <div>
-            <SectionTitle title="My Joined Events" subtitle="Events you are participating in" align="left" />
+            <SectionTitle title={t('dashboard.visitor.joinedEvents.title')} subtitle={t('dashboard.visitor.joinedEvents.subtitle')} align="left" />
             <div className="mt-6">
               <JoinedEvents events={joinedEvents} loading={loading.events} />
             </div>
           </div>
 
           <div>
-            <SectionTitle title="Recommended for You" subtitle="Events based on your interests" align="left" />
+            <SectionTitle title={t('dashboard.visitor.recommended.title')} subtitle={t('dashboard.visitor.recommended.subtitle')} align="left" />
             <div className="mt-6">
               <RecommendedEvents recommendations={recommendations} loading={loading.recommendations} />
             </div>

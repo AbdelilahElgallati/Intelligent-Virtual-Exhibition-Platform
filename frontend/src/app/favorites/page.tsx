@@ -12,6 +12,7 @@ import { apiClient } from "@/lib/api/client";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { resolveMediaUrl } from "@/lib/media";
 import { motion, AnimatePresence, Variants } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 // Helper to determine Card styling based on target type
 const getTypeColor = (type: string) => {
@@ -24,6 +25,7 @@ const getTypeColor = (type: string) => {
 }
 
 export default function FavoritesPage() {
+    const { t } = useTranslation();
     const { isAuthenticated } = useAuth();
     const [favorites, setFavorites] = useState<Favorite[]>([]);
     const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export default function FavoritesPage() {
                 setFavorites(data);
             } catch (err) {
                 console.error(err);
-                setError("Failed to load favorites");
+                setError(t("visitor.favorites.errors.loadFailed"));
             } finally {
                 setLoading(false);
             }
@@ -52,7 +54,7 @@ export default function FavoritesPage() {
             setFavorites((prev) => prev.filter((f) => f.id !== id && (f as any)._id !== id));
         } catch (err) {
             console.error(err);
-            setError("Failed to remove favorite");
+            setError(t("visitor.favorites.errors.removeFailed"));
         }
     };
 
@@ -67,13 +69,13 @@ export default function FavoritesPage() {
                                 <Heart className="w-8 h-8 fill-rose-100" />
                             </div>
                             <div>
-                                <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">Your Collection</p>
-                                <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl mt-1">Saved Favorites</h1>
+                                <p className="text-sm font-semibold uppercase tracking-wider text-rose-500">{t("visitor.favorites.title")}</p>
+                                <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl mt-1">{t("visitor.favorites.sectionTitle")}</h1>
                             </div>
                         </div>
                         {isAuthenticated && !loading && (
                             <p className="text-sm text-zinc-500 font-medium bg-zinc-100 px-4 py-2 rounded-full shadow-inner">
-                                {favorites.length} Item{favorites.length !== 1 && 's'} Found
+                                {t("visitor.favorites.countLabel", { count: favorites.length })}
                             </p>
                         )}
                     </div>
@@ -83,12 +85,12 @@ export default function FavoritesPage() {
             <Container className="max-w-7xl px-6 py-12">
                 {!isAuthenticated ? (
                     <EmptyState
-                        title="Login to view favorites"
-                        message="Sign in to see events, stands, and resources you’ve carefully saved for later."
+                        title={t("visitor.favorites.empty.unauthenticated.title")}
+                        message={t("visitor.favorites.empty.unauthenticated.subtitle")}
                         action={
                             <div className="flex gap-4 mt-4">
-                                <Link href="/auth/login"><Button size="lg" className="shadow-md shadow-indigo-500/20">Login</Button></Link>
-                                <Link href="/auth/register"><Button variant="outline" size="lg">Create Account</Button></Link>
+                                <Link href="/auth/login"><Button size="lg" className="shadow-md shadow-indigo-500/20">{t("visitor.favorites.empty.unauthenticated.login")}</Button></Link>
+                                <Link href="/auth/register"><Button variant="outline" size="lg">{t("visitor.favorites.empty.unauthenticated.createAccount")}</Button></Link>
                             </div>
                         }
                     />
@@ -136,6 +138,7 @@ function FavoritesList({
     error: string | null;
     onRemove: (id: string) => void;
 }) {
+    const { t } = useTranslation();
     const [detailsMap, setDetailsMap] = useState<Record<string, EntityData>>({});
     const [loadingDetails, setLoadingDetails] = useState(false);
 
@@ -155,8 +158,8 @@ function FavoritesList({
                         // Use slug when available so the browser URL is human-readable
                         const eventRef = evt.slug || fav.target_id;
                         map[safeId] = {
-                            title: evt.title || "Unknown Event",
-                            description: evt.description || "No description provided.",
+                            title: evt.title || t("visitor.favorites.fallbacks.unknownEvent"),
+                            description: evt.description || t("visitor.favorites.fallbacks.noDescription"),
                             img: evt.banner_url,
                             href: `/events/${eventRef}`
                         };
@@ -166,24 +169,31 @@ function FavoritesList({
                         const standRef = std.slug || fav.target_id;
                         const eventRef = std.event_slug || std.event_id;
                         map[safeId] = {
-                            title: std.name || "Unknown Stand",
-                            description: std.description || "No description provided.",
+                            title: std.name || t("visitor.favorites.fallbacks.unknownStand"),
+                            description: std.description || t("visitor.favorites.fallbacks.noDescription"),
                             img: std.logo_url || std.banner_url,
                             href: eventRef ? `/events/${eventRef}/stands/${standRef}` : undefined
                         };
                     } else if (fav.target_type === 'organization') {
                          const org = await apiClient.get<any>(ENDPOINTS.ORGANIZATIONS.GET(fav.target_id));
                          map[safeId] = {
-                             title: org.name || "Unknown Organization",
+                             title: org.name || t("visitor.favorites.fallbacks.unknownOrganization"),
                              description: org.description,
                              img: org.logo_url
-                         };
+                          };
                     }
                 } catch {
                     // Fallback if entity is deleted or network fails
+                    const removedTitle = fav.target_type === "event"
+                        ? t("visitor.favorites.fallbacks.eventRemoved")
+                        : fav.target_type === "stand"
+                            ? t("visitor.favorites.fallbacks.standRemoved")
+                            : fav.target_type === "organization"
+                                ? t("visitor.favorites.fallbacks.organizationRemoved")
+                                : t("visitor.favorites.fallbacks.identityRemoved", { type: fav.target_type });
                     map[safeId] = {
-                        title: `${fav.target_type.charAt(0).toUpperCase() + fav.target_type.slice(1)} Identity Removed`,
-                        description: `ID: ${fav.target_id}`
+                        title: removedTitle,
+                        description: t("visitor.favorites.fallbacks.idPrefix", { id: fav.target_id })
                     };
                 }
             }));
@@ -192,7 +202,7 @@ function FavoritesList({
             setLoadingDetails(false);
         };
         loadRichData();
-    }, [favorites]);
+    }, [favorites, t]);
 
     if (loading) {
         return (
@@ -214,11 +224,11 @@ function FavoritesList({
     if (favorites.length === 0) {
         return (
             <EmptyState
-                title="Your collection is empty"
-                message="Start exploring Events, Booths, and Organizations to build your personalized directory."
+                title={t("visitor.favorites.empty.authenticated.title")}
+                message={t("visitor.favorites.empty.authenticated.subtitle")}
                 action={
                     <Link href="/events">
-                        <Button variant="outline" className="mt-4"><Activity className="w-4 h-4 mr-2" /> Browse Live Events</Button>
+                        <Button variant="outline" className="mt-4"><Activity className="w-4 h-4 mr-2" /> {t("visitor.favorites.empty.authenticated.action")}</Button>
                     </Link>
                 }
             />
@@ -233,9 +243,9 @@ function FavoritesList({
     }, {} as Record<GroupKey, Favorite[]>);
 
     const sections: { key: GroupKey; label: string }[] = [
-        { key: "event", label: "Events" },
-        { key: "stand", label: "Stands & Booths" },
-        { key: "organization", label: "Organizations" },
+        { key: "event", label: t("visitor.favorites.sections.events") },
+        { key: "stand", label: t("visitor.favorites.sections.stands") },
+        { key: "organization", label: t("visitor.favorites.sections.organizations") },
     ];
 
     return (
@@ -292,7 +302,7 @@ function FavoritesList({
 
                                                 <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-50/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-700 shadow-sm">
                                                     <Heart className="h-3 w-3 fill-current" />
-                                                    Favorited
+                                                    {t("visitor.favorites.badge")}
                                                 </span>
                                                 
                                                 {/* Float Action Button */}
@@ -303,7 +313,7 @@ function FavoritesList({
                                                         if (removeId) onRemove(removeId); 
                                                     }}
                                                     className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full text-rose-500 hover:bg-rose-500 hover:text-white transition-colors shadow-sm z-10"
-                                                    title="Remove from favorites"
+                                                    title={t("visitor.favorites.removeTooltip")}
                                                 >
                                                     <HeartOff className="w-4 h-4" />
                                                 </button>
@@ -335,10 +345,10 @@ function FavoritesList({
                                                     </span>
                                                     {href && !isLoading ? (
                                                         <Link href={href} className="flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">
-                                                            View Details <ExternalLink className="w-4 h-4 ml-1" />
+                                                            {t("visitor.favorites.viewDetails")} <ExternalLink className="w-4 h-4 ml-1" />
                                                         </Link>
                                                     ) : (
-                                                        <span className="text-xs text-zinc-300">Unreachable Route</span>
+                                                        <span className="text-xs text-zinc-300">{t("visitor.favorites.fallbacks.unreachableRoute")}</span>
                                                     )}
                                                 </div>
                                             </div>

@@ -10,6 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import { downloadMarketplaceUnifiedOrderReceiptPdf } from '@/lib/pdf/receipts';
 import { loadEventReceiptContext } from '@/lib/pdf/eventReceiptContext';
 import { parseISOUTC } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 import clsx from 'clsx';
 
@@ -23,6 +24,7 @@ function buildOrderRef(groupId: string, createdAt: string): string {
 }
 
 function MarketplaceSuccessContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const sessionId = searchParams.get('session_id');
     const groupIdFromUrl = searchParams.get('group_id');
@@ -86,7 +88,7 @@ function MarketplaceSuccessContent() {
             standName: first.stand_name,
             paymentMethod: first.payment_method,
             status: first.status,
-            buyerName: me?.full_name || me?.username || me?.email || 'Visitor',
+            buyerName: me?.full_name || me?.username || me?.email || t('visitor.marketplace.success.buyerFallback'),
             buyerEmail: me?.email,
             buyerPhone: first.buyer_phone,
             shippingAddress: first.shipping_address,
@@ -135,10 +137,12 @@ function MarketplaceSuccessContent() {
                                 <div className="text-left">
                                     <h3 className="text-sm font-bold text-gray-900 leading-tight">
                                         {order.items[0]?.product_name}
-                                        {order.items.length > 1 && ` + ${order.items.length - 1} more`}
+                                        {order.items.length > 1 && t('visitor.marketplace.success.moreItemsSuffix', { count: order.items.length - 1 })}
                                     </h3>
                                     <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5 whitespace-nowrap">
-                                        {order.payment_method === 'cash_on_delivery' || order.payment_method === 'cod' ? 'Cash on Reception' : 'Stripe Payment'}
+                                        {order.payment_method === 'cash_on_delivery' || order.payment_method === 'cod'
+                                            ? t('visitor.marketplace.success.paymentLabels.cashOnReception')
+                                            : t('visitor.marketplace.success.paymentLabels.stripePayment')}
                                     </p>
                                 </div>
                             </div>
@@ -150,7 +154,13 @@ function MarketplaceSuccessContent() {
                                         (order.status === 'pending' && (order.payment_method === 'cash_on_delivery' || order.payment_method === 'cod')) ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
                                             "bg-amber-50 text-amber-600 border-amber-100"
                                 )}>
-                                    {(order.status === 'pending' && (order.payment_method === 'cash_on_delivery' || order.payment_method === 'cod')) ? 'CONFIRMED' : order.status}
+                                    {(order.status === 'pending' && (order.payment_method === 'cash_on_delivery' || order.payment_method === 'cod'))
+                                        ? t('visitor.marketplace.success.statusOverride')
+                                        : (order.status === 'paid'
+                                            ? t('visitor.marketplace.success.statusLabels.paid')
+                                            : order.status === 'pending'
+                                                ? t('visitor.marketplace.success.statusLabels.pending')
+                                                : order.status)}
                                 </span>
                             </div>
                         </div>
@@ -158,7 +168,7 @@ function MarketplaceSuccessContent() {
                 </div>
 
                 <div className="flex items-center justify-between px-3 py-3 mb-4 rounded-xl bg-indigo-50 border border-indigo-100">
-                    <span className="text-sm font-semibold text-indigo-700">Grand Total</span>
+                    <span className="text-sm font-semibold text-indigo-700">{t('visitor.marketplace.success.grandTotal')}</span>
                     <span className="text-lg font-bold text-indigo-800">{fmt(grandTotal, grandCurrency)}</span>
                 </div>
 
@@ -167,7 +177,7 @@ function MarketplaceSuccessContent() {
                     className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors mb-4"
                 >
                     <FileText className="w-4 h-4" />
-                    Download Receipt (PDF)
+                    {t('visitor.marketplace.success.downloadReceipt')}
                 </button>
             </>
         );
@@ -180,9 +190,9 @@ function MarketplaceSuccessContent() {
                     <CheckCircle2 className="w-9 h-9 text-emerald-600" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('visitor.marketplace.success.title')}</h1>
                 <p className="text-gray-500 text-sm mb-6">
-                    Thank you for your purchase. Your order has been confirmed.
+                    {t('visitor.marketplace.success.subtitle')}
                 </p>
 
                 {renderOrderSummary()}
@@ -192,13 +202,13 @@ function MarketplaceSuccessContent() {
                         href={backToStandHref}
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                        Go Back to Stand
+                        {t('visitor.marketplace.success.goBackToStand')}
                     </Link>
                     <Link
                         href="/events"
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
                     >
-                        Browse Events
+                        {t('visitor.marketplace.success.browseEvents')}
                     </Link>
                 </div>
             </div>

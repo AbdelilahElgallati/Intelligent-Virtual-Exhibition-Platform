@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { XCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 function MarketplaceCancelContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const standIdFromUrl = searchParams.get('stand_id');
     const eventIdFromUrl = searchParams.get('event_id');
@@ -20,9 +22,9 @@ function MarketplaceCancelContent() {
                     <XCircle className="w-9 h-9 text-red-500" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Cancelled</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('visitor.marketplace.cancel.title')}</h1>
                 <p className="text-gray-500 text-sm mb-6">
-                    Your payment was cancelled. No charges were made. You can return to the stand and try again.
+                    {t('visitor.marketplace.cancel.subtitle')}
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -30,13 +32,13 @@ function MarketplaceCancelContent() {
                         href={backToStandHref}
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
                     >
-                        Go Back to Stand
+                        {t('visitor.marketplace.cancel.goBackToStand')}
                     </Link>
                     <Link
                         href="/dashboard"
                         className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors"
                     >
-                        Go to Dashboard
+                        {t('visitor.marketplace.cancel.goToDashboard')}
                     </Link>
                 </div>
             </div>

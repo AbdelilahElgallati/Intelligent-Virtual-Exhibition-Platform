@@ -14,6 +14,7 @@ import type { Event } from '@/types/event';
 import type { MarketplaceOrder, UnifiedMarketplaceOrder } from '@/types/marketplace';
 import type { Stand } from '@/lib/api/types';
 import { Loader2, Package, Briefcase, Download, ArrowRight, Clock3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type JoinedEventsPayload = Event[] | { items?: Event[]; events?: Event[] };
 type EventsListPayload = Event[] | { items?: Event[]; events?: Event[]; results?: Event[] };
@@ -231,6 +232,7 @@ const fulfillmentColor: Record<string, string> = {
 };
 
 export default function VisitorOrdersPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [orders, setOrders] = useState<UnifiedMarketplaceOrder[]>([]);
@@ -376,7 +378,7 @@ export default function VisitorOrdersPage() {
       standName: order.stand_name,
       paymentMethod: order.payment_method,
       status: order.status,
-      buyerName: user?.full_name || user?.username || 'Visitor',
+      buyerName: user?.full_name || user?.username || t('visitor.marketplace.success.buyerFallback'),
       buyerEmail: user?.email,
       buyerPhone: order.buyer_phone,
       shippingAddress: order.shipping_address,
@@ -442,7 +444,7 @@ export default function VisitorOrdersPage() {
       return (
         <div className="rounded-2xl border border-gray-200 bg-white p-10 flex items-center justify-center gap-3 text-gray-500">
           <Loader2 className="w-5 h-5 animate-spin" />
-          Loading your orders...
+          {t('dashboard.orders.loading')}
         </div>
       );
     }
@@ -450,8 +452,8 @@ export default function VisitorOrdersPage() {
     if (!hasOrders) {
       return (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-          <p className="text-gray-600 font-medium">No orders yet.</p>
-          <p className="text-sm text-gray-500 mt-1">Visit event stands and use the marketplace to place your first order.</p>
+          <p className="text-gray-600 font-medium">{t('dashboard.orders.noOrders')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('dashboard.orders.noOrdersHint')}</p>
         </div>
       );
     }
@@ -462,17 +464,29 @@ export default function VisitorOrdersPage() {
           <div key={order.group_id} className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-gray-900">{order.stand_name || 'Enterprise Stand'}</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {(!order.stand_name || order.stand_name === 'Enterprise Stand')
+                    ? t('visitor.orders.enterpriseFallback')
+                    : order.stand_name}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Order Ref: {buildOrderRef(order.group_id, order.created_at)} · {formatInTZ(order.created_at, getUserTimezone(), 'MMM d, yyyy, h:mm a')}
+                  {t('dashboard.orders.orderRef')}: {buildOrderRef(order.group_id, order.created_at)} · {formatInTZ(order.created_at, getUserTimezone(), 'MMM d, yyyy, h:mm a')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-full border text-xs font-semibold ${statusColor[order.status] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                  {order.status}
+                  {order.status === 'paid'
+                    ? t('visitor.orders.status.paid')
+                    : order.status === 'pending'
+                      ? t('visitor.orders.status.pending')
+                      : order.status === 'cancelled'
+                        ? t('visitor.orders.status.cancelled')
+                        : order.status}
                 </span>
                 <span className="px-2.5 py-1 rounded-full border text-xs font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
-                  {order.payment_method === 'cash_on_delivery' ? 'COD' : 'Stripe'}
+                  {order.payment_method === 'cash_on_delivery'
+                    ? t('visitor.orders.paymentMethod.cod')
+                    : t('visitor.orders.paymentMethod.stripe')}
                 </span>
               </div>
             </div>
@@ -488,7 +502,7 @@ export default function VisitorOrdersPage() {
                           <p className="text-sm font-semibold text-gray-900 truncate">{item.product_name}</p>
                           <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
                             {isService ? <Briefcase size={12} /> : <Package size={12} />}
-                            {isService ? 'Service' : `Product · Qty ${item.quantity}`}
+                            {isService ? t('dashboard.orders.service') : `${t('dashboard.orders.product')} · ${t('dashboard.orders.quantityShort', { count: item.quantity })}`}
                           </p>
                         </div>
                         <p className="text-sm font-semibold text-indigo-700 shrink-0">
@@ -497,7 +511,7 @@ export default function VisitorOrdersPage() {
                       </div>
                       <div className="mt-2">
                         <span className={`px-2 py-0.5 rounded-full border text-[11px] font-medium ${fulfillmentColor[item.fulfillment_status || 'requested'] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                          {(item.fulfillment_status || 'requested').replaceAll('_', ' ')}
+                          {t(`visitor.orders.fulfillment.${(item.fulfillment_status || 'requested')}`, { defaultValue: (item.fulfillment_status || 'requested').replaceAll('_', ' ') })}
                         </span>
                       </div>
                     </div>
@@ -507,12 +521,12 @@ export default function VisitorOrdersPage() {
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-gray-100">
                 <div className="text-sm text-gray-600">
-                  <p className="font-medium text-gray-700">Total: <span className="text-gray-900">{formatAmount(order.total_amount, order.currency)}</span></p>
+                  <p className="font-medium text-gray-700">{t('dashboard.orders.total')}: <span className="text-gray-900">{formatAmount(order.total_amount, order.currency)}</span></p>
                   {order.shipping_address && (
-                    <p className="text-xs mt-1">Shipping: {order.shipping_address}</p>
+                    <p className="text-xs mt-1">{t('dashboard.orders.shipping')}: {order.shipping_address}</p>
                   )}
                   {order.delivery_notes && (
-                    <p className="text-xs mt-0.5">Notes: {order.delivery_notes}</p>
+                    <p className="text-xs mt-0.5">{t('dashboard.orders.notes')}: {order.delivery_notes}</p>
                   )}
                 </div>
 
@@ -521,7 +535,7 @@ export default function VisitorOrdersPage() {
                     onClick={() => handleDownloadReceipt(order)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors"
                   >
-                    <Download size={14} /> Receipt
+                    <Download size={14} /> {t('dashboard.orders.receipt')}
                   </button>
                   <button
                     onClick={() => handleRevisitStand(order)}
@@ -529,7 +543,7 @@ export default function VisitorOrdersPage() {
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
                   >
                     {actionLoading === order.group_id ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                    Revisit Stand
+                    {t('dashboard.orders.revisitStand')}
                   </button>
                 </div>
               </div>
@@ -543,9 +557,9 @@ export default function VisitorOrdersPage() {
   return (
     <Container className="py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">My Orders</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('dashboard.orders.title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Track all your stand purchases in unified orders. Product and service items from the same checkout are grouped together.
+          {t('dashboard.orders.subtitle')}
         </p>
       </div>
 
@@ -555,7 +569,10 @@ export default function VisitorOrdersPage() {
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 flex items-start gap-3 text-indigo-800">
           <Clock3 className="w-5 h-5 mt-0.5" />
           <p className="text-sm">
-            You have <span className="font-semibold">{paidOrders.length}</span> paid order{paidOrders.length > 1 ? 's' : ''}. Each card groups products and services from the same checkout.
+            {t('dashboard.orders.paidOrdersHint', {
+              count: paidOrders.length,
+              plural: paidOrders.length > 1 ? 's' : '',
+            })}
           </p>
         </div>
       )}

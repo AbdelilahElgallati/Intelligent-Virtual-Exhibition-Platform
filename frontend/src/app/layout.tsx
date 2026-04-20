@@ -1,11 +1,26 @@
 import type { Metadata } from "next";
+import i18next from "i18next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import en from "../../messages/en.json";
+
+const metadataI18n = i18next.createInstance();
+void metadataI18n.init({
+  lng: "en",
+  fallbackLng: "en",
+  resources: { en: { translation: en } },
+  interpolation: {
+    escapeValue: false,
+    prefix: "{",
+    suffix: "}",
+  },
+  initImmediate: false,
+});
 
 export const metadata: Metadata = {
-  title: "IVEP - Intelligent Virtual Exhibition Platform",
-  description: "Experience the future of exhibitions with IVEP.",
+  title: metadataI18n.t("layout.metadata.title"),
+  description: metadataI18n.t("layout.metadata.description"),
 };
 
 export default function RootLayout({
