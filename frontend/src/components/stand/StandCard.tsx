@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowRight, Building2 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/media';
+import { useTranslation } from 'react-i18next';
 
 interface StandCardProps {
     stand: Stand;
 }
 
 export function StandCard({ stand }: StandCardProps) {
+    const { t } = useTranslation();
     const standId = (stand as any).id || (stand as any)._id;
     // Use slugs when available so the browser URL shows names, not ObjectIds
     const standRef  = (stand as any).slug  || standId;
@@ -35,7 +37,7 @@ export function StandCard({ stand }: StandCardProps) {
                     </div>
                     {stand.stand_type === 'sponsor' && (
                         <Badge variant="warning" className="uppercase text-[10px] tracking-wider">
-                            Sponsor
+                            {t('visitor.stands.sponsor')}
                         </Badge>
                     )}
                 </div>
@@ -54,7 +56,7 @@ export function StandCard({ stand }: StandCardProps) {
                     </h3>
 
                     <div className="text-sm text-gray-500 mb-4 line-clamp-2 min-h-[2.5rem]">
-                        {stand.description || "Visit our stand to learn about our premium solutions and connect with our team."}
+                        {stand.description || t('visitor.standCard.descriptionFallback')}
                     </div>
 
                     {/* Tags */}
@@ -78,7 +80,7 @@ export function StandCard({ stand }: StandCardProps) {
                         variant="outline"
                         className="w-full group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all"
                     >
-                        Visit Stand
+                        {t('visitor.standCard.visitStand')}
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </Link>

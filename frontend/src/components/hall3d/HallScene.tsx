@@ -9,6 +9,7 @@ import { HallFloor, HALL_WIDTH, HALL_DEPTH } from './HallFloor';
 import { Booth } from './Booth';
 import { useHallLayout } from './useHallLayout';
 import { useHallTextures } from './useHallTextures';
+import { useTranslation } from 'react-i18next';
 
 interface HallSceneProps {
     stands: Stand[];
@@ -23,6 +24,7 @@ interface HallSceneProps {
  * Rich warm lighting inspired by real exhibition halls.
  */
 function HallSceneContent({ stands, onStandClick, eventTitle, onViewAllStands }: HallSceneProps) {
+    const { t } = useTranslation();
     const placements = useHallLayout(stands);
     const textures = useHallTextures();
 
@@ -66,13 +68,14 @@ function HallSceneContent({ stands, onStandClick, eventTitle, onViewAllStands }:
                 outlineColor="#ffffff"
                 font={undefined}
             >
-                {'▼  Click a stand to visit  ▼'}
+                {t('visitor.hall3d.scene.clickStandPrompt')}
             </Text>
         </>
     );
 }
 
 function HallFloorCta({ onClick }: { onClick: () => void }) {
+    const { t } = useTranslation();
     const { size } = useThree();
     const [hovered, setHovered] = useState(false);
     const responsiveScale = size.width < 640 ? 1.35 : size.width < 1024 ? 1.18 : 1;
@@ -130,7 +133,7 @@ function HallFloorCta({ onClick }: { onClick: () => void }) {
                 outlineColor="#451a03"
                 font={undefined}
             >
-                {'View all stands'}
+                {t('visitor.hall3d.scene.viewAllStands')}
             </Text>
         </group>
     );
@@ -179,6 +182,7 @@ function ResponsiveCamera() {
  * Includes fullscreen toggle and responsive sizing.
  */
 function HallSceneInner({ stands, onStandClick, eventTitle, onViewAllStands }: HallSceneProps) {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -214,14 +218,14 @@ function HallSceneInner({ stands, onStandClick, eventTitle, onViewAllStands }: H
             <button
                 onClick={toggleFullscreen}
                 className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/90 backdrop-blur-sm border border-amber-200 shadow-md hover:bg-white hover:shadow-lg transition-all text-xs font-medium text-zinc-700"
-                title={isFullscreen ? 'Exit Fullscreen' : 'View Fullscreen'}
+                title={isFullscreen ? t('visitor.hall3d.scene.actions.exitFullscreen') : t('visitor.hall3d.scene.actions.viewFullscreen')}
             >
                 {isFullscreen ? (
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 4 20 10 20" /><polyline points="20 10 20 4 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
                 ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
                 )}
-                <span className="hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+                <span className="hidden sm:inline">{isFullscreen ? t('visitor.hall3d.scene.actions.exitFullscreen') : t('visitor.hall3d.scene.actions.fullscreen')}</span>
             </button>
 
             <Canvas

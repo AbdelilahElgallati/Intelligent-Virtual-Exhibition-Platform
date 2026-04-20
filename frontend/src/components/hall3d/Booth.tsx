@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { Stand } from '@/types/stand';
 import type { HallTextures } from './useHallTextures';
 import { resolveMediaUrl } from '@/lib/media';
+import { useTranslation } from 'react-i18next';
 
 /* ── Booth dimensions (enlarged for 3-per-row layout) ── */
 const BOOTH_W = 4.5;   // width  (X)
@@ -72,6 +73,7 @@ function getContrastColor(hex: string): string {
  * Inspired by real virtual exhibition booths.
  */
 function BoothInner({ stand, position, onClick, textures }: BoothProps) {
+    const { t } = useTranslation();
     const groupRef = useRef<THREE.Group>(null);
     const [hovered, setHovered] = useState(false);
 
@@ -91,7 +93,7 @@ function BoothInner({ stand, position, onClick, textures }: BoothProps) {
         }
     }, [resolvedLogoUrl]);
 
-    const displayName = truncateName(stand.name || 'Stand');
+    const displayName = truncateName(stand.name || t('visitor.hall3d.booth.defaults.standName'));
 
     return (
         <group

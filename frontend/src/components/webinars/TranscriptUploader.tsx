@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/api/client';
 import { ENDPOINTS } from '@/lib/api/endpoints';
 import { Button } from '@/components/ui/Button';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface TranscriptSegment {
   start: number;
@@ -20,6 +21,7 @@ interface TranscriptResponse {
 }
 
 export const TranscriptUploader: React.FC = () => {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<TranscriptResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export const TranscriptUploader: React.FC = () => {
       const data = await apiClient.post<TranscriptResponse>(ENDPOINTS.TRANSCRIPTS.UPLOAD, form);
       setResult(data);
     } catch (err: any) {
-      setError(err?.message || 'Failed to transcribe');
+      setError(err?.message || t('visitor.webinars.transcriptUploader.errors.transcribeFailed'));
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export const TranscriptUploader: React.FC = () => {
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-3 p-4 border border-gray-200 rounded-xl bg-white shadow-sm">
         <div>
-          <label className="text-sm font-medium text-gray-700">Upload audio</label>
+          <label className="text-sm font-medium text-gray-700">{t('visitor.webinars.transcriptUploader.labels.uploadAudio')}</label>
           <input
             type="file"
             accept="audio/*"
@@ -57,7 +59,7 @@ export const TranscriptUploader: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={!file || loading} className="bg-indigo-600 hover:bg-indigo-700">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Transcribe'}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('visitor.webinars.transcriptUploader.actions.transcribe')}
           </Button>
           {error && <span className="text-sm text-red-600">{error}</span>}
         </div>
@@ -65,11 +67,11 @@ export const TranscriptUploader: React.FC = () => {
 
       {result && (
         <div className="p-4 border border-gray-200 rounded-xl bg-white shadow-sm space-y-3">
-          <div className="text-sm text-gray-500">Language: {result.language} · Duration: {result.duration.toFixed(1)}s</div>
+          <div className="text-sm text-gray-500">{t('visitor.webinars.transcriptUploader.meta.language')}: {result.language} · {t('visitor.webinars.transcriptUploader.meta.duration')}: {result.duration.toFixed(1)}s</div>
           <div className="text-gray-900 whitespace-pre-wrap text-sm">{result.text}</div>
           {result.segments?.length > 0 && (
             <div className="pt-2 space-y-1">
-              <div className="text-xs font-semibold text-gray-600">Segments</div>
+              <div className="text-xs font-semibold text-gray-600">{t('visitor.webinars.transcriptUploader.labels.segments')}</div>
               <ul className="space-y-1">
                 {result.segments.map((seg, idx) => (
                   <li key={idx} className="text-xs text-gray-700">

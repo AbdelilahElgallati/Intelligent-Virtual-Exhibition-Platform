@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 interface RecommendedEventsProps {
   recommendations: Recommendation[];
@@ -11,6 +12,7 @@ interface RecommendedEventsProps {
 }
 
 export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommendations, loading }) => {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="space-y-4">
@@ -24,7 +26,7 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
   if (recommendations.length === 0) {
     return (
       <div className="text-center p-6 bg-muted/20 rounded-lg border border-dashed">
-        <p className="text-muted-foreground text-sm">No recommendations available yet.</p>
+        <p className="text-muted-foreground text-sm">{t('dashboard.visitor.recommended.empty')}</p>
       </div>
     );
   }
@@ -37,9 +39,9 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
             <div className="flex justify-between items-start">
               <CardTitle className="text-base">{rec.title}</CardTitle>
               {rec.score > 0.8 && (
-                <Badge variant="secondary" className="text-[10px]">
-                  High Match
-                </Badge>
+                  <Badge variant="secondary" className="text-[10px]">
+                  {t('dashboard.visitor.recommended.highMatch')}
+                  </Badge>
               )}
             </div>
           </CardHeader>
@@ -55,7 +57,7 @@ export const RecommendedEvents: React.FC<RecommendedEventsProps> = ({ recommenda
           </CardContent>
           <CardFooter className="p-4 pt-0 flex justify-end">
             <Button asChild size="sm" variant="ghost">
-              <Link href={`/events/${rec.id}`}>View details</Link>
+              <Link href={`/events/${rec.id}`}>{t('dashboard.visitor.recommended.viewDetails')}</Link>
             </Button>
           </CardFooter>
         </Card>

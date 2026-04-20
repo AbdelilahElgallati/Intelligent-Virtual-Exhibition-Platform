@@ -11,6 +11,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useDailyRoom, DailyParticipant } from '@/hooks/useDailyRoom';
 import MediaGrid from './MediaGrid';
 import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff, WifiOff, Loader2, AlertTriangle, RefreshCw, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface MeetingRoomProps {
   token: string;
@@ -26,6 +27,7 @@ interface MeetingRoomProps {
 function Controls({
   localParticipant,
   reconnecting,
+  t,
   onToggleMic,
   onToggleCam,
   onToggleScreen,
@@ -33,6 +35,7 @@ function Controls({
 }: Readonly<{
   localParticipant: DailyParticipant | null;
   reconnecting: boolean;
+  t: (key: string) => string;
   onToggleMic: () => void;
   onToggleCam: () => void;
   onToggleScreen: () => void;
@@ -48,7 +51,7 @@ function Controls({
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 px-6 py-4 rounded-3xl bg-black/30 backdrop-blur-2xl border border-white/10 shadow-2xl">
       {reconnecting && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 bg-amber-500 rounded-full text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
-          <WifiOff size={12} /> Reconnecting…
+          <WifiOff size={12} /> {t('visitor.meetingRoom.reconnecting')}
         </div>
       )}
 
@@ -56,7 +59,7 @@ function Controls({
       <button
         onClick={onToggleMic}
         className={`${btnBase} ${micOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-red-500 text-white hover:bg-red-600'}`}
-        title={micOn ? 'Mute' : 'Unmute'}
+        title={micOn ? t('visitor.meetingRoom.mute') : t('visitor.meetingRoom.unmute')}
       >
         {micOn ? <Mic size={20} /> : <MicOff size={20} />}
       </button>
@@ -65,7 +68,7 @@ function Controls({
       <button
         onClick={onToggleCam}
         className={`${btnBase} ${camOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-red-500 text-white hover:bg-red-600'}`}
-        title={camOn ? 'Turn Camera Off' : 'Turn Camera On'}
+        title={camOn ? t('visitor.meetingRoom.cameraOff') : t('visitor.meetingRoom.cameraOn')}
       >
         {camOn ? <Video size={20} /> : <VideoOff size={20} />}
       </button>
@@ -74,7 +77,7 @@ function Controls({
       <button
         onClick={onToggleScreen}
         className={`${btnBase} ${screenOn ? 'bg-indigo-600 text-white' : 'bg-white/10 text-zinc-300 hover:bg-white/20'}`}
-        title={screenOn ? 'Stop Sharing' : 'Share Screen'}
+        title={screenOn ? t('visitor.meetingRoom.screenShareOff') : t('visitor.meetingRoom.screenShareOn')}
       >
         <ScreenShare size={20} />
       </button>
@@ -83,7 +86,7 @@ function Controls({
       <button
         onClick={onLeave}
         className={`${btnBase} bg-red-600 text-white hover:bg-red-500 hover:scale-105 active:scale-95 border-none`}
-        title="End Call"
+        title={t('visitor.meetingRoom.endCall')}
       >
         <PhoneOff size={24} />
       </button>
@@ -94,6 +97,7 @@ function Controls({
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessionEnd }: Readonly<MeetingRoomProps>) {
+  const { t } = useTranslation();
   const {
     joined,
     error,
@@ -159,13 +163,13 @@ export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessio
         <div className="w-20 h-20 rounded-3xl bg-red-500/10 flex items-center justify-center text-red-500 mb-6 border border-red-500/20">
           <AlertTriangle size={40} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Connection Failed</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t('visitor.meetingRoom.connectionFailed')}</h2>
         <p className="text-zinc-500 max-w-sm mb-8">{error}</p>
         <button
           onClick={() => onSessionEnd?.()}
           className="px-8 py-3 bg-white text-black font-bold rounded-2xl hover:bg-zinc-200 transition-all active:scale-95"
         >
-          Return to Stand
+          {t('visitor.meetingRoom.returnToStand')}
         </button>
       </div>
     );
@@ -180,13 +184,13 @@ export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessio
             <Loader2 size={48} className="animate-spin text-indigo-500" />
             <div className="absolute inset-0 blur-xl bg-indigo-500/20 animate-pulse" />
           </div>
-          <p className="text-zinc-400 font-medium tracking-wide animate-pulse">Establishing encrypted connection…</p>
+          <p className="text-zinc-400 font-medium tracking-wide animate-pulse">{t('visitor.meetingRoom.establishing')}…</p>
           {canRejoin && (
             <button
               onClick={() => reconnect()}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white border border-white/15 hover:bg-white/15 transition-all"
             >
-              <RefreshCw size={16} /> Rejoin now
+              <RefreshCw size={16} /> {t('visitor.meetingRoom.rejoinPrompt')}
             </button>
           )}
           {error && <p className="text-xs text-red-300 max-w-md text-center px-4">{error}</p>}
@@ -201,7 +205,7 @@ export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessio
       {joined && remoteParticipants.length === 0 && (
         <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/55 border border-white/10 text-zinc-200 text-sm backdrop-blur-xl">
           <Users size={14} className="text-zinc-300" />
-          Waiting for the other participant to join or rejoin
+          {t('visitor.meetingRoom.waitingParticipant')}
         </div>
       )}
 
@@ -213,7 +217,7 @@ export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessio
             onClick={() => reconnect()}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/25 hover:bg-red-500/35 transition"
           >
-            <RefreshCw size={13} /> Rejoin
+            <RefreshCw size={13} /> {t('visitor.meetingRoom.rejoin')}
           </button>
         </div>
       )}
@@ -222,6 +226,7 @@ export default function MeetingRoom({ token, roomUrl, startsAt, endsAt, onSessio
       <Controls
         localParticipant={localParticipant}
         reconnecting={reconnecting}
+        t={t}
         onToggleMic={toggleMic}
         onToggleCam={toggleCam}
         onToggleScreen={toggleScreenShare}

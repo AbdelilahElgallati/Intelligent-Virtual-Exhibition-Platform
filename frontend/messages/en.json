@@ -4437,10 +4437,12 @@
       "onlineCount": "{n} online",
       "noOtherAttendees": "No other attendees yet",
       "chatPlaceholder": "Type a message",
+      "noMessages": "No messages yet",
       "sending": "Sending",
       "send": "Send",
       "liveChat": "Live Chat",
-      "notSet": "Not set"
+      "notSet": "Not set",
+      "you": "You"
     },
     "qaPanel": {
       "title": "Questions & Answers",
@@ -4494,6 +4496,8 @@
       "quietRoom": "Room is currently quiet",
       "waitingStreams": "Waiting for streams to begin",
       "switchMainPip": "Switch main and picture-in-picture videos",
+      "switch": "Switch",
+      "you": "You",
       "screenShared": "Screen shared",
       "streamPaused": "Stream Paused"
     },
@@ -4557,6 +4561,22 @@
       "subtitle": "Watch sessions and upload recordings...",
       "transcriptViewer": "Transcript Viewer",
       "transcriptUpload": "Upload an audio recording to generate a transcript.",
+      "transcriptUploader": {
+        "labels": {
+          "uploadAudio": "Upload audio",
+          "segments": "Segments"
+        },
+        "actions": {
+          "transcribe": "Transcribe"
+        },
+        "meta": {
+          "language": "Language",
+          "duration": "Duration"
+        },
+        "errors": {
+          "transcribeFailed": "Failed to transcribe"
+        }
+      },
       "items": {
         "futureTechExpo": {
           "title": "Future Tech Expo Keynote",
@@ -4600,6 +4620,10 @@
       "currentSlot": "Current: {label}",
       "virtual": "Virtual",
       "defaultCategory": "Exhibition"
+    },
+    "standCard": {
+      "descriptionFallback": "Visit our stand to learn about our premium solutions and connect with our team.",
+      "visitStand": "Visit Stand"
     },
     "eventsGrid": {
       "noEvents": "No events found",
@@ -4667,6 +4691,7 @@
       "liveSessionsCount": "{n} live sessions",
       "myMeetings": "My Meetings",
       "myMeetingsSubtitle": "Includes who you will meet, start time, duration, countdown, and live join.",
+      "conferencesTitle": "Conferences",
       "noMeetings": "No meetings for this event yet.",
       "with": "With",
       "start": "Start",
@@ -4690,6 +4715,22 @@
       "startsInDaysHours": "Starts in {d}d {h}h",
       "startsInHoursMinutes": "Starts in {h}h {m}m",
       "startsInMinutes": "Starts in {m}m"
+    },
+    "hall3d": {
+      "scene": {
+        "clickStandPrompt": "▼  Click a stand to visit  ▼",
+        "viewAllStands": "View all stands",
+        "actions": {
+          "viewFullscreen": "View Fullscreen",
+          "exitFullscreen": "Exit Fullscreen",
+          "fullscreen": "Fullscreen"
+        }
+      },
+      "booth": {
+        "defaults": {
+          "standName": "Stand"
+        }
+      }
     },
     "floatingAssistant": {
       "buttonLabel": "Assistant",

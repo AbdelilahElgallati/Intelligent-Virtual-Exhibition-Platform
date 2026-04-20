@@ -154,3 +154,5 @@ Components (frontend/src/components)
 - frontend/src/components/hall3d/useHallLayout.ts
 - frontend/src/components/hall3d/useHallTextures.ts
 - frontend/src/components/hall3d/index.ts
+
+***********************************************************************
