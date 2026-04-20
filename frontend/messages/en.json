@@ -2519,6 +2519,7 @@
       "form": {
         "eventTitle": "Event Title",
         "urlSlug": "URL Slug (Friendly ID)",
+        "slugPlaceholder": "e.g. tech-expo-2025",
         "timezone": "Event Timezone",
         "registrationDeadline": "Registration Deadline",
         "startDate": "Start Date",
@@ -2619,6 +2620,19 @@
       "loadFailed": "Could not load event details.",
       "overview": {
         "eventInformation": "Event Information",
+        "descriptionGoals": "Description & Goals",
+        "extendedContext": "Extended Context",
+        "operationalNotes": "Operational Notes",
+        "quickInfo": "Quick Info",
+        "category": "Category",
+        "location": "Location",
+        "enterpriseAllocation": "Enterprise Allocation",
+        "standPrice": "Stand Price",
+        "perEnterprise": "Per Enterprise",
+        "visitorAccess": "Visitor Access",
+        "paidEntry": "Paid Entry",
+        "freeAccess": "Free Access",
+        "scheduleSubtitle": "Timeline and session breakdown across the event duration.",
         "pricing": "Pricing",
         "inviteLinks": "Invite Links",
         "enterpriseInvite": "Enterprise Invite Link",
@@ -2652,6 +2666,7 @@
         "subtitle": "Access and sharing links for your event.",
         "enterpriseAccess": "Enterprise Access",
         "visitorAccess": "Visitor Access",
+        "notGenerated": "Links Not Generated",
         "noEnterpriseLink": "No enterprise link generated yet.",
         "noVisitorLink": "No visitor link generated yet.",
         "linkNotAvailable": "Link not available"
@@ -2825,6 +2840,65 @@
       "help": {
         "title": "Need Help?",
         "description": "For organization-level changes or role migrations, please contact our support team."
+      }
+    },
+    "layout": {
+      "authChecking": "Checking authorization...",
+      "workspace": "Organizer Workspace",
+      "breadcrumbOrganizer": "Organizer",
+      "notifications": "Notifications",
+      "nav": {
+        "dashboard": "Dashboard",
+        "myEvents": "My Events",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      }
+    },
+    "scheduleEditor": {
+      "day": "Day",
+      "addSlot": "Add Slot",
+      "removeSlot": "Remove Slot",
+      "autoBlocked": "Auto Blocked",
+      "passed": "PASSED: THIS SESSION'S TIME HAS ALREADY ELAPSED",
+      "timeRange": "Time Range",
+      "spillsNextDay": "This session spills into the next day.",
+      "nextDay": "Next Day",
+      "activityDescription": "Activity Description",
+      "activityPlaceholder": "e.g. Keynote Presentation",
+      "choosePartner": "Choose Partner...",
+      "partnerEnterprise": "Partner Enterprise",
+      "overridesEnterprise": "Overrides Enterprise",
+      "emptyDay": "Empty day. Add your first time slot.",
+      "invalidSchedule": "Invalid Schedule",
+      "blockedSlotTitle": "This slot is unavailable because a session from the previous day spills into this timeframe.",
+      "resolveConflicts": "Please resolve all conflicts before saving.",
+      "saveFailed": "Failed to save schedule",
+      "unknownEnterprise": "Unknown Enterprise",
+      "untitled": "Untitled",
+      "continuingSession": "Continuing session: {label}"
+    },
+    "eventConferences": {
+      "title": "Conference Assignments",
+      "assignHint": "Click \"Assign Speaker\" on any slot to turn it into a live conference with an enterprise speaker.",
+      "invalidDate": "Invalid date",
+      "speaker": "Speaker",
+      "assignSpeaker": "Assign Speaker",
+      "enterpriseSpeaker": "Enterprise Speaker *",
+      "selectEnterprise": "— Select enterprise —",
+      "speakerDisplayName": "Speaker Display Name",
+      "speakerDisplayPlaceholder": "Optional — defaults to enterprise name",
+      "saveAssignment": "Save Assignment",
+      "noSchedule": "No schedule defined for this event.",
+      "allConferences": "All Conferences",
+      "qa": "Q&A",
+      "registered": "{count} registered",
+      "confirm": {
+        "removeAssignment": "Remove conference assignment from this slot?",
+        "cancelConference": "Cancel this conference?"
+      },
+      "errors": {
+        "assignConference": "Failed to assign conference",
+        "removeAssignment": "Failed to remove assignment"
       }
     }
   },

@@ -139,6 +139,7 @@ export const Navbar: React.FC = () => {
     const [profileOpen, setProfileOpen] = useState(false);
     const [languageOpen, setLanguageOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const languageDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -155,10 +156,15 @@ export const Navbar: React.FC = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const translate = mounted ? t : i18n.getFixedT('en');
     const role = user?.role;
     const navLinks = isAuthenticated ? getNavLinks(role) : GUEST_NAV;
     const dropdownItems = getDropdownItems(role);
-    const currentLanguage = (i18n.resolvedLanguage || 'en').split('-')[0] as 'en' | 'fr' | 'ar';
+    const currentLanguage = ((mounted ? i18n.resolvedLanguage : 'en') || 'en').split('-')[0] as 'en' | 'fr' | 'ar';
     const languageCodeLabel: Record<'en' | 'fr' | 'ar', string> = { en: 'EN', fr: 'FR', ar: 'AR' };
 
     const initials = (user?.full_name || user?.username || 'U')
@@ -175,7 +181,7 @@ export const Navbar: React.FC = () => {
                     {/* Logo + Nav links */}
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2">
-                            <span className="text-xl font-bold tracking-tight text-indigo-600">{t('common.brand')}</span>
+                            <span className="text-xl font-bold tracking-tight text-indigo-600">{translate('common.brand')}</span>
                         </Link>
 
                         <div className="hidden md:flex items-center gap-6">
@@ -190,7 +196,7 @@ export const Navbar: React.FC = () => {
                                                 : 'text-zinc-600 hover:text-indigo-600'
                                             }`}
                                     >
-                                        {t(link.label)}
+                                        {translate(link.label)}
                                     </Link>
                                 );
                             })}
@@ -222,21 +228,21 @@ export const Navbar: React.FC = () => {
                                         onClick={() => { i18n.changeLanguage('en'); setLanguageOpen(false); }}
                                         className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'en' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
                                     >
-                                        {t('common.languages.english')}
+                                        {translate('common.languages.english')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => { i18n.changeLanguage('fr'); setLanguageOpen(false); }}
                                         className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'fr' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
                                     >
-                                        {t('common.languages.french')}
+                                        {translate('common.languages.french')}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => { i18n.changeLanguage('ar'); setLanguageOpen(false); }}
                                         className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'ar' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
                                     >
-                                        {t('common.languages.arabic')}
+                                        {translate('common.languages.arabic')}
                                     </button>
                                 </div>
                             )}
@@ -273,7 +279,7 @@ export const Navbar: React.FC = () => {
                                                     </p>
                                                     <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
                                                     <span className={`inline-block mt-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full capitalize ${roleBadge[role ?? ''] ?? 'bg-zinc-100 text-zinc-600'}`}>
-                                                        {role ? t(`common.roles.${role}`) : ''}
+                                                        {role ? translate(`common.roles.${role}`) : ''}
                                                     </span>
                                                 </div>
                                             </div>
@@ -289,7 +295,7 @@ export const Navbar: React.FC = () => {
                                                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
                                                 >
                                                     {item.icon}
-                                                    {t(item.label)}
+                                                    {translate(item.label)}
                                                 </Link>
                                             ))}
                                         </div>
@@ -303,7 +309,7 @@ export const Navbar: React.FC = () => {
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                                 </svg>
-                                                {t('common.buttons.signOut')}
+                                                {translate('common.buttons.signOut')}
                                             </button>
                                         </div>
                                     </div>
@@ -312,10 +318,10 @@ export const Navbar: React.FC = () => {
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link href="/auth/login">
-                                    <Button variant="ghost" size="sm">{t('common.buttons.login')}</Button>
+                                    <Button variant="ghost" size="sm">{translate('common.buttons.login')}</Button>
                                 </Link>
                                 <Link href="/auth/register">
-                                    <Button size="sm">{t('common.buttons.register')}</Button>
+                                    <Button size="sm">{translate('common.buttons.register')}</Button>
                                 </Link>
                             </div>
                         )}
@@ -325,7 +331,7 @@ export const Navbar: React.FC = () => {
                             className="flex md:hidden items-center justify-center p-2 rounded-md text-zinc-600 hover:text-indigo-600 hover:bg-zinc-100"
                             aria-expanded={mobileMenuOpen}
                         >
-                            <span className="sr-only">{t('common.navigation.openMenu')}</span>
+                            <span className="sr-only">{translate('common.navigation.openMenu')}</span>
                             {mobileMenuOpen ? (
                                 <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -354,7 +360,7 @@ export const Navbar: React.FC = () => {
                                             : 'text-zinc-700 hover:bg-zinc-50 hover:text-indigo-600'
                                         }`}
                                 >
-                                    {t(link.label)}
+                                    {translate(link.label)}
                                 </Link>
                             );
                         })}

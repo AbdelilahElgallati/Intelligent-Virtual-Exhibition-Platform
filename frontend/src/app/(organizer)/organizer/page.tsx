@@ -23,8 +23,10 @@ import { organizerService } from '@/services/organizer.service';
 import { Button } from '@/components/ui/Button';
 import { OrganizerSummary } from '@/types/organizer';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 export default function OrganizerDashboard() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [events, setEvents] = useState<OrganizerEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function OrganizerDashboard() {
         } catch (err) {
             console.error('Failed to fetch dashboard data', err);
             setEvents([]);
-            setError('Unable to refresh dashboard data right now.');
+            setError(t('organizer.dashboard.errorRefresh'));
         } finally {
             if (initial) {
                 setLoading(false);
@@ -81,7 +83,7 @@ export default function OrganizerDashboard() {
             setTimeout(() => setExportSuccess(false), 5000);
         } catch (err: any) {
             console.error('Export failed', err);
-            setError(err.message || "Failed to export overall report.");
+            setError(err.message || t('organizer.dashboard.errorExport'));
         } finally {
             setExportLoading(false);
         }
@@ -119,10 +121,10 @@ export default function OrganizerDashboard() {
     }, [events, eventSearch, stateFilter, activeEvents, pendingEvents, closedEvents]);
 
     const stats = [
-        { label: 'Total Events', value: events.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Active Events', value: activeEvents.length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-        { label: 'Pending Approval', value: pendingEvents.length, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        { label: 'Total Visitors', value: summary?.overview.total_visitors ?? 0, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: t('organizer.dashboard.stats.totalEvents'), value: events.length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: t('organizer.dashboard.stats.activeEvents'), value: activeEvents.length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: t('organizer.dashboard.stats.pendingApproval'), value: pendingEvents.length, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+        { label: t('organizer.dashboard.stats.totalVisitors'), value: summary?.overview.total_visitors ?? 0, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     ];
 
     const getEventStateBadgeClass = (state: string) => {
@@ -133,13 +135,13 @@ export default function OrganizerDashboard() {
 
     const renderRecentEvents = () => {
         if (loading) {
-            return <p className="text-gray-500 text-sm">Loading events...</p>;
+            return <p className="text-gray-500 text-sm">{t('organizer.dashboard.recentEvents.loading')}</p>;
         }
         if (!Array.isArray(events) || events.length === 0) {
-            return <p className="text-gray-500 text-sm">No events found. Start by creating one!</p>;
+            return <p className="text-gray-500 text-sm">{t('organizer.dashboard.recentEvents.empty')}</p>;
         }
         if (filteredRecentEvents.length === 0) {
-            return <p className="text-gray-500 text-sm">No events match your filter.</p>;
+            return <p className="text-gray-500 text-sm">{t('organizer.dashboard.recentEvents.noMatch')}</p>;
         }
 
         return filteredRecentEvents.map((event) => (
@@ -171,9 +173,13 @@ export default function OrganizerDashboard() {
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.full_name?.split(' ')[0]}</h1>
-                    <p className="text-gray-500">Here's what's happening with your events today.</p>
-                    <p className="text-xs text-gray-400 mt-1">{lastSyncedAt ? `Last synced: ${formatInUserTZ(lastSyncedAt, { hour: '2-digit', minute: '2-digit' })}` : 'Waiting for first sync...'}</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('organizer.dashboard.welcome', { name: user?.full_name?.split(' ')[0] })}</h1>
+                    <p className="text-gray-500">{t('organizer.dashboard.subtitle')}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {lastSyncedAt
+                            ? t('organizer.dashboard.lastSynced', { time: formatInUserTZ(lastSyncedAt, { hour: '2-digit', minute: '2-digit' }) })
+                            : t('organizer.dashboard.waitingSync')}
+                    </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button
@@ -183,7 +189,7 @@ export default function OrganizerDashboard() {
                         className="gap-2"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Refresh
+                        {t('organizer.dashboard.refresh')}
                     </Button>
                     {!loading && events.length > 0 && (
                         <Button
@@ -193,7 +199,7 @@ export default function OrganizerDashboard() {
                             className="gap-2 shadow-sm"
                         >
                             <Download className="w-4 h-4" />
-                            Export Overall Performance (PDF)
+                            {t('organizer.dashboard.exportPdf')}
                         </Button>
                     )}
                 </div>
@@ -207,7 +213,7 @@ export default function OrganizerDashboard() {
 
             {exportSuccess && (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-2xl text-sm flex gap-3 items-center animate-in slide-in-from-top-2 duration-300">
-                    <CheckCircle2 className="w-5 h-5 shrink-0" /> Overall performance report exported successfully!
+                    <CheckCircle2 className="w-5 h-5 shrink-0" /> {t('organizer.dashboard.exportSuccess')}
                 </div>
             )}
 
@@ -230,21 +236,21 @@ export default function OrganizerDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="p-5 border-none shadow-sm">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">Engagement Score</p>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">{t('organizer.dashboard.engagementScore')}</p>
                     <div className="flex items-center justify-between">
                         <p className="text-2xl font-bold text-indigo-700">{summary?.overview.stand_engagement_score ?? 0}</p>
                         <TrendingUp className="w-5 h-5 text-indigo-500" />
                     </div>
                 </Card>
                 <Card className="p-5 border-none shadow-sm">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">Leads Generated</p>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">{t('organizer.dashboard.leadsGenerated')}</p>
                     <div className="flex items-center justify-between">
                         <p className="text-2xl font-bold text-emerald-700">{summary?.overview.leads_generated ?? 0}</p>
                         <ArrowRight className="w-5 h-5 text-emerald-500" />
                     </div>
                 </Card>
                 <Card className="p-5 border-none shadow-sm">
-                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">Safety Resolution</p>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-2">{t('organizer.dashboard.safetyResolution')}</p>
                     <div className="flex items-center justify-between">
                         <p className="text-2xl font-bold text-sky-700">{Math.round(summary?.safety.resolution_rate ?? 0)}%</p>
                         <ShieldCheck className="w-5 h-5 text-sky-500" />
@@ -255,23 +261,23 @@ export default function OrganizerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="p-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">Recent Events</h3>
+                        <h3 className="text-lg font-bold text-gray-900">{t('organizer.dashboard.recentEvents.title')}</h3>
                         <div className="relative">
                             <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
                             <input
                                 value={eventSearch}
                                 onChange={(e) => setEventSearch(e.target.value)}
-                                placeholder="Search event"
+                                placeholder={t('organizer.dashboard.recentEvents.searchPlaceholder')}
                                 className="h-8 pl-7 pr-3 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                             />
                         </div>
                     </div>
                     <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50 mb-4 gap-1">
                         {([
-                            ['all', 'All'],
-                            ['active', 'Active'],
-                            ['pending', 'Pending'],
-                            ['closed', 'Closed'],
+                            ['all', t('organizer.dashboard.recentEvents.filters.all')],
+                            ['active', t('organizer.dashboard.recentEvents.filters.active')],
+                            ['pending', t('organizer.dashboard.recentEvents.filters.pending')],
+                            ['closed', t('organizer.dashboard.recentEvents.filters.closed')],
                         ] as const).map(([value, label]) => (
                             <button
                                 key={value}
@@ -288,14 +294,14 @@ export default function OrganizerDashboard() {
                 </Card>
 
                 <Card className="p-6 bg-indigo-900 text-white border-none">
-                    <h3 className="text-lg font-bold mb-2">Performance Spotlight</h3>
+                    <h3 className="text-lg font-bold mb-2">{t('organizer.dashboard.performanceSpotlight.title')}</h3>
                     <p className="text-indigo-100 text-sm leading-relaxed mb-4">
-                        Add detailed schedules and complete stand profiles to increase conversion from visitors to leads.
+                        {t('organizer.dashboard.performanceSpotlight.tip')}
                     </p>
                     <div className="space-y-3 mb-5">
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1">
-                                <span className="text-indigo-100">Enterprise Participation</span>
+                                <span className="text-indigo-100">{t('organizer.dashboard.performanceSpotlight.enterpriseParticipation')}</span>
                                 <span className="font-semibold">{Math.round(summary?.overview.enterprise_participation_rate ?? 0)}%</span>
                             </div>
                             <div className="w-full h-2 bg-indigo-700 rounded-full overflow-hidden">
@@ -307,7 +313,7 @@ export default function OrganizerDashboard() {
                         </div>
                         <div>
                             <div className="flex items-center justify-between text-xs mb-1">
-                                <span className="text-indigo-100">Chat Interactions</span>
+                                <span className="text-indigo-100">{t('organizer.dashboard.performanceSpotlight.chatInteractions')}</span>
                                 <span className="font-semibold">{summary?.overview.chat_interactions ?? 0}</span>
                             </div>
                             <div className="w-full h-2 bg-indigo-700 rounded-full overflow-hidden">
@@ -321,7 +327,7 @@ export default function OrganizerDashboard() {
                     <div className="flex flex-wrap gap-2">
                         <Link href="/organizer/events">
                             <button className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors inline-flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4" /> Improve Events
+                                <MessageSquare className="w-4 h-4" /> {t('organizer.dashboard.performanceSpotlight.improveEvents')}
                             </button>
                         </Link>
                     </div>

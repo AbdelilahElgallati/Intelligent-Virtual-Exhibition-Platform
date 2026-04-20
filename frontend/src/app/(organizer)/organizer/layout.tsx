@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -15,19 +15,19 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/notifications';
-
-const NAV_ITEMS = [
-    { label: 'Dashboard', href: '/organizer', icon: LayoutDashboard },
-    { label: 'My Events', href: '/organizer/events', icon: Calendar },
-    { label: 'Profile', href: '/organizer/profile', icon: User },
-];
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 export default function OrganizerLayout({ children }: { children: React.ReactNode }) {
+    const { t } = useTranslation();
     const { user, isAuthenticated, isLoading, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [languageOpen, setLanguageOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const languageDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!isLoading) {
@@ -45,8 +45,29 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
             .catch(() => { });
     }, [isAuthenticated, user]);
 
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (languageDropdownRef.current && !languageDropdownRef.current.contains(e.target as Node)) {
+                setLanguageOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const translate = mounted ? t : i18n.getFixedT('en');
+    const NAV_ITEMS = [
+        { label: translate('organizer.layout.nav.dashboard'), href: '/organizer', icon: LayoutDashboard },
+        { label: translate('organizer.layout.nav.myEvents'), href: '/organizer/events', icon: Calendar },
+        { label: translate('organizer.layout.nav.profile'), href: '/organizer/profile', icon: User },
+    ];
+
     if (isLoading || !isAuthenticated || user?.role !== 'organizer') {
-        return <LoadingState message="Checking authorization..." />;
+        return <LoadingState message={translate('organizer.layout.authChecking')} />;
     }
 
     const initials = (user?.full_name || user?.email || 'OR')
@@ -54,7 +75,9 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
     const currentNav = NAV_ITEMS.find((item) => item.href === '/organizer'
         ? pathname === '/organizer'
         : pathname.startsWith(item.href));
-    const pageLabel = currentNav?.label || 'Organizer Workspace';
+    const pageLabel = currentNav?.label || translate('organizer.layout.workspace');
+    const currentLanguage = ((mounted ? i18n.resolvedLanguage : 'en') || 'en').split('-')[0] as 'en' | 'fr' | 'ar';
+    const languageCodeLabel: Record<'en' | 'fr' | 'ar', string> = { en: 'EN', fr: 'FR', ar: 'AR' };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -122,7 +145,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                         className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                         <LogOut className="w-5 h-5" />
-                        Sign Out
+                        {translate('organizer.layout.nav.signOut')}
                     </button>
                 </div>
             </aside>
@@ -141,7 +164,7 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                         </button>
                         <div className="min-w-0">
                             <div className="hidden lg:flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                                <span>Organizer</span>
+                                <span>{translate('organizer.layout.breadcrumbOrganizer')}</span>
                                 <ChevronRight className="w-3.5 h-3.5" />
                                 <span>{pageLabel}</span>
                             </div>
@@ -150,10 +173,52 @@ export default function OrganizerLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <div className="relative" ref={languageDropdownRef}>
+                            <button
+                                type="button"
+                                onClick={() => setLanguageOpen((prev) => !prev)}
+                                className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                                aria-haspopup="true"
+                                aria-expanded={languageOpen}
+                            >
+                                <svg className="h-3.5 w-3.5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9Zm0 0c2.3 2.5 3.5 5.55 3.5 9S14.3 18.5 12 21m0-18c-2.3 2.5-3.5 5.55-3.5 9S9.7 18.5 12 21m-8.25-9h16.5" />
+                                </svg>
+                                {languageCodeLabel[currentLanguage] || 'EN'}
+                                <svg className={`h-3 w-3 transition-transform ${languageOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                            {languageOpen && (
+                                <div className="absolute right-0 mt-1 w-36 rounded-md border border-zinc-200 bg-white shadow-lg z-50 py-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('en'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'en' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {translate('common.languages.english')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('fr'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'fr' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {translate('common.languages.french')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { i18n.changeLanguage('ar'); setLanguageOpen(false); }}
+                                        className={`block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50 ${currentLanguage === 'ar' ? 'font-semibold text-indigo-600' : 'text-zinc-700'}`}
+                                    >
+                                        {translate('common.languages.arabic')}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         <Link
                             href="/organizer/notifications"
                             className="relative p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                            title="Notifications"
+                            title={translate('organizer.layout.notifications')}
                         >
                             <Bell className="w-5 h-5" />
                             {unreadCount > 0 && (

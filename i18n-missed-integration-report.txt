@@ -131,3 +131,164 @@ All new keys added to frontend/messages/en.json (exact JSON path):
 - visitor.conferenceCard.actions.joinLive
 - visitor.conferenceCard.actions.registerSession
 - visitor.conferenceCard.actions.registered
+
+---
+
+File: frontend/src/app/(organizer)/organizer/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/profile/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/subscription/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/notifications/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/events/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/events/new/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/events/[id]/page.tsx
+- NEW keys added:
+  - organizer.eventDetail.form.slugPlaceholder
+  - organizer.eventDetail.overview.descriptionGoals
+  - organizer.eventDetail.overview.extendedContext
+  - organizer.eventDetail.overview.operationalNotes
+  - organizer.eventDetail.overview.quickInfo
+  - organizer.eventDetail.overview.category
+  - organizer.eventDetail.overview.location
+  - organizer.eventDetail.overview.enterpriseAllocation
+  - organizer.eventDetail.overview.standPrice
+  - organizer.eventDetail.overview.perEnterprise
+  - organizer.eventDetail.overview.visitorAccess
+  - organizer.eventDetail.overview.paidEntry
+  - organizer.eventDetail.overview.freeAccess
+  - organizer.eventDetail.overview.scheduleSubtitle
+  - organizer.eventDetail.links.notGenerated
+
+File: frontend/src/app/(organizer)/organizer/events/[id]/analytics/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(organizer)/organizer/layout.tsx
+- NEW keys added:
+  - organizer.layout.authChecking
+  - organizer.layout.workspace
+  - organizer.layout.breadcrumbOrganizer
+  - organizer.layout.notifications
+  - organizer.layout.nav.dashboard
+  - organizer.layout.nav.myEvents
+  - organizer.layout.nav.profile
+  - organizer.layout.nav.signOut
+
+File: frontend/src/components/events/ScheduleEditor.tsx
+- NEW keys added:
+  - organizer.scheduleEditor.day
+  - organizer.scheduleEditor.addSlot
+  - organizer.scheduleEditor.removeSlot
+  - organizer.scheduleEditor.autoBlocked
+  - organizer.scheduleEditor.passed
+  - organizer.scheduleEditor.timeRange
+  - organizer.scheduleEditor.spillsNextDay
+  - organizer.scheduleEditor.nextDay
+  - organizer.scheduleEditor.activityDescription
+  - organizer.scheduleEditor.activityPlaceholder
+  - organizer.scheduleEditor.choosePartner
+  - organizer.scheduleEditor.partnerEnterprise
+  - organizer.scheduleEditor.overridesEnterprise
+  - organizer.scheduleEditor.emptyDay
+  - organizer.scheduleEditor.invalidSchedule
+  - organizer.scheduleEditor.blockedSlotTitle
+  - organizer.scheduleEditor.resolveConflicts
+  - organizer.scheduleEditor.saveFailed
+  - organizer.scheduleEditor.unknownEnterprise
+  - organizer.scheduleEditor.untitled
+  - organizer.scheduleEditor.continuingSession
+
+File: frontend/src/components/conferences/OrganizerEventConferences.tsx
+- NEW keys added:
+  - organizer.eventConferences.title
+  - organizer.eventConferences.assignHint
+  - organizer.eventConferences.invalidDate
+  - organizer.eventConferences.speaker
+  - organizer.eventConferences.assignSpeaker
+  - organizer.eventConferences.enterpriseSpeaker
+  - organizer.eventConferences.selectEnterprise
+  - organizer.eventConferences.speakerDisplayName
+  - organizer.eventConferences.speakerDisplayPlaceholder
+  - organizer.eventConferences.saveAssignment
+  - organizer.eventConferences.noSchedule
+  - organizer.eventConferences.allConferences
+  - organizer.eventConferences.qa
+  - organizer.eventConferences.registered
+  - organizer.eventConferences.confirm.removeAssignment
+  - organizer.eventConferences.confirm.cancelConference
+  - organizer.eventConferences.errors.assignConference
+  - organizer.eventConferences.errors.removeAssignment
+
+All new keys added to frontend/messages/en.json (exact JSON path):
+- organizer.eventDetail.form.slugPlaceholder
+- organizer.eventDetail.overview.descriptionGoals
+- organizer.eventDetail.overview.extendedContext
+- organizer.eventDetail.overview.operationalNotes
+- organizer.eventDetail.overview.quickInfo
+- organizer.eventDetail.overview.category
+- organizer.eventDetail.overview.location
+- organizer.eventDetail.overview.enterpriseAllocation
+- organizer.eventDetail.overview.standPrice
+- organizer.eventDetail.overview.perEnterprise
+- organizer.eventDetail.overview.visitorAccess
+- organizer.eventDetail.overview.paidEntry
+- organizer.eventDetail.overview.freeAccess
+- organizer.eventDetail.overview.scheduleSubtitle
+- organizer.eventDetail.links.notGenerated
+- organizer.layout.authChecking
+- organizer.layout.workspace
+- organizer.layout.breadcrumbOrganizer
+- organizer.layout.notifications
+- organizer.layout.nav.dashboard
+- organizer.layout.nav.myEvents
+- organizer.layout.nav.profile
+- organizer.layout.nav.signOut
+- organizer.scheduleEditor.day
+- organizer.scheduleEditor.addSlot
+- organizer.scheduleEditor.removeSlot
+- organizer.scheduleEditor.autoBlocked
+- organizer.scheduleEditor.passed
+- organizer.scheduleEditor.timeRange
+- organizer.scheduleEditor.spillsNextDay
+- organizer.scheduleEditor.nextDay
+- organizer.scheduleEditor.activityDescription
+- organizer.scheduleEditor.activityPlaceholder
+- organizer.scheduleEditor.choosePartner
+- organizer.scheduleEditor.partnerEnterprise
+- organizer.scheduleEditor.overridesEnterprise
+- organizer.scheduleEditor.emptyDay
+- organizer.scheduleEditor.invalidSchedule
+- organizer.scheduleEditor.blockedSlotTitle
+- organizer.scheduleEditor.resolveConflicts
+- organizer.scheduleEditor.saveFailed
+- organizer.scheduleEditor.unknownEnterprise
+- organizer.scheduleEditor.untitled
+- organizer.scheduleEditor.continuingSession
+- organizer.eventConferences.title
+- organizer.eventConferences.assignHint
+- organizer.eventConferences.invalidDate
+- organizer.eventConferences.speaker
+- organizer.eventConferences.assignSpeaker
+- organizer.eventConferences.enterpriseSpeaker
+- organizer.eventConferences.selectEnterprise
+- organizer.eventConferences.speakerDisplayName
+- organizer.eventConferences.speakerDisplayPlaceholder
+- organizer.eventConferences.saveAssignment
+- organizer.eventConferences.noSchedule
+- organizer.eventConferences.allConferences
+- organizer.eventConferences.qa
+- organizer.eventConferences.registered
+- organizer.eventConferences.confirm.removeAssignment
+- organizer.eventConferences.confirm.cancelConference
+- organizer.eventConferences.errors.assignConference
+- organizer.eventConferences.errors.removeAssignment

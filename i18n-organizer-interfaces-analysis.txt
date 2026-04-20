@@ -1,0 +1,54 @@
+1) i18n setup summary
+
+- File analyzed: frontend/src/lib/i18n.ts
+- Translations are loaded statically at startup via JSON imports:
+  - frontend/messages/en.json
+  - frontend/messages/fr.json
+  - frontend/messages/ar.json
+- Resource registration:
+  - resources.en.translation = en
+  - resources.fr.translation = fr
+  - resources.ar.translation = ar
+- Language config:
+  - lng: "en"
+  - fallbackLng: "en"
+- Detection:
+  - order: localStorage -> cookie -> navigator
+  - caches: localStorage
+- Interpolation:
+  - escapeValue: false
+  - delimiters: { ... }
+
+Namespace strategy confirmation
+- Single namespace strategy is active:
+  - ns: ["translation"]
+  - defaultNS: "translation"
+
+Key structure pattern confirmation (frontend/messages/en.json)
+- Nested domain-based JSON key tree.
+- Dot-path access pattern through the single namespace, e.g.:
+  - t("admin.dashboard.title")
+  - t("landing.hero.heading")
+  - t("common.actions.submit")
+
+
+2) Organizer interface discovery (excluding previously covered scope)
+
+Grouped file list:
+
+Pages
+- frontend/src/app/(organizer)/organizer/page.tsx
+- frontend/src/app/(organizer)/organizer/profile/page.tsx
+- frontend/src/app/(organizer)/organizer/subscription/page.tsx
+- frontend/src/app/(organizer)/organizer/notifications/page.tsx
+- frontend/src/app/(organizer)/organizer/events/page.tsx
+- frontend/src/app/(organizer)/organizer/events/new/page.tsx
+- frontend/src/app/(organizer)/organizer/events/[id]/page.tsx
+- frontend/src/app/(organizer)/organizer/events/[id]/analytics/page.tsx
+
+Layouts
+- frontend/src/app/(organizer)/organizer/layout.tsx
+
+Components
+- frontend/src/components/events/ScheduleEditor.tsx
+- frontend/src/components/conferences/OrganizerEventConferences.tsx

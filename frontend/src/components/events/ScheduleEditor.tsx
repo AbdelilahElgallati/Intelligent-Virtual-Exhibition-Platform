@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { organizerService } from "@/services/organizer.service";
 import { apiClient } from "@/lib/api/client";
+import { useTranslation } from "react-i18next";
 
 interface ScheduleEditorProps {
   eventId: string;
@@ -32,6 +33,7 @@ interface ScheduleEditorProps {
 }
 
 export default function ScheduleEditor({ eventId, initialDays, startDate, endDate, timezone, onSave, onCancel }: ScheduleEditorProps) {
+  const { t } = useTranslation();
   const [days, setDays] = useState<EventScheduleDay[]>(JSON.parse(JSON.stringify(initialDays)));
   const [enterprises, setEnterprises] = useState<{ id: string, name: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
           blocked[nextDayNum].push({
             start: "00:00",
             end: slot.end_time,
-            label: `Continuing session: ${slot.label || 'Untitled'}`
+            label: t('organizer.scheduleEditor.continuingSession', { label: slot.label || t('organizer.scheduleEditor.untitled') })
           });
         }
       });
@@ -62,7 +64,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
         const data = await apiClient.get<any[]>(`/participants/event/${eventId}/enterprises`);
         setEnterprises(data.map(p => ({ 
           id: p.user_id, 
-          name: p.organization_name || "Unknown Enterprise" 
+          name: p.organization_name || t('organizer.scheduleEditor.unknownEnterprise') 
         })));
       } catch (err) {
         console.error("Failed to fetch enterprises", err);
@@ -179,7 +181,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
 
   const handleSave = async () => {
     if (hasAnyConflict) {
-        setError("Please resolve all conflicts before saving.");
+        setError(t('organizer.scheduleEditor.resolveConflicts'));
         return;
     }
     setLoading(true);
@@ -195,7 +197,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
         await organizerService.updateEvent(eventId, { schedule_days: sortedDays });
         onSave(sortedDays);
     } catch (err: any) {
-        setError(err.message || "Failed to save schedule");
+        setError(err.message || t('organizer.scheduleEditor.saveFailed'));
     } finally {
         setLoading(false);
     }
@@ -217,7 +219,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                 {day.day_number}
               </span>
               <div>
-                <h3 className="text-sm font-bold text-zinc-900">Day {day.day_number}</h3>
+                <h3 className="text-sm font-bold text-zinc-900">{t('organizer.scheduleEditor.day')} {day.day_number}</h3>
                 {day.date_label && <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{day.date_label}</p>}
               </div>
             </div>
@@ -228,7 +230,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                 disabled={isDayPassed(day.day_number)}
                 className="rounded-xl h-9 border-zinc-200 text-zinc-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Add Slot
+              <Plus className="w-4 h-4 mr-1.5" /> {t('organizer.scheduleEditor.addSlot')}
             </Button>
           </div>
 
@@ -238,7 +240,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                 <div 
                   key={`blocked-${bIdx}`} 
                   className="bg-zinc-50 border border-zinc-200 border-dashed rounded-2xl p-4 flex items-center justify-between opacity-80 shadow-inner group/blocked relative overflow-hidden"
-                  title="This slot is unavailable because a session from the previous day spills into this timeframe."
+                  title={t('organizer.scheduleEditor.blockedSlotTitle')}
                 >
                     <div className="absolute inset-0 bg-zinc-100/30 -z-10 [background-image:linear-gradient(45deg,transparent_25%,rgba(0,0,0,0.02)_25%,rgba(0,0,0,0.02)_50%,transparent_50%,transparent_75%,rgba(0,0,0,0.02)_75%,rgba(0,0,0,0.02))] [background-size:20px_20px]" />
                     <div className="flex items-center gap-6">
@@ -254,7 +256,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                         <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-200/50 px-2 py-1 rounded-md border border-zinc-300/30">Auto Blocked</span>
+                         <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-200/50 px-2 py-1 rounded-md border border-zinc-300/30">{t('organizer.scheduleEditor.autoBlocked')}</span>
                     </div>
                 </div>
             ))}
@@ -284,7 +286,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                   )}
                   {passed && !conflict && (
                     <div className="absolute -top-3 left-4 px-2 py-0.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg shadow-red-200 z-10 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                      <AlertCircle className="w-3 h-3" /> PASSED: THIS SESSION'S TIME HAS ALREADY ELAPSED
+                      <AlertCircle className="w-3 h-3" /> {t('organizer.scheduleEditor.passed')}
                     </div>
                   )}
 
@@ -293,15 +295,15 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                     <div className="lg:col-span-4 space-y-3 min-w-0">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                          <Clock className="w-3 h-3 text-indigo-500" /> Time Range
+                          <Clock className="w-3 h-3 text-indigo-500" /> {t('organizer.scheduleEditor.timeRange')}
                         </label>
                         {isCrossDay && (
                           <span 
                             className="p-1 bg-amber-100 text-amber-600 rounded-md cursor-help flex items-center gap-1 shadow-sm"
-                            title="This session spills into the next day."
+                            title={t('organizer.scheduleEditor.spillsNextDay')}
                           >
                             <ArrowRight className="w-2.5 h-2.5" />
-                            <span className="text-[8px] font-black uppercase tracking-tighter">Next Day</span>
+                            <span className="text-[8px] font-black uppercase tracking-tighter">{t('organizer.scheduleEditor.nextDay')}</span>
                           </span>
                         )}
                       </div>
@@ -331,14 +333,14 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                     {/* Label / Description */}
                     <div className="md:col-span-2 lg:col-span-5 space-y-3 min-w-0">
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                        <Info className="w-3 h-3 text-indigo-500" /> Activity Description
+                        <Info className="w-3 h-3 text-indigo-500" /> {t('organizer.scheduleEditor.activityDescription')}
                       </label>
                       <input 
                         type="text" 
                         value={slot.label} 
                         disabled={passed}
                         onChange={(e) => handleUpdateSlot(dIdx, sIdx, 'label', e.target.value)}
-                        placeholder="e.g. Keynote Presentation"
+                        placeholder={t('organizer.scheduleEditor.activityPlaceholder')}
                         className="w-full h-[46px] rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-2 text-sm font-bold text-zinc-800 placeholder:text-zinc-400 placeholder:font-normal focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all hover:border-zinc-300 disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                     </div>
@@ -366,14 +368,14 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                       {slot.is_conference && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 p-4 bg-violet-50/50 rounded-2xl border border-violet-100 shadow-sm shadow-violet-100/50">
                           <div className="space-y-2">
-                            <label className="text-[9px] font-black text-violet-500 uppercase tracking-widest">Partner Enterprise</label>
+                            <label className="text-[9px] font-black text-violet-500 uppercase tracking-widest">{t('organizer.scheduleEditor.partnerEnterprise')}</label>
                             <select 
                               value={slot.assigned_enterprise_id || ""} 
                               disabled={passed}
                               onChange={(e) => handleUpdateSlot(dIdx, sIdx, 'assigned_enterprise_id', e.target.value)}
                               className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all hover:border-violet-300 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              <option value="">Choose Partner...</option>
+                              <option value="">{t('organizer.scheduleEditor.choosePartner')}</option>
                               {enterprises.map(e => (
                                 <option key={e.id} value={e.id}>{e.name}</option>
                               ))}
@@ -388,7 +390,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                               value={slot.speaker_name || ""} 
                               disabled={passed}
                               onChange={(e) => handleUpdateSlot(dIdx, sIdx, 'speaker_name', e.target.value)}
-                              placeholder="Overrides Enterprise"
+                              placeholder={t('organizer.scheduleEditor.overridesEnterprise')}
                               className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 transition-all hover:border-violet-300 placeholder:font-normal placeholder:text-violet-300 disabled:opacity-60 disabled:cursor-not-allowed"
                             />
                           </div>
@@ -403,10 +405,10 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
                       onClick={() => handleRemoveSlot(dIdx, sIdx)}
                       disabled={passed}
                       className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all flex items-center gap-2 text-[10px] font-bold uppercase disabled:opacity-0 disabled:cursor-not-allowed"
-                      title="Remove this slot"
+                      title={t('organizer.scheduleEditor.removeSlot')}
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="lg:hidden">Remove Slot</span>
+                      <span className="lg:hidden">{t('organizer.scheduleEditor.removeSlot')}</span>
                     </button>
                   </div>
                 </div>
@@ -416,7 +418,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
             {day.slots.length === 0 && (
               <div className="py-10 text-center bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-3xl">
                 <Clock className="w-8 h-8 text-zinc-200 mx-auto mb-2" />
-                <p className="text-xs text-zinc-400">Empty day. Add your first time slot.</p>
+                <p className="text-xs text-zinc-400">{t('organizer.scheduleEditor.emptyDay')}</p>
               </div>
             )}
           </div>
@@ -430,7 +432,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
             disabled={loading}
             className="rounded-xl px-6 h-11 border-zinc-200 text-zinc-600"
         >
-          Cancel
+          {t('organizer.eventDetail.buttons.cancel')}
         </Button>
         <Button 
             onClick={handleSave} 
@@ -438,7 +440,7 @@ export default function ScheduleEditor({ eventId, initialDays, startDate, endDat
             disabled={loading || hasAnyConflict}
             className={`rounded-xl px-10 h-11 transition-all ${hasAnyConflict ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100'}`}
         >
-          <Save className="w-4 h-4 mr-2" /> {hasAnyConflict ? 'Invalid Schedule' : 'Save Schedule'}
+          <Save className="w-4 h-4 mr-2" /> {hasAnyConflict ? t('organizer.scheduleEditor.invalidSchedule') : t('organizer.eventDetail.schedule.save')}
         </Button>
       </div>
     </div>

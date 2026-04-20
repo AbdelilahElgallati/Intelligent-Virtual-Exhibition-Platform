@@ -11,6 +11,7 @@ import { EventScheduleDay } from '@/types/event';
 import { ArrowLeft, FileText, Users, CalendarDays, Info, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { zonedToUtc } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = ['Exhibition', 'Conference', 'Webinar', 'Networking', 'Workshop', 'Hackathon'];
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -33,6 +34,7 @@ const SUPPORTED_TIMEZONES =
 const LOCAL_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 export default function NewEventRequestPage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [saving, setSaving] = useState(false);
     const [pendingBannerFile, setPendingBannerFile] = useState<File | null>(null);
@@ -114,32 +116,32 @@ export default function NewEventRequestPage() {
     };
 
     const validateSchedule = (): string | null => {
-        if (!form.start_date || !form.end_date) return 'Please select a start and end date.';
-        if (scheduleDays.length === 0) return 'The event schedule is empty.';
+        if (!form.start_date || !form.end_date) return t('organizer.newEvent.validation.dateRequired');
+        if (scheduleDays.length === 0) return t('organizer.newEvent.validation.scheduleEmpty');
         const tz = form.event_timezone || 'UTC';
         const todayIso = getTodayIsoInTimezone(tz);
         const nowMinutes = getNowMinutesInTimezone(tz);
         for (const day of scheduleDays) {
-            if (day.slots.length === 0) return `Day ${day.day_number} must have at least one time slot.`;
+            if (day.slots.length === 0) return t('organizer.newEvent.validation.daySlotsRequired', { N: day.day_number });
             for (const slot of day.slots) {
-                if (!slot.start_time || !slot.end_time) return `Day ${day.day_number}: every slot needs a start and end time.`;
+                if (!slot.start_time || !slot.end_time) return t('organizer.newEvent.validation.daySlotsTimeMissing', { N: day.day_number });
                 if (!TIME_24H_REGEX.test(slot.start_time) || !TIME_24H_REGEX.test(slot.end_time)) {
-                    return `Day ${day.day_number}: use 24-hour time format (HH:mm) for all slots.`;
+                    return t('organizer.newEvent.validation.daySlotsFormatInvalid', { N: day.day_number });
                 }
                 const [startH, startM] = slot.start_time.split(':').map(Number);
                 const [endH, endM] = slot.end_time.split(':').map(Number);
                 const startMinutes = startH * 60 + startM;
                 const endMinutes = endH * 60 + endM;
                 if (startMinutes === endMinutes) {
-                    return `Day ${day.day_number}: start and end time cannot be identical.`;
+                    return t('organizer.newEvent.validation.daySlotsIdentical', { N: day.day_number });
                 }
                 if (form.start_date === todayIso && day.day_number === 1) {
                     const slotStartMinutes = startH * 60 + startM;
                     if (slotStartMinutes < nowMinutes) {
-                        return `Day 1: ${slot.start_time} is in the past. Please choose a future time for today's schedule.`;
+                        return t('organizer.newEvent.validation.dayOneSlotPast', { time: slot.start_time });
                     }
                 }
-                if (!slot.label.trim()) return `Day ${day.day_number}: please describe the activity for the ${slot.start_time}–${slot.end_time} slot.`;
+                if (!slot.label.trim()) return t('organizer.newEvent.validation.daySlotDescriptionMissing', { N: day.day_number, start: slot.start_time, end: slot.end_time });
             }
         }
         return null;
@@ -149,27 +151,27 @@ export default function NewEventRequestPage() {
         e.preventDefault();
         setError(null);
 
-        if (!form.title.trim()) { setError('Event title is required.'); return; }
+        if (!form.title.trim()) { setError(t('organizer.newEvent.validation.titleRequired')); return; }
         if (!form.num_enterprises || parseInt(form.num_enterprises) < 1) {
-            setError('Number of participating enterprises must be at least 1.'); return;
+            setError(t('organizer.newEvent.validation.enterprisesMin')); return;
         }
         if (form.stand_price === '' || parseFloat(form.stand_price) < 0) {
-            setError('Stand price is required and must be ≥ 0.'); return;
+            setError(t('organizer.newEvent.validation.standPriceRequired')); return;
         }
         if (form.is_paid && (form.ticket_price === '' || parseFloat(form.ticket_price) < 0)) {
-            setError('Ticket price is required for paid events and must be ≥ 0.'); return;
+            setError(t('organizer.newEvent.validation.ticketPriceRequired')); return;
         }
         if (form.start_date && form.end_date && form.start_date > form.end_date) {
-            setError('End date must be on or after start date.'); return;
+            setError(t('organizer.newEvent.validation.endDateInvalid')); return;
         }
         const todayInEventTz = getTodayIsoInTimezone(form.event_timezone || 'UTC');
         if (form.start_date && form.start_date < todayInEventTz) {
-            setError('Start date cannot be in the past for the selected event timezone.'); return;
+            setError(t('organizer.newEvent.validation.startDatePast')); return;
         }
         const schedErr = validateSchedule();
         if (schedErr) { setError(schedErr); return; }
         if (!form.extended_details.trim() || form.extended_details.trim().length < 10) {
-            setError('Extended event details are required (at least 10 characters).'); return;
+            setError(t('organizer.newEvent.validation.extendedDetailsRequired')); return;
         }
 
         setSaving(true);
@@ -212,7 +214,7 @@ export default function NewEventRequestPage() {
             await eventsApi.createEvent(payload);
             router.push('/organizer/events');
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Failed to submit event request. Please try again.';
+            const message = err instanceof Error ? err.message : t('organizer.newEvent.validation.submitFailed');
             setError(message);
         } finally {
             setSaving(false);
@@ -231,13 +233,13 @@ export default function NewEventRequestPage() {
                 <Link href="/organizer/events">
                     <Button variant="outline" size="sm" className="gap-2">
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {t('organizer.newEvent.buttons.back')}
                     </Button>
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Submit Event Request</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('organizer.newEvent.title')}</h1>
                     <p className="text-gray-500 text-sm">
-                        Fill in the details below. Your request will be reviewed by an administrator.
+                        {t('organizer.newEvent.subtitle')}
                     </p>
                 </div>
             </div>
@@ -245,9 +247,7 @@ export default function NewEventRequestPage() {
             <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 text-sm text-indigo-700 flex gap-2">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
-                    Once submitted, an admin will review your request. If approved, you will receive a
-                    payment invoice. After payment is confirmed, enterprise and visitor access links will be
-                    generated automatically.
+                    {t('organizer.newEvent.infoBanner')}
                 </span>
             </div>
 
@@ -262,24 +262,24 @@ export default function NewEventRequestPage() {
                     {/* ── Basic Information ─────────────────────────────── */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                            <FileText className="w-4 h-4" /> Basic Information
+                            <FileText className="w-4 h-4" /> {t('organizer.newEvent.sections.basicInfo')}
                         </h2>
-                        <Input label="Event Title *" name="title" placeholder="e.g. Tech Innovation Expo 2026" value={form.title} onChange={handleChange} required />
+                        <Input label={t('organizer.newEvent.labels.eventTitle')} name="title" placeholder={t('organizer.newEvent.placeholders.eventTitle')} value={form.title} onChange={handleChange} required />
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-gray-700">Description</label>
-                            <textarea name="description" rows={3} placeholder="Describe what attendees can expect..." value={form.description} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                            <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.labels.description')}</label>
+                            <textarea name="description" rows={3} placeholder={t('organizer.newEvent.placeholders.description')} value={form.description} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-gray-700">Category</label>
+                            <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.labels.category')}</label>
                             <select name="category" value={form.category} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                {CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                                {CATEGORIES.map((cat) => (<option key={cat} value={cat}>{t(`organizer.newEvent.categories.${cat.toLowerCase()}`)}</option>))}
                             </select>
                         </div>
 
                         {/* Date-only pickers */}
                         <div className="grid grid-cols-2 gap-4">
                             <Input
-                                label="Start Date *"
+                                label={t('organizer.newEvent.labels.startDate')}
                                 name="start_date"
                                 type="date"
                                 value={form.start_date}
@@ -288,7 +288,7 @@ export default function NewEventRequestPage() {
                                 required
                             />
                             <Input
-                                label="End Date *"
+                                label={t('organizer.newEvent.labels.endDate')}
                                 name="end_date"
                                 type="date"
                                 value={form.end_date}
@@ -298,7 +298,7 @@ export default function NewEventRequestPage() {
                             />
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-gray-700">Event Timezone</label>
+                            <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.labels.timezone')}</label>
                             <select
                                 name="event_timezone"
                                 value={form.event_timezone}
@@ -309,23 +309,23 @@ export default function NewEventRequestPage() {
                                     <option key={tz} value={tz}>{tz}</option>
                                 ))}
                             </select>
-                            <p className="text-xs text-gray-500">Schedule slots are interpreted in this timezone for all users.</p>
+                            <p className="text-xs text-gray-500">{t('organizer.newEvent.labels.timezoneHint')}</p>
                         </div>
                         {form.start_date && form.end_date && form.start_date <= form.end_date && (
                             <p className="text-xs text-indigo-600 flex items-center gap-1">
                                 <CalendarDays className="w-3.5 h-3.5" />
-                                {scheduleDays.length} day{scheduleDays.length !== 1 ? 's' : ''} · add time slots in the schedule section below
+                                {t('organizer.newEvent.labels.daysGenerated', { count: scheduleDays.length })}
                             </p>
                         )}
 
-                        <Input label="Location" name="location" placeholder="Virtual Platform" value={form.location} onChange={handleChange} />
-                        <Input label="Tags (comma-separated)" name="tags" placeholder="e.g. AI, Tech, Startup" value={form.tags} onChange={handleChange} />
+                        <Input label={t('organizer.newEvent.labels.location')} name="location" placeholder={t('organizer.newEvent.placeholders.category')} value={form.location} onChange={handleChange} />
+                        <Input label={t('organizer.newEvent.labels.tags')} name="tags" placeholder={t('organizer.newEvent.placeholders.tags')} value={form.tags} onChange={handleChange} />
                         <div className="space-y-2">
                             <Input
-                                label="Banner Image URL"
+                                label={t('organizer.newEvent.labels.bannerImage')}
                                 name="banner_url"
                                 type="text"
-                                placeholder="https://example.com/banner.jpg or /uploads/event_banners/..."
+                                placeholder={t('organizer.newEvent.placeholders.bannerUrl')}
                                 value={form.banner_url}
                                 onChange={handleChange}
                             />
@@ -343,12 +343,12 @@ export default function NewEventRequestPage() {
                                     size="sm"
                                     onClick={() => bannerInputRef.current?.click()}
                                 >
-                                    Upload Banner Image
+                                    {t('organizer.newEvent.labels.uploadBanner')}
                                 </Button>
                                 <span className="text-xs text-gray-500">
                                     {pendingBannerFile
-                                        ? `Selected: ${pendingBannerFile.name} (will upload on submit)`
-                                        : 'You can upload a file or paste an external URL.'}
+                                        ? t('organizer.newEvent.labels.selectedFile', { filename: pendingBannerFile.name })
+                                        : t('organizer.newEvent.labels.fileHint')}
                                 </span>
                             </div>
                         </div>
@@ -359,12 +359,12 @@ export default function NewEventRequestPage() {
                     {/* ── Participation Details ──────────────────────────── */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                            <Users className="w-4 h-4" /> Participation Details
+                            <Users className="w-4 h-4" /> {t('organizer.newEvent.sections.participationDetails')}
                         </h2>
-                        <Input label="Number of Participating Enterprises *" name="num_enterprises" type="number" min="1" placeholder="e.g. 20" value={form.num_enterprises} onChange={handleChange} required />
+                        <Input label={t('organizer.newEvent.labels.numEnterprises')} name="num_enterprises" type="number" min="1" placeholder={t('organizer.newEvent.placeholders.numEnterprises')} value={form.num_enterprises} onChange={handleChange} required />
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-gray-700">Extended Event Details *</label>
-                            <textarea name="extended_details" rows={4} placeholder="Provide detailed information: objectives, target audience, special features, etc." value={form.extended_details} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" required />
+                            <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.labels.extendedDetails')}</label>
+                            <textarea name="extended_details" rows={4} placeholder={t('organizer.newEvent.placeholders.extendedDetails')} value={form.extended_details} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" required />
                         </div>
                     </div>
 
@@ -373,28 +373,28 @@ export default function NewEventRequestPage() {
                     {/* ── Pricing ───────────────────────────────────────── */}
                     <div className="space-y-4">
                         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                            <DollarSign className="w-4 h-4" /> Pricing
+                            <DollarSign className="w-4 h-4" /> {t('organizer.newEvent.sections.pricing')}
                         </h2>
 
                         {/* Stand price */}
                         <Input
-                            label="Stand Price per Enterprise (MAD) *"
+                            label={t('organizer.newEvent.labels.standPrice')}
                             name="stand_price"
                             type="number"
                             min="0"
                             step="0.01"
-                            placeholder="e.g. 500"
+                            placeholder={t('organizer.newEvent.placeholders.standPrice')}
                             value={form.stand_price}
                             onChange={handleChange}
                             required
                         />
                         <p className="text-xs text-gray-500 -mt-2">
-                            The amount each enterprise pays to host a stand at this event.
+                            {t('organizer.newEvent.labels.standPriceHint')}
                         </p>
 
                         {/* Event type: free / paid */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium text-gray-700">Event Type for Visitors *</label>
+                            <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.labels.eventType')}</label>
                             <div className="flex gap-3">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -404,7 +404,7 @@ export default function NewEventRequestPage() {
                                         onChange={() => setForm(p => ({ ...p, is_paid: false, ticket_price: '' }))}
                                         className="accent-indigo-600"
                                     />
-                                    <span className="text-sm text-gray-700">Free — visitors attend at no cost</span>
+                                    <span className="text-sm text-gray-700">{t('organizer.newEvent.labels.eventTypeFree')}</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -414,7 +414,7 @@ export default function NewEventRequestPage() {
                                         onChange={() => setForm(p => ({ ...p, is_paid: true }))}
                                         className="accent-indigo-600"
                                     />
-                                    <span className="text-sm text-gray-700">Paid — visitors purchase a ticket</span>
+                                    <span className="text-sm text-gray-700">{t('organizer.newEvent.labels.eventTypePaid')}</span>
                                 </label>
                             </div>
                         </div>
@@ -423,17 +423,17 @@ export default function NewEventRequestPage() {
                         {form.is_paid && (
                             <div className="pl-4 border-l-2 border-indigo-100 space-y-1">
                                 <Input
-                                    label="Visitor Ticket Price (MAD) *"
+                                    label={t('organizer.newEvent.labels.visitorPrice')}
                                     name="ticket_price"
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    placeholder="e.g. 25.00"
+                                    placeholder={t('organizer.newEvent.placeholders.ticketPrice')}
                                     value={form.ticket_price}
                                     onChange={handleChange}
                                     required
                                 />
-                                <p className="text-xs text-gray-500">Price visitors pay to access the event.</p>
+                                <p className="text-xs text-gray-500">{t('organizer.newEvent.labels.visitorPriceHint')}</p>
                             </div>
                         )}
                     </div>
@@ -444,12 +444,12 @@ export default function NewEventRequestPage() {
                     <div className="space-y-4">
                         <div>
                             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2 mb-0.5">
-                                <CalendarDays className="w-4 h-4" /> Event Schedule *
+                                <CalendarDays className="w-4 h-4" /> {t('organizer.newEvent.sections.schedule')}
                             </h2>
                             <p className="text-xs text-gray-500">
-                                Days are generated automatically from your start &amp; end dates. Add time slots for each day.
+                                {t('organizer.newEvent.labels.scheduleDescription')}
                             </p>
-                            <p className="text-xs text-indigo-600 mt-1">Time slots use 24-hour format (HH:mm). If a slot ends earlier than it starts, it continues into the next day.</p>
+                            <p className="text-xs text-indigo-600 mt-1">{t('organizer.newEvent.labels.scheduleHint')}</p>
                         </div>
 
                         <ScheduleBuilder
@@ -469,16 +469,16 @@ export default function NewEventRequestPage() {
 
                     {/* ── Additional Info ───────────────────────────────── */}
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-medium text-gray-700">Additional Information <span className="text-gray-400">(optional)</span></label>
-                        <textarea name="additional_info" rows={3} placeholder="Any other relevant information for the administrator..." value={form.additional_info} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+                        <label className="text-sm font-medium text-gray-700">{t('organizer.newEvent.sections.additionalInfo')} <span className="text-gray-400">{t('organizer.newEvent.sections.additionalInfoOptional')}</span></label>
+                        <textarea name="additional_info" rows={3} placeholder={t('organizer.newEvent.labels.additionalInfoPlaceholder')} value={form.additional_info} onChange={handleChange} className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
                     </div>
 
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" isLoading={saving} className="bg-indigo-600 hover:bg-indigo-700">
-                            Submit Event Request
+                            {t('organizer.newEvent.buttons.submit')}
                         </Button>
                         <Link href="/organizer/events">
-                            <Button type="button" variant="outline">Cancel</Button>
+                            <Button type="button" variant="outline">{t('organizer.eventDetail.buttons.cancel')}</Button>
                         </Link>
                     </div>
                 </form>

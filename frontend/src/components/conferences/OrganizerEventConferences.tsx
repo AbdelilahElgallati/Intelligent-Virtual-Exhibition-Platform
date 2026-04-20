@@ -9,6 +9,7 @@ import { http } from '@/lib/http';
 import { formatInTZ, getUserTimezone, formatInUserTZ, zonedToUtc } from '@/lib/timezone';
 import { formatSlotRangeLabel, isOvernightSlot } from '@/lib/schedule';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     eventId: string;
@@ -25,6 +26,7 @@ interface EnterpriseOption {
 }
 
 export default function OrganizerEventConferences({ eventId, event, onEventUpdated }: Props) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
@@ -42,7 +44,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
         const dayOffset = Math.max(0, Number(dayNumber || (dayIndex + 1)) - 1);
         const tz = viewerTimeZone;
         const start = new Date(event.start_date || new Date().toISOString());
-        if (Number.isNaN(start.getTime())) return 'Invalid date';
+        if (Number.isNaN(start.getTime())) return t('organizer.eventConferences.invalidDate');
 
         // Build the base calendar day in the event timezone, then offset by day index.
         const parts = new Intl.DateTimeFormat('en-CA', {
@@ -55,7 +57,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
         const year = Number(parts.find((p) => p.type === 'year')?.value);
         const month = Number(parts.find((p) => p.type === 'month')?.value);
         const day = Number(parts.find((p) => p.type === 'day')?.value);
-        if (!year || !month || !day) return 'Invalid date';
+        if (!year || !month || !day) return t('organizer.eventConferences.invalidDate');
 
         const anchorUtcNoon = new Date(Date.UTC(year, month - 1, day + dayOffset, 12, 0, 0));
         return new Intl.DateTimeFormat('en-GB', {
@@ -143,14 +145,14 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
             onEventUpdated?.();
             loadConferences();
         } catch (e: any) {
-            setError(e.message || 'Failed to assign conference');
+            setError(e.message || t('organizer.eventConferences.errors.assignConference'));
         } finally {
             setSaving(false);
         }
     };
 
     const removeAssignment = async (dayIdx: number, slotIdx: number) => {
-        if (!confirm('Remove conference assignment from this slot?')) return;
+        if (!confirm(t('organizer.eventConferences.confirm.removeAssignment'))) return;
         setSaving(true);
         try {
             await http.patch(`/events/${eventId}/schedule/assign-conference`, {
@@ -161,14 +163,14 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
             onEventUpdated?.();
             loadConferences();
         } catch (e: any) {
-            setError(e.message || 'Failed to remove assignment');
+            setError(e.message || t('organizer.eventConferences.errors.removeAssignment'));
         } finally {
             setSaving(false);
         }
     };
 
     const cancelConference = async (confId: string) => {
-        if (!confirm('Cancel this conference?')) return;
+        if (!confirm(t('organizer.eventConferences.confirm.cancelConference'))) return;
         try {
             await http.delete(`/organizer/events/${eventId}/conferences/${confId}`);
             loadConferences();
@@ -178,7 +180,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
     return (
         <Card className="p-5">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2 mb-4">
-                <Video className="w-4 h-4 text-violet-600" /> Conference Assignments
+                <Video className="w-4 h-4 text-violet-600" /> {t('organizer.eventConferences.title')}
             </h2>
 
             {error && (
@@ -189,7 +191,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
             {days && days.length > 0 ? (
                 <div className="space-y-4 mb-6">
                     <p className="text-xs text-gray-500">
-                        Click &quot;Assign Speaker&quot; on any slot to turn it into a live conference with an enterprise speaker.
+                        {t('organizer.eventConferences.assignHint')}
                     </p>
                     {days.map((day, dayIdx) => (
                         <div key={day.day_number} className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
@@ -197,7 +199,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                                     {day.day_number}
                                 </span>
-                                <span className="text-sm font-semibold text-zinc-800">Day {day.day_number}</span>
+                                <span className="text-sm font-semibold text-zinc-800">{t('organizer.scheduleEditor.day')} {day.day_number}</span>
                                 <span className="text-xs text-zinc-500 ml-1">— {formatDayLabel(day.day_number, dayIdx)}</span>
                             </div>
                             <div className="p-3 space-y-2">
@@ -217,11 +219,11 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-zinc-700 font-medium">{slot.label || <em className="text-zinc-400">No description</em>}</p>
+                                                    <p className="text-sm text-zinc-700 font-medium">{slot.label || <em className="text-zinc-400">{t('organizer.eventDetail.schedule.noDescription')}</em>}</p>
                                                     {slot.is_conference && slot.assigned_enterprise_name && (
                                                         <p className="text-xs text-violet-600 mt-1 flex items-center gap-1">
                                                             <UserCheck className="w-3 h-3" />
-                                                            Speaker: {slot.speaker_name || slot.assigned_enterprise_name}
+                                                            {t('organizer.eventConferences.speaker')}: {slot.speaker_name || slot.assigned_enterprise_name}
                                                             <span className="text-zinc-400 ml-1">({slot.assigned_enterprise_name})</span>
                                                         </p>
                                                     )}
@@ -230,7 +232,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                     {slot.is_conference ? (
                                                         <>
                                                             <button onClick={() => startEdit(dayIdx, slotIdx, slot)} className="text-xs text-violet-600 hover:text-violet-800 font-medium px-2 py-1 rounded hover:bg-violet-100 transition-colors">
-                                                                Edit
+                                                                {t('common.actions.edit')}
                                                             </button>
                                                             <button onClick={() => removeAssignment(dayIdx, slotIdx)} disabled={saving} className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
                                                                 <X className="w-3.5 h-3.5" />
@@ -238,7 +240,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                         </>
                                                     ) : (
                                                         <button onClick={() => startEdit(dayIdx, slotIdx, slot)} className="text-xs text-violet-600 hover:text-violet-800 font-semibold px-3 py-1.5 rounded-lg border border-violet-200 bg-white hover:bg-violet-50 transition-colors">
-                                                            Assign Speaker
+                                                            {t('organizer.eventConferences.assignSpeaker')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -249,14 +251,14 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                 <div className="mt-3 pt-3 border-t border-violet-200 space-y-2">
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                         <div>
-                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">Enterprise Speaker *</label>
+                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('organizer.eventConferences.enterpriseSpeaker')}</label>
                                                             <select
                                                                 required
                                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                                                                 value={assignForm.assigned_enterprise_id}
                                                                 onChange={e => setAssignForm(f => ({ ...f, assigned_enterprise_id: e.target.value }))}
                                                             >
-                                                                <option value="">— Select enterprise —</option>
+                                                                <option value="">{t('organizer.eventConferences.selectEnterprise')}</option>
                                                                 {enterprises.map(ent => (
                                                                     <option key={ent.id || ent._id} value={ent.user_id}>
                                                                         {ent.organization_name || ent.full_name || ent.user_id}
@@ -265,25 +267,25 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                                             </select>
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">Speaker Display Name</label>
+                                                            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('organizer.eventConferences.speakerDisplayName')}</label>
                                                             <input
                                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
                                                                 value={assignForm.speaker_name}
                                                                 onChange={e => setAssignForm(f => ({ ...f, speaker_name: e.target.value }))}
-                                                                placeholder="Optional — defaults to enterprise name"
+                                                                placeholder={t('organizer.eventConferences.speakerDisplayPlaceholder')}
                                                             />
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-end gap-2 pt-1">
                                                         <button type="button" onClick={cancelEdit} className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700">
-                                                            Cancel
+                                                            {t('organizer.eventDetail.buttons.cancel')}
                                                         </button>
                                                         <button
                                                             onClick={() => saveAssignment(dayIdx, slotIdx)}
                                                             disabled={saving || !assignForm.assigned_enterprise_id}
                                                             className="px-4 py-1.5 bg-violet-600 text-white text-sm font-semibold rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
                                                         >
-                                                            {saving ? 'Saving…' : 'Save Assignment'}
+                                                            {saving ? t('common.actions.saving') : t('organizer.eventConferences.saveAssignment')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -292,19 +294,19 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                     );
                                 })}
                                 {day.slots.length === 0 && (
-                                    <p className="text-xs text-zinc-400 italic px-1">No slots defined</p>
+                                    <p className="text-xs text-zinc-400 italic px-1">{t('organizer.eventDetail.schedule.noSlots')}</p>
                                 )}
                             </div>
                         </div>
                     ))}
                 </div>
             ) : (
-                <p className="text-sm text-gray-400 italic mb-4">No schedule defined for this event.</p>
+                <p className="text-sm text-gray-400 italic mb-4">{t('organizer.eventConferences.noSchedule')}</p>
             )}
 
             {/* Existing conferences list */}
             <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">All Conferences</h3>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('organizer.eventConferences.allConferences')}</h3>
                 {loading ? (
                     <div className="text-center py-6"><div className="animate-spin w-5 h-5 border-2 border-violet-600 border-t-transparent rounded-full mx-auto" /></div>
                 ) : conferences.length === 0 ? (
@@ -327,7 +329,7 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusColors[conf.status] || statusColors.scheduled}`}>
                                                 {conf.status === 'live' ? '🔴 Live' : conf.status}
                                             </span>
-                                            {conf.qa_enabled && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Q&A</span>}
+                                            {conf.qa_enabled && <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">{t('organizer.eventConferences.qa')}</span>}
                                         </div>
                                         <p className="font-semibold text-gray-900 text-sm truncate">{conf.title}</p>
                                         {conf.speaker_name && <p className="text-xs text-gray-500">🎙️ {conf.speaker_name}</p>}
@@ -335,10 +337,10 @@ export default function OrganizerEventConferences({ eventId, event, onEventUpdat
                                             {formatInTZ(conf.start_time, viewerTimeZone, 'dd MMM yyyy HH:mm')}
                                             {' → '}{formatInTZ(conf.end_time, viewerTimeZone, 'HH:mm')}
                                         </p>
-                                        <p className="text-xs text-violet-600 mt-0.5">👥 {conf.attendee_count} registered</p>
+                                        <p className="text-xs text-violet-600 mt-0.5">👥 {t('organizer.eventConferences.registered', { count: conf.attendee_count })}</p>
                                     </div>
                                     {conf.status === 'scheduled' && (
-                                        <button onClick={() => cancelConference(conf.id)} className="text-red-400 hover:text-red-600 text-xs font-medium shrink-0 mt-1">Cancel</button>
+                                        <button onClick={() => cancelConference(conf.id)} className="text-red-400 hover:text-red-600 text-xs font-medium shrink-0 mt-1">{t('organizer.eventDetail.buttons.cancel')}</button>
                                     )}
                                 </div>
                             );

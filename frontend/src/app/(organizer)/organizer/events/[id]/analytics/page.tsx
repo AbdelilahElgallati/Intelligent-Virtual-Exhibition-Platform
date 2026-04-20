@@ -34,6 +34,7 @@ import {
   Activity,
   ArrowUpRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Kpi {
   label: string;
@@ -167,6 +168,7 @@ function mapLiveAnalyticsPayload(livePayload: LiveEventAnalyticsResponse): Event
 
 // ── Enterprise Detail Modal ──────────────────────────────────────────────
 function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () => void }) {
+  const { t } = useTranslation();
   const [org, setOrg] = useState<OrganizationRead | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -190,7 +192,7 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
         {loading ? (
           <div className="p-20 flex flex-col items-center justify-center gap-4">
             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-zinc-500 font-medium text-sm">Fetching profile...</p>
+            <p className="text-zinc-500 font-medium text-sm">{t('organizer.eventAnalytics.enterpriseModal.loading')}</p>
           </div>
         ) : org ? (
           <div className="flex flex-col">
@@ -211,9 +213,9 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
               <div>
                 <h2 className="text-2xl font-bold text-zinc-900">{org.name}</h2>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 text-[10px] font-bold uppercase tracking-wider">{org.industry || 'Exhibitor'}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500 text-[10px] font-bold uppercase tracking-wider">{org.industry || t('organizer.eventAnalytics.unnamedEnterprise')}</span>
                   {org.is_verified && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100 uppercase tracking-wider">Verified</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100 uppercase tracking-wider">{t('organizer.eventAnalytics.enterpriseModal.verified')}</span>
                   )}
                 </div>
               </div>
@@ -221,30 +223,30 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
               <div className="space-y-6">
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.1em] flex items-center gap-2">
-                    <Info size={14} className="text-indigo-500" /> Description
+                      <Info size={14} className="text-indigo-500" /> {t('organizer.eventAnalytics.enterpriseModal.description')}
                   </h3>
                   <p className="text-zinc-600 text-sm leading-relaxed">
-                    {org.description || "This enterprise has not provided a description yet."}
+                    {org.description || t('organizer.eventAnalytics.enterpriseModal.noDescription')}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 pt-4">
                   <div className="space-y-2">
                     <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.1em] flex items-center gap-2">
-                      <Mail size={14} className="text-indigo-500" /> Contact Email
+                      <Mail size={14} className="text-indigo-500" /> {t('organizer.eventAnalytics.enterpriseModal.contactEmail')}
                     </h3>
-                    <p className="text-zinc-900 font-semibold text-sm">{org.contact_email || "Not available"}</p>
+                    <p className="text-zinc-900 font-semibold text-sm">{org.contact_email || t('organizer.eventAnalytics.enterpriseModal.notAvailable')}</p>
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.1em] flex items-center gap-2">
-                      <Globe size={14} className="text-indigo-500" /> Website
+                      <Globe size={14} className="text-indigo-500" /> {t('organizer.eventAnalytics.enterpriseModal.website')}
                     </h3>
                     {org.website ? (
                       <a href={org.website.startsWith('http') ? org.website : `https://${org.website}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm transition-colors flex items-center gap-1 group">
                         {org.website}
                       </a>
                     ) : (
-                      <p className="text-zinc-900 font-semibold text-sm">Not available</p>
+                        <p className="text-zinc-900 font-semibold text-sm">{t('organizer.eventAnalytics.enterpriseModal.notAvailable')}</p>
                     )}
                   </div>
                 </div>
@@ -252,14 +254,14 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
 
               <div className="pt-6 border-t border-zinc-100">
                 <Button onClick={onClose} className="w-full h-12 rounded-2xl bg-zinc-900 text-white hover:bg-zinc-800 transition-all font-bold tracking-wide">
-                  Close Profile
+                  {t('organizer.eventAnalytics.enterpriseModal.close')}
                 </Button>
               </div>
             </div>
           </div>
         ) : (
           <div className="p-20 text-center">
-            <p className="text-zinc-500 font-medium">Failed to load organization profile.</p>
+            <p className="text-zinc-500 font-medium">{t('organizer.eventAnalytics.enterpriseModal.loadFailed')}</p>
           </div>
         )}
       </div>
@@ -268,6 +270,7 @@ function EnterpriseDetailModal({ orgId, onClose }: { orgId: string; onClose: () 
 }
 
 export default function EventAnalyticsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const eventId = params?.id as string;
 
@@ -322,7 +325,7 @@ export default function EventAnalyticsPage() {
       } catch (fallbackErr) {
         console.error("Analytics fetch error:", fallbackErr);
         if (isMounted && surfaceError) {
-          setError("Could not load analytics data.");
+          setError(t('organizer.eventAnalytics.errorLoad'));
         }
       }
     };
@@ -335,7 +338,7 @@ export default function EventAnalyticsPage() {
       } catch (initErr) {
         console.error("Event analytics initialization error:", initErr);
         if (isMounted) {
-          setError("Could not load event analytics.");
+          setError(t('organizer.eventAnalytics.errorLoad'));
         }
       } finally {
         if (isMounted) {
@@ -368,7 +371,7 @@ export default function EventAnalyticsPage() {
     } catch (err: unknown) {
       console.error("Export failed:", err);
       // Use the error message from the service if available
-      const message = err instanceof Error ? err.message : "Failed to export report. Please check your connection.";
+      const message = err instanceof Error ? err.message : t('organizer.eventAnalytics.errorExport');
       setError(message);
     } finally {
       setExportLoading(false);
@@ -379,7 +382,7 @@ export default function EventAnalyticsPage() {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-zinc-500 font-medium animate-pulse">Analysing event data...</p>
+        <p className="text-zinc-500 font-medium animate-pulse">{t('organizer.eventAnalytics.loading')}</p>
       </div>
     );
   }
@@ -390,9 +393,9 @@ export default function EventAnalyticsPage() {
         <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-6">
           <AlertTriangle className="text-zinc-300" size={32} />
         </div>
-        <h3 className="text-lg font-bold text-zinc-900 mb-2">Event not found</h3>
+        <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('organizer.eventAnalytics.notFound')}</h3>
         <Link href="/organizer/events" className="text-indigo-600 font-semibold hover:underline">
-          Back to events list
+          {t('organizer.eventAnalytics.backToEvents')}
         </Link>
       </div>
     );
@@ -450,7 +453,7 @@ export default function EventAnalyticsPage() {
         <div className="space-y-4">
           <Link href={`/organizer/events/${eventId}`} className="inline-flex items-center gap-2 text-zinc-500 hover:text-indigo-600 transition-colors group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Back to Event Details</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">{t('organizer.eventAnalytics.backToDetail')}</span>
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">{event.title}</h1>
@@ -459,14 +462,14 @@ export default function EventAnalyticsPage() {
                 }`}>
                 {event.state.replace('_', ' ')}
               </span>
-              <p className="text-sm text-zinc-400 font-medium">Performance Metrics & Analysis</p>
+              <p className="text-sm text-zinc-400 font-medium">{t('organizer.eventAnalytics.title')}</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-zinc-500">
               <RefreshCw className="w-3.5 h-3.5" />
-              {lastUpdatedAt ? `Last refresh: ${lastUpdatedAt.toLocaleTimeString()}` : 'Waiting for first data refresh...'}
+              {lastUpdatedAt ? t('organizer.eventAnalytics.lastRefresh', { time: lastUpdatedAt.toLocaleTimeString() }) : t('organizer.eventAnalytics.waitingRefresh')}
             </div>
             <div className="text-xs text-zinc-500">
-              Coverage: <span className="font-semibold text-zinc-700">{analytics?.kpis?.length ?? 0}</span> metrics · <span className="font-semibold text-zinc-700">{sortedDistribution.length}</span> funnel stages
+              {t('organizer.eventAnalytics.coverage', { count: analytics?.kpis?.length ?? 0 }).replace('{count}', String(sortedDistribution.length))}
             </div>
           </div>
         </div>
@@ -477,7 +480,7 @@ export default function EventAnalyticsPage() {
             onClick={handleExport}
             isLoading={exportLoading}
           >
-            {exportLoading ? "Generating..." : "Export Data"}
+            {exportLoading ? t('organizer.eventAnalytics.exporting') : t('organizer.eventAnalytics.export')}
           </Button>
         </div>
       </div>
@@ -490,7 +493,7 @@ export default function EventAnalyticsPage() {
 
       {exportSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-2xl text-sm flex gap-3 items-center animate-in slide-in-from-top-2 duration-300">
-          <CheckCircle2 className="w-5 h-5 shrink-0" /> Report exported successfully! Your download should start shortly.
+          <CheckCircle2 className="w-5 h-5 shrink-0" /> {t('organizer.eventAnalytics.exportSuccess')}
         </div>
       )}
 
@@ -499,9 +502,9 @@ export default function EventAnalyticsPage() {
           <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <BarChart2 className="w-10 h-10 text-zinc-300" />
           </div>
-          <h3 className="text-xl font-bold text-zinc-900 mb-2">Insight Horizon Not Reached</h3>
+          <h3 className="text-xl font-bold text-zinc-900 mb-2">{t('organizer.eventAnalytics.insightNotReached.title')}</h3>
           <p className="text-zinc-500 max-w-sm mx-auto">
-            Analytics will materialize once the event transition to live state and participants begin engagement.
+            {t('organizer.eventAnalytics.insightNotReached.message')}
           </p>
         </Card>
       ) : (
@@ -512,19 +515,19 @@ export default function EventAnalyticsPage() {
               onClick={() => setActiveView("overview")}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "overview" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
             >
-              Overview
+              {t('organizer.eventAnalytics.viewTabs.overview')}
             </button>
             <button
               onClick={() => setActiveView("engagement")}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "engagement" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
             >
-              Engagement
+              {t('organizer.eventAnalytics.viewTabs.engagement')}
             </button>
             <button
               onClick={() => setActiveView("enterprises")}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeView === "enterprises" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
             >
-              Enterprises
+              {t('organizer.eventAnalytics.viewTabs.enterprises')}
             </button>
           </div>
 
@@ -539,7 +542,7 @@ export default function EventAnalyticsPage() {
                   <div className="text-3xl font-bold text-zinc-900">
                     {enterpriseCount}
                   </div>
-                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">Participating Enterprises</div>
+                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">{t('organizer.eventAnalytics.kpi.participatingEnterprises')}</div>
                 </div>
               </div>
             </Card>
@@ -551,7 +554,7 @@ export default function EventAnalyticsPage() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-zinc-900">{totalVisitors}</div>
-                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">Unique Visitors</div>
+                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">{t('organizer.eventAnalytics.kpi.uniqueVisitors')}</div>
                 </div>
               </div>
             </Card>
@@ -563,7 +566,7 @@ export default function EventAnalyticsPage() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-zinc-900">{totalInteractions}</div>
-                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">Engagement Events</div>
+                  <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mt-1">{t('organizer.eventAnalytics.kpi.engagementEvents')}</div>
                 </div>
               </div>
             </Card>
@@ -571,21 +574,21 @@ export default function EventAnalyticsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Engagement Rate</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">{t('organizer.eventAnalytics.kpi.engagementRate')}</p>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-emerald-600">{engagementRate}%</p>
                 <Activity className="w-5 h-5 text-emerald-500" />
               </div>
             </Card>
             <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Leads Captured</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">{t('organizer.eventAnalytics.kpi.leadsCaptured')}</p>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-indigo-600">{leadsKpi}</p>
                 <ArrowUpRight className="w-5 h-5 text-indigo-500" />
               </div>
             </Card>
             <Card className="p-4 rounded-2xl border-zinc-200 shadow-sm">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">Meetings Initiated</p>
+              <p className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold mb-1">{t('organizer.eventAnalytics.kpi.meetingsInitiated')}</p>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-purple-600">{meetingsKpi}</p>
                 <Users className="w-5 h-5 text-purple-500" />
@@ -606,7 +609,7 @@ export default function EventAnalyticsPage() {
                   <input
                     value={kpiQuery}
                     onChange={(e) => setKpiQuery(e.target.value)}
-                    placeholder="Filter KPI"
+                    placeholder={t('organizer.eventAnalytics.searchMetrics')}
                     className="h-8 pl-7 pr-3 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
@@ -631,20 +634,20 @@ export default function EventAnalyticsPage() {
             <Card className="p-8 rounded-[2rem] border-zinc-200 shadow-sm h-full">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-500" /> Engagement Funnel
+                <Users className="w-4 h-4 text-indigo-500" /> {t('organizer.eventAnalytics.funnel.title')}
                 </h2>
                 <div className="inline-flex rounded-lg border border-zinc-200 p-1 bg-zinc-50">
                   <button
                     onClick={() => setDistributionMode("percent")}
                     className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition ${distributionMode === "percent" ? "bg-white text-zinc-900" : "text-zinc-500"}`}
                   >
-                    <PieChart className="w-3 h-3 inline-block mr-1" /> Percent
+                    <PieChart className="w-3 h-3 inline-block mr-1" /> {t('organizer.eventAnalytics.funnel.percentage')}
                   </button>
                   <button
                     onClick={() => setDistributionMode("absolute")}
                     className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition ${distributionMode === "absolute" ? "bg-white text-zinc-900" : "text-zinc-500"}`}
                   >
-                    <Table2 className="w-3 h-3 inline-block mr-1" /> Value
+                    <Table2 className="w-3 h-3 inline-block mr-1" /> {t('organizer.eventAnalytics.funnel.absolute')}
                   </button>
                 </div>
               </div>
@@ -688,12 +691,12 @@ export default function EventAnalyticsPage() {
                   <input
                     value={enterpriseQuery}
                     onChange={(e) => setEnterpriseQuery(e.target.value)}
-                    placeholder="Search enterprise"
+                    placeholder={t('organizer.eventAnalytics.enterpriseRoster.searchPlaceholder')}
                     className="h-8 pl-7 pr-3 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
                 <div className="text-[10px] font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm border border-purple-100">
-                  {enterpriseCount} Registered
+                  {t('organizer.eventAnalytics.enterpriseRoster.showingCount', { count: enterpriseCount, total: enterpriseCount })}
                 </div>
               </div>
             </div>
@@ -715,7 +718,7 @@ export default function EventAnalyticsPage() {
                     <div className="text-center">
                       <h4 className="font-bold text-zinc-900 text-sm truncate px-2">{ent.name}</h4>
                       <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mt-1.5">
-                        {ent.industry || 'Exhibitor'}
+                        {ent.industry || t('organizer.eventAnalytics.unnamedEnterprise')}
                       </p>
                     </div>
                     <div className="mt-6 pt-6 border-t border-zinc-100 w-full flex justify-center">
@@ -723,7 +726,7 @@ export default function EventAnalyticsPage() {
                         onClick={() => setSelectedOrgId(ent.id)}
                         className="text-[10px] font-extrabold text-indigo-600 hover:text-indigo-500 uppercase tracking-[0.2em] transition-all hover:scale-110 active:scale-95 py-1 px-4 rounded-full hover:bg-indigo-50"
                       >
-                        View Profile
+                        {t('organizer.eventAnalytics.enterpriseRoster.viewProfile')}
                       </button>
                     </div>
                   </div>
@@ -731,7 +734,7 @@ export default function EventAnalyticsPage() {
               </div>
             ) : (
               <div className="py-12 text-center border-2 border-dashed border-zinc-100 rounded-[2rem]">
-                <p className="text-zinc-400 text-sm font-medium">No enterprises match your filter.</p>
+                <p className="text-zinc-400 text-sm font-medium">{t('organizer.events.noMatch')}</p>
               </div>
             )}
           </Card>
@@ -741,25 +744,25 @@ export default function EventAnalyticsPage() {
           <Card className="px-8 py-6 rounded-3xl border-zinc-200 shadow-sm bg-gradient-to-r from-zinc-900 to-zinc-800 text-white">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
               <div className="space-y-1">
-                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">Event Category</div>
-                <div className="text-sm font-bold truncate">{event.category || "General"}</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">{t('organizer.eventAnalytics.generalCategory')}</div>
+                <div className="text-sm font-bold truncate">{event.category || t('organizer.eventAnalytics.generalCategory')}</div>
               </div>
               <div className="space-y-1">
-                <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-[0.15em] mb-1">Engagement Rate</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-[0.15em] mb-1">{t('organizer.eventAnalytics.kpi.engagementRate')}</div>
                 <div className="text-xl font-bold text-emerald-400">
                   {engagementRate}%
                 </div>
               </div>
               <div className="space-y-1">
-                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">Timeline</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">{t('organizer.eventAnalytics.timelineLabel')}</div>
                 <div className="text-sm font-bold flex items-center gap-1.5">
                   <Calendar size={14} className="text-zinc-500" />
-                  {event.start_date ? formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not scheduled'}
+                  {event.start_date ? formatInUserTZ(event.start_date, { year: 'numeric', month: 'short', day: 'numeric' }) : t('organizer.eventAnalytics.notScheduled')}
                 </div>
               </div>
               <div className="space-y-1">
-                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">Data Recency</div>
-                <div className="text-[10px] font-bold text-zinc-400 mt-1 italic">Real-time update active</div>
+                <div className="text-[10px] text-zinc-400 uppercase font-black tracking-[0.15em] mb-1">{t('organizer.eventAnalytics.dataRecencyLabel')}</div>
+                <div className="text-[10px] font-bold text-zinc-400 mt-1 italic">{t('organizer.eventAnalytics.realTimeActive')}</div>
               </div>
             </div>
           </Card>
