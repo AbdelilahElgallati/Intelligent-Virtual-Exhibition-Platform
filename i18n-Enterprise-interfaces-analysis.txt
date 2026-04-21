@@ -1,0 +1,25 @@
+Pages
+- frontend/src/app/(enterprise)/enterprise/page.tsx
+- frontend/src/app/(enterprise)/enterprise/profile/page.tsx
+- frontend/src/app/(enterprise)/enterprise/notifications/page.tsx
+- frontend/src/app/(enterprise)/enterprise/leads/page.tsx
+- frontend/src/app/(enterprise)/enterprise/products/page.tsx
+- frontend/src/app/(enterprise)/enterprise/product-requests/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/payment-success/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/manage/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/manage/requests/page.tsx
+
+*************************************************************************************************************
+
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/stand/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/analytics/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/conferences/page.tsx
+- frontend/src/app/(enterprise)/enterprise/events/[eventId]/conferences/[confId]/live/page.tsx
+- frontend/src/app/(enterprise)/enterprise/conferences/page.tsx
+- frontend/src/app/(enterprise)/enterprise/communications/page.tsx
+- frontend/src/app/(enterprise)/enterprise/analytics/page.tsx
+Layouts
+- frontend/src/app/(enterprise)/enterprise/layout.tsx
+Components
+- frontend/src/components/conferences/SpeakerRoom.tsx

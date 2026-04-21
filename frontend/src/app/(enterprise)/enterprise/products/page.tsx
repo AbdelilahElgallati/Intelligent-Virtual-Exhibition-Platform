@@ -10,8 +10,10 @@ import {
     Package, Plus, Trash2, Edit2, X, Image as ImageIcon,
     Upload
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function EnterpriseProductsPage() {
+    const { t } = useTranslation();
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
@@ -113,7 +115,7 @@ export default function EnterpriseProductsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        if (!confirm(t('enterprise.products.deleteConfirm'))) return;
         try {
             await http.delete(`/enterprise/products/${id}`);
             fetchProducts();
@@ -142,7 +144,7 @@ export default function EnterpriseProductsPage() {
         return (
             <div className="text-center py-20">
                 <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-zinc-500">Loading catalog...</p>
+                <p className="text-zinc-500">{t('enterprise.products.loading')}</p>
             </div>
         );
     }
@@ -150,10 +152,10 @@ export default function EnterpriseProductsPage() {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
-                <p className="text-zinc-500 text-sm">Manage your catalog of products and services.</p>
+                <p className="text-zinc-500 text-sm">{t('enterprise.products.subtitle')}</p>
                 {!isAdding && (
                     <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2">
-                        <Plus size={18} /> Add Product / Service
+                        <Plus size={18} /> {t('enterprise.products.addButton')}
                     </Button>
                 )}
             </div>
@@ -165,8 +167,8 @@ export default function EnterpriseProductsPage() {
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-zinc-900">
                                 {editingProduct
-                                    ? (formData.type === 'service' ? 'Edit Service' : 'Edit Product')
-                                    : (formData.type === 'service' ? 'Add New Service' : 'Add New Product')}
+                                    ? (formData.type === 'service' ? t('enterprise.products.form.editService') : t('enterprise.products.form.editProduct'))
+                                    : (formData.type === 'service' ? t('enterprise.products.form.addService') : t('enterprise.products.form.addProduct'))}
                             </h3>
                             <button onClick={resetForm} className="text-zinc-400 hover:text-zinc-600">
                                 <X size={20} />
@@ -176,38 +178,38 @@ export default function EnterpriseProductsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="md:col-span-2">
                                     <Input
-                                        label="Product / Service Name *"
+                                        label={t('enterprise.products.form.name.label')}
                                         name="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        placeholder="e.g. Cloud Analytics Suite"
+                                        placeholder={t('enterprise.products.form.name.placeholder')}
                                         required
                                     />
                                 </div>
 
                                 <div className="md:col-span-2 space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Description</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.products.form.description.label')}</label>
                                     <textarea
                                         name="description"
                                         value={formData.description}
                                         onChange={handleChange}
                                         className="w-full min-h-[100px] p-4 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                        placeholder="Briefly describe what this is..."
+                                        placeholder={t('enterprise.products.form.description.placeholder')}
                                     />
                                 </div>
 
                                 <Input
-                                    label="Price *"
+                                    label={t('enterprise.products.form.price.label')}
                                     name="price"
                                     value={formData.price}
                                     onChange={handleChange}
                                     type="number"
-                                    placeholder="99.99"
+                                    placeholder={t('enterprise.products.form.price.placeholder')}
                                     required
                                 />
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Currency</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.products.form.currency.label')}</label>
                                     <select
                                         name="currency"
                                         value={formData.currency}
@@ -220,24 +222,24 @@ export default function EnterpriseProductsPage() {
 
                                 {formData.type !== 'service' ? (
                                     <Input
-                                        label="Stock (quantity available)"
+                                        label={t('enterprise.products.form.stock.label')}
                                         name="stock"
                                         value={formData.stock}
                                         onChange={handleChange}
                                         type="number"
-                                        placeholder="100"
+                                        placeholder={t('enterprise.products.form.stock.placeholder')}
                                     />
                                 ) : (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Stock</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.products.form.stock.label')}</label>
                                         <div className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm text-zinc-500">
-                                            Not applicable for services
+                                            {t('enterprise.products.form.stock.note')}
                                         </div>
                                     </div>
                                 )}
 
                                 <div className="md:col-span-2 space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Type *</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.products.form.type.label')}</label>
                                     <div className="flex gap-0 rounded-xl border border-zinc-200 overflow-hidden bg-zinc-50">
                                         <button
                                             type="button"
@@ -247,7 +249,7 @@ export default function EnterpriseProductsPage() {
                                                 : 'text-zinc-500 hover:text-zinc-700'
                                                 }`}
                                         >
-                                            <Package size={15} /> Product
+                                            <Package size={15} /> {t('enterprise.products.form.type.product')}
                                         </button>
                                         <button
                                             type="button"
@@ -257,7 +259,7 @@ export default function EnterpriseProductsPage() {
                                                 : 'text-zinc-500 hover:text-zinc-700'
                                                 }`}
                                         >
-                                            ⚙️ Service
+                                            ⚙️ {t('enterprise.products.form.type.service')}
                                         </button>
                                     </div>
                                 </div>
@@ -265,7 +267,7 @@ export default function EnterpriseProductsPage() {
                                 {/* Single Image Upload */}
                                 <div className="md:col-span-2 space-y-3">
                                     <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                        <ImageIcon size={15} className="text-indigo-500" /> Image
+                                        <ImageIcon size={15} className="text-indigo-500" /> {t('enterprise.products.form.image.label')}
                                     </label>
 
                                     {/* Current image (edit mode) */}
@@ -278,7 +280,7 @@ export default function EnterpriseProductsPage() {
                                                     className="w-full h-full object-cover"
                                                 />
                                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-white text-[10px] font-semibold">Current</span>
+                                                    <span className="text-white text-[10px] font-semibold">{t('enterprise.products.form.image.current')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -307,8 +309,8 @@ export default function EnterpriseProductsPage() {
                                         <Upload size={18} className="text-indigo-500 flex-shrink-0" />
                                         <span className="text-sm text-zinc-500">
                                             {pendingImage
-                                                ? 'Image selected — click to replace'
-                                                : 'Click to upload a product image (JPG, PNG, WebP)'}
+                                                ? t('enterprise.products.form.image.selected')
+                                                : t('enterprise.products.form.image.uploadHint')}
                                         </span>
                                         <input
                                             ref={fileInputRef}
@@ -322,11 +324,11 @@ export default function EnterpriseProductsPage() {
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
-                                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
+                                <Button type="button" variant="outline" onClick={resetForm}>{t('enterprise.products.form.cancel')}</Button>
                                 <Button type="submit">
                                     {editingProduct
-                                        ? (formData.type === 'service' ? 'Update Service' : 'Update Product')
-                                        : (formData.type === 'service' ? 'Create Service' : 'Create Product')}
+                                        ? (formData.type === 'service' ? t('enterprise.products.form.updateService') : t('enterprise.products.form.updateProduct'))
+                                        : (formData.type === 'service' ? t('enterprise.products.form.createService') : t('enterprise.products.form.createProduct'))}
                                 </Button>
                             </div>
                         </form>
@@ -340,11 +342,11 @@ export default function EnterpriseProductsPage() {
                     <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Package className="text-zinc-300" size={32} />
                     </div>
-                    <h3 className="text-lg font-bold text-zinc-900 mb-2">No products yet</h3>
+                    <h3 className="text-lg font-bold text-zinc-900 mb-2">{t('enterprise.products.empty.title')}</h3>
                     <p className="text-zinc-500 max-w-xs mx-auto mb-8">
-                        Start by adding your first product or service.
+                        {t('enterprise.products.empty.subtitle')}
                     </p>
-                    <Button onClick={() => setIsAdding(true)} variant="outline">Add First Product</Button>
+                    <Button onClick={() => setIsAdding(true)} variant="outline">{t('enterprise.products.empty.action')}</Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -374,7 +376,7 @@ export default function EnterpriseProductsPage() {
                                     <div className="p-5 flex flex-col flex-1 gap-3">
                                         <div className="flex justify-between items-start">
                                             <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${p.type === 'service' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                                                {p.type === 'service' ? 'Service' : 'Product'}
+                                                {p.type === 'service' ? t('enterprise.products.badges.service') : t('enterprise.products.badges.product')}
                                             </span>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                                 <button onClick={() => startEdit(p)} className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-600 transition-colors">
@@ -396,13 +398,13 @@ export default function EnterpriseProductsPage() {
                                         <div className="flex justify-between items-center pt-3 border-t border-zinc-50">
                                             {p.type !== 'service' && p.stock != null && (
                                                 <span className="text-xs text-zinc-500 font-medium">
-                                                    {p.stock} in stock
+                                                    {p.stock} {t('enterprise.products.badges.inStock')}
                                                 </span>
                                             )}
                                             <span className="font-bold text-indigo-600 text-sm flex items-center gap-0.5 ml-auto">
                                                 {p.price
                                                     ? <>{p.price.toLocaleString()} MAD</>
-                                                    : <span className="text-zinc-400 font-normal text-xs">No price</span>}
+                                                    : <span className="text-zinc-400 font-normal text-xs">{t('enterprise.products.badges.noPrice')}</span>}
                                             </span>
                                         </div>
                                     </div>

@@ -26,6 +26,7 @@ import {
     CalendarDays,
     SlidersHorizontal,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type RequestStatus = "PENDING" | "CONTACTED" | "CLOSED";
 
@@ -95,10 +96,10 @@ const ORDER_WORKFLOW: FulfillmentStatus[] = [
 ];
 
 const DATE_FILTERS: Array<{ value: DateFilter; label: string }> = [
-    { value: "all", label: "All dates" },
-    { value: "today", label: "Today" },
-    { value: "last7", label: "Last 7 days" },
-    { value: "last30", label: "Last 30 days" },
+    { value: "all", label: "enterprise.eventRequests.timeFilters.all" },
+    { value: "today", label: "enterprise.eventRequests.timeFilters.today" },
+    { value: "last7", label: "enterprise.eventRequests.timeFilters.last7Days" },
+    { value: "last30", label: "enterprise.eventRequests.timeFilters.last30Days" },
 ];
 
 function titleCase(input: string): string {
@@ -141,6 +142,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseEventRequestsPage() {
+    const { t } = useTranslation();
     const params = useParams();
     const eventId = params.eventId as string;
 
@@ -295,35 +297,35 @@ export default function EnterpriseEventRequestsPage() {
                         className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
                     >
                         <ArrowLeft size={14} />
-                        Back to Event Management
+                        {t('enterprise.eventAnalytics.backToManagement')}
                     </Link>
-                    <h1 className="mt-2 text-2xl font-black text-zinc-900 tracking-tight">Products & Services Requests</h1>
+                    <h1 className="mt-2 text-2xl font-black text-zinc-900 tracking-tight">{t('enterprise.eventRequests.productsTitle')}</h1>
                     <p className="text-sm text-zinc-500 mt-1">
-                        Manage visitor requests, payment details, delivery workflow, and contact points for this event.
+                        {t('enterprise.eventRequests.title')}
                     </p>
                 </div>
                 <Button variant="outline" onClick={fetchData} disabled={loading}>
                     {loading ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Clock size={14} className="mr-2" />}
-                    Refresh
+                    {t('enterprise.eventManagement.actions.refresh')}
                 </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Card className="border-zinc-200">
                     <CardContent className="p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Stand</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('enterprise.events.detail.enterpriseSlots')}</p>
                         <p className="text-sm font-bold text-zinc-900 mt-1 truncate">{stand?.name || "—"}</p>
                     </CardContent>
                 </Card>
                 <Card className="border-zinc-200">
                     <CardContent className="p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Checkout Orders</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('enterprise.eventRequests.checkoutOrders.title')}</p>
                         <p className="text-sm font-bold text-zinc-900 mt-1">{orders.length}</p>
                     </CardContent>
                 </Card>
                 <Card className="border-zinc-200">
                     <CardContent className="p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Direct Requests</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('enterprise.eventRequests.directInquiries.title')}</p>
                         <p className="text-sm font-bold text-zinc-900 mt-1">{requests.length}</p>
                     </CardContent>
                 </Card>
@@ -336,7 +338,7 @@ export default function EnterpriseEventRequestsPage() {
                         tab === "products" ? "bg-white text-indigo-700 shadow-sm" : "text-zinc-600"
                     }`}
                 >
-                    <Package size={16} /> Products
+                    <Package size={16} /> {t('enterprise.eventRequests.tabs.products')}
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] text-indigo-700">
                         {productOrders.length + productRequests.length}
                     </span>
@@ -347,7 +349,7 @@ export default function EnterpriseEventRequestsPage() {
                         tab === "services" ? "bg-white text-indigo-700 shadow-sm" : "text-zinc-600"
                     }`}
                 >
-                    <Briefcase size={16} /> Services
+                    <Briefcase size={16} /> {t('enterprise.eventRequests.tabs.services')}
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] text-indigo-700">
                         {serviceOrders.length + serviceRequests.length}
                     </span>
@@ -359,38 +361,38 @@ export default function EnterpriseEventRequestsPage() {
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:max-w-2xl">
                             <label className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">
-                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> Order status</span>
+                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> {t('enterprise.eventRequests.filters.orderStatus')}</span>
                                 <select
                                     value={orderStatusFilter}
                                     onChange={(e) => setOrderStatusFilter(e.target.value as "all" | FulfillmentStatus)}
                                     className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700"
                                 >
-                                    <option value="all">All order statuses</option>
+                                    <option value="all">{t('enterprise.eventRequests.filters.allStatuses')}</option>
                                     {ORDER_WORKFLOW.map((status) => (
                                         <option key={status} value={status}>{titleCase(status)}</option>
                                     ))}
-                                    <option value="cancelled">Cancelled</option>
+                                    <option value="cancelled">{t('enterprise.eventRequests.filters.closed')}</option>
                                 </select>
                             </label>
 
                             <label className="text-xs font-semibold text-zinc-600 uppercase tracking-wide">
-                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> Request status</span>
+                                <span className="mb-1 inline-flex items-center gap-1.5"><SlidersHorizontal size={13} /> {t('enterprise.eventRequests.filters.requestStatus')}</span>
                                 <select
                                     value={requestStatusFilter}
                                     onChange={(e) => setRequestStatusFilter(e.target.value as "all" | RequestStatus)}
                                     className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700"
                                 >
-                                    <option value="all">All request statuses</option>
-                                    <option value="PENDING">Pending</option>
-                                    <option value="CONTACTED">Contacted</option>
-                                    <option value="CLOSED">Closed</option>
+                                    <option value="all">{t('enterprise.eventRequests.filters.allStatuses')}</option>
+                                    <option value="PENDING">{t('enterprise.eventRequests.filters.pending')}</option>
+                                    <option value="CONTACTED">{t('enterprise.eventRequests.filters.contacted')}</option>
+                                    <option value="CLOSED">{t('enterprise.eventRequests.filters.closed')}</option>
                                 </select>
                             </label>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs font-semibold uppercase tracking-wide text-zinc-600 inline-flex items-center gap-1.5">
-                                <CalendarDays size={13} /> Date
+                                <CalendarDays size={13} /> {t('enterprise.eventRequests.filters.timePeriod')}
                             </span>
                             {DATE_FILTERS.map((filter) => (
                                 <button
@@ -402,7 +404,7 @@ export default function EnterpriseEventRequestsPage() {
                                             : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
                                     }`}
                                 >
-                                    {filter.label}
+                                    {t(filter.label)}
                                 </button>
                             ))}
                         </div>
@@ -413,7 +415,7 @@ export default function EnterpriseEventRequestsPage() {
             {loading ? (
                 <div className="py-24 text-center">
                     <Loader2 size={38} className="animate-spin text-indigo-600 mx-auto mb-4" />
-                    <p className="text-sm text-zinc-500">Loading event requests...</p>
+                    <p className="text-sm text-zinc-500">{t('enterprise.productRequests.syncing')}</p>
                 </div>
             ) : error ? (
                 <Card className="border-red-200 bg-red-50">
@@ -424,12 +426,12 @@ export default function EnterpriseEventRequestsPage() {
                     <Card className="border-zinc-200">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-bold text-zinc-900 inline-flex items-center gap-2">
-                                <Receipt size={16} /> Checkout Orders
+                                <Receipt size={16} /> {t('enterprise.eventRequests.checkoutOrders.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {filteredOrders.length === 0 && (
-                                <p className="text-sm text-zinc-500">No checkout orders in this section yet.</p>
+                                <p className="text-sm text-zinc-500">{t('enterprise.eventRequests.checkoutOrders.empty')}</p>
                             )}
 
                             {filteredOrders.map((order) => {
@@ -456,25 +458,25 @@ export default function EnterpriseEventRequestsPage() {
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-zinc-600">
-                                            {!isService && <p><span className="font-semibold text-zinc-800">Quantity:</span> {order.quantity}</p>}
-                                            <p><span className="font-semibold text-zinc-800">Total:</span> {(order.total_amount || 0).toFixed(2)} {(order.currency || "MAD").toUpperCase()}</p>
-                                            <p className="inline-flex items-center gap-1.5"><CreditCard size={13} /><span className="font-semibold text-zinc-800">Payment:</span> {order.payment_method === "cash_on_delivery" ? "Pay on reception (COD)" : "Stripe"}</p>
+                                            {!isService && <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.quantity')}:</span> {order.quantity}</p>}
+                                            <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.order.total')}:</span> {(order.total_amount || 0).toFixed(2)} {(order.currency || "MAD").toUpperCase()}</p>
+                                            <p className="inline-flex items-center gap-1.5"><CreditCard size={13} /><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.payment')}:</span> {order.payment_method === "cash_on_delivery" ? t('enterprise.eventRequests.labels.payOnReceptionCod') : t('dashboard.orders.payment.stripe')}</p>
                                             {order.payment_method === "stripe" && (
-                                                <p className="truncate"><span className="font-semibold text-zinc-800">Stripe intent:</span> {order.stripe_payment_intent_id || order.stripe_session_id || "Pending"}</p>
+                                                <p className="truncate"><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.stripeIntent')}:</span> {order.stripe_payment_intent_id || order.stripe_session_id || t('enterprise.eventRequests.labels.pending')}</p>
                                             )}
-                                            <p className="md:col-span-2"><span className="font-semibold text-zinc-800">Receiver:</span> {order.buyer_name || "Visitor"}{order.buyer_email ? ` (${order.buyer_email})` : ""}</p>
+                                            <p className="md:col-span-2"><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.receiver')}:</span> {order.buyer_name || t('enterprise.eventManagement.meetings.visitorFallback')}{order.buyer_email ? ` (${order.buyer_email})` : ""}</p>
                                             {order.buyer_phone && (
-                                                <p className="md:col-span-2"><span className="font-semibold text-zinc-800">Receiver phone:</span> {order.buyer_phone}</p>
+                                                <p className="md:col-span-2"><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.receiverPhone')}:</span> {order.buyer_phone}</p>
                                             )}
-                                            <p className="inline-flex items-center gap-1.5 md:col-span-2"><MapPin size={13} /><span className="font-semibold text-zinc-800">Shipping:</span> {order.shipping_address || "No shipping address provided"}</p>
+                                            <p className="inline-flex items-center gap-1.5 md:col-span-2"><MapPin size={13} /><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.shipping')}:</span> {order.shipping_address || t('enterprise.eventRequests.labels.noShippingAddress')}</p>
                                             {order.delivery_notes && (
-                                                <p className="md:col-span-2"><span className="font-semibold text-zinc-800">Delivery notes:</span> {order.delivery_notes}</p>
+                                                <p className="md:col-span-2"><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.deliveryNotes')}:</span> {order.delivery_notes}</p>
                                             )}
                                         </div>
 
                                         <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                                             <div className="flex items-center justify-between text-xs font-semibold text-zinc-600 uppercase tracking-wide">
-                                                <span>Fulfillment timeline</span>
+                                                <span>{t('enterprise.eventRequests.labels.fulfillmentTimeline')}</span>
                                                 <span>{progress}%</span>
                                             </div>
                                             <div className="mt-2 h-2 rounded-full bg-zinc-200 overflow-hidden">
@@ -485,14 +487,14 @@ export default function EnterpriseEventRequestsPage() {
                                             </div>
                                             <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
                                                 <span>{titleCase(ORDER_WORKFLOW[0])}</span>
-                                                <span className="font-semibold text-zinc-700">Current: {titleCase(status)}</span>
+                                                <span className="font-semibold text-zinc-700">{t('enterprise.eventRequests.labels.current')}: {titleCase(status)}</span>
                                                 <span>{titleCase(ORDER_WORKFLOW[ORDER_WORKFLOW.length - 1])}</span>
                                             </div>
                                         </div>
 
                                         {(order.fulfillment_note || lastHistory?.note) && (
                                             <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50 p-2.5 text-xs text-indigo-800">
-                                                <span className="font-semibold">Latest internal note:</span>{" "}
+                                                <span className="font-semibold">{t('enterprise.eventRequests.labels.latestInternalNote')}:</span>{" "}
                                                 {order.fulfillment_note || lastHistory?.note}
                                             </div>
                                         )}
@@ -503,7 +505,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     href={`mailto:${order.buyer_email}?subject=Order update for ${encodeURIComponent(order.product_name)}`}
                                                     className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
                                                 >
-                                                    <Mail size={13} /> Email visitor
+                                                    <Mail size={13} /> {t('enterprise.eventRequests.actions.emailVisitor')}
                                                 </a>
                                             )}
                                             {order.buyer_phone && (
@@ -511,7 +513,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     href={`tel:${order.buyer_phone}`}
                                                     className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
                                                 >
-                                                    <Phone size={13} /> Call visitor
+                                                    <Phone size={13} /> {t('enterprise.eventRequests.actions.callVisitor')}
                                                 </a>
                                             )}
 
@@ -519,7 +521,7 @@ export default function EnterpriseEventRequestsPage() {
                                                 <div className="ml-auto w-full md:w-auto md:min-w-[380px] space-y-2">
                                                     <input
                                                         type="text"
-                                                        placeholder="Optional internal note for this status change"
+                                                        placeholder={t('enterprise.eventRequests.labels.optionalInternalNote')}
                                                         value={orderNotesDraft[orderId] || ""}
                                                         onChange={(e) =>
                                                             setOrderNotesDraft((prev) => ({
@@ -540,7 +542,7 @@ export default function EnterpriseEventRequestsPage() {
                                                         ) : (
                                                             <Truck size={14} className="mr-1.5" />
                                                         )}
-                                                        Mark as {titleCase(nextStatus)}
+                                                        {t('enterprise.eventRequests.actions.markAsStatus', { status: titleCase(nextStatus) })}
                                                     </Button>
 
                                                     {status !== "cancelled" && status !== "completed" && (
@@ -575,12 +577,12 @@ export default function EnterpriseEventRequestsPage() {
                     <Card className="border-zinc-200">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base font-bold text-zinc-900 inline-flex items-center gap-2">
-                                <MessageSquare size={16} /> Direct Visitor Requests
+                                <MessageSquare size={16} /> {t('enterprise.eventRequests.directInquiries.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {filteredRequests.length === 0 && (
-                                <p className="text-sm text-zinc-500">No direct visitor requests in this section yet.</p>
+                                <p className="text-sm text-zinc-500">{t('enterprise.eventRequests.directInquiries.empty')}</p>
                             )}
 
                             {filteredRequests.map((req) => {
@@ -602,17 +604,17 @@ export default function EnterpriseEventRequestsPage() {
 
                                         <p className="text-sm text-zinc-700 italic">&ldquo;{req.message}&rdquo;</p>
                                         <div className="mt-2 text-sm text-zinc-600 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            <p><span className="font-semibold text-zinc-800">Visitor:</span> {req.visitor_name || `Visitor #${req.visitor_id?.slice(-4) || "----"}`}</p>
+                                            <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.visitor')}:</span> {req.visitor_name || `Visitor #${req.visitor_id?.slice(-4) || "----"}`}</p>
                                             {((req.product_type || (req.product_is_service ? "service" : "product")) !== "service") && req.quantity != null && (
-                                                <p><span className="font-semibold text-zinc-800">Quantity:</span> {req.quantity}</p>
+                                                <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.quantity')}:</span> {req.quantity}</p>
                                             )}
-                                            {req.visitor_email && <p><span className="font-semibold text-zinc-800">Email:</span> {req.visitor_email}</p>}
-                                            {req.visitor_phone && <p><span className="font-semibold text-zinc-800">Phone:</span> {req.visitor_phone}</p>}
-                                            {req.visitor_company && <p><span className="font-semibold text-zinc-800">Company:</span> {req.visitor_company}</p>}
+                                            {req.visitor_email && <p><span className="font-semibold text-zinc-800">{t('enterprise.productRequests.inquiry.email')}:</span> {req.visitor_email}</p>}
+                                            {req.visitor_phone && <p><span className="font-semibold text-zinc-800">{t('enterprise.productRequests.inquiry.phone')}:</span> {req.visitor_phone}</p>}
+                                            {req.visitor_company && <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.company')}:</span> {req.visitor_company}</p>}
                                             {(req.visitor_location || req.visitor_city || req.visitor_country) && (
-                                                <p className="inline-flex items-center gap-1.5"><MapPin size={13} /><span className="font-semibold text-zinc-800">Location:</span> {req.visitor_location || [req.visitor_city, req.visitor_country].filter(Boolean).join(", ")}</p>
+                                                <p className="inline-flex items-center gap-1.5"><MapPin size={13} /><span className="font-semibold text-zinc-800">{t('enterprise.productRequests.inquiry.location')}:</span> {req.visitor_location || [req.visitor_city, req.visitor_country].filter(Boolean).join(", ")}</p>
                                             )}
-                                            <p><span className="font-semibold text-zinc-800">Payment:</span> To be confirmed with visitor</p>
+                                            <p><span className="font-semibold text-zinc-800">{t('enterprise.eventRequests.labels.payment')}:</span> {t('enterprise.eventRequests.labels.paymentToConfirmWithVisitor')}</p>
                                         </div>
 
                                         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -621,7 +623,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     href={`mailto:${req.visitor_email}?subject=Regarding your request for ${encodeURIComponent(req.product_name || "our offering")}`}
                                                     className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
                                                 >
-                                                    <Mail size={13} /> Email visitor
+                                                    <Mail size={13} /> {t('enterprise.eventRequests.actions.emailVisitor')}
                                                 </a>
                                             )}
                                             {req.visitor_phone && (
@@ -629,7 +631,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     href={`tel:${req.visitor_phone}`}
                                                     className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
                                                 >
-                                                    <Phone size={13} /> Call visitor
+                                                    <Phone size={13} /> {t('enterprise.eventRequests.actions.callVisitor')}
                                                 </a>
                                             )}
 
@@ -641,7 +643,7 @@ export default function EnterpriseEventRequestsPage() {
                                                     onClick={() => handleRequestStatusUpdate(reqId, "CONTACTED")}
                                                 >
                                                     {updatingRequestId === reqId ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Clock size={14} className="mr-1.5" />}
-                                                    {(req.product_type || (req.product_is_service ? "service" : "product")) === "service" ? "Confirm Service Details" : "Mark Contacted"}
+                                                    {(req.product_type || (req.product_is_service ? "service" : "product")) === "service" ? t('enterprise.eventRequests.actions.confirmServiceDetails') : t('enterprise.productRequests.inquiry.markContacted')}
                                                 </Button>
                                             )}
                                             {req.status === "CONTACTED" && (
@@ -653,12 +655,12 @@ export default function EnterpriseEventRequestsPage() {
                                                     onClick={() => handleRequestStatusUpdate(reqId, "CLOSED")}
                                                 >
                                                     {updatingRequestId === reqId ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <CheckCircle2 size={14} className="mr-1.5" />}
-                                                    Mark Closed
+                                                    {t('enterprise.productRequests.inquiry.markClosed')}
                                                 </Button>
                                             )}
                                             {req.status === "CLOSED" && (
                                                 <span className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-600">
-                                                    <CheckCircle2 size={13} /> Completed
+                                                    <CheckCircle2 size={13} /> {t('enterprise.eventRequests.actions.completed')}
                                                 </span>
                                             )}
                                         </div>

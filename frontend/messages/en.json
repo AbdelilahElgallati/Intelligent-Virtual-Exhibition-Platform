@@ -3544,6 +3544,32 @@
         "cancelConfirm": "Cancel order for \"{product}\"? This will mark the order as cancelled and restore stock for product items.",
         "cancelNote": "Optional cancellation note"
       },
+      "labels": {
+        "quantity": "Quantity",
+        "payment": "Payment",
+        "stripeIntent": "Stripe intent",
+        "pending": "Pending",
+        "receiver": "Receiver",
+        "receiverPhone": "Receiver phone",
+        "shipping": "Shipping",
+        "noShippingAddress": "No shipping address provided",
+        "deliveryNotes": "Delivery notes",
+        "fulfillmentTimeline": "Fulfillment timeline",
+        "current": "Current",
+        "latestInternalNote": "Latest internal note",
+        "optionalInternalNote": "Optional internal note for this status change",
+        "visitor": "Visitor",
+        "company": "Company",
+        "paymentToConfirmWithVisitor": "To be confirmed with visitor",
+        "payOnReceptionCod": "Pay on reception (COD)"
+      },
+      "actions": {
+        "emailVisitor": "Email visitor",
+        "callVisitor": "Call visitor",
+        "markAsStatus": "Mark as {status}",
+        "confirmServiceDetails": "Confirm Service Details",
+        "completed": "Completed"
+      },
       "refresh": "Refresh Data",
       "syncing": "Synchronizing records...",
       "kpi": {

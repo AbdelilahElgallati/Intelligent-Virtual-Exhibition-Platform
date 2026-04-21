@@ -20,6 +20,7 @@ import {
     Clock
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface Lead {
     _id: string;
@@ -43,6 +44,7 @@ interface Stand {
 }
 
 export default function EnterpriseLeadsPage() {
+    const { t } = useTranslation();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [stands, setStands] = useState<Stand[]>([]);
     const [events, setEvents] = useState<any[]>([]);
@@ -111,13 +113,13 @@ export default function EnterpriseLeadsPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-indigo-600 text-white border-0 shadow-lg shadow-indigo-100">
                     <CardContent className="p-6">
-                        <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">Total Leads</p>
+                        <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">{t('enterprise.leads.kpi.totalLeads')}</p>
                         <h3 className="text-3xl font-bold">{leads.length}</h3>
                     </CardContent>
                 </Card>
                 <Card className="bg-white border-zinc-200">
                     <CardContent className="p-6">
-                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Visits</p>
+                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">{t('enterprise.leads.kpi.visits')}</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
                             {leads.filter(l => (l.last_interaction_type || l.interaction_type) === 'stand_visit').length}
                         </h3>
@@ -125,7 +127,7 @@ export default function EnterpriseLeadsPage() {
                 </Card>
                 <Card className="bg-white border-zinc-200">
                     <CardContent className="p-6">
-                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Chat Inquiries</p>
+                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">{t('enterprise.leads.kpi.chatInquiries')}</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
                             {leads.filter(l => (l.last_interaction_type || l.interaction_type) === 'chat_message').length}
                         </h3>
@@ -133,7 +135,7 @@ export default function EnterpriseLeadsPage() {
                 </Card>
                 <Card className="bg-white border-zinc-200">
                     <CardContent className="p-6">
-                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Action Rate</p>
+                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">{t('enterprise.leads.kpi.actionRate')}</p>
                         <h3 className="text-3xl font-bold text-zinc-900">
                             {leads.length > 0 ? Math.round((leads.filter(l => !['stand_visit', 'event_view'].includes(l.last_interaction_type || l.interaction_type || '')).length / leads.length) * 100) : 0}%
                         </h3>
@@ -148,7 +150,7 @@ export default function EnterpriseLeadsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
                         <input
                             type="text"
-                            placeholder="Search leads..."
+                            placeholder={t('enterprise.leads.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
@@ -159,12 +161,12 @@ export default function EnterpriseLeadsPage() {
                         value={selectedStand}
                         onChange={e => setSelectedStand(e.target.value)}
                     >
-                        <option value="all">All Stands</option>
+                        <option value="all">{t('enterprise.leads.allStands')}</option>
                         {stands.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
                 <Button variant="outline" className="gap-2 text-sm border-zinc-200">
-                    <Download size={16} /> Export CSV
+                    <Download size={16} /> {t('enterprise.leads.exportCsv')}
                 </Button>
             </div>
 
@@ -174,11 +176,11 @@ export default function EnterpriseLeadsPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-50/50 border-b border-zinc-100">
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Visitor</th>
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Interaction</th>
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Stand / Event</th>
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">Time</th>
-                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('enterprise.leads.table.visitor')}</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('enterprise.leads.table.interaction')}</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('enterprise.leads.table.standEvent')}</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('enterprise.leads.table.time')}</th>
+                                <th className="px-6 py-4 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">{t('enterprise.leads.table.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-50">
@@ -195,7 +197,7 @@ export default function EnterpriseLeadsPage() {
                             ) : filteredLeads.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-20 text-center text-zinc-400 italic">
-                                        No leads found matching your criteria.
+                                        {t('enterprise.leads.empty')}
                                     </td>
                                 </tr>
                             ) : (
@@ -208,9 +210,9 @@ export default function EnterpriseLeadsPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-zinc-900">
-                                                        {lead.visitor_name || `Visitor #${(lead.visitor_id || '').slice(-4)}`}
+                                                        {lead.visitor_name || t('enterprise.leads.visitorLabel', { id: (lead.visitor_id || '').slice(-4) })}
                                                     </p>
-                                                    <p className="text-[10px] text-zinc-400">{lead.visitor_email || 'No email provided'}</p>
+                                                    <p className="text-[10px] text-zinc-400">{lead.visitor_email || t('enterprise.leads.noEmail')}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -226,7 +228,7 @@ export default function EnterpriseLeadsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="text-xs font-medium text-zinc-800">
-                                                {stands.find(s => s.id === lead.stand_id)?.name || 'Unknown Stand'}
+                                                {stands.find(s => s.id === lead.stand_id)?.name || t('enterprise.leads.unknownStand')}
                                             </p>
                                             <p className="text-[10px] text-zinc-400 capitalize">Event ID: {lead.stand_id?.slice(-6)}</p>
                                         </td>
@@ -250,7 +252,7 @@ export default function EnterpriseLeadsPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-wider border-zinc-200">
-                                                View Details
+                                                {t('enterprise.leads.viewDetails')}
                                             </Button>
                                         </td>
                                     </tr>

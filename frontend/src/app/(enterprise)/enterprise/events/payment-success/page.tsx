@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, FileText, Building2 } from 'lucide-react';
 import { http } from '@/lib/http';
 import { downloadEnterpriseStandFeeReceiptPdf } from '@/lib/pdf/receipts';
 import { formatInTZ, getUserTimezone } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 function formatEventDateLabel(iso?: string): string | undefined {
   if (!iso) return undefined;
@@ -18,6 +19,7 @@ function formatEventDateLabel(iso?: string): string | undefined {
 }
 
 export default function EnterprisePaymentSuccessPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const eventId = searchParams.get('event_id');
   const sessionId = searchParams.get('session_id');
@@ -81,9 +83,9 @@ export default function EnterprisePaymentSuccessPage() {
     const eid = String(eventId || event?.id || event?._id || '');
     await downloadEnterpriseStandFeeReceiptPdf({
       eventId: eid,
-      eventTitle: event?.title || 'Event',
+      eventTitle: event?.title || t('enterprise.eventManagement.eventFallback'),
       organizerName: event?.organizer_name || '',
-      buyerName: buyer?.full_name || buyer?.email || 'Enterprise',
+      buyerName: buyer?.full_name || buyer?.email || t('auth.register.roles.enterprise'),
       buyerEmail: buyer?.email || '',
       amount: Number(standFee || 0),
       paidAt: participant?.updated_at,
@@ -106,9 +108,9 @@ export default function EnterprisePaymentSuccessPage() {
           <CheckCircle2 className="w-9 h-9 text-emerald-600" />
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Stand Approved!</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('enterprise.paymentSuccess.standApproved')}</h1>
         <p className="text-gray-500 text-sm mb-6">
-          Your stand fee has been paid successfully. Your participation is approved.
+          {t('enterprise.paymentSuccess.successMessage')}
         </p>
 
         {loading ? (
@@ -123,17 +125,16 @@ export default function EnterprisePaymentSuccessPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{event.title}</p>
                   <p className="text-xs text-gray-500">
-                    Stand Fee: {Number(standFee || 0).toFixed(2)} MAD
+                    {t('enterprise.paymentSuccess.amountPaidLabel', { amount: Number(standFee || 0).toFixed(2), currency: 'MAD' })}
                   </p>
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold uppercase">
-                  Paid
+                  {t('enterprise.paymentSuccess.statusPaid')}
                 </span>
               </div>
             ) : (
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 text-left">
-                Event details are still loading. You can download your receipt — it matches the PDF from the Enterprise
-                Events page.
+                {t('enterprise.paymentSuccess.eventLoadingHint')}
               </p>
             )}
 
@@ -144,7 +145,7 @@ export default function EnterprisePaymentSuccessPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors mb-4"
               >
                 <FileText className="w-4 h-4" />
-                Download receipt (PDF)
+                {t('enterprise.paymentSuccess.downloadReceipt')}
               </button>
             )}
           </>
@@ -155,7 +156,7 @@ export default function EnterprisePaymentSuccessPage() {
             href="/enterprise/events"
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
           >
-            Back to Events
+            {t('enterprise.paymentSuccess.backToEvents')}
           </Link>
         </div>
       </div>

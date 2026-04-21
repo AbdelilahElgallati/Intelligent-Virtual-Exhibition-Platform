@@ -13,6 +13,7 @@ import {
     Upload, X, Camera, Briefcase
 } from 'lucide-react';
 import ChangePassword from '@/components/common/ChangePassword';
+import { useTranslation } from 'react-i18next';
 const ENTERPRISE_CATEGORY_OPTIONS = [
     'Technology',
     'Healthcare',
@@ -47,6 +48,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export default function EnterpriseProfilePage() {
+    const { t } = useTranslation();
     const { user, refreshUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
@@ -58,6 +60,24 @@ export default function EnterpriseProfilePage() {
         typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
             ? (Intl.supportedValuesOf('timeZone') as string[])
             : ['UTC', 'Africa/Casablanca', 'Europe/Paris', 'Europe/London', 'America/New_York'];
+
+    const categoryLabelMap: Record<string, string> = {
+        Technology: t('enterprise.profile.categories.technology'),
+        Healthcare: t('enterprise.profile.categories.healthcare'),
+        Finance: t('enterprise.profile.categories.finance'),
+        Education: t('enterprise.profile.categories.education'),
+        Manufacturing: t('enterprise.profile.categories.manufacturing'),
+        Retail: t('enterprise.profile.categories.retail'),
+        Logistics: t('enterprise.profile.categories.logistics'),
+        Energy: t('enterprise.profile.categories.energy'),
+        Telecommunications: t('enterprise.profile.categories.telecommunications'),
+        Consulting: t('enterprise.profile.categories.consulting'),
+        'Media & Marketing': t('enterprise.profile.categories.mediaMarketing'),
+        'Tourism & Hospitality': t('enterprise.profile.categories.tourismHospitality'),
+        'Government & Public Services': t('enterprise.profile.categories.governmentPublicServices'),
+        'Non-Profit': t('enterprise.profile.categories.nonProfit'),
+        Other: t('enterprise.profile.categories.other'),
+    };
 
     const [profile, setProfile] = useState({
         name: '',
@@ -163,9 +183,9 @@ export default function EnterpriseProfilePage() {
             const url = type === 'logo' ? data.logo_url : data.banner_url;
 
             setProfile(prev => ({ ...prev, [`${type}_url`]: url }));
-            setMessage({ type: 'success', text: `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded!` });
+            setMessage({ type: 'success', text: type === 'logo' ? t('enterprise.profile.messages.logoUploaded') : t('enterprise.profile.messages.bannerUploaded') });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || `Failed to upload ${type}.` });
+            setMessage({ type: 'error', text: err.message || t('enterprise.profile.messages.uploadFailed') });
         } finally {
             setIsUploading(prev => ({ ...prev, [type]: false }));
         }
@@ -214,9 +234,9 @@ export default function EnterpriseProfilePage() {
             }
             setProfile(prev => ({ ...prev, tags: normalizedTags }));
             setTagsInput(normalizedTags.join(', '));
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: t('enterprise.profile.messages.profileUpdated') });
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+            setMessage({ type: 'error', text: err.message || t('enterprise.profile.messages.profileUpdateFailed') });
         } finally {
             setIsLoading(false);
         }
@@ -229,7 +249,7 @@ export default function EnterpriseProfilePage() {
                 {profile.banner_url ? (
                     <img
                         src={resolveMediaUrl(profile.banner_url)}
-                        alt="Banner"
+                        alt={t('enterprise.profile.updateCoverPhoto')}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                 ) : (
@@ -242,7 +262,7 @@ export default function EnterpriseProfilePage() {
                         className="bg-white/90 text-indigo-600 hover:bg-white border-none gap-2 shadow-2xl scale-95 group-hover:scale-100 transition-all font-bold"
                         isLoading={isUploading.banner}
                     >
-                        <Camera size={18} /> Update Cover Photo
+                        <Camera size={18} /> {t('enterprise.profile.updateCoverPhoto')}
                     </Button>
                     <input
                         ref={bannerInputRef}
@@ -260,7 +280,7 @@ export default function EnterpriseProfilePage() {
                                 {profile.logo_url ? (
                                     <img
                                         src={resolveMediaUrl(profile.logo_url)}
-                                        alt="Logo"
+                                        alt={t('enterprise.profile.logoAlt')}
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover/logo:scale-110"
                                     />
                                 ) : (
@@ -294,18 +314,18 @@ export default function EnterpriseProfilePage() {
                     <Card className="border-zinc-200 shadow-sm overflow-hidden">
                         <CardHeader className="bg-zinc-50/50 border-b border-zinc-100 px-6 py-4">
                             <CardTitle className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                                <Shield size={16} className="text-indigo-500" /> Account Verified
+                                <Shield size={16} className="text-indigo-500" /> {t('enterprise.profile.accountVerified')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6">
                             <div className="space-y-1">
-                                <InfoRow icon={User} label="Primary Contact" value={user?.full_name} />
-                                <InfoRow icon={Mail} label="Account Email" value={user?.email} />
-                                <InfoRow icon={Building2} label="Registered Entity" value={profile.name || user?.org_name} />
-                                <InfoRow icon={MapPin} label="Base Location" value={[profile.city || user?.org_city, profile.country || user?.org_country].filter(Boolean).join(', ') || 'Global'} />
-                                <InfoRow icon={Briefcase} label="Sector" value={profile.industry || user?.org_type} />
+                                <InfoRow icon={User} label={t('enterprise.profile.primaryContact')} value={user?.full_name} />
+                                <InfoRow icon={Mail} label={t('enterprise.profile.accountEmail')} value={user?.email} />
+                                <InfoRow icon={Building2} label={t('enterprise.profile.registeredEntity')} value={profile.name || user?.org_name} />
+                                <InfoRow icon={MapPin} label={t('enterprise.profile.baseLocation')} value={[profile.city || user?.org_city, profile.country || user?.org_country].filter(Boolean).join(', ') || t('enterprise.profile.global')} />
+                                <InfoRow icon={Briefcase} label={t('enterprise.profile.sector')} value={profile.industry || user?.org_type} />
                                 <div className="pt-4 text-center">
-                                    <p className="text-[10px] text-zinc-400"> Member since {user?.created_at ? new Date(user.created_at).getFullYear() : '2024'} </p>
+                                    <p className="text-[10px] text-zinc-400"> {t('enterprise.profile.memberSince', { year: user?.created_at ? new Date(user.created_at).getFullYear() : '2024' })} </p>
                                 </div>
                             </div>
                         </CardContent>
@@ -313,14 +333,14 @@ export default function EnterpriseProfilePage() {
 
                     <Card className="border-indigo-100 bg-indigo-50/30">
                         <CardContent className="p-6">
-                            <h4 className="text-sm font-bold text-indigo-900 mb-2">Completion Status</h4>
+                            <h4 className="text-sm font-bold text-indigo-900 mb-2">{t('enterprise.profile.completionStatus.title')}</h4>
                             <div className="w-full bg-indigo-100 h-2 rounded-full overflow-hidden mb-3">
                                 <div
                                     className="bg-indigo-600 h-full transition-all duration-1000"
                                     style={{ width: `${Object.values(profile).filter(v => v && v.length > 0).length * 10}%` }}
                                 />
                             </div>
-                            <p className="text-xs text-indigo-600">Complete your profile to increase your visibility in virtual exhibitions.</p>
+                            <p className="text-xs text-indigo-600">{t('enterprise.profile.completionStatus.description')}</p>
                         </CardContent>
                     </Card>
 
@@ -343,106 +363,106 @@ export default function EnterpriseProfilePage() {
                         {/* General Info */}
                         <Card className="border-zinc-200 shadow-sm">
                             <CardHeader className="border-b border-zinc-100 px-8 py-5">
-                                <CardTitle className="text-lg font-bold text-zinc-900">About Company</CardTitle>
+                                <CardTitle className="text-lg font-bold text-zinc-900">{t('enterprise.profile.aboutCompany')}</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Company Name</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.companyName')}</label>
                                         <Input
                                             name="name"
                                             value={profile.name}
                                             onChange={handleChange}
-                                            placeholder="Acme Corporation"
+                                            placeholder={t('enterprise.profile.placeholders.companyName')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Industry</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.industry')}</label>
                                         <Input
                                             name="industry"
                                             value={profile.industry}
                                             onChange={handleChange}
-                                            placeholder="Technology"
+                                            placeholder={t('enterprise.profile.placeholders.industry')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Country</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.country')}</label>
                                         <Input
                                             name="country"
                                             value={profile.country}
                                             onChange={handleChange}
-                                            placeholder="Morocco"
+                                            placeholder={t('enterprise.profile.placeholders.country')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">City</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.city')}</label>
                                         <Input
                                             name="city"
                                             value={profile.city}
                                             onChange={handleChange}
-                                            placeholder="Casablanca"
+                                            placeholder={t('enterprise.profile.placeholders.city')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Company Size</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.companySize')}</label>
                                         <Input
                                             name="company_size"
                                             value={profile.company_size}
                                             onChange={handleChange}
-                                            placeholder="51-200"
+                                            placeholder={t('enterprise.profile.placeholders.companySize')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-zinc-700">Professional Email</label>
+                                        <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.professionalEmail')}</label>
                                         <Input
                                             name="professional_email"
                                             value={profile.professional_email}
                                             onChange={handleChange}
                                             type="email"
-                                            placeholder="business@acme.com"
+                                            placeholder={t('enterprise.profile.placeholders.professionalEmail')}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700 flex items-center justify-between">
-                                        Company Bio
-                                        <span className="text-[10px] text-zinc-400 font-normal">Displayed on your booth</span>
+                                        {t('enterprise.profile.companyBio')}
+                                        <span className="text-[10px] text-zinc-400 font-normal">{t('enterprise.profile.displayedOnBooth')}</span>
                                     </label>
                                     <textarea
                                         name="description"
                                         value={profile.description}
                                         onChange={handleChange}
                                         className="w-full min-h-[120px] p-4 bg-zinc-50 border border-zinc-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-inner"
-                                        placeholder="Tell visitors about your company value proposition..."
+                                        placeholder={t('enterprise.profile.companyBioPlaceholder')}
                                     ></textarea>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Category</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.category.label')}</label>
                                     <select
                                         name="category"
                                         value={profile.category}
                                         onChange={handleChange}
                                         className="w-full h-12 rounded-xl border border-zinc-300 bg-white px-4 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     >
-                                        <option value="">Select a category</option>
+                                        <option value="">{t('enterprise.profile.category.selectPlaceholder')}</option>
                                         {profile.category && !ENTERPRISE_CATEGORY_OPTIONS.includes(profile.category) && (
                                             <option value={profile.category}>{profile.category}</option>
                                         )}
                                         {ENTERPRISE_CATEGORY_OPTIONS.map((option) => (
-                                            <option key={option} value={option}>{option}</option>
+                                            <option key={option} value={option}>{categoryLabelMap[option] || option}</option>
                                         ))}
                                     </select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-zinc-700">Business Tags</label>
+                                    <label className="text-sm font-semibold text-zinc-700">{t('enterprise.profile.businessTags')}</label>
                                     <div className="relative">
                                         <Input
                                             value={tagsInput}
                                             onChange={handleTagsChange}
-                                            placeholder="AI, Blockchain, SaaS, Green Energy (comma separated)"
+                                            placeholder={t('enterprise.profile.placeholders.businessTags')}
                                             className="pl-10"
                                         />
                                         <Briefcase className="absolute left-3.5 top-3 text-zinc-400" size={16} />
@@ -458,7 +478,7 @@ export default function EnterpriseProfilePage() {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                        <Globe size={14} className="text-indigo-500" /> Account Timezone
+                                        <Globe size={14} className="text-indigo-500" /> {t('enterprise.profile.accountTimezone')}
                                     </label>
                                     <select
                                         value={accountTimezone}
@@ -469,7 +489,7 @@ export default function EnterpriseProfilePage() {
                                             <option key={tz} value={tz}>{tz}</option>
                                         ))}
                                     </select>
-                                    <p className="text-xs text-zinc-500">Used as your personal display timezone across the platform.</p>
+                                    <p className="text-xs text-zinc-500">{t('enterprise.profile.accountTimezoneHelp')}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -477,53 +497,53 @@ export default function EnterpriseProfilePage() {
                         {/* Contact & Links */}
                         <Card className="border-zinc-200 shadow-sm">
                             <CardHeader className="border-b border-zinc-100 px-8 py-5">
-                                <CardTitle className="text-lg font-bold text-zinc-900">Contact & Presence</CardTitle>
+                                <CardTitle className="text-lg font-bold text-zinc-900">{t('enterprise.profile.contactPresence')}</CardTitle>
                             </CardHeader>
                             <CardContent className="p-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Mail size={14} className="text-indigo-500" /> Public Business Email
+                                            <Mail size={14} className="text-indigo-500" /> {t('enterprise.profile.publicBusinessEmail')}
                                         </label>
                                         <Input
                                             name="contact_email"
                                             value={profile.contact_email}
                                             onChange={handleChange}
-                                            placeholder="contact@acme.com"
+                                            placeholder={t('enterprise.profile.placeholders.contactEmail')}
                                             type="email"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Phone size={14} className="text-indigo-500" /> Phone Number
+                                            <Phone size={14} className="text-indigo-500" /> {t('enterprise.profile.phoneNumber')}
                                         </label>
                                         <Input
                                             name="contact_phone"
                                             value={profile.contact_phone}
                                             onChange={handleChange}
-                                            placeholder="+212 600-000000"
+                                            placeholder={t('enterprise.profile.placeholders.contactPhone')}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Globe size={14} className="text-indigo-500" /> Corporate Website
+                                            <Globe size={14} className="text-indigo-500" /> {t('enterprise.profile.corporateWebsite')}
                                         </label>
                                         <Input
                                             name="website"
                                             value={profile.website}
                                             onChange={handleChange}
-                                            placeholder="https://acme.com"
+                                            placeholder={t('enterprise.profile.placeholders.website')}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-                                            <Linkedin size={14} className="text-indigo-500" /> LinkedIn Profile
+                                            <Linkedin size={14} className="text-indigo-500" /> {t('enterprise.profile.linkedinProfile')}
                                         </label>
                                         <Input
                                             name="linkedin"
                                             value={profile.linkedin}
                                             onChange={handleChange}
-                                            placeholder="https://linkedin.com/company/acme"
+                                            placeholder={t('enterprise.profile.placeholders.linkedin')}
                                         />
                                     </div>
                                 </div>
@@ -533,7 +553,7 @@ export default function EnterpriseProfilePage() {
                         {/* Submit */}
                         <div className="pt-6 flex justify-end sticky bottom-0 z-10">
                             <Button type="submit" className="min-w-[220px] h-14 rounded-2xl text-lg font-bold shadow-2xl shadow-indigo-200 flex items-center gap-3 active:scale-95 transition-transform" isLoading={isLoading}>
-                                <Save size={20} /> Save All Changes
+                                <Save size={20} /> {t('enterprise.profile.saveAllChanges')}
                             </Button>
                         </div>
                     </form>

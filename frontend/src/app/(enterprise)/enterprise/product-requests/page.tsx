@@ -27,6 +27,7 @@ import {
     Layers,
     Filter
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type RequestStatus = "PENDING" | "CONTACTED" | "CLOSED";
 
@@ -90,10 +91,10 @@ const ORDER_WORKFLOW: FulfillmentStatus[] = [
 ];
 
 const DATE_FILTERS: Array<{ value: DateFilter; label: string }> = [
-    { value: "all", label: "All dates" },
-    { value: "today", label: "Today" },
-    { value: "last7", label: "Last 7 days" },
-    { value: "last30", label: "Last 30 days" },
+    { value: "all", label: "enterprise.productRequests.filters.timeOptions.all" },
+    { value: "today", label: "enterprise.productRequests.filters.timeOptions.today" },
+    { value: "last7", label: "enterprise.productRequests.filters.timeOptions.last7Days" },
+    { value: "last30", label: "enterprise.productRequests.filters.timeOptions.last30Days" },
 ];
 
 function titleCase(input: string): string {
@@ -134,6 +135,7 @@ function fulfillmentProgress(status: FulfillmentStatus): number {
 }
 
 export default function EnterpriseGlobalRequestsPage() {
+    const { t } = useTranslation();
     const [tab, setTab] = useState<"products" | "services">("products");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -257,14 +259,14 @@ export default function EnterpriseGlobalRequestsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">All Inquiries & Orders</h1>
+                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{t('enterprise.productRequests.allInquiriesTitle')}</h1>
                     <p className="text-zinc-500 mt-1 max-w-2xl">
-                        A unified view of all visitor requests and marketplace checkouts across every event you participate in.
+                        {t('enterprise.productRequests.subtitle')}
                     </p>
                 </div>
                 <Button variant="outline" onClick={fetchData} disabled={loading} className="shadow-sm">
                     {loading ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Clock size={16} className="mr-2" />}
-                    Refresh Data
+                    {t('enterprise.eventRequests.refresh')}
                 </Button>
             </div>
 
@@ -275,7 +277,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <Layers size={24} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Events Active</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.kpi.eventsActive')}</p>
                             <p className="text-xl font-black text-zinc-900">{events.length}</p>
                         </div>
                     </CardContent>
@@ -286,7 +288,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <Receipt size={24} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Total Orders</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.kpi.totalOrders')}</p>
                             <p className="text-xl font-black text-zinc-900">{orders.length}</p>
                         </div>
                     </CardContent>
@@ -297,7 +299,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <MessageSquare size={24} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Direct Requests</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.kpi.directRequests')}</p>
                             <p className="text-xl font-black text-zinc-900">{requests.length}</p>
                         </div>
                     </CardContent>
@@ -314,7 +316,7 @@ export default function EnterpriseGlobalRequestsPage() {
                                 tab === "products" ? "bg-white text-indigo-700 shadow-md" : "text-zinc-500 hover:text-zinc-800"
                             }`}
                         >
-                            <Package size={16} /> Products
+                            <Package size={16} /> {t('enterprise.productRequests.tabs.products')}
                         </button>
                         <button
                             onClick={() => setTab("services")}
@@ -322,25 +324,25 @@ export default function EnterpriseGlobalRequestsPage() {
                                 tab === "services" ? "bg-white text-indigo-700 shadow-md" : "text-zinc-500 hover:text-zinc-800"
                             }`}
                         >
-                            <Briefcase size={16} /> Services
+                            <Briefcase size={16} /> {t('enterprise.productRequests.tabs.services')}
                         </button>
                     </div>
 
                     <Card className="border-zinc-200 shadow-sm overflow-hidden">
                         <CardHeader className="bg-zinc-50 border-b border-zinc-100 py-3 px-4">
                             <CardTitle className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                <Filter size={12} /> Refine View
+                                <Filter size={12} /> {t('enterprise.productRequests.refineView')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 space-y-5">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Filter by Event</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.filters.byEvent.label')}</label>
                                 <select
                                     value={selectedEventId}
                                     onChange={(e) => setSelectedEventId(e.target.value)}
                                     className="w-full h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                 >
-                                    <option value="all">All Events</option>
+                                    <option value="all">{t('enterprise.productRequests.filters.byEvent.all')}</option>
                                     {events.map(ev => (
                                         <option key={ev.id || ev._id} value={ev.id || ev._id}>{ev.title}</option>
                                     ))}
@@ -348,36 +350,36 @@ export default function EnterpriseGlobalRequestsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Order Fulfillment</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.filters.orderFulfillment')}</label>
                                 <select
                                     value={orderStatusFilter}
                                     onChange={(e) => setOrderStatusFilter(e.target.value as any)}
                                     className="w-full h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                 >
-                                    <option value="all">All Statuses</option>
+                                    <option value="all">{t('enterprise.productRequests.filters.allStatuses')}</option>
                                     {ORDER_WORKFLOW.map(s => (
                                         <option key={s} value={s}>{titleCase(s)}</option>
                                     ))}
-                                    <option value="cancelled">Cancelled</option>
+                                    <option value="cancelled">{t('enterprise.productRequests.orderStatus.cancelled')}</option>
                                 </select>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Request Status</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.filters.requestStatus')}</label>
                                 <select
                                     value={requestStatusFilter}
                                     onChange={(e) => setRequestStatusFilter(e.target.value as any)}
                                     className="w-full h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                 >
-                                    <option value="all">All Statuses</option>
-                                    <option value="PENDING">Pending</option>
-                                    <option value="CONTACTED">Contacted</option>
-                                    <option value="CLOSED">Closed</option>
+                                    <option value="all">{t('enterprise.productRequests.filters.requestStatuses.all')}</option>
+                                    <option value="PENDING">{t('enterprise.productRequests.filters.requestStatuses.pending')}</option>
+                                    <option value="CONTACTED">{t('enterprise.productRequests.filters.requestStatuses.contacted')}</option>
+                                    <option value="CLOSED">{t('enterprise.productRequests.filters.requestStatuses.closed')}</option>
                                 </select>
                             </div>
 
                             <div className="pt-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mb-2">Time Period</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mb-2">{t('enterprise.productRequests.filters.timePeriod')}</label>
                                 <div className="flex flex-col gap-1.5">
                                     {DATE_FILTERS.map(f => (
                                         <button
@@ -389,7 +391,7 @@ export default function EnterpriseGlobalRequestsPage() {
                                                     : "text-zinc-500 hover:bg-zinc-100"
                                             }`}
                                         >
-                                            {f.label}
+                                            {t(f.label)}
                                         </button>
                                     ))}
                                 </div>
@@ -403,13 +405,13 @@ export default function EnterpriseGlobalRequestsPage() {
                     {loading ? (
                         <div className="py-32 text-center bg-white border border-zinc-200 rounded-3xl">
                             <Loader2 size={42} className="animate-spin text-indigo-600 mx-auto mb-4" />
-                            <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">Synchronizing records...</p>
+                            <p className="text-sm font-bold text-zinc-400 uppercase tracking-widest">{t('enterprise.productRequests.syncing')}</p>
                         </div>
                     ) : error ? (
                         <Card className="border-red-200 bg-red-50 rounded-3xl">
                             <CardContent className="p-8 text-center">
                                 <p className="text-red-700 font-bold">{error}</p>
-                                <Button onClick={fetchData} className="mt-4 bg-red-600 text-white hover:bg-red-700">Retry Loading</Button>
+                                <Button onClick={fetchData} className="mt-4 bg-red-600 text-white hover:bg-red-700">{t('enterprise.productRequests.retry')}</Button>
                             </CardContent>
                         </Card>
                     ) : (
@@ -418,7 +420,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between px-2">
                                     <h2 className="text-lg font-black text-zinc-900 inline-flex items-center gap-2">
-                                        <Receipt size={20} className="text-indigo-600" /> Checkout Orders
+                                        <Receipt size={20} className="text-indigo-600" /> {t('enterprise.productRequests.checkoutOrders.title')}
                                         <span className="text-xs bg-zinc-100 text-zinc-500 py-0.5 px-2 rounded-full font-bold">{filteredOrders.length}</span>
                                     </h2>
                                 </div>
@@ -426,7 +428,7 @@ export default function EnterpriseGlobalRequestsPage() {
                                 {filteredOrders.length === 0 ? (
                                     <div className="py-16 text-center bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-3xl">
                                         <Package className="text-zinc-300 mx-auto mb-3" size={32} />
-                                        <p className="text-sm text-zinc-500 font-medium">No checkout orders match your current filters.</p>
+                                        <p className="text-sm text-zinc-500 font-medium">{t('enterprise.productRequests.checkoutOrders.empty')}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
@@ -467,7 +469,7 @@ export default function EnterpriseGlobalRequestsPage() {
 
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50/50 rounded-2xl p-4 border border-zinc-100">
                                                                 <div className="space-y-2">
-                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Customer Details</p>
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.productRequests.inquiry.visitorInfo')}</p>
                                                                     <p className="text-sm font-bold text-zinc-800">{order.buyer_name || "Visitor"}</p>
                                                                     <div className="flex flex-col gap-1">
                                                                         {order.buyer_email && <a href={`mailto:${order.buyer_email}`} className="text-xs text-indigo-600 hover:underline flex items-center gap-1.5"><Mail size={12} /> {order.buyer_email}</a>}
@@ -475,7 +477,7 @@ export default function EnterpriseGlobalRequestsPage() {
                                                                     </div>
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Shipping & Payment</p>
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.eventRequests.filters.orderFulfillment')}</p>
                                                                     <p className="text-xs text-zinc-600 flex items-start gap-1.5"><MapPin size={12} className="shrink-0 mt-0.5" /> {order.shipping_address || "No address provided"}</p>
                                                                     <p className="text-xs text-zinc-600 flex items-center gap-1.5"><CreditCard size={12} /> {order.payment_method === "cash_on_delivery" ? "COD" : "Stripe Online"}</p>
                                                                 </div>
@@ -483,7 +485,7 @@ export default function EnterpriseGlobalRequestsPage() {
 
                                                             <div className="space-y-2">
                                                                 <div className="flex items-center justify-between">
-                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Fulfillment Progress</p>
+                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('enterprise.eventRequests.filters.orderFulfillment')}</p>
                                                                     <p className="text-[10px] font-black text-indigo-600">{progress}%</p>
                                                                 </div>
                                                                 <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
@@ -533,7 +535,7 @@ export default function EnterpriseGlobalRequestsPage() {
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between px-2">
                                     <h2 className="text-lg font-black text-zinc-900 inline-flex items-center gap-2">
-                                        <MessageSquare size={20} className="text-indigo-600" /> Direct Inquiries
+                                        <MessageSquare size={20} className="text-indigo-600" /> {t('enterprise.productRequests.directInquiries.title')}
                                         <span className="text-xs bg-zinc-100 text-zinc-500 py-0.5 px-2 rounded-full font-bold">{filteredRequests.length}</span>
                                     </h2>
                                 </div>
@@ -541,7 +543,7 @@ export default function EnterpriseGlobalRequestsPage() {
                                 {filteredRequests.length === 0 ? (
                                     <div className="py-16 text-center bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-3xl">
                                         <MessageSquare className="text-zinc-300 mx-auto mb-3" size={32} />
-                                        <p className="text-sm text-zinc-500 font-medium">No direct inquiries match your current filters.</p>
+                                        <p className="text-sm text-zinc-500 font-medium">{t('enterprise.productRequests.directInquiries.empty')}</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">

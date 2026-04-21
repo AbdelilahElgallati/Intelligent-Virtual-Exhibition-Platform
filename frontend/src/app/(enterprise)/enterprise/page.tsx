@@ -22,10 +22,12 @@ import {
     Zap,
     Globe,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatCard({ title, value, icon: Icon, color, sub, href }: any) {
+    const { t } = useTranslation();
     const inner = (
         <div className={`relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${href ? 'cursor-pointer' : ''}`}>
             <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-10 ${color}`} />
@@ -41,7 +43,7 @@ function StatCard({ title, value, icon: Icon, color, sub, href }: any) {
             </div>
             {href && (
                 <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-indigo-600">
-                    View details <ChevronRight size={13} />
+                    {t('enterprise.dashboard.stat.viewDetails')} <ChevronRight size={13} />
                 </div>
             )}
         </div>
@@ -64,17 +66,18 @@ function QuickLink({ href, icon: Icon, label, desc, color }: any) {
     );
 }
 
-const STATUS_STYLE: Record<string, { label: string; cls: string }> = {
-    approved:       { label: 'Approved', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    guest_approved: { label: 'Approved', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    pending_payment:{ label: 'Pay Fee',  cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-    pending_admin_approval: { label: 'Awaiting', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-    rejected:       { label: 'Rejected', cls: 'bg-red-50 text-red-700 border-red-200' },
+const STATUS_STYLE: Record<string, { labelKey: string; cls: string }> = {
+    approved:       { labelKey: 'enterprise.dashboard.eventStatus.approved', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    guest_approved: { labelKey: 'enterprise.dashboard.eventStatus.approved', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    pending_payment:{ labelKey: 'enterprise.dashboard.eventStatus.payFee',  cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    pending_admin_approval: { labelKey: 'enterprise.dashboard.eventStatus.awaiting', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    rejected:       { labelKey: 'enterprise.dashboard.eventStatus.rejected', cls: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function EnterpriseDashboardPage() {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [products, setProducts] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
@@ -115,7 +118,7 @@ export default function EnterpriseDashboardPage() {
     const serviceCount = products.filter(p => p.type === 'service').length;
     const productCount = products.filter(p => p.type !== 'service').length;
 
-    const orgName = profile?.name || profile?.organization_name || 'Your Enterprise';
+    const orgName = profile?.name || profile?.organization_name || t('enterprise.dashboard.fallbackOrgName');
     const totalStands = approvedEvents.length;
 
     // Recent events to show in the panel (latest 4)
@@ -142,9 +145,9 @@ export default function EnterpriseDashboardPage() {
 
                 <div className="relative flex flex-col gap-6 md:gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300">Enterprise Workspace</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300">{t('enterprise.dashboard.workspaceLabel')}</p>
                         <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-                            Welcome back,{' '}
+                            {t('enterprise.dashboard.welcomeBack')}{' '}
                             <span className="text-indigo-300">{orgName}</span>
                         </h1>
                         <p className="mt-2 text-sm leading-6 text-indigo-200 max-w-xl">
@@ -155,11 +158,11 @@ export default function EnterpriseDashboardPage() {
                     <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end">
                         <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-sm font-bold">{liveEvents.length} Live</span>
+                            <span className="text-sm font-bold">{liveEvents.length} {t('enterprise.dashboard.pills.live')}</span>
                         </div>
                         <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                             <Calendar size={14} className="text-indigo-300" />
-                            <span className="text-sm font-bold">{upcomingEvents.length} Upcoming</span>
+                            <span className="text-sm font-bold">{upcomingEvents.length} {t('enterprise.dashboard.pills.upcoming')}</span>
                         </div>
                     </div>
                 </div>
@@ -168,35 +171,35 @@ export default function EnterpriseDashboardPage() {
             {/* ── KPI Row ──────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <StatCard
-                    title="Catalog Items"
+                    title={t('enterprise.dashboard.kpi.catalogItems')}
                     value={products.length}
                     icon={Package}
                     color="bg-indigo-600"
-                    sub={`${productCount} products · ${serviceCount} services`}
+                    sub={t('enterprise.dashboard.kpi.catalogSub', { products: productCount, services: serviceCount })}
                     href="/enterprise/products"
                 />
                 <StatCard
-                    title="Active Stands"
+                    title={t('enterprise.dashboard.kpi.activeStands')}
                     value={totalStands}
                     icon={Globe}
                     color="bg-emerald-600"
-                    sub={`across ${myEvents.length} event${myEvents.length !== 1 ? 's' : ''}`}
+                    sub={t('enterprise.dashboard.kpi.activeStandsSub', { count: myEvents.length })}
                     href="/enterprise/events"
                 />
                 <StatCard
-                    title="Pending Requests"
+                    title={t('enterprise.dashboard.kpi.pendingRequests')}
                     value={pendingRequests.length}
                     icon={Clock}
                     color="bg-amber-500"
-                    sub={`${requests.length} total inquiries`}
+                    sub={t('enterprise.dashboard.kpi.pendingRequestsSub', { count: requests.length })}
                     href="/enterprise/product-requests"
                 />
                 <StatCard
-                    title="Total Inquiries"
+                    title={t('enterprise.dashboard.kpi.totalInquiries')}
                     value={requests.length}
                     icon={MessageSquare}
                     color="bg-purple-600"
-                    sub={`${requests.length - pendingRequests.length} handled`}
+                    sub={t('enterprise.dashboard.kpi.totalInquiriesSub', { count: requests.length - pendingRequests.length })}
                     href="/enterprise/product-requests"
                 />
             </div>
@@ -209,18 +212,18 @@ export default function EnterpriseDashboardPage() {
                     <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
                         <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-indigo-500" />
-                            <h2 className="font-bold text-zinc-900 text-sm">My Event Participations</h2>
+                            <h2 className="font-bold text-zinc-900 text-sm">{t('enterprise.dashboard.eventParticipations.title')}</h2>
                         </div>
                         <Link href="/enterprise/events" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                            View all <ChevronRight size={13} />
+                            {t('enterprise.dashboard.eventParticipations.viewAll')} <ChevronRight size={13} />
                         </Link>
                     </div>
                     {recentEvents.length === 0 ? (
                         <div className="py-16 text-center text-zinc-400">
                             <Globe size={36} className="mx-auto mb-3 text-zinc-200" />
-                            <p className="text-sm font-medium">No event participations yet</p>
+                            <p className="text-sm font-medium">{t('enterprise.dashboard.eventParticipations.empty')}</p>
                             <Link href="/enterprise/events" className="mt-2 inline-flex items-center gap-1 text-xs text-indigo-600 font-semibold">
-                                Browse events <ArrowUpRight size={12} />
+                                {t('enterprise.dashboard.eventParticipations.emptyAction')} <ArrowUpRight size={12} />
                             </Link>
                         </div>
                     ) : (
@@ -228,7 +231,7 @@ export default function EnterpriseDashboardPage() {
                             {recentEvents.map(ev => {
                                 const evId = ev.slug || ev.id || ev._id;
                                 const s = ev.participation?.status;
-                                const style = STATUS_STYLE[s] || { label: s || 'Unknown', cls: 'bg-zinc-50 text-zinc-500 border-zinc-200' };
+                                const style = STATUS_STYLE[s] || { labelKey: 'enterprise.dashboard.eventStatus.unknown', cls: 'bg-zinc-50 text-zinc-500 border-zinc-200' };
                                 const isApproved = s === 'approved' || s === 'guest_approved';
                                 const isLive = ev.state === 'live';
                                 return (
@@ -239,11 +242,11 @@ export default function EnterpriseDashboardPage() {
                                             <p className="font-semibold text-zinc-900 text-sm truncate">{ev.title}</p>
                                             <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                                                 <Calendar size={10} />
-                                                {ev.start_date ? formatInUserTZ(ev.start_date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : 'TBD'}
+                                                {ev.start_date ? formatInUserTZ(ev.start_date, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : t('enterprise.dashboard.eventParticipations.tbd')}
                                             </p>
                                         </div>
                                         <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.cls}`}>
-                                            {style.label}
+                                            {t(style.labelKey)}
                                         </span>
                                         {isApproved && (
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -272,14 +275,14 @@ export default function EnterpriseDashboardPage() {
                     <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm overflow-hidden">
                         <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-100">
                             <Zap size={15} className="text-amber-500" />
-                            <h2 className="font-bold text-zinc-900 text-sm">Quick Actions</h2>
+                            <h2 className="font-bold text-zinc-900 text-sm">{t('enterprise.dashboard.quickActions.title')}</h2>
                         </div>
                         <div className="p-4 grid gap-2">
-                            <QuickLink href="/enterprise/events" icon={Calendar} label="Browse Events" desc="Join new events & manage stands" color="bg-indigo-600" />
-                            <QuickLink href="/enterprise/products" icon={Package} label="Manage Catalog" desc="Add products & services" color="bg-emerald-600" />
-                            <QuickLink href="/enterprise/analytics" icon={BarChart3} label="View Analytics" desc="Stand performance & visitor data" color="bg-purple-600" />
-                            <QuickLink href="/enterprise/communications" icon={MessageSquare} label="Communications" desc="B2B chat & follow-ups" color="bg-blue-600" />
-                            <QuickLink href="/enterprise/leads" icon={Users} label="Leads & Contacts" desc="Visitor interactions & leads" color="bg-rose-500" />
+                            <QuickLink href="/enterprise/events" icon={Calendar} label={t('enterprise.dashboard.quickActions.browseEvents.title')} desc={t('enterprise.dashboard.quickActions.browseEvents.subtitle')} color="bg-indigo-600" />
+                            <QuickLink href="/enterprise/products" icon={Package} label={t('enterprise.dashboard.quickActions.manageCatalog.title')} desc={t('enterprise.dashboard.quickActions.manageCatalog.subtitle')} color="bg-emerald-600" />
+                            <QuickLink href="/enterprise/analytics" icon={BarChart3} label={t('enterprise.dashboard.quickActions.viewAnalytics.title')} desc={t('enterprise.dashboard.quickActions.viewAnalytics.subtitle')} color="bg-purple-600" />
+                            <QuickLink href="/enterprise/communications" icon={MessageSquare} label={t('enterprise.dashboard.quickActions.communications.title')} desc={t('enterprise.dashboard.quickActions.communications.subtitle')} color="bg-blue-600" />
+                            <QuickLink href="/enterprise/leads" icon={Users} label={t('enterprise.dashboard.quickActions.leadsContacts.title')} desc={t('enterprise.dashboard.quickActions.leadsContacts.subtitle')} color="bg-rose-500" />
                         </div>
                     </div>
 
@@ -291,9 +294,9 @@ export default function EnterpriseDashboardPage() {
                                     <AlertCircle size={18} />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-amber-900 text-sm">{pendingRequests.length} Request{pendingRequests.length !== 1 ? 's' : ''} Awaiting Response</p>
-                                    <p className="text-xs text-amber-700 mt-0.5">Visitors are enquiring about your products. Respond promptly to convert leads.</p>
-                                    <p className="mt-2 text-xs font-bold text-amber-600 flex items-center gap-1">Handle now <ArrowUpRight size={12} /></p>
+                                    <p className="font-bold text-amber-900 text-sm">{t('enterprise.dashboard.requestsAwaiting.title', { count: pendingRequests.length })}</p>
+                                    <p className="text-xs text-amber-700 mt-0.5">{t('enterprise.dashboard.requestsAwaiting.subtitle')}</p>
+                                    <p className="mt-2 text-xs font-bold text-amber-600 flex items-center gap-1">{t('enterprise.dashboard.requestsAwaiting.action')} <ArrowUpRight size={12} /></p>
                                 </div>
                             </div>
                         </Link>
@@ -306,8 +309,8 @@ export default function EnterpriseDashboardPage() {
                                 <CheckCircle2 size={18} />
                             </div>
                             <div>
-                                <p className="font-bold text-emerald-900 text-sm">All caught up!</p>
-                                <p className="text-xs text-emerald-700 mt-0.5">{requests.length} inquir{requests.length > 1 ? 'ies' : 'y'} handled. Great work.</p>
+                                <p className="font-bold text-emerald-900 text-sm">{t('enterprise.dashboard.allCaughtUp.title')}</p>
+                                <p className="text-xs text-emerald-700 mt-0.5">{t('enterprise.dashboard.allCaughtUp.subtitle', { count: requests.length })}</p>
                             </div>
                         </div>
                     )}
@@ -319,32 +322,32 @@ export default function EnterpriseDashboardPage() {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
                     <div className="flex items-center gap-2">
                         <TrendingUp size={16} className="text-indigo-500" />
-                        <h2 className="font-bold text-zinc-900 text-sm">Catalog Health</h2>
+                        <h2 className="font-bold text-zinc-900 text-sm">{t('enterprise.dashboard.catalogHealth.title')}</h2>
                     </div>
                     <Link href="/enterprise/products" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                        Manage <ChevronRight size={13} />
+                        {t('enterprise.dashboard.catalogHealth.manage')} <ChevronRight size={13} />
                     </Link>
                 </div>
                         <div className="p-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
                         <Package size={20} className="mx-auto text-indigo-500 mb-2" />
                         <p className="text-2xl font-black text-indigo-900">{productCount}</p>
-                        <p className="text-xs text-indigo-600 font-semibold mt-1">Products</p>
+                        <p className="text-xs text-indigo-600 font-semibold mt-1">{t('enterprise.dashboard.catalogHealth.products')}</p>
                     </div>
                     <div className="text-center p-4 rounded-2xl bg-amber-50 border border-amber-100">
                         <Zap size={20} className="mx-auto text-amber-500 mb-2" />
                         <p className="text-2xl font-black text-amber-900">{serviceCount}</p>
-                        <p className="text-xs text-amber-600 font-semibold mt-1">Services</p>
+                        <p className="text-xs text-amber-600 font-semibold mt-1">{t('enterprise.dashboard.catalogHealth.services')}</p>
                     </div>
                     <div className="text-center p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
                         <Eye size={20} className="mx-auto text-emerald-500 mb-2" />
                         <p className="text-2xl font-black text-emerald-900">{totalStands}</p>
-                        <p className="text-xs text-emerald-600 font-semibold mt-1">Active Stands</p>
+                        <p className="text-xs text-emerald-600 font-semibold mt-1">{t('enterprise.dashboard.catalogHealth.activeStands')}</p>
                     </div>
                     <div className="text-center p-4 rounded-2xl bg-purple-50 border border-purple-100">
                         <MessageSquare size={20} className="mx-auto text-purple-500 mb-2" />
                         <p className="text-2xl font-black text-purple-900">{requests.length}</p>
-                        <p className="text-xs text-purple-600 font-semibold mt-1">Inquiries</p>
+                        <p className="text-xs text-purple-600 font-semibold mt-1">{t('enterprise.dashboard.catalogHealth.inquiries')}</p>
                     </div>
                 </div>
             </div>
