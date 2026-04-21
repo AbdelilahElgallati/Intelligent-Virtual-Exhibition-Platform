@@ -19,6 +19,7 @@ import {
 import { adminService } from '@/services/admin.service';
 import { OrganizerSummary } from '@/types/organizer';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 // ─── Animated counter ────────────────────────────────────────────────────────
 
@@ -125,6 +126,7 @@ function DashboardSkeleton() {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OrganizerReportPage() {
+    const { t } = useTranslation();
     const { id: eventId } = useParams<{ id: string }>();
     const [data, setData] = useState<OrganizerSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -140,7 +142,7 @@ export default function OrganizerReportPage() {
             const res = await adminService.getOrganizerSummary(eventId);
             setData(res);
         } catch (e: any) {
-            setError(e?.message ?? 'Failed to load organizer report.');
+            setError(e?.message ?? t('admin.organizerReport.errors.loadFailed'));
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -160,7 +162,7 @@ export default function OrganizerReportPage() {
         try {
             await adminService.exportOrganizerSummaryPDF(eventId);
         } catch (e: any) {
-            alert(e?.message ?? 'PDF export failed.');
+            alert(e?.message ?? t('admin.organizerReport.export.exportFailed'));
         } finally {
             setExporting(false);
         }
@@ -177,7 +179,7 @@ export default function OrganizerReportPage() {
             <AlertTriangle className="w-12 h-12 text-amber-400" />
             <p className="text-zinc-600 font-medium">{error}</p>
             <button onClick={() => load()} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors">
-                Retry
+                {t('admin.organizerReport.export.retry')}
             </button>
         </div>
     );
@@ -188,8 +190,8 @@ export default function OrganizerReportPage() {
 
     // Revenue pie data
     const revPie = [
-        { name: 'Stand Revenue', value: ov.revenue_summary.stand_revenue },
-        { name: 'Ticket Revenue', value: ov.revenue_summary.ticket_revenue },
+        { name: t('admin.organizerReport.revenue.standRevenue'), value: ov.revenue_summary.stand_revenue },
+        { name: t('admin.organizerReport.revenue.ticketRevenue'), value: ov.revenue_summary.ticket_revenue },
     ].filter(d => d.value > 0);
 
     const generatedAt = formatInUserTZ(data.generated_at, { dateStyle: 'medium', timeStyle: 'short' }, 'en-US');
@@ -200,9 +202,9 @@ export default function OrganizerReportPage() {
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900">📊 Organizer Report</h1>
+                    <h1 className="text-2xl font-bold text-zinc-900">📊 {t('admin.organizerReport.title')}</h1>
                     <p className="text-zinc-500 text-sm mt-1">
-                        Business intelligence & event performance · Updated {generatedAt}
+                        {t('admin.organizerReport.description', { time: generatedAt })}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -212,7 +214,7 @@ export default function OrganizerReportPage() {
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-200 text-zinc-600 text-sm hover:bg-zinc-50 transition-colors disabled:opacity-50"
                     >
                         <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
+                        {t('admin.events.refresh')}
                     </button>
                     <button
                         onClick={handleExport}
@@ -220,34 +222,34 @@ export default function OrganizerReportPage() {
                         className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-60"
                     >
                         <Download className="w-4 h-4" />
-                        {exporting ? 'Exporting…' : 'Export PDF'}
+                        {exporting ? t('admin.organizerReport.export.exporting') : t('admin.analytics.export.exportPdf')}
                     </button>
                 </div>
             </div>
 
             {/* ── KPI Grid ── */}
             <section>
-                <SectionHead><TrendingUp className="w-4 h-4 text-violet-500" /> Key Metrics</SectionHead>
+                <SectionHead><TrendingUp className="w-4 h-4 text-violet-500" /> {t('admin.organizerReport.keyMetrics')}</SectionHead>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <KpiCard label="Total Visitors" value={ov.total_visitors} icon={<Users className="w-5 h-5" />} colour="bg-violet-600" format="number" />
-                    <KpiCard label="Enterprise Rate" value={Math.round(ov.enterprise_participation_rate)} icon={<Building2 className="w-5 h-5" />} colour="bg-blue-600" format="percent" />
-                    <KpiCard label="Engagement Score" value={Math.round(ov.stand_engagement_score)} icon={<BarChart2 className="w-5 h-5" />} colour="bg-indigo-500" format="score" />
-                    <KpiCard label="Leads Generated" value={ov.leads_generated} icon={<TrendingUp className="w-5 h-5" />} colour="bg-emerald-600" format="number" />
-                    <KpiCard label="Meetings Booked" value={ov.meetings_booked} icon={<CalendarCheck className="w-5 h-5" />} colour="bg-teal-600" format="number" />
-                    <KpiCard label="Chat Interactions" value={ov.chat_interactions} icon={<MessageCircle className="w-5 h-5" />} colour="bg-cyan-600" format="number" />
+                    <KpiCard label={t('admin.organizerReport.kpi.totalVisitors')} value={ov.total_visitors} icon={<Users className="w-5 h-5" />} colour="bg-violet-600" format="number" />
+                    <KpiCard label={t('admin.organizerReport.kpi.enterpriseRate')} value={Math.round(ov.enterprise_participation_rate)} icon={<Building2 className="w-5 h-5" />} colour="bg-blue-600" format="percent" />
+                    <KpiCard label={t('admin.organizerReport.kpi.engagementScore')} value={Math.round(ov.stand_engagement_score)} icon={<BarChart2 className="w-5 h-5" />} colour="bg-indigo-500" format="score" />
+                    <KpiCard label={t('admin.organizerReport.kpi.leadsGenerated')} value={ov.leads_generated} icon={<TrendingUp className="w-5 h-5" />} colour="bg-emerald-600" format="number" />
+                    <KpiCard label={t('admin.organizerReport.kpi.meetingsBooked')} value={ov.meetings_booked} icon={<CalendarCheck className="w-5 h-5" />} colour="bg-teal-600" format="number" />
+                    <KpiCard label={t('admin.organizerReport.kpi.chatInteractions')} value={ov.chat_interactions} icon={<MessageCircle className="w-5 h-5" />} colour="bg-cyan-600" format="number" />
                 </div>
             </section>
 
             {/* ── Revenue Summary ── */}
             <section>
-                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> Revenue Performance</SectionHead>
+                <SectionHead><DollarSign className="w-4 h-4 text-emerald-500" /> {t('admin.organizerReport.revenue.title')}</SectionHead>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Revenue Breakdown */}
                     <div className="lg:col-span-2 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between">
                         <div className="space-y-6">
                             {[
-                                { label: 'Ticket Revenue', value: ov.revenue_summary.ticket_revenue, icon: <CheckCircle2 className="w-4 h-4 text-violet-500" />, colour: 'text-violet-600', bg: 'bg-violet-50' },
-                                { label: 'Stand Revenue', value: ov.revenue_summary.stand_revenue, icon: <Building2 className="w-4 h-4 text-emerald-500" />, colour: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                { label: t('admin.organizerReport.revenue.ticketRevenue'), value: ov.revenue_summary.ticket_revenue, icon: <CheckCircle2 className="w-4 h-4 text-violet-500" />, colour: 'text-violet-600', bg: 'bg-violet-50' },
+                                { label: t('admin.organizerReport.revenue.standRevenue'), value: ov.revenue_summary.stand_revenue, icon: <Building2 className="w-4 h-4 text-emerald-500" />, colour: 'text-emerald-600', bg: 'bg-emerald-50' },
                             ].map(r => (
                                 <div key={r.label} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-3">
@@ -256,21 +258,21 @@ export default function OrganizerReportPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className={`font-bold text-xl ${r.colour}`}>{r.value.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD</p>
-                                        <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Verified Income</p>
+                                        <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">{t('admin.organizerReport.revenue.verifiedIncome')}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                         <div className="mt-8 pt-6 border-t border-zinc-100 flex justify-between items-end">
                             <div>
-                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Total Gross Revenue</p>
+                                <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">{t('admin.organizerReport.revenue.totalGross')}</p>
                                 <p className="text-4xl font-black text-zinc-900 tracking-tight">
                                     {ov.revenue_summary.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })} MAD
                                 </p>
                             </div>
                             <div className="text-right">
                                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100">
-                                    <TrendingUp className="w-3 h-3" /> +12% vs Event Avg
+                                    <TrendingUp className="w-3 h-3" /> {t('admin.organizerReport.revenue.vsEventAvg')}
                                 </span>
                             </div>
                         </div>
@@ -279,7 +281,7 @@ export default function OrganizerReportPage() {
                     {/* Donut Chart */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col items-center justify-center relative group">
                         <div className="mb-4 text-center">
-                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Revenue Mix</h3>
+                            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{t('admin.organizerReport.revenue.revenueMix')}</h3>
                         </div>
                         {revPie.length > 0 ? (
                             <div className="relative w-full h-[200px]">
@@ -305,16 +307,16 @@ export default function OrganizerReportPage() {
                                 </ResponsiveContainer>
                                 {/* Center Label */}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase">Share</span>
-                                    <span className="text-lg font-black text-zinc-800">Mix%</span>
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase">{t('admin.organizerReport.revenue.donutCenter.share')}</span>
+                                    <span className="text-lg font-black text-zinc-800">{t('admin.organizerReport.revenue.donutCenter.mixPercent')}</span>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-zinc-400 text-sm">No revenue data available yet.</p>
+                            <p className="text-zinc-400 text-sm">{t('admin.organizerReport.revenue.noRevenueData')}</p>
                         )}
                         <div className="mt-4 flex gap-4 text-[10px] font-bold uppercase tracking-tighter">
-                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#10b981]" /> Stand</div>
-                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#6d28d9]" /> Ticket</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#10b981]" /> {t('admin.organizerReport.revenue.stand')}</div>
+                            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#6d28d9]" /> {t('admin.organizerReport.revenue.ticket')}</div>
                         </div>
                     </div>
                 </div>
@@ -322,13 +324,13 @@ export default function OrganizerReportPage() {
 
             {/* ── Performance Trends ── */}
             <section>
-                <SectionHead><BarChart2 className="w-4 h-4 text-blue-500" /> Performance Trends</SectionHead>
+                <SectionHead><BarChart2 className="w-4 h-4 text-blue-500" /> {t('admin.organizerReport.trends.title')}</SectionHead>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                     {/* Visitors over time */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-bold text-zinc-700">Visitors Over Time</h3>
+                            <h3 className="text-sm font-bold text-zinc-700">{t('admin.organizerReport.trends.visitorsOverTime')}</h3>
                             <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center">
                                 <Users className="w-4 h-4 text-violet-500" />
                             </div>
@@ -350,14 +352,14 @@ export default function OrganizerReportPage() {
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
-                            <p className="text-zinc-400 text-sm text-center py-8">No visitor data yet.</p>
+                            <p className="text-zinc-400 text-sm text-center py-8">{t('admin.organizerReport.trends.noVisitorData')}</p>
                         )}
                     </div>
 
                     {/* Engagement over time */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-bold text-zinc-700">Engagement Over Time</h3>
+                            <h3 className="text-sm font-bold text-zinc-700">{t('admin.organizerReport.trends.engagementOverTime')}</h3>
                             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
                                 <Zap className="w-4 h-4 text-blue-500" />
                             </div>
@@ -379,7 +381,7 @@ export default function OrganizerReportPage() {
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (
-                            <p className="text-zinc-400 text-sm text-center py-8">No engagement data yet.</p>
+                            <p className="text-zinc-400 text-sm text-center py-8">{t('admin.organizerReport.trends.noEngagementData')}</p>
                         )}
                     </div>
                 </div>
@@ -387,7 +389,7 @@ export default function OrganizerReportPage() {
                 {/* Lead generation - Full Width */}
                 <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm overflow-hidden group">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-bold text-zinc-700">Lead Generation Performance</h3>
+                        <h3 className="text-sm font-bold text-zinc-700">{t('admin.organizerReport.trends.leadGeneration')}</h3>
                         <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
                             <Target className="w-4 h-4 text-emerald-500" />
                         </div>
@@ -403,26 +405,26 @@ export default function OrganizerReportPage() {
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-zinc-400 text-sm text-center py-8">No lead data yet.</p>
+                        <p className="text-zinc-400 text-sm text-center py-8">{t('admin.organizerReport.trends.noLeadData')}</p>
                     )}
                 </div>
             </section>
 
             {/* ── Safety & Moderation ── */}
             <section>
-                <SectionHead><ShieldAlert className="w-4 h-4 text-red-500" /> Safety & Moderation</SectionHead>
+                <SectionHead><ShieldAlert className="w-4 h-4 text-red-500" /> {t('admin.organizerReport.safety.title')}</SectionHead>
                 <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex flex-col gap-1">
-                        <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Total Flags</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">{t('admin.organizerReport.safety.totalFlags')}</p>
                         <p className="text-4xl font-extrabold text-zinc-800">{safety.total_flags}</p>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Resolved</p>
+                        <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">{t('admin.organizerReport.safety.resolved')}</p>
                         <p className="text-4xl font-extrabold text-emerald-600">{safety.resolved_flags}</p>
                     </div>
                     <div className="flex flex-col gap-3 justify-center">
                         <div className="flex justify-between items-center">
-                            <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">Resolution Rate</p>
+                            <p className="text-xs text-zinc-500 uppercase tracking-wide font-medium">{t('admin.organizerReport.safety.resolutionRate')}</p>
                             <span className="text-sm font-bold text-zinc-700">{safety.resolution_rate.toFixed(1)}%</span>
                         </div>
                         <div className="relative w-full h-3 rounded-full bg-zinc-100 overflow-hidden">
@@ -440,8 +442,8 @@ export default function OrganizerReportPage() {
                         </div>
                         <p className="text-xs text-zinc-400 flex items-center gap-1">
                             {safety.resolution_rate >= 80
-                                ? <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Great moderation rate</>
-                                : <><AlertTriangle className="w-3 h-3 text-amber-500" /> Some flags need attention</>
+                                ? <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> {t('admin.organizerReport.safety.greatModeration')}</>
+                                : <><AlertTriangle className="w-3 h-3 text-amber-500" /> {t('admin.organizerReport.safety.needsAttention')}</>
                             }
                         </p>
                     </div>

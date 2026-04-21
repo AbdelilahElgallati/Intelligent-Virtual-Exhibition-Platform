@@ -1,15 +1,19 @@
 "use client";
 
+import { useTranslation } from 'react-i18next';
+
 export default function AdminPaymentsPage() {
+	const { t } = useTranslation();
 	return (
 		<div className="rounded-2xl border border-zinc-200 bg-white p-8">
-			<h1 className="text-2xl font-bold text-zinc-900">Payment Reviews</h1>
-			<p className="mt-2 text-sm text-zinc-500">
-				This page is temporarily disabled while the payment moderation flow is being stabilized.
+			<h1 className="text-2xl font-bold text-zinc-900">{t('admin.payments.title')}</h1>
+			<p className="mt-4 text-zinc-600">
+				{t('admin.payments.disabledDescription')}
 			</p>
 		</div>
 	);
 }
+
 
 // 'use client';
 

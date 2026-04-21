@@ -1,3 +1,8 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
+
 export default function SecurityPage() {
-  return <div>Security</div>;
+  const { t } = useTranslation();
+  return <div>{t('admin.navigation.security')}</div>;
 }

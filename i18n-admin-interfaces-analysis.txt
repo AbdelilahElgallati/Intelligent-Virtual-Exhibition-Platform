@@ -1,0 +1,39 @@
+# i18n Analysis - Admin Interface Scope
+
+## 1. Pages (frontend/src/app/(admin)/admin)
+- frontend/src/app/(admin)/admin/page.tsx (Main Admin Dashboard)
+- frontend/src/app/(admin)/admin/analytics/page.tsx (Global Analytics)
+- frontend/src/app/(admin)/admin/analytics/[id]/page.tsx (Per-event deep metrics)
+- frontend/src/app/(admin)/admin/audit/page.tsx (Governance Audit Logs)
+- frontend/src/app/(admin)/admin/enterprises/page.tsx (Enterprise/Exhibitor Management)
+- frontend/src/app/(admin)/admin/event-join-requests/page.tsx (Enterprise/Visitor join request approvals)
+- frontend/src/app/(admin)/admin/events/page.tsx (All Events Management)
+- frontend/src/app/(admin)/admin/events/[id]/page.tsx (Admin Event Detail view)
+- frontend/src/app/(admin)/admin/events/[id]/sessions/page.tsx (Event Conference Sessions management)
+- frontend/src/app/(admin)/admin/events/[id]/organizer-report/page.tsx (Organizer BI Report)
+- frontend/src/app/(admin)/admin/events/[id]/monitoring/page.tsx (Event Live Monitoring)
+- frontend/src/app/(admin)/admin/events/[id]/enterprises/page.tsx (Event Enterprise participants)
+- frontend/src/app/(admin)/admin/finance/page.tsx (Financial Transactions & Payouts)
+- frontend/src/app/(admin)/admin/incidents/page.tsx (Incident Management & Content Flagging)
+- frontend/src/app/(admin)/admin/monitoring/page.tsx (Platform Health & Monitoring)
+- frontend/src/app/(admin)/admin/organizations/page.tsx (Organization Management)
+- frontend/src/app/(admin)/admin/organizer-registrations/page.tsx (Organizer Approval Queue)
+- frontend/src/app/(admin)/admin/payments/page.tsx (Payment History)
+- frontend/src/app/(admin)/admin/profile/page.tsx (Admin Profile)
+- frontend/src/app/(admin)/admin/security/page.tsx (Admin Security Settings)
+- frontend/src/app/(admin)/admin/subscriptions/page.tsx (Subscription & Billing Management)
+- frontend/src/app/(admin)/admin/users/page.tsx (Global User Registry & Governance)
+
+## 2. Layouts (frontend/src/app/(admin)/admin)
+- frontend/src/app/(admin)/admin/layout.tsx (Admin Sidebar & Topbar Layout)
+
+## 3. Components
+Most Admin-specific components are currently implemented inline within the pages listed above (e.g. StatCard, RoleBadge, UserPanel, CreateAdminModal, etc.).
+No external shared Admin-only components were found in `frontend/src/components/admin` as the directory does not exist.
+Shared components from `frontend/src/components/ui` and `frontend/src/components/common` are already covered in the previous i18n scope.
+
+## i18n Strategy Confirmation
+- **Loading:** Translations are loaded via `react-i18next` using the `translation` namespace from JSON files.
+- **Namespace:** Single namespace "translation" used platform-wide.
+- **Key Pattern:** Domain-based nesting (e.g. `admin.users.governance.title`).
+- **Implementation:** Use `useTranslation` hook in client components and `t()` function for keys.

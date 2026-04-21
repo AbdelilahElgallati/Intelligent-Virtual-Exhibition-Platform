@@ -22,22 +22,24 @@ import {
     CheckCircle,
 } from 'lucide-react';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 // ─── Status badge ────────────────────────────────────────────────────────────
 
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-    pending_payment: { label: 'Pending Payment', cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
-    pending_admin_approval: { label: 'Awaiting Approval', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-    requested: { label: 'Requested', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-    approved: { label: 'Approved', cls: 'bg-green-50 text-green-700 border border-green-200' },
-    rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-700 border border-red-200' },
+const STATUS_META: Record<string, { labelKey: string; cls: string }> = {
+    pending_payment: { labelKey: 'admin.enterpriseJoinRequests.statusBadges.pendingPayment', cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
+    pending_admin_approval: { labelKey: 'admin.enterpriseJoinRequests.statusBadges.pendingAdminApproval', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+    requested: { labelKey: 'admin.enterpriseJoinRequests.statusBadges.requested', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+    approved: { labelKey: 'admin.enterpriseJoinRequests.statusBadges.approved', cls: 'bg-green-50 text-green-700 border border-green-200' },
+    rejected: { labelKey: 'admin.enterpriseJoinRequests.statusBadges.rejected', cls: 'bg-red-50 text-red-700 border border-red-200' },
 };
 
 function StatusBadge({ status }: { status: string }) {
-    const meta = STATUS_META[status] ?? { label: status, cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
+    const { t } = useTranslation();
+    const meta = STATUS_META[status] ?? { labelKey: '', cls: 'bg-zinc-100 text-zinc-600 border border-zinc-200' };
     return (
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${meta.cls}`}>
-            {meta.label}
+            {meta.labelKey ? t(meta.labelKey) : status}
         </span>
     );
 }
@@ -45,7 +47,8 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Plan badge ───────────────────────────────────────────────────────────────
 
 function PlanBadge({ plan }: { plan?: string | null }) {
-    if (!plan) return <span className="text-zinc-400 text-sm">—</span>;
+    const { t } = useTranslation();
+    if (!plan) return <span className="text-zinc-400 text-sm">{t('admin.common.ui.emptyValue')}</span>;
     const cls =
         plan === 'enterprise' ? 'bg-violet-50 text-violet-700 border border-violet-200' :
             plan === 'pro' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
@@ -70,6 +73,7 @@ function RejectModal({
     onCancel: () => void;
     isLoading: boolean;
 }) {
+    const { t } = useTranslation();
     const [reason, setReason] = useState('');
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -79,13 +83,9 @@ function RejectModal({
                         <XCircle className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-zinc-900">Reject Request</h3>
+                        <h3 className="text-base font-semibold text-zinc-900">{t('admin.enterpriseJoinRequests.rejectModal.title')}</h3>
                         <p className="text-sm text-zinc-500 mt-0.5">
-                            Reject{' '}
-                            <span className="font-medium text-zinc-700">
-                                {item.organization?.name ?? item.user.email}
-                            </span>
-                            {"'"}s join request
+                            {t('admin.enterpriseJoinRequests.rejectModal.description', { name: item.organization?.name ?? item.user.email })}
                         </p>
                     </div>
                     <button
@@ -96,12 +96,12 @@ function RejectModal({
                     </button>
                 </div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                    Reason <span className="font-normal text-zinc-400">(optional)</span>
+                    {t('admin.enterpriseJoinRequests.rejectModal.reasonLabel')} <span className="font-normal text-zinc-400">{t('admin.enterpriseJoinRequests.rejectModal.reasonOptional')}</span>
                 </label>
                 <textarea
                     className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
                     rows={3}
-                    placeholder="Explain why the request is being rejected…"
+                    placeholder={t('admin.enterpriseJoinRequests.rejectModal.reasonPlaceholder')}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                 />
@@ -111,7 +111,7 @@ function RejectModal({
                         disabled={isLoading}
                         className="flex-1 py-2.5 rounded-xl text-sm font-medium text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
                     >
-                        Cancel
+                        {t('common.actions.cancel')}
                     </button>
                     <button
                         onClick={() => onConfirm(reason)}
@@ -119,7 +119,7 @@ function RejectModal({
                         className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                        Reject
+                        {t('admin.enterpriseJoinRequests.rejectModal.reject')}
                     </button>
                 </div>
             </div>
@@ -150,13 +150,14 @@ function SkeletonRow() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_TABS = [
-    { key: 'pending_admin_approval', label: 'Awaiting Approval' },
-    { key: 'pending_payment', label: 'Pending Payment' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
+    { key: 'pending_admin_approval', labelKey: 'admin.enterpriseJoinRequests.tabs.awaitingApproval' },
+    { key: 'pending_payment', labelKey: 'admin.enterpriseJoinRequests.tabs.pendingPayment' },
+    { key: 'approved', labelKey: 'admin.enterpriseJoinRequests.tabs.approved' },
+    { key: 'rejected', labelKey: 'admin.enterpriseJoinRequests.tabs.rejected' },
 ];
 
 export default function EnterpriseRequestsPage() {
+    const { t } = useTranslation();
     const { id: eventId } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -190,11 +191,11 @@ export default function EnterpriseRequestsPage() {
             });
             setData(result);
         } catch (e: unknown) {
-            setError((e as Error)?.message ?? 'Failed to load requests');
+            setError((e as Error)?.message ?? t('admin.enterpriseJoinRequests.failedToLoad'));
         } finally {
             setLoading(false);
         }
-    }, [eventId, activeStatus, search]);
+    }, [eventId, activeStatus, search, t]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -215,10 +216,10 @@ export default function EnterpriseRequestsPage() {
         setActionLoading(pid);
         try {
             await adminService.approveEnterpriseRequest(eventId, pid);
-            addToast(`${item.organization?.name ?? item.user.email} approved`, 'success');
+            addToast(t('admin.enterpriseJoinRequests.approvedToast', { name: item.organization?.name ?? item.user.email }), 'success');
             await fetchData();
         } catch (e: unknown) {
-            addToast((e as Error)?.message ?? 'Approve failed', 'error');
+            addToast((e as Error)?.message ?? t('admin.enterpriseJoinRequests.approveFailed'), 'error');
         } finally {
             setActionLoading(null);
         }
@@ -230,18 +231,18 @@ export default function EnterpriseRequestsPage() {
         setActionLoading(pid);
         try {
             await adminService.rejectEnterpriseRequest(eventId, pid, { reason: reason || undefined });
-            addToast(`${rejectTarget.organization?.name ?? rejectTarget.user.email} rejected`, 'success');
+            addToast(t('admin.enterpriseJoinRequests.rejectedToast', { name: rejectTarget.organization?.name ?? rejectTarget.user.email }), 'success');
             setRejectTarget(null);
             await fetchData();
         } catch (e: unknown) {
-            addToast((e as Error)?.message ?? 'Reject failed', 'error');
+            addToast((e as Error)?.message ?? t('admin.enterpriseJoinRequests.rejectFailed'), 'error');
         } finally {
             setActionLoading(null);
         }
     };
 
     const fmt = (d?: string) =>
-        d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
+        d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : t('admin.common.ui.emptyValue');
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
@@ -287,13 +288,13 @@ export default function EnterpriseRequestsPage() {
                     <Building2 className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold text-zinc-900">Enterprise Join Requests</h1>
-                    <p className="text-xs text-zinc-400">{eventName || `Event ${eventId}`}</p>
+                    <h1 className="text-xl font-bold text-zinc-900">{t('admin.enterpriseJoinRequests.title')}</h1>
+                    <p className="text-xs text-zinc-400">{eventName || t('admin.enterpriseJoinRequests.eventPlaceholder', { id: eventId })}</p>
                 </div>
                 <button
                     onClick={() => fetchData()}
                     className="ml-auto p-2 rounded-lg text-zinc-400 hover:bg-zinc-100 transition-colors"
-                    title="Refresh"
+                    title={t('common.actions.refresh')}
                 >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
@@ -312,7 +313,7 @@ export default function EnterpriseRequestsPage() {
                                 : 'text-zinc-500 hover:text-zinc-700'
                                 }`}
                         >
-                            {tab.label}
+                            {t(tab.labelKey)}
                         </button>
                     ))}
                 </div>
@@ -323,7 +324,7 @@ export default function EnterpriseRequestsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <input
                             type="text"
-                            placeholder="Search by org name or email…"
+                            placeholder={t('admin.enterpriseJoinRequests.searchPlaceholder')}
                             value={searchInput}
                             onChange={e => setSearchInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -334,14 +335,14 @@ export default function EnterpriseRequestsPage() {
                         onClick={handleSearch}
                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"
                     >
-                        Search
+                        {t('common.actions.search')}
                     </button>
                     {search && (
                         <button
                             onClick={() => { setSearch(''); setSearchInput(''); }}
                             className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 border border-zinc-200 rounded-xl bg-white transition-colors"
                         >
-                            Clear
+                            {t('common.actions.clear')}
                         </button>
                     )}
                 </div>
@@ -350,7 +351,7 @@ export default function EnterpriseRequestsPage() {
             {/* Count */}
             {!loading && data && (
                 <p className="text-sm text-zinc-500">
-                    {data.total} {data.total === 1 ? 'request' : 'requests'} found
+                    {t('admin.enterpriseJoinRequests.requestsFound', { total: data.total })}
                 </p>
             )}
 
@@ -360,7 +361,7 @@ export default function EnterpriseRequestsPage() {
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     {error}
                     <button onClick={fetchData} className="ml-auto text-xs font-medium hover:underline">
-                        Retry
+                        {t('common.actions.retry')}
                     </button>
                 </div>
             )}
@@ -371,22 +372,22 @@ export default function EnterpriseRequestsPage() {
                     <thead>
                         <tr className="border-b border-zinc-100">
                             <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">
-                                <span className="flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" />Enterprise</span>
+                                <span className="flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" />{t('admin.enterpriseJoinRequests.table.enterprise')}</span>
                             </th>
                             <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">
-                                <span className="flex items-center gap-1.5"><User2 className="w-3.5 h-3.5" />Contact</span>
+                                <span className="flex items-center gap-1.5"><User2 className="w-3.5 h-3.5" />{t('admin.enterpriseJoinRequests.table.contact')}</span>
                             </th>
                             <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden md:table-cell">
-                                Industry
+                                {t('admin.enterpriseJoinRequests.table.industry')}
                             </th>
                             {/* <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">
                                 <span className="flex items-center gap-1.5"><CreditCard className="w-3.5 h-3.5" />Plan</span>
                             </th> */}
                             <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">
-                                <span className="flex items-center gap-1.5"><History className="w-3.5 h-3.5" />History</span>
+                                <span className="flex items-center gap-1.5"><History className="w-3.5 h-3.5" />{t('admin.enterpriseJoinRequests.table.history')}</span>
                             </th>
-                            <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
-                            <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Actions</th>
+                            <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.enterpriseJoinRequests.table.status')}</th>
+                            <th className="text-left px-5 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.enterpriseJoinRequests.table.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-50">
@@ -397,121 +398,89 @@ export default function EnterpriseRequestsPage() {
                                 <td colSpan={7} className="px-5 py-14 text-center">
                                     <Building2 className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
                                     <p className="text-zinc-500 font-medium">
-                                        No {STATUS_TABS.find(t => t.key === activeStatus)?.label.toLowerCase()} requests found
+                                        {t('admin.enterpriseJoinRequests.noRequests', { status: t(STATUS_TABS.find(t => t.key === activeStatus)?.labelKey || '') })}
                                     </p>
-                                    {search && (
-                                        <button
-                                            onClick={() => { setSearch(''); setSearchInput(''); }}
-                                            className="mt-2 text-xs text-indigo-600 hover:underline"
-                                        >
-                                            Clear search
-                                        </button>
-                                    )}
                                 </td>
                             </tr>
                         )}
 
-                        {!loading && data?.items.map(item => {
-                            const pid = item.participant.id;
-                            const isActing = actionLoading === pid;
-                            const isPending = (item.participant.status as string) === 'requested' || (item.participant.status as string) === 'pending_admin_approval';
-
-                            return (
-                                <tr key={pid} className="hover:bg-zinc-50 transition-colors">
-                                    {/* Enterprise */}
-                                    <td className="px-5 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
-                                                <Building2 className="w-4 h-4 text-indigo-600" />
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-zinc-900">
-                                                    {item.organization?.name ?? '—'}
-                                                </p>
-                                                <p className="text-xs text-zinc-400">{fmt(item.participant.created_at)}</p>
-                                            </div>
+                        {!loading && data?.items.map(item => (
+                            <tr key={item.participant.id} className="hover:bg-zinc-50/50 transition-colors">
+                                <td className="px-5 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 font-bold border border-zinc-200">
+                                            {item.organization?.name?.charAt(0) ?? item.user.email.charAt(0).toUpperCase()}
                                         </div>
-                                    </td>
-
-                                    {/* Contact */}
-                                    <td className="px-5 py-4">
-                                        <p className="font-medium text-zinc-700">{item.user.full_name ?? '—'}</p>
-                                        <p className="text-xs text-zinc-400">{item.user.email}</p>
-                                        {!item.user.is_active && (
-                                            <span className="text-xs text-red-500">suspended</span>
+                                        <div className="min-w-0">
+                                            <p className="font-semibold text-zinc-900 truncate">{item.organization?.name ?? t('admin.common.ui.unnamedOrg')}</p>
+                                            <p className="text-[11px] text-zinc-400 truncate">{item.organization?.country || t('admin.common.ui.emptyValue')}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-5 py-4">
+                                    <div className="min-w-0">
+                                        <p className="text-zinc-900 font-medium truncate">{item.user.full_name}</p>
+                                        <p className="text-[11px] text-zinc-400 truncate">{item.user.email}</p>
+                                    </div>
+                                </td>
+                                <td className="px-5 py-4 hidden md:table-cell">
+                                    <span className="text-zinc-600 truncate max-w-[120px] block">
+                                        {item.organization?.industry || t('admin.common.ui.emptyValue')}
+                                    </span>
+                                </td>
+                                {/* <td className="px-5 py-4 hidden lg:table-cell">
+                                    <PlanBadge plan={item.subscription?.plan} />
+                                </td> */}
+                                <td className="px-5 py-4 hidden lg:table-cell">
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+                                            <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                                            {t('admin.enterpriseJoinRequests.table.joined')}: {fmt(item.participant.created_at)}
+                                        </div>
+                                        {item.participant.status === 'suspended' && (
+                                            <div className="text-[10px] text-red-500 font-medium">
+                                                {t('admin.enterpriseJoinRequests.table.suspended')}
+                                            </div>
                                         )}
-                                    </td>
-
-                                    {/* Industry */}
-                                    <td className="px-5 py-4 hidden md:table-cell">
-                                        <span className="text-zinc-500 text-sm">{item.organization?.industry ?? '—'}</span>
-                                    </td>
-
-                                    {/* Plan */}
-                                    {/* <td className="px-5 py-4 hidden lg:table-cell">
-                                        <PlanBadge plan={item.subscription?.plan} />
-                                    </td> */}
-
-                                    {/* History */}
-                                    <td className="px-5 py-4 hidden lg:table-cell">
-                                        <div className="flex items-center gap-1">
-                                            <span className={`font-semibold ${item.history.total_approved > 0 ? 'text-green-600' : 'text-zinc-400'}`}>
-                                                {item.history.total_approved}
-                                            </span>
-                                            <span className="text-xs text-zinc-400">approved</span>
-                                        </div>
-                                    </td>
-
-                                    {/* Status */}
-                                    <td className="px-5 py-4">
-                                        <div className="space-y-1">
-                                            <StatusBadge status={item.participant.status} />
-                                            {item.participant.rejection_reason && (
-                                                <p className="text-xs text-zinc-400 max-w-[120px] truncate">
-                                                    {item.participant.rejection_reason}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </td>
-
-                                    {/* Actions */}
-                                    <td className="px-5 py-4">
-                                        {isPending ? (
-                                            <div className="flex items-center gap-2">
+                                    </div>
+                                </td>
+                                <td className="px-5 py-4">
+                                    <StatusBadge status={item.participant.status} />
+                                </td>
+                                <td className="px-5 py-4">
+                                    <div className="flex items-center gap-2">
+                                        {item.participant.status === 'pending_admin_approval' || item.participant.status === 'requested' ? (
+                                            <>
                                                 <button
                                                     onClick={() => handleApprove(item)}
-                                                    disabled={isActing}
-                                                    title="Approve"
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                                                    disabled={!!actionLoading}
+                                                    className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                                                    title={t('admin.enterpriseJoinRequests.approve')}
                                                 >
-                                                    {isActing
-                                                        ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                                        : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                                    Approve
+                                                    {actionLoading === item.participant.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                                 </button>
                                                 <button
                                                     onClick={() => setRejectTarget(item)}
-                                                    disabled={isActing}
-                                                    title="Reject"
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                    disabled={!!actionLoading}
+                                                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                    title={t('admin.enterpriseJoinRequests.reject')}
                                                 >
-                                                    <XCircle className="w-3.5 h-3.5" />
-                                                    Reject
+                                                    <XCircle className="w-4 h-4" />
                                                 </button>
-                                            </div>
+                                            </>
                                         ) : (
-                                            <span className="text-zinc-300 text-sm">—</span>
+                                            <span className="text-xs text-zinc-400 font-medium">—</span>
                                         )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
 
-                {data && data.total > data.limit && (
-                    <div className="px-5 py-3 border-t border-zinc-100 text-xs text-zinc-400">
-                        Showing {data.items.length} of {data.total} results
+                {!loading && data && data.total > 0 && (
+                    <div className="px-5 py-4 bg-zinc-50 border-t border-zinc-100 text-xs text-zinc-400 font-medium">
+                        {t('admin.enterpriseJoinRequests.pagination.showingResults', { shown: data.items.length, total: data.total })}
                     </div>
                 )}
             </div>

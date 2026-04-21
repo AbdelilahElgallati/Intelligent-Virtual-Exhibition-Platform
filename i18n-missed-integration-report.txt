@@ -1,294 +1,93 @@
-I18n Integration Report (react-i18next)
+IVEP i18n Missed Integration Report - Admin Interface Pages
+Generated: 2026-04-21
 
-File: frontend/src/components/events/EventsGrid.tsx
-- NEW keys added: None
+Files processed and i18n integrated:
 
-File: frontend/src/components/events/EventsFilters.tsx
-- NEW keys added: None
+- frontend/src/app/(admin)/admin/organizations/page.tsx (Organization Management)
+  NEW keys added:
+    - admin.organizations.toast.verified
+    - admin.organizations.toast.flagToggled
+    - admin.organizations.toast.suspensionToggled
 
-File: frontend/src/components/events/EventCard.tsx
-- NEW keys added:
-  - visitor.eventCard.virtual
-  - visitor.eventCard.defaultCategory
+- frontend/src/app/(admin)/admin/organizer-registrations/page.tsx (Organizer Approval Queue)
+  NEW keys added: None (Used existing keys)
 
-File: frontend/src/components/events/EventDetailsHeader.tsx
-- NEW keys added: None
+- frontend/src/app/(admin)/admin/payments/page.tsx (Payment History)
+  NEW keys added:
+    - admin.payments.title
+    - admin.payments.disabledDescription
 
-File: frontend/src/components/events/JoinEventCard.tsx
-- NEW keys added:
-  - visitor.joinCard.nextSlotIn
+- frontend/src/app/(admin)/admin/profile/page.tsx (Admin Profile)
+  NEW keys added: None (Used existing keys)
 
-File: frontend/src/components/event/EventLiveLayout.tsx
-- NEW keys added: None
+- frontend/src/app/(admin)/admin/security/page.tsx (Admin Security Settings)
+  NEW keys added: None (Used existing placeholder navigation key)
 
-File: frontend/src/components/event/StandsGrid.tsx
-- NEW keys added:
-  - visitor.standsGrid.favorited
-  - visitor.standsGrid.addFavorite
-  - visitor.standsGrid.removeFavorite
-  - visitor.standsGrid.loadingHall
-  - visitor.standsGrid.loadFailed
-  - visitor.standsGrid.pageOf
+- frontend/src/app/(admin)/admin/subscriptions/page.tsx (Subscription & Billing Management)
+  NEW keys added:
+    - admin.subscriptions.title
+    - admin.subscriptions.description
+    - admin.subscriptions.stats.totalOrganizations
+    - admin.subscriptions.stats.proPlans
+    - admin.subscriptions.stats.freePlans
+    - admin.subscriptions.table.organization
+    - admin.subscriptions.table.plan
+    - admin.subscriptions.table.status
+    - admin.subscriptions.table.actions
+    - admin.subscriptions.loading
+    - admin.subscriptions.noSubscriptions
+    - admin.subscriptions.upgrade
+    - admin.subscriptions.downgrade
+    - admin.subscriptions.cancel
+    - admin.subscriptions.alreadyFree
+    - admin.subscriptions.cancelToFree
+    - admin.subscriptions.failedToLoad
+    - admin.subscriptions.actionFailed
+    - admin.subscriptions.toast.switched
+    - admin.subscriptions.toast.cancelled
 
-File: frontend/src/components/event/StandFilterModal.tsx
-- NEW keys added: None
+- frontend/src/app/(admin)/admin/users/page.tsx (Global User Registry & Governance)
+  NEW keys added: None (Used existing keys)
 
-File: frontend/src/components/event/ScheduleTab.tsx
-- NEW keys added:
-  - visitor.scheduleTab.visitorTimeline
-  - visitor.scheduleTab.activitySchedule
-  - visitor.scheduleTab.followActivity
-  - visitor.scheduleTab.timesShown
-  - visitor.scheduleTab.happeningNow
-  - visitor.scheduleTab.nextUp
-  - visitor.scheduleTab.noLiveSession
-  - visitor.scheduleTab.noUpcoming
-  - visitor.scheduleTab.sessionsCount
-  - visitor.scheduleTab.liveCount
-  - visitor.scheduleTab.upcomingCount
-  - visitor.scheduleTab.noSessionsDay
-  - visitor.scheduleTab.loadingDetails
-  - visitor.scheduleTab.notPublished
-  - visitor.scheduleTab.toLabel
-  - visitor.scheduleTab.untitledSession
-  - visitor.scheduleTab.nextDayBadge
-  - visitor.scheduleTab.kind.conference
-  - visitor.scheduleTab.kind.talk
-  - visitor.scheduleTab.kind.activity
+- frontend/src/app/(admin)/admin/layout.tsx (Admin Sidebar & Topbar Layout)
+  NEW keys added: None (Used existing keys)
 
-File: frontend/src/components/event/NetworkingTab.tsx
-- NEW keys added: None
+--------------------------------------------------------------------------------
+ALL NEW KEYS ADDED TO en.json:
 
-File: frontend/src/components/stand/VirtualStandLayout.tsx
-- NEW keys added: None
+Location: admin.payments
+  "title": "Payment Reviews",
+  "disabledDescription": "This page is temporarily disabled while the payment moderation flow is being stabilized."
 
-File: frontend/src/components/stand/StandResources.tsx
-- NEW keys added: None
+Location: admin.subscriptions
+  "title": "Subscriptions",
+  "description": "View and override billing plans for any organization",
+  "stats": {
+    "totalOrganizations": "Total Organizations",
+    "proPlans": "PRO Plans",
+    "freePlans": "FREE Plans"
+  },
+  "table": {
+    "organization": "Organization",
+    "plan": "Plan",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "loading": "Loading subscriptions…",
+  "noSubscriptions": "No subscriptions found",
+  "upgrade": "Upgrade",
+  "downgrade": "Downgrade",
+  "cancel": "Cancel",
+  "alreadyFree": "Already on FREE plan",
+  "cancelToFree": "Cancel to FREE",
+  "failedToLoad": "Failed to load subscriptions",
+  "actionFailed": "Action failed",
+  "toast": {
+    "switched": "{name} switched to {plan}.",
+    "cancelled": "{name} subscription cancelled."
+  }
 
-File: frontend/src/components/stand/ProductsPanel.tsx
-- NEW keys added: None
-
-File: frontend/src/components/stand/ChatPanel.tsx
-- NEW keys added: None
-
-File: frontend/src/components/stand/MeetingRequestModal.tsx
-- NEW keys added:
-  - visitor.meetingRequestModal.constraintNotice
-  - visitor.meetingRequestModal.checkingAvailability
-
-All new keys added to frontend/messages/en.json (exact JSON path):
-- visitor.eventCard.virtual
-- visitor.eventCard.defaultCategory
-- visitor.joinCard.nextSlotIn
-- visitor.standsGrid.favorited
-- visitor.standsGrid.addFavorite
-- visitor.standsGrid.removeFavorite
-- visitor.standsGrid.loadingHall
-- visitor.standsGrid.loadFailed
-- visitor.standsGrid.pageOf
-- visitor.scheduleTab.visitorTimeline
-- visitor.scheduleTab.activitySchedule
-- visitor.scheduleTab.followActivity
-- visitor.scheduleTab.timesShown
-- visitor.scheduleTab.happeningNow
-- visitor.scheduleTab.nextUp
-- visitor.scheduleTab.noLiveSession
-- visitor.scheduleTab.noUpcoming
-- visitor.scheduleTab.sessionsCount
-- visitor.scheduleTab.liveCount
-- visitor.scheduleTab.upcomingCount
-- visitor.scheduleTab.noSessionsDay
-- visitor.scheduleTab.loadingDetails
-- visitor.scheduleTab.notPublished
-- visitor.scheduleTab.toLabel
-- visitor.scheduleTab.untitledSession
-- visitor.scheduleTab.nextDayBadge
-- visitor.scheduleTab.kind.conference
-- visitor.scheduleTab.kind.talk
-- visitor.scheduleTab.kind.activity
-- visitor.meetingRequestModal.constraintNotice
-- visitor.meetingRequestModal.checkingAvailability
-
----
-
-File: frontend/src/components/conferences/ConferenceCard.tsx
-- NEW keys added:
-  - visitor.conferenceCard.status.scheduled
-  - visitor.conferenceCard.status.canceled
-  - visitor.conferenceCard.attendeeCountRegistered
-  - visitor.conferenceCard.features.chatEnabled
-  - visitor.conferenceCard.features.qaOpen
-  - visitor.conferenceCard.actions.joinLive
-  - visitor.conferenceCard.actions.registerSession
-  - visitor.conferenceCard.actions.registered
-
-All new keys added to frontend/messages/en.json (exact JSON path):
-- visitor.conferenceCard.status.scheduled
-- visitor.conferenceCard.status.canceled
-- visitor.conferenceCard.attendeeCountRegistered
-- visitor.conferenceCard.features.chatEnabled
-- visitor.conferenceCard.features.qaOpen
-- visitor.conferenceCard.actions.joinLive
-- visitor.conferenceCard.actions.registerSession
-- visitor.conferenceCard.actions.registered
-
----
-
-File: frontend/src/app/(organizer)/organizer/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/profile/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/subscription/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/notifications/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/events/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/events/new/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/events/[id]/page.tsx
-- NEW keys added:
-  - organizer.eventDetail.form.slugPlaceholder
-  - organizer.eventDetail.overview.descriptionGoals
-  - organizer.eventDetail.overview.extendedContext
-  - organizer.eventDetail.overview.operationalNotes
-  - organizer.eventDetail.overview.quickInfo
-  - organizer.eventDetail.overview.category
-  - organizer.eventDetail.overview.location
-  - organizer.eventDetail.overview.enterpriseAllocation
-  - organizer.eventDetail.overview.standPrice
-  - organizer.eventDetail.overview.perEnterprise
-  - organizer.eventDetail.overview.visitorAccess
-  - organizer.eventDetail.overview.paidEntry
-  - organizer.eventDetail.overview.freeAccess
-  - organizer.eventDetail.overview.scheduleSubtitle
-  - organizer.eventDetail.links.notGenerated
-
-File: frontend/src/app/(organizer)/organizer/events/[id]/analytics/page.tsx
-- NEW keys added: None
-
-File: frontend/src/app/(organizer)/organizer/layout.tsx
-- NEW keys added:
-  - organizer.layout.authChecking
-  - organizer.layout.workspace
-  - organizer.layout.breadcrumbOrganizer
-  - organizer.layout.notifications
-  - organizer.layout.nav.dashboard
-  - organizer.layout.nav.myEvents
-  - organizer.layout.nav.profile
-  - organizer.layout.nav.signOut
-
-File: frontend/src/components/events/ScheduleEditor.tsx
-- NEW keys added:
-  - organizer.scheduleEditor.day
-  - organizer.scheduleEditor.addSlot
-  - organizer.scheduleEditor.removeSlot
-  - organizer.scheduleEditor.autoBlocked
-  - organizer.scheduleEditor.passed
-  - organizer.scheduleEditor.timeRange
-  - organizer.scheduleEditor.spillsNextDay
-  - organizer.scheduleEditor.nextDay
-  - organizer.scheduleEditor.activityDescription
-  - organizer.scheduleEditor.activityPlaceholder
-  - organizer.scheduleEditor.choosePartner
-  - organizer.scheduleEditor.partnerEnterprise
-  - organizer.scheduleEditor.overridesEnterprise
-  - organizer.scheduleEditor.emptyDay
-  - organizer.scheduleEditor.invalidSchedule
-  - organizer.scheduleEditor.blockedSlotTitle
-  - organizer.scheduleEditor.resolveConflicts
-  - organizer.scheduleEditor.saveFailed
-  - organizer.scheduleEditor.unknownEnterprise
-  - organizer.scheduleEditor.untitled
-  - organizer.scheduleEditor.continuingSession
-
-File: frontend/src/components/conferences/OrganizerEventConferences.tsx
-- NEW keys added:
-  - organizer.eventConferences.title
-  - organizer.eventConferences.assignHint
-  - organizer.eventConferences.invalidDate
-  - organizer.eventConferences.speaker
-  - organizer.eventConferences.assignSpeaker
-  - organizer.eventConferences.enterpriseSpeaker
-  - organizer.eventConferences.selectEnterprise
-  - organizer.eventConferences.speakerDisplayName
-  - organizer.eventConferences.speakerDisplayPlaceholder
-  - organizer.eventConferences.saveAssignment
-  - organizer.eventConferences.noSchedule
-  - organizer.eventConferences.allConferences
-  - organizer.eventConferences.qa
-  - organizer.eventConferences.registered
-  - organizer.eventConferences.confirm.removeAssignment
-  - organizer.eventConferences.confirm.cancelConference
-  - organizer.eventConferences.errors.assignConference
-  - organizer.eventConferences.errors.removeAssignment
-
-All new keys added to frontend/messages/en.json (exact JSON path):
-- organizer.eventDetail.form.slugPlaceholder
-- organizer.eventDetail.overview.descriptionGoals
-- organizer.eventDetail.overview.extendedContext
-- organizer.eventDetail.overview.operationalNotes
-- organizer.eventDetail.overview.quickInfo
-- organizer.eventDetail.overview.category
-- organizer.eventDetail.overview.location
-- organizer.eventDetail.overview.enterpriseAllocation
-- organizer.eventDetail.overview.standPrice
-- organizer.eventDetail.overview.perEnterprise
-- organizer.eventDetail.overview.visitorAccess
-- organizer.eventDetail.overview.paidEntry
-- organizer.eventDetail.overview.freeAccess
-- organizer.eventDetail.overview.scheduleSubtitle
-- organizer.eventDetail.links.notGenerated
-- organizer.layout.authChecking
-- organizer.layout.workspace
-- organizer.layout.breadcrumbOrganizer
-- organizer.layout.notifications
-- organizer.layout.nav.dashboard
-- organizer.layout.nav.myEvents
-- organizer.layout.nav.profile
-- organizer.layout.nav.signOut
-- organizer.scheduleEditor.day
-- organizer.scheduleEditor.addSlot
-- organizer.scheduleEditor.removeSlot
-- organizer.scheduleEditor.autoBlocked
-- organizer.scheduleEditor.passed
-- organizer.scheduleEditor.timeRange
-- organizer.scheduleEditor.spillsNextDay
-- organizer.scheduleEditor.nextDay
-- organizer.scheduleEditor.activityDescription
-- organizer.scheduleEditor.activityPlaceholder
-- organizer.scheduleEditor.choosePartner
-- organizer.scheduleEditor.partnerEnterprise
-- organizer.scheduleEditor.overridesEnterprise
-- organizer.scheduleEditor.emptyDay
-- organizer.scheduleEditor.invalidSchedule
-- organizer.scheduleEditor.blockedSlotTitle
-- organizer.scheduleEditor.resolveConflicts
-- organizer.scheduleEditor.saveFailed
-- organizer.scheduleEditor.unknownEnterprise
-- organizer.scheduleEditor.untitled
-- organizer.scheduleEditor.continuingSession
-- organizer.eventConferences.title
-- organizer.eventConferences.assignHint
-- organizer.eventConferences.invalidDate
-- organizer.eventConferences.speaker
-- organizer.eventConferences.assignSpeaker
-- organizer.eventConferences.enterpriseSpeaker
-- organizer.eventConferences.selectEnterprise
-- organizer.eventConferences.speakerDisplayName
-- organizer.eventConferences.speakerDisplayPlaceholder
-- organizer.eventConferences.saveAssignment
-- organizer.eventConferences.noSchedule
-- organizer.eventConferences.allConferences
-- organizer.eventConferences.qa
-- organizer.eventConferences.registered
-- organizer.eventConferences.confirm.removeAssignment
-- organizer.eventConferences.confirm.cancelConference
-- organizer.eventConferences.errors.assignConference
-- organizer.eventConferences.errors.removeAssignment
+Location: admin.organizations.toast
+  "verified": "{name} verified.",
+  "flagToggled": "{name} flag toggled.",
+  "suspensionToggled": "{name} suspension toggled."

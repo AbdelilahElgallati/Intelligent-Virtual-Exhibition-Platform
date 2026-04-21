@@ -5,6 +5,7 @@ import { Activity, Database, Server, Clock, RefreshCw, Plus, AlertTriangle, Chec
 import { adminService } from '@/services/admin.service';
 import { PlatformHealth, Incident, IncidentCreate } from '@/types/incident';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 // ── Status helpers ─────────────────────────────────────────────────────────────
 const statusIcon = (s: string) => {
@@ -35,19 +36,20 @@ function CreateIncidentModal({ onClose, onCreate }: {
     onClose: () => void;
     onCreate: (data: IncidentCreate) => Promise<void>;
 }) {
+    const { t } = useTranslation();
     const [form, setForm] = useState<IncidentCreate>({ title: '', description: '', severity: 'medium' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const submit = async () => {
-        if (!form.title.trim()) { setError('Title is required'); return; }
+        if (!form.title.trim()) { setError(t('admin.monitoring.createIncident.titleRequired')); return; }
         setLoading(true);
         setError('');
         try {
             await onCreate(form);
             onClose();
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Failed to create incident');
+            setError(e instanceof Error ? e.message : t('admin.monitoring.createIncident.failed'));
         } finally {
             setLoading(false);
         }
@@ -56,52 +58,52 @@ function CreateIncidentModal({ onClose, onCreate }: {
     return (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">Create Incident</h2>
+                <h2 className="text-base font-semibold text-zinc-900">{t('admin.monitoring.createIncident.title')}</h2>
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 <div className="space-y-3">
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">Title *</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.titleLabel')} *</label>
                         <input
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder="Brief incident title"
+                            placeholder={t('admin.monitoring.createIncident.titlePlaceholder')}
                             value={form.title}
                             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">Description</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.descriptionLabel')}</label>
                         <textarea
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
                             rows={3}
-                            placeholder="What happened?"
+                            placeholder={t('admin.monitoring.createIncident.descriptionPlaceholder')}
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-zinc-600 mb-1">Severity</label>
+                        <label className="block text-xs font-medium text-zinc-600 mb-1">{t('admin.monitoring.createIncident.severityLabel')}</label>
                         <select
                             className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                             value={form.severity}
                             onChange={e => setForm(f => ({ ...f, severity: e.target.value as IncidentCreate['severity'] }))}
                         >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="critical">Critical</option>
+                            <option value="low">{t('admin.monitoring.createIncident.low')}</option>
+                            <option value="medium">{t('admin.monitoring.createIncident.medium')}</option>
+                            <option value="high">{t('admin.monitoring.createIncident.high')}</option>
+                            <option value="critical">{t('admin.monitoring.createIncident.critical')}</option>
                         </select>
                     </div>
                 </div>
                 <div className="flex gap-3 pt-1">
                     <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-zinc-200 rounded-lg text-zinc-600 hover:bg-zinc-50">
-                        Cancel
+                        {t('common.actions.cancel')}
                     </button>
                     <button
                         onClick={submit}
                         disabled={loading}
                         className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                     >
-                        {loading ? 'Creating…' : 'Create Incident'}
+                        {loading ? t('admin.monitoring.createIncident.creating') : t('admin.monitoring.createIncident.create')}
                     </button>
                 </div>
             </div>
@@ -111,6 +113,7 @@ function CreateIncidentModal({ onClose, onCreate }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MonitoringPage() {
+    const { t } = useTranslation();
     const [health, setHealth] = useState<PlatformHealth | null>(null);
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [loading, setLoading] = useState(true);
@@ -130,11 +133,11 @@ export default function MonitoringPage() {
             setIncidents(inc);
             setLastRefresh(formatInUserTZ(new Date(), { hour: '2-digit', minute: '2-digit' }));
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Failed to load monitoring data');
+            setError(e instanceof Error ? e.message : t('admin.monitoring.failedToLoad'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -169,10 +172,10 @@ export default function MonitoringPage() {
                         <Activity className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900">Platform Monitoring</h1>
+                        <h1 className="text-2xl font-bold text-zinc-900">{t('admin.monitoring.title')}</h1>
                         <p className="text-zinc-500 text-sm mt-0.5">
-                            Server health, database status, and incidents.
-                            {lastRefresh && <span className="ml-2 text-zinc-400">Last refresh: {lastRefresh}</span>}
+                            {t('admin.monitoring.description')}
+                            {lastRefresh && <span className="ml-2 text-zinc-400">{t('admin.monitoring.lastRefresh', { time: lastRefresh })}</span>}
                         </p>
                     </div>
                 </div>
@@ -181,13 +184,13 @@ export default function MonitoringPage() {
                         onClick={load}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
                     >
-                        <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                        <RefreshCw className="w-3.5 h-3.5" /> {t('common.actions.refresh')}
                     </button>
                     <button
                         onClick={() => setShowCreate(true)}
                         className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                     >
-                        <Plus className="w-3.5 h-3.5" /> Create Incident
+                        <Plus className="w-3.5 h-3.5" /> {t('admin.monitoring.createIncident.title')}
                     </button>
                 </div>
             </div>
@@ -200,7 +203,7 @@ export default function MonitoringPage() {
             {isDegraded && (
                 <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                    <span><strong>Platform degraded</strong> — one or more services are reporting issues. Consider creating an incident.</span>
+                    <span><strong>{t('admin.monitoring.degradedAlert.title')}</strong> — {t('admin.monitoring.degradedAlert.message')}</span>
                 </div>
             )}
 
@@ -211,44 +214,59 @@ export default function MonitoringPage() {
                     <div className="bg-white border border-zinc-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-2">
                             <Server className="w-4 h-4 text-zinc-400" />
-                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Overall</p>
+                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.overall')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {statusIcon(health.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.status)}`}>
-                                {health.status}
+                                {health.status === 'healthy' ? t('admin.monitoring.health.status.healthy')
+                                    : health.status === 'ok' ? t('admin.monitoring.health.status.ok')
+                                        : health.status === 'degraded' ? t('admin.monitoring.health.status.degraded')
+                                            : t('admin.monitoring.health.status.error')}
                             </span>
                         </div>
                         <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Uptime: {health.uptime}
+                            <Clock className="w-3 h-3" /> {t('admin.monitoring.health.uptime', { uptime: health.uptime })}
                         </p>
                     </div>
                     {/* MongoDB */}
                     <div className="bg-white border border-zinc-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-2">
                             <Database className="w-4 h-4 text-zinc-400" />
-                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">MongoDB</p>
+                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.mongodb')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.mongodb.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.mongodb.status)}`}>
-                                {health.services.mongodb.status}
+                                {health.services.mongodb.status === 'healthy' || health.services.mongodb.status === 'ok'
+                                    ? t('admin.monitoring.health.status.healthy')
+                                    : health.services.mongodb.status === 'not_configured'
+                                        ? t('admin.monitoring.health.status.notConfigured')
+                                        : health.services.mongodb.status === 'ok'
+                                            ? t('admin.monitoring.health.status.ok')
+                                            : t('admin.monitoring.health.status.error')}
                             </span>
                         </div>
                         {health.services.mongodb.latency_ms !== null && (
-                            <p className="text-xs text-zinc-400 mt-2">Latency: {health.services.mongodb.latency_ms} ms</p>
+                            <p className="text-xs text-zinc-400 mt-2">{t('admin.monitoring.health.latency', { ms: health.services.mongodb.latency_ms })}</p>
                         )}
                     </div>
                     {/* Redis */}
                     <div className="bg-white border border-zinc-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-2">
                             <Database className="w-4 h-4 text-zinc-400" />
-                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Redis</p>
+                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.redis')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.redis.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.redis.status)}`}>
-                                {health.services.redis.status.replace(/_/g, ' ')}
+                                {health.services.redis.status === 'healthy' || health.services.redis.status === 'ok'
+                                    ? t('admin.monitoring.health.status.healthy')
+                                    : health.services.redis.status === 'not_configured'
+                                        ? t('admin.monitoring.health.status.notConfigured')
+                                        : health.services.redis.status === 'ok'
+                                            ? t('admin.monitoring.health.status.ok')
+                                            : t('admin.monitoring.health.status.error')}
                             </span>
                         </div>
                     </div>
@@ -256,15 +274,19 @@ export default function MonitoringPage() {
                     <div className="bg-white border border-zinc-200 rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-2">
                             <Server className="w-4 h-4 text-zinc-400" />
-                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">API Process</p>
+                            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{t('admin.monitoring.health.apiProcess')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {statusIcon(health.services.api.status)}
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadge(health.services.api.status)}`}>
-                                {health.services.api.status}
+                                {health.services.api.status === 'healthy'
+                                    ? t('admin.monitoring.health.status.healthy')
+                                    : health.services.api.status === 'ok'
+                                        ? t('admin.monitoring.health.status.ok')
+                                        : t('admin.monitoring.health.status.error')}
                             </span>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-2">PID: {health.services.api.pid}</p>
+                        <p className="text-xs text-zinc-400 mt-2">{t('admin.monitoring.health.pidLabel', { pid: health.services.api.pid })}</p>
                     </div>
                 </div>
             )}
@@ -272,11 +294,11 @@ export default function MonitoringPage() {
             {/* Incidents table */}
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-zinc-700">Recent Incidents</h2>
-                    <span className="text-xs text-zinc-400">{incidents.length} incidents</span>
+                    <h2 className="text-sm font-semibold text-zinc-700">{t('admin.monitoring.incidents.title')}</h2>
+                    <span className="text-xs text-zinc-400">{t('admin.monitoring.incidents.count', { count: incidents.length })}</span>
                 </div>
                 {incidents.length === 0 ? (
-                    <p className="text-sm text-zinc-400 text-center py-10">No incidents recorded.</p>
+                    <p className="text-sm text-zinc-400 text-center py-10">{t('admin.monitoring.incidents.noIncidents')}</p>
                 ) : (
                     <div className="divide-y divide-zinc-100">
                         {incidents.map(inc => (
@@ -290,10 +312,22 @@ export default function MonitoringPage() {
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${severityBadge[inc.severity] ?? ''}`}>
-                                        {inc.severity}
+                                        {inc.severity === 'low'
+                                            ? t('admin.monitoring.createIncident.low')
+                                            : inc.severity === 'medium'
+                                                ? t('admin.monitoring.createIncident.medium')
+                                                : inc.severity === 'high'
+                                                    ? t('admin.monitoring.createIncident.high')
+                                                    : t('admin.monitoring.createIncident.critical')}
                                     </span>
                                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${incidentStatusBadge[inc.status] ?? ''}`}>
-                                        {inc.status}
+                                        {inc.status === 'open'
+                                            ? t('admin.incidents.tabs.open')
+                                            : inc.status === 'investigating'
+                                                ? t('admin.incidents.tabs.investigating')
+                                                : inc.status === 'mitigating'
+                                                    ? t('admin.incidents.tabs.mitigating')
+                                                    : t('admin.incidents.tabs.resolved')}
                                     </span>
                                 </div>
                             </div>

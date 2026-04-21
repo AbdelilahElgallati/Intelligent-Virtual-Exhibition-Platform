@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
+import i18n from '@/lib/i18n';
 import { adminService } from '@/services/admin.service';
 import {
     FinancialTransaction,
@@ -12,6 +13,7 @@ import {
     ReceiverType,
     SourceType,
 } from '@/types/finance';
+import { useTranslation } from 'react-i18next';
 
 type SelectValue<T extends string> = 'all' | T;
 type ToastType = 'success' | 'error';
@@ -25,9 +27,9 @@ interface ToastItem {
 let toastSequence = 0;
 
 function formatDate(value: string | null): string { 
-    if (!value) return '-';
+    if (!value) return i18n.t('admin.common.ui.emptyValue');
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '-';
+    if (Number.isNaN(date.getTime())) return i18n.t('admin.common.ui.emptyValue');
     return date.toLocaleString();
 }
 
@@ -36,9 +38,9 @@ function formatAmount(amount: number, currency: string): string {
 }
 
 function sourceLabel(source: SourceType): string {
-    if (source === 'event_ticket') return 'Event Ticket';
-    if (source === 'marketplace') return 'Marketplace';
-    return 'Stand Fee';
+    if (source === 'event_ticket') return i18n.t('admin.finance.filters.eventTicket');
+    if (source === 'marketplace') return i18n.t('admin.finance.filters.marketplace');
+    return i18n.t('admin.finance.filters.standFee');
 }
 
 function badgeClass(value: string): string {
@@ -70,6 +72,7 @@ function getPayoutId(payout: PayoutRecord): string {
 }
 
 export default function AdminFinancePage() {
+    const { t } = useTranslation();
     const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
     const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -113,11 +116,11 @@ export default function AdminFinancePage() {
                 id: item.id || item._id || `${item.transaction_id}-${index}`,
             })));
         } catch (err: unknown) {
-            setError(getErrorMessage(err, 'Failed to load finance data'));
+            setError(getErrorMessage(err, t('admin.finance.failedToLoad')));
         } finally {
             setLoading(false);
         }
-    }, [sourceType, payoutStatus, receiverType]);
+    }, [sourceType, payoutStatus, receiverType, t]);
 
     useEffect(() => {
         fetchAll();
@@ -151,14 +154,19 @@ export default function AdminFinancePage() {
         if (!selectedTx) return;
         try {
             setSubmittingId(selectedTx.id);
-            await adminService.markFinancePayout(selectedTx.id, note.trim() || undefined);
+            await adminMarkPayout(selectedTx.id, note.trim() || undefined);
             closeModal();
             await fetchAll();
         } catch (err: unknown) {
-            alert(getErrorMessage(err, 'Failed to mark payout'));
+            alert(getErrorMessage(err, t('admin.finance.markPayoutFailed')));
         } finally {
             setSubmittingId(null);
         }
+    }
+
+    // Proxy helper to keep confirmation logic minimal
+    async function adminMarkPayout(id: string, note?: string) {
+        return await adminService.markFinancePayout(id, note);
     }
 
     function openEditPayoutModal(payout: PayoutRecord) {
@@ -177,7 +185,7 @@ export default function AdminFinancePage() {
         if (!editingPayout) return;
         const payoutId = getPayoutId(editingPayout);
         if (!payoutId) {
-            addToast('Invalid payout id', 'error');
+            addToast(t('admin.finance.payouts.invalidId'), 'error');
             return;
         }
 
@@ -189,9 +197,9 @@ export default function AdminFinancePage() {
             });
             closeEditPayoutModal();
             await fetchAll();
-            addToast('Payout history updated successfully', 'success');
+            addToast(t('admin.finance.payouts.editSuccess'), 'success');
         } catch (err: unknown) {
-            addToast(getErrorMessage(err, 'Failed to update payout history'), 'error');
+            addToast(getErrorMessage(err, t('admin.finance.payouts.editFailed')), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
@@ -200,20 +208,20 @@ export default function AdminFinancePage() {
     async function handleDeletePayout(payout: PayoutRecord) {
         const payoutId = getPayoutId(payout);
         if (!payoutId) {
-            addToast('Invalid payout id', 'error');
+            addToast(t('admin.finance.payouts.invalidId'), 'error');
             return;
         }
 
-        const ok = window.confirm('Delete this payout history record? This action cannot be undone.');
+        const ok = window.confirm(t('admin.finance.payouts.deleteConfirm'));
         if (!ok) return;
 
         try {
             setPayoutActionLoadingId(payoutId);
             await adminService.deleteFinancePayout(payoutId);
             await fetchAll();
-            addToast('Payout history deleted successfully', 'success');
+            addToast(t('admin.finance.payouts.deleteSuccess'), 'success');
         } catch (err: unknown) {
-            addToast(getErrorMessage(err, 'Failed to delete payout history'), 'error');
+            addToast(getErrorMessage(err, t('admin.finance.payouts.deleteFailed')), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
@@ -223,67 +231,67 @@ export default function AdminFinancePage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900">Financial Dashboard</h1>
-                    <p className="text-sm text-zinc-500">Unified transactions, payout settlement, and payout audit history.</p>
+                    <h1 className="text-2xl font-bold text-zinc-900">{t('admin.finance.title')}</h1>
+                    <p className="text-sm text-zinc-500">{t('admin.finance.description')}</p>
                 </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                    <p className="text-xs uppercase tracking-wide text-zinc-500">Total Volume</p>
-                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.total, 'MAD')}</p>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.summary.totalVolume')}</p>
+                    <p className="mt-2 text-xl font-semibold text-zinc-900">{formatAmount(summary.total, t('admin.common.currency'))}</p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                    <p className="text-xs uppercase tracking-wide text-zinc-500">Settled</p>
-                    <p className="mt-2 text-xl font-semibold text-green-700">{formatAmount(summary.settled, 'MAD')}</p>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.summary.settled')}</p>
+                    <p className="mt-2 text-xl font-semibold text-green-700">{formatAmount(summary.settled, t('admin.common.currency'))}</p>
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-white p-4">
-                    <p className="text-xs uppercase tracking-wide text-zinc-500">Unpaid</p>
-                    <p className="mt-2 text-xl font-semibold text-zinc-700">{formatAmount(summary.unpaid, 'MAD')}</p>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.summary.unpaid')}</p>
+                    <p className="mt-2 text-xl font-semibold text-zinc-700">{formatAmount(summary.unpaid, t('admin.common.currency'))}</p>
                 </div>
             </div>
 
             <div className="rounded-xl border border-zinc-200 bg-white p-4">
                 <div className="grid gap-3 md:grid-cols-3">
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">Source Type</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.sourceType')}</span>
                         <select
                             value={sourceType}
                             onChange={(e) => setSourceType(e.target.value as SelectValue<SourceType>)}
                             className="w-full rounded-lg border border-zinc-300 px-3 py-2"
                         >
-                            <option value="all">All</option>
-                            <option value="event_ticket">Event Ticket</option>
-                            <option value="marketplace">Marketplace</option>
-                            <option value="stand_fee">Stand Fee</option>
+                            <option value="all">{t('admin.finance.filters.all')}</option>
+                            <option value="event_ticket">{t('admin.finance.filters.eventTicket')}</option>
+                            <option value="marketplace">{t('admin.finance.filters.marketplace')}</option>
+                            <option value="stand_fee">{t('admin.finance.filters.standFee')}</option>
                         </select>
                     </label>
 
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">Payout Status</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.payoutStatus')}</span>
                         <select
                             value={payoutStatus}
                             onChange={(e) => setPayoutStatus(e.target.value as SelectValue<PayoutStatus>)}
                             className="w-full rounded-lg border border-zinc-300 px-3 py-2"
                         >
-                            <option value="all">All</option>
-                            <option value="unpaid">Unpaid</option>
-                            <option value="processing">Processing</option>
-                            <option value="paid">Paid</option>
+                            <option value="all">{t('admin.finance.filters.all')}</option>
+                            <option value="unpaid">{t('admin.finance.filters.unpaid')}</option>
+                            <option value="processing">{t('admin.finance.filters.processing')}</option>
+                            <option value="paid">{t('admin.finance.filters.paid')}</option>
                         </select>
                     </label>
 
                     <label className="space-y-1 text-sm text-zinc-700">
-                        <span className="text-xs uppercase tracking-wide text-zinc-500">Receiver Type</span>
+                        <span className="text-xs uppercase tracking-wide text-zinc-500">{t('admin.finance.filters.receiverType')}</span>
                         <select
                             value={receiverType}
                             onChange={(e) => setReceiverType(e.target.value as SelectValue<ReceiverType>)}
                             className="w-full rounded-lg border border-zinc-300 px-3 py-2"
                         >
-                            <option value="all">All</option>
-                            <option value="organizer">Organizer</option>
-                            <option value="enterprise">Enterprise</option>
-                            <option value="platform">Platform</option>
+                            <option value="all">{t('admin.finance.filters.all')}</option>
+                            <option value="organizer">{t('admin.finance.filters.organizer')}</option>
+                            <option value="enterprise">{t('admin.finance.filters.enterprise')}</option>
+                            <option value="platform">{t('admin.finance.filters.platform')}</option>
                         </select>
                     </label>
                 </div>
@@ -292,25 +300,25 @@ export default function AdminFinancePage() {
             <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
                 {loading ? (
                     <div className="p-6">
-                        <LoadingState message="Loading financial transactions..." />
+                        <LoadingState message={t('admin.finance.loadingTransactions')} />
                     </div>
                 ) : error ? (
                     <div className="p-6 text-sm text-red-600">{error}</div>
                 ) : transactions.length === 0 ? (
-                    <div className="p-6 text-sm text-zinc-500">No transactions found for the selected filters.</div>
+                    <div className="p-6 text-sm text-zinc-500">{t('admin.finance.transactionsTable.noTransactions')}</div>
                 ) : (
                     <div className="max-h-[30rem] overflow-auto">
                         <table className="min-w-full text-sm">
                             <thead className="bg-zinc-50 text-zinc-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-semibold">Type</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Amount</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Payer</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Receiver</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Status</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Payout Status</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Date</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.type')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.amount')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.payer')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.receiver')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.status')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.payoutStatus')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.transactionsTable.date')}</th>
+                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.transactionsTable.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -319,22 +327,22 @@ export default function AdminFinancePage() {
                                         <td className="px-4 py-3">{sourceLabel(tx.source_type)}</td>
                                         <td className="px-4 py-3 font-medium">{formatAmount(tx.amount, tx.currency)}</td>
                                         <td className="px-4 py-3">
-                                            <div className="font-mono text-xs">{tx.payer_id || '-'}</div>
-                                            <div className="text-xs text-zinc-500">{getMetaString(tx, 'payer_name') || '-'}</div>
+                                            <div className="font-mono text-xs">{tx.payer_id || i18n.t('admin.common.ui.emptyValue')}</div>
+                                            <div className="text-xs text-zinc-500">{getMetaString(tx, 'payer_name') || i18n.t('admin.common.ui.emptyValue')}</div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="text-xs text-zinc-500">{tx.receiver_type}</div>
-                                            <div className="font-mono text-xs">{tx.receiver_id || '-'}</div>
-                                            <div className="text-xs text-zinc-500">{getMetaString(tx, 'receiver_name') || '-'}</div>
+                                            <div className="text-xs text-zinc-500">{t(`admin.finance.filters.${tx.receiver_type.toLowerCase()}`)}</div>
+                                            <div className="font-mono text-xs">{tx.receiver_id || i18n.t('admin.common.ui.emptyValue')}</div>
+                                            <div className="text-xs text-zinc-500">{getMetaString(tx, 'receiver_name') || i18n.t('admin.common.ui.emptyValue')}</div>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(tx.status)}`}>
-                                                {tx.status}
+                                                {t(`admin.finance.filters.${tx.status.toLowerCase()}`)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(tx.payout_status)}`}>
-                                                {tx.payout_status}
+                                                {t(`admin.finance.filters.${tx.payout_status.toLowerCase()}`)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-zinc-600">{formatDate(tx.paid_at || tx.created_at)}</td>
@@ -344,10 +352,10 @@ export default function AdminFinancePage() {
                                                     onClick={() => openPayoutModal(tx)}
                                                     className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-700"
                                                 >
-                                                    Mark as Paid
+                                                    {t('admin.finance.transactionsTable.markAsPaid')}
                                                 </button>
                                             ) : (
-                                                <span className="text-xs text-zinc-500">No action</span>
+                                                <span className="text-xs text-zinc-500">{t('admin.finance.transactionsTable.noAction')}</span>
                                             )}
                                         </td>
                                     </tr>
@@ -360,21 +368,21 @@ export default function AdminFinancePage() {
 
             <div className="rounded-xl border border-zinc-200 bg-white">
                 <div className="border-b border-zinc-100 px-4 py-3">
-                    <h2 className="text-sm font-semibold text-zinc-900">Payout History</h2>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t('admin.finance.payouts.title')}</h2>
                 </div>
                 {payouts.length === 0 ? (
-                    <div className="px-4 py-4 text-sm text-zinc-500">No payout records yet.</div>
+                    <div className="px-4 py-4 text-sm text-zinc-500">{t('admin.finance.payouts.noRecords')}</div>
                 ) : (
                     <div className="max-h-[22rem] overflow-auto">
                         <table className="min-w-full text-sm">
                             <thead className="bg-zinc-50 text-zinc-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-semibold">Receiver</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Amount</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Admin</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Date</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Note</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.receiver')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.amount')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.admin')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.date')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.note')}</th>
+                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.payouts.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -382,15 +390,15 @@ export default function AdminFinancePage() {
                                     <tr key={`${p.id || p._id || p.transaction_id}-${index}`} className="border-t border-zinc-100">
                                         <td className="px-4 py-3">
                                             <div className="font-mono text-xs">{p.receiver_id}</div>
-                                            <div className="text-xs text-zinc-500">{p.receiver_name || '-'}</div>
+                                            <div className="text-xs text-zinc-500">{p.receiver_name || i18n.t('admin.common.ui.emptyValue')}</div>
                                         </td>
-                                        <td className="px-4 py-3">{formatAmount(p.amount, 'MAD')}</td>
+                                        <td className="px-4 py-3">{formatAmount(p.amount, t('admin.common.currency'))}</td>
                                         <td className="px-4 py-3">
                                             <div className="font-mono text-xs">{p.processed_by}</div>
-                                            <div className="text-xs text-zinc-500">{p.processed_by_name || '-'}</div>
+                                            <div className="text-xs text-zinc-500">{p.processed_by_name || i18n.t('admin.common.ui.emptyValue')}</div>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-zinc-600">{formatDate(p.processed_at)}</td>
-                                        <td className="px-4 py-3 text-xs text-zinc-700">{p.note || '-'}</td>
+                                        <td className="px-4 py-3 text-xs text-zinc-700">{p.note || i18n.t('admin.common.ui.emptyValue')}</td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
@@ -398,14 +406,14 @@ export default function AdminFinancePage() {
                                                     disabled={payoutActionLoadingId === getPayoutId(p)}
                                                     className="rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                                                 >
-                                                    Edit
+                                                    {t('admin.finance.payouts.edit')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeletePayout(p)}
                                                     disabled={payoutActionLoadingId === getPayoutId(p)}
                                                     className="rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
                                                 >
-                                                    Delete
+                                                    {t('admin.finance.payouts.delete')}
                                                 </button>
                                             </div>
                                         </td>
@@ -420,17 +428,17 @@ export default function AdminFinancePage() {
             {isModalOpen && selectedTx && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
                     <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-                        <h3 className="text-lg font-semibold text-zinc-900">Confirm Payout Settlement</h3>
+                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.finance.payouts.confirmTitle')}</h3>
                         <p className="mt-2 text-sm text-zinc-600">
-                            You are settling {sourceLabel(selectedTx.source_type)} for {formatAmount(selectedTx.amount, selectedTx.currency)}.
+                            {t('admin.finance.payouts.confirmDescription', { source: sourceLabel(selectedTx.source_type), amount: formatAmount(selectedTx.amount, selectedTx.currency) })}
                         </p>
                         <label className="mt-4 block text-sm text-zinc-700">
-                            Optional note
+                            {t('admin.finance.payouts.optionalNote')}
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 className="mt-1 h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                                placeholder="Settlement note (optional)"
+                                placeholder={t('admin.finance.payouts.notePlaceholder')}
                             />
                         </label>
 
@@ -439,14 +447,14 @@ export default function AdminFinancePage() {
                                 onClick={closeModal}
                                 className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                             >
-                                Cancel
+                                {t('common.actions.cancel')}
                             </button>
                             <button
                                 onClick={confirmPayout}
                                 disabled={submittingId === selectedTx.id}
                                 className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
                             >
-                                {submittingId === selectedTx.id ? 'Processing...' : 'Confirm'}
+                                {submittingId === selectedTx.id ? t('common.actions.processing') : t('common.buttons.confirm')}
                             </button>
                         </div>
                     </div>
@@ -456,28 +464,28 @@ export default function AdminFinancePage() {
             {editingPayout && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
                     <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-                        <h3 className="text-lg font-semibold text-zinc-900">Edit Payout History</h3>
+                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.finance.payouts.editTitle')}</h3>
                         <p className="mt-1 text-xs text-zinc-500 font-mono">{getPayoutId(editingPayout)}</p>
 
                         <label className="mt-4 block text-sm text-zinc-700">
-                            Status
+                            {t('admin.finance.payouts.statusLabel')}
                             <select
                                 value={editStatus}
                                 onChange={(e) => setEditStatus(e.target.value as PayoutRecordStatus)}
                                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                             >
-                                <option value="completed">Completed</option>
-                                <option value="pending">Pending</option>
+                                <option value="completed">{t('admin.finance.payouts.completed')}</option>
+                                <option value="pending">{t('admin.finance.payouts.pending')}</option>
                             </select>
                         </label>
 
                         <label className="mt-3 block text-sm text-zinc-700">
-                            Note
+                            {t('admin.finance.payouts.note')}
                             <textarea
                                 value={editNote}
                                 onChange={(e) => setEditNote(e.target.value)}
                                 className="mt-1 h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                                placeholder="Edit note"
+                                placeholder={t('admin.finance.payouts.editNotePlaceholder')}
                             />
                         </label>
 
@@ -486,14 +494,14 @@ export default function AdminFinancePage() {
                                 onClick={closeEditPayoutModal}
                                 className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                             >
-                                Cancel
+                                {t('common.actions.cancel')}
                             </button>
                             <button
                                 onClick={savePayoutEdits}
                                 disabled={payoutActionLoadingId === getPayoutId(editingPayout)}
                                 className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-zinc-700 disabled:opacity-60"
                             >
-                                {payoutActionLoadingId === getPayoutId(editingPayout) ? 'Saving...' : 'Save'}
+                                {payoutActionLoadingId === getPayoutId(editingPayout) ? t('admin.finance.saving') : t('common.buttons.save')}
                             </button>
                         </div>
                     </div>
