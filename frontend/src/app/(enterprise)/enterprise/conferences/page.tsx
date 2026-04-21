@@ -10,8 +10,10 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 export default function EnterpriseConferencesPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
@@ -49,8 +51,8 @@ export default function EnterpriseConferencesPage() {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">Speaking Sessions</h1>
-                    <p className="text-zinc-500 mt-1">Manage your webinars and live conferences across all events.</p>
+                    <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{t('enterprise.conferences.title')}</h1>
+                    <p className="text-zinc-500 mt-1">{t('enterprise.conferences.subtitle')}</p>
                 </div>
             </div>
 
@@ -73,7 +75,7 @@ export default function EnterpriseConferencesPage() {
                                     "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
                                     c.status === 'live' ? "bg-emerald-100 text-emerald-700" : "bg-zinc-100 text-zinc-500"
                                 )}>
-                                    {c.status === 'live' ? '🔴 Live' : c.status}
+                                    {c.status === 'live' ? `🔴 ${t('enterprise.conferences.live')}` : c.status}
                                 </span>
                                 <div className="flex gap-1">
                                     <button className="p-1.5 text-zinc-400 hover:text-indigo-600 transition-colors">
@@ -110,7 +112,7 @@ export default function EnterpriseConferencesPage() {
                                     // Assuming conferences are event-specific, we might need event_id in the URL
                                     onClick={() => router.push(`/enterprise/events/${eventPathId}/conferences/${c._id}/live`)}
                                 >
-                                    {c.status === 'live' ? 'Enter Studio' : 'Go Live'}
+                                    {c.status === 'live' ? t('enterprise.conferences.enterStudio') : t('enterprise.conferences.goLive')}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -128,9 +130,9 @@ export default function EnterpriseConferencesPage() {
                 {conferences.length === 0 && (
                     <div className="col-span-full h-80 flex flex-col items-center justify-center text-center bg-zinc-50 rounded-[2.5rem] border-2 border-dashed border-zinc-200">
                         <Video size={64} className="text-zinc-200 mb-4" />
-                        <h3 className="text-xl font-black text-zinc-400">No Sessions Assigned</h3>
+                        <h3 className="text-xl font-black text-zinc-400">{t('enterprise.conferences.empty.title')}</h3>
                         <p className="text-sm text-zinc-400 max-w-sm mt-2">
-                            When event organizers assign you as a speaker for a conference or webinar, it will appear here.
+                            {t('enterprise.conferences.empty.subtitle')}
                         </p>
                     </div>
                 )}

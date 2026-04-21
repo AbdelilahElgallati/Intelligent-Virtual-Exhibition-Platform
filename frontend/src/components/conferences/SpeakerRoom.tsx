@@ -18,6 +18,7 @@ import {
   MonitorUp, RefreshCw, Shield, Users, Video, VideoOff,
 } from 'lucide-react';
 import { formatInTZ, getUserTimezone, parseISOUTC } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 interface SpeakerRoomProps {
   token: string;
@@ -73,6 +74,7 @@ export default function SpeakerRoom({
   onEndSession,
   onRefreshToken,
 }: Readonly<SpeakerRoomProps>) {
+  const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
   const [endingSession, setEndingSession] = useState(false);
   const [showDisconnectOverlay, setShowDisconnectOverlay] = useState(false);
@@ -124,8 +126,8 @@ export default function SpeakerRoom({
     const ok = await removeParticipant(participant.sessionId);
     setModerationMsg(
       ok
-        ? `${participant.userName} was removed from the conference.`
-        : 'Participant removal is not available in this browser session.'
+        ? t('enterprise.speakerRoom.messages.participantRemoved', { name: participant.userName })
+        : t('enterprise.speakerRoom.messages.participantRemovalUnavailable')
     );
     globalThis.setTimeout(() => setModerationMsg(null), 2600);
   };
@@ -133,17 +135,17 @@ export default function SpeakerRoom({
   const start = startTime ? parseISOUTC(startTime).getTime() : null;
   const end = endTime ? parseISOUTC(endTime).getTime() : null;
   const isInSession = Boolean(start && end && now >= start && now < end);
-  let sessionState = 'Live session';
+  let sessionState = t('enterprise.speakerRoom.sessionState.liveSession');
   if (start && now < start) {
-    sessionState = `Starts in ${formatDuration(start - now)}`;
+    sessionState = t('enterprise.speakerRoom.sessionState.startsIn', { duration: formatDuration(start - now) });
   } else if (start && end && isInSession) {
-    sessionState = `Ends in ${formatDuration(end - now)}`;
+    sessionState = t('enterprise.speakerRoom.sessionState.endsIn', { duration: formatDuration(end - now) });
   } else if (start && end) {
-    sessionState = `Ended ${formatDuration(now - end)} ago`;
+    sessionState = t('enterprise.speakerRoom.sessionState.endedAgo', { duration: formatDuration(now - end) });
   }
 
   const handleExplicitEnd = async () => {
-    if (!confirm('Are you sure you want to end this session for everyone?')) return;
+    if (!confirm(t('enterprise.speakerRoom.messages.confirmEndSession'))) return;
     setEndingSession(true);
     try {
       await leave();
@@ -164,9 +166,9 @@ export default function SpeakerRoom({
   const liveCount = allParticipants.length;
   let engagementPanel: React.ReactNode;
   if (activePanel === 'chat') {
-    engagementPanel = (
+      engagementPanel = (
       <ConferenceChatPanel
-        title="Speaker Chat"
+        title={t('enterprise.speakerRoom.panels.speakerChat')}
         messages={roomMessages}
         onSend={sendRoomMessage}
       />
@@ -174,9 +176,9 @@ export default function SpeakerRoom({
   } else if (qaEnabled) {
     engagementPanel = <QAPanel conferenceId={conferenceId} isSpeaker={true} />;
   } else {
-    engagementPanel = (
+      engagementPanel = (
       <div className="flex items-center justify-center h-full p-8 text-center">
-        <p className="text-xs text-zinc-600 italic">Audience interaction is disabled for this session.</p>
+        <p className="text-xs text-zinc-600 italic">{t('enterprise.speakerRoom.messages.audienceInteractionDisabled')}</p>
       </div>
     );
   }
@@ -194,7 +196,7 @@ export default function SpeakerRoom({
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-red-500 border border-red-500/20">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                    <span>Broadcasting Live</span>
+                    <span>{t('enterprise.speakerRoom.labels.broadcastingLive')}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-400 border border-white/5">
                     <Clock3 size={13} />
@@ -203,7 +205,7 @@ export default function SpeakerRoom({
                   {reconnecting && (
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-semibold text-amber-500 border border-amber-500/10">
                       <RefreshCw size={12} className="animate-spin" />
-                      Recovering Connection…
+                      {t('enterprise.speakerRoom.labels.recoveringConnection')}
                     </span>
                   )}
                 </div>
@@ -216,7 +218,7 @@ export default function SpeakerRoom({
                     onClick={() => { globalThis.location.href = `/enterprise/events/${eventId}/manage`; }}
                     className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition-all hover:bg-white/10"
                   >
-                    Event Settings
+                    {t('enterprise.speakerRoom.actions.eventSettings')}
                   </button>
                 )}
                 <button
@@ -224,7 +226,7 @@ export default function SpeakerRoom({
                   disabled={endingSession}
                   className="rounded-xl border border-red-500/20 bg-red-500 text-white px-5 py-2.5 text-xs font-black uppercase tracking-wider transition-all hover:bg-red-600 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] disabled:opacity-50"
                 >
-                  {endingSession ? 'Ending…' : 'End Session'}
+                  {endingSession ? t('enterprise.speakerRoom.actions.ending') : t('enterprise.speakerRoom.actions.endSession')}
                 </button>
               </div>
             </div>
@@ -243,7 +245,7 @@ export default function SpeakerRoom({
               <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-emerald-400">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  STUDIO ACTIVE
+                  {t('enterprise.speakerRoom.labels.studioActive')}
                 </div>
               </div>
             </div>
@@ -257,7 +259,7 @@ export default function SpeakerRoom({
                 <div className={`p-4 rounded-2xl transition-all ${micOn ? 'bg-white/5 hover:bg-white/10 border border-white/10' : 'bg-red-500/10 border border-red-500/20'}`}>
                   {micOn ? <Mic size={22} /> : <MicOff size={22} />}
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{micOn ? 'Mute' : 'Unmute'}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{micOn ? t('enterprise.speakerRoom.actions.mute') : t('enterprise.speakerRoom.actions.unmute')}</span>
               </button>
 
               <button
@@ -267,7 +269,7 @@ export default function SpeakerRoom({
                 <div className={`p-4 rounded-2xl transition-all ${camOn ? 'bg-white/5 hover:bg-white/10 border border-white/10' : 'bg-red-500/10 border border-red-500/20'}`}>
                   {camOn ? <Video size={22} /> : <VideoOff size={22} />}
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{camOn ? 'Stop Video' : 'Start Video'}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{camOn ? t('enterprise.speakerRoom.actions.stopVideo') : t('enterprise.speakerRoom.actions.startVideo')}</span>
               </button>
 
               <div className="w-px h-10 bg-white/10 mx-2" />
@@ -279,7 +281,7 @@ export default function SpeakerRoom({
                 <div className={`p-4 rounded-2xl transition-all ${screenOn ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-white/5 hover:bg-white/10 border border-white/10'}`}>
                   <MonitorUp size={22} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{screenOn ? 'Sharing' : 'Share Screen'}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{screenOn ? t('enterprise.speakerRoom.labels.sharing') : t('enterprise.speakerRoom.actions.shareScreen')}</span>
               </button>
 
               <button
@@ -289,7 +291,7 @@ export default function SpeakerRoom({
                 <div className="p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10">
                   <RefreshCw size={22} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">Sync</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{t('enterprise.speakerRoom.actions.sync')}</span>
               </button>
             </div>
 
@@ -300,16 +302,16 @@ export default function SpeakerRoom({
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     <AlertTriangle size={32} />
                   </div>
-                  <h3 className="text-xl font-black text-white">Stream Disturbance</h3>
+                  <h3 className="text-xl font-black text-white">{t('enterprise.speakerRoom.labels.streamDisturbance')}</h3>
                   <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
-                    We've detected a connection drop. Your audience is still waiting in the room.
+                    {t('enterprise.speakerRoom.messages.connectionDropDetected')}
                   </p>
                   <button
                     onClick={handleReconnect}
                     className="mt-8 w-full inline-flex items-center justify-center rounded-xl bg-white px-8 py-4 text-sm font-black text-black transition-all hover:bg-zinc-200"
                   >
                     <RefreshCw size={18} className="mr-2" />
-                    Resume Broadcast
+                    {t('enterprise.speakerRoom.actions.resumeBroadcast')}
                   </button>
                 </div>
               </div>
@@ -320,14 +322,14 @@ export default function SpeakerRoom({
         {/* ── Right: Studio Dashboard ────────────────────── */}
         <aside className="flex flex-col bg-[#0a0a0f] border-l border-white/5 shadow-2xl overflow-hidden">
           <div className="px-6 py-6 border-b border-white/5">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Producer Center</h2>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{t('enterprise.speakerRoom.labels.producerCenter')}</h2>
             <div className="mt-6 flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg transform rotate-3">
                 <Users size={24} className="text-white -rotate-3" />
               </div>
               <div>
-                <p className="text-base font-black text-white leading-none">Studio Dashboard</p>
-                <p className="text-[10px] text-zinc-500 mt-1.5 uppercase tracking-wider font-bold">Conference Management</p>
+                <p className="text-base font-black text-white leading-none">{t('enterprise.speakerRoom.labels.studioDashboard')}</p>
+                <p className="text-[10px] text-zinc-500 mt-1.5 uppercase tracking-wider font-bold">{t('enterprise.speakerRoom.labels.conferenceManagement')}</p>
               </div>
             </div>
           </div>
@@ -337,16 +339,16 @@ export default function SpeakerRoom({
               {/* Speaker Profile Tile */}
               <div className="rounded-2xl bg-white/5 border border-white/5 p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lead Speaker</p>
-                  <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[9px] font-black border border-red-500/20">LIVE</span>
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t('enterprise.speakerRoom.labels.leadSpeaker')}</p>
+                  <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[9px] font-black border border-red-500/20">{t('enterprise.speakerRoom.labels.live')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold border border-white/10">
                     {speakerName?.charAt(0) || 'S'}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white leading-tight">{speakerName || enterpriseName || 'Assigned speaker'}</p>
-                    <p className="text-[11px] text-zinc-500">Broadcasting Now</p>
+                    <p className="text-sm font-bold text-white leading-tight">{speakerName || enterpriseName || t('enterprise.speakerRoom.labels.assignedSpeaker')}</p>
+                    <p className="text-[11px] text-zinc-500">{t('enterprise.speakerRoom.labels.broadcastingNow')}</p>
                   </div>
                 </div>
               </div>
@@ -354,11 +356,11 @@ export default function SpeakerRoom({
               {/* Analytics Quick View */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase">Live Audience</p>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('enterprise.speakerRoom.labels.liveAudience')}</p>
                   <p className="text-2xl font-black text-white mt-1">{liveCount}</p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase">Total Access</p>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase">{t('enterprise.speakerRoom.labels.totalAccess')}</p>
                   <p className="text-2xl font-black text-zinc-400 mt-1">{Math.max(attendeeCount, liveCount)}</p>
                 </div>
               </div>
@@ -366,15 +368,15 @@ export default function SpeakerRoom({
               {/* Attendee Roster */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Active Roster</h3>
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('enterprise.speakerRoom.labels.activeRoster')}</h3>
                   <div className="h-4 w-px bg-white/10" />
-                  <span className="text-[10px] text-zinc-400 font-bold">{remoteParticipants.length} remote</span>
+                  <span className="text-[10px] text-zinc-400 font-bold">{t('enterprise.speakerRoom.labels.remoteCount', { count: remoteParticipants.length })}</span>
                 </div>
                 
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                   <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                    <span className="text-xs font-black text-white">You (Producer)</span>
+                    <span className="text-xs font-black text-white">{t('enterprise.speakerRoom.labels.youProducer')}</span>
                   </div>
                   
                   {remoteParticipants.map((p) => (
@@ -389,7 +391,7 @@ export default function SpeakerRoom({
                   
                   {remoteParticipants.length === 0 && (
                     <div className="py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/5">
-                      <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Waiting for audience</p>
+                      <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{t('enterprise.speakerRoom.labels.waitingForAudience')}</p>
                     </div>
                   )}
                 </div>
@@ -402,13 +404,13 @@ export default function SpeakerRoom({
                     onClick={() => setActivePanel('chat')}
                     className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'chat' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
                   >
-                    Live Chat
+                    {t('enterprise.speakerRoom.panels.liveChat')}
                   </button>
                   <button
                     onClick={() => setActivePanel('qa')}
                     className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${activePanel === 'qa' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/30' : 'bg-white/5 text-zinc-500 border border-white/5 hover:text-zinc-300'}`}
                   >
-                    Q&A
+                    {t('enterprise.speakerRoom.panels.qa')}
                   </button>
                   <div className="flex-1 h-px bg-white/5" />
                 </div>
@@ -420,7 +422,7 @@ export default function SpeakerRoom({
               {/* Moderation controls */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Moderation</h3>
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('enterprise.speakerRoom.labels.moderation')}</h3>
                   <div className="flex-1 h-px bg-white/5" />
                 </div>
 
@@ -435,13 +437,13 @@ export default function SpeakerRoom({
                         onClick={() => handleRemoveParticipant(p)}
                         className="rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-red-300 hover:bg-red-500/20"
                       >
-                        Remove
+                        {t('enterprise.speakerRoom.actions.remove')}
                       </button>
                     </div>
                   ))}
 
                   {remoteParticipants.length === 0 && (
-                    <p className="text-[10px] text-zinc-600 text-center py-2">No audience connected.</p>
+                    <p className="text-[10px] text-zinc-600 text-center py-2">{t('enterprise.speakerRoom.labels.noAudienceConnected')}</p>
                   )}
                 </div>
                 {moderationMsg && (

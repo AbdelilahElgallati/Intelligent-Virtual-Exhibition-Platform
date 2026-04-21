@@ -26,13 +26,13 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-    { label: 'Dashboard', href: '/enterprise', icon: LayoutDashboard },
-    { label: 'Events', href: '/enterprise/events', icon: Calendar },
-    { label: 'Requests', href: '/enterprise/product-requests', icon: MessageSquare },
-    { label: 'Analytics', href: '/enterprise/analytics', icon: BarChart3 },
-    { label: 'Products', href: '/enterprise/products', icon: Package },
-    { label: 'Profile', href: '/enterprise/profile', icon: User },
-    { label: 'Notifications', href: '/enterprise/notifications', icon: Bell },
+    { labelKey: 'layout.enterprise.sidebar.dashboard', href: '/enterprise', icon: LayoutDashboard },
+    { labelKey: 'layout.enterprise.sidebar.events', href: '/enterprise/events', icon: Calendar },
+    { labelKey: 'layout.enterprise.sidebar.requests', href: '/enterprise/product-requests', icon: MessageSquare },
+    { labelKey: 'layout.enterprise.sidebar.analytics', href: '/enterprise/analytics', icon: BarChart3 },
+    { labelKey: 'layout.enterprise.sidebar.products', href: '/enterprise/products', icon: Package },
+    { labelKey: 'layout.enterprise.sidebar.profile', href: '/enterprise/profile', icon: User },
+    { labelKey: 'layout.enterprise.sidebar.notifications', href: '/enterprise/notifications', icon: Bell },
 ];
 
 export default function EnterpriseLayout({ children }: { children: React.ReactNode }) {
@@ -68,13 +68,13 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
 
     const translate = mounted ? t : i18n.getFixedT('en');
     if (isLoading || !isAuthenticated || user?.role !== 'enterprise') {
-        return <LoadingState message="Loading..." />;
+        return <LoadingState message={translate('layout.enterprise.loading')} />;
     }
 
     const initials = (user?.full_name || user?.email || 'EN')
         .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
     const currentNav = NAV_ITEMS.find((item) => pathname === item.href || (item.href !== '/enterprise' && pathname.startsWith(item.href)));
-    const pageLabel = currentNav?.label || 'Enterprise Workspace';
+    const pageLabel = currentNav ? translate(currentNav.labelKey) : translate('layout.enterprise.workspace');
     const currentLanguage = ((mounted ? i18n.resolvedLanguage : 'en') || 'en').split('-')[0] as 'en' | 'fr' | 'ar';
     const languageCodeLabel: Record<'en' | 'fr' | 'ar', string> = { en: 'EN', fr: 'FR', ar: 'AR' };
 
@@ -101,8 +101,8 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                     <Link href="/enterprise" className="flex items-center gap-2.5">
                         <ShieldCheck className="w-5 h-5 text-indigo-600" />
                         <div>
-                            <span className="block text-base font-bold text-zinc-900">Enterprise Panel</span>
-                            <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-400">Business Journey</span>
+                            <span className="block text-base font-bold text-zinc-900">{translate('layout.enterprise.sidebar.title')}</span>
+                            <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-400">{translate('layout.enterprise.sidebar.subtitle')}</span>
                         </div>
                     </Link>
                     <button
@@ -115,7 +115,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
 
                 {/* Navigation — grows and scrolls */}
                 <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-                    {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+                    {NAV_ITEMS.map(({ labelKey, href, icon: Icon }) => {
                         const isActive = pathname === href || (href !== '/enterprise' && pathname.startsWith(href));
                         return (
                             <Link
@@ -128,7 +128,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                                     }`}
                             >
                                 <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-zinc-400'}`} />
-                                {label}
+                                {translate(labelKey)}
                             </Link>
                         );
                     })}
@@ -141,7 +141,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                         className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-600 hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
                         <LogOut className="w-4 h-4 text-zinc-400" />
-                        Sign Out
+                        {translate('layout.enterprise.sidebar.signOut')}
                     </button>
                 </div>
             </aside>
@@ -157,13 +157,13 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                         <Menu className="w-5 h-5" />
                     </button>
                     <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                    <span className="text-sm font-semibold text-zinc-900">Enterprise Panel</span>
+                    <span className="text-sm font-semibold text-zinc-900">{translate('layout.enterprise.sidebar.title')}</span>
                 </header>
 
                 <header className="hidden lg:flex sticky top-0 z-20 items-center justify-between border-b border-white/70 bg-white/75 px-8 py-4 backdrop-blur-xl">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                            <span>Enterprise</span>
+                            <span>{translate('layout.enterprise.breadcrumb')}</span>
                             <ChevronRight className="h-3.5 w-3.5" />
                             <span>{pageLabel}</span>
                         </div>
@@ -213,7 +213,7 @@ export default function EnterpriseLayout({ children }: { children: React.ReactNo
                             )}
                         </div>
                         <div className="text-right">
-                            <p className="text-sm font-semibold text-zinc-900">{user?.full_name || 'Enterprise User'}</p>
+                            <p className="text-sm font-semibold text-zinc-900">{user?.full_name || translate('layout.enterprise.fallbackUser')}</p>
                             <p className="text-xs text-zinc-500">{user?.role}</p>
                         </div>
                         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-sm font-bold text-indigo-700">

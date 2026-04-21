@@ -3265,6 +3265,8 @@
         "resourceUrlRequired": "Please provide a valid URL for this resource tape.",
         "resourceFileRequired": "Please select a file to upload.",
         "standConfigNotLoaded": "Stand configuration not fully loaded yet.",
+        "resourceAddFailed": "Failed to add resource",
+        "invalidQuantityForProduct": "Invalid quantity for {product}. Please choose a value between 1 and available stock.",
         "aiActivationSuccess": "AI assistant enabled! Indexed {indexed_documents} document(s).",
         "aiActivationFailed": "RAG activation failed",
         "loadingStandConfig": "Loading stand configuration...",
@@ -3279,13 +3281,28 @@
         "companyBioPlaceholder": "What will visitors find at your stand?",
         "logoUrl": "Logo URL",
         "logoUrlPlaceholder": "https://...",
+        "customBackgroundPlaceholder": "https://... or /stands/...",
         "uploadLogoImage": "Upload Logo Image",
         "uploadLogoHelper": "Use URL or upload a file.",
         "standBackgroundPresets": "Stand Background Presets",
+        "backgroundPresetWoodWave": "Wood Wave Desk",
+        "backgroundPresetNeonWhite": "Neon White Tech",
+        "backgroundPresetNeonDark": "Neon Dark Tech",
+        "backgroundPresetClassicWood": "Classic Wood Desk",
+        "backgroundPresetOffice": "Office Stand",
         "saveBranding": "Save Branding",
+        "themeColor": "Theme Color",
+        "presenterAvatar": "Presenter Avatar",
+        "auto": "Auto",
+        "defaultAvatarSelection": "Use the default avatar selection.",
+        "customAvatarUrl": "Custom Avatar URL",
+        "customAvatarPlaceholder": "https://... or /stands/...",
+        "presenterMale": "Male Presenter",
+        "presenterFemale": "Female Presenter",
         "selectProductsDescription": "Select which products from your catalog to display on this stand.",
         "noProductsInCatalog": "No products in your catalog yet.",
         "addProductsFirst": "Add products first.",
+        "quoteOnly": "Quote Only",
         "productTypeService": "Service",
         "productTypeProduct": "Product",
         "productStatusAvailable": "available",
@@ -3300,6 +3317,7 @@
         "resourceTypeImage": "Image",
         "resourceTypeVideo": "Video URL",
         "resourceTypeLink": "Link",
+        "urlLinkLabel": "URL / Link",
         "urlPlaceholder": "https://...",
         "uploadFileLabel": "Upload File",
         "addResourceButton": "Add Resource",
@@ -3637,6 +3655,72 @@
       "scheduled": "Scheduled",
       "goLive": "Go Live",
       "enterStudio": "Enter Studio"
+      ,
+      "goLiveIn": "Go Live in {minutes} min",
+      "goLiveAvailableTooltip": "Go Live available 20 minutes before start ({minutes} min away)",
+      "timeouts": {
+        "loadingEventTimeline": "Loading event timeline timed out. Please check your connection and retry.",
+        "loadingConferenceDetails": "Loading conference details timed out. Please check your connection and retry.",
+        "startingConferenceRoom": "Starting conference room timed out. Please check your connection and retry.",
+        "refreshingConferenceDetails": "Refreshing conference details timed out. Please check your connection and retry.",
+        "requestingLiveAccessToken": "Requesting live access token timed out. Please check your connection and retry.",
+        "refreshingLiveAccessToken": "Refreshing live access token timed out. Please check your connection and retry."
+      }
+    },
+    "speakerRoom": {
+      "sessionState": {
+        "liveSession": "Live session",
+        "startsIn": "Starts in {duration}",
+        "endsIn": "Ends in {duration}",
+        "endedAgo": "Ended {duration} ago"
+      },
+      "panels": {
+        "speakerChat": "Speaker Chat",
+        "liveChat": "Live Chat",
+        "qa": "Q&A"
+      },
+      "labels": {
+        "broadcastingLive": "Broadcasting Live",
+        "recoveringConnection": "Recovering Connection…",
+        "studioActive": "Studio Active",
+        "sharing": "Sharing",
+        "streamDisturbance": "Stream Disturbance",
+        "producerCenter": "Producer Center",
+        "studioDashboard": "Studio Dashboard",
+        "conferenceManagement": "Conference Management",
+        "leadSpeaker": "Lead Speaker",
+        "live": "LIVE",
+        "assignedSpeaker": "Assigned speaker",
+        "broadcastingNow": "Broadcasting Now",
+        "liveAudience": "Live Audience",
+        "totalAccess": "Total Access",
+        "activeRoster": "Active Roster",
+        "remoteCount": "{count} remote",
+        "youProducer": "You (Producer)",
+        "waitingForAudience": "Waiting for audience",
+        "moderation": "Moderation",
+        "noAudienceConnected": "No audience connected."
+      },
+      "actions": {
+        "eventSettings": "Event Settings",
+        "ending": "Ending…",
+        "endSession": "End Session",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "stopVideo": "Stop Video",
+        "startVideo": "Start Video",
+        "shareScreen": "Share Screen",
+        "sync": "Sync",
+        "resumeBroadcast": "Resume Broadcast",
+        "remove": "Remove"
+      },
+      "messages": {
+        "confirmEndSession": "Are you sure you want to end this session for everyone?",
+        "audienceInteractionDisabled": "Audience interaction is disabled for this session.",
+        "connectionDropDetected": "We've detected a connection drop. Your audience is still waiting in the room.",
+        "participantRemoved": "{name} was removed from the conference.",
+        "participantRemovalUnavailable": "Participant removal is not available in this browser session."
+      }
     },
     "liveConference": {
       "title": "Speaker Studio",
@@ -3925,7 +4009,8 @@
         "subtitle": "Select a visitor or enterprise from the list to start or continue your conversation.",
         "conversation": "Conversation",
         "member": "Member",
-        "noMessages": "No messages yet"
+        "noMessages": "No messages yet",
+        "b2bChat": "B2B Chat"
       },
       "meetings": {
         "requestLabel": "Visitor Request #{id}",

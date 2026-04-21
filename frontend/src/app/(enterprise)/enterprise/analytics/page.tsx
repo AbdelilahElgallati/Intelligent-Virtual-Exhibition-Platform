@@ -17,6 +17,7 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface TimeSeriesPoint {
     timestamp: string;
@@ -104,6 +105,7 @@ const BAR_COLORS = [
 ];
 
 export default function EnterpriseAnalyticsPage() {
+    const { t } = useTranslation();
     const [stands, setStands] = useState<StandEntry[]>([]);
     const [analytics, setAnalytics] = useState<Record<string, StandAnalytics>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -125,9 +127,9 @@ export default function EnterpriseAnalyticsPage() {
                         const s = await http.get<any>(`/enterprise/events/${ev.id || ev._id}/stand`);
                         return {
                             id: s.id || s._id,
-                            name: s.name || 'Unnamed Stand',
+                            name: s.name || t('enterprise.analytics.defaults.unnamedStand'),
                             event_id: ev.id || ev._id,
-                            event_title: ev.title || 'Unnamed Event',
+                            event_title: ev.title || t('enterprise.analytics.defaults.unnamedEvent'),
                         } as StandEntry;
                     } catch {
                         return null;
@@ -219,7 +221,7 @@ export default function EnterpriseAnalyticsPage() {
         return (
             <div className="text-center py-20">
                 <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-zinc-500">Loading analytics...</p>
+                <p className="text-zinc-500">{t('enterprise.analytics.loading')}</p>
             </div>
         );
     }
@@ -229,8 +231,8 @@ export default function EnterpriseAnalyticsPage() {
             {/* Header + Controls */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-zinc-900 tracking-tight">Stand Performance</h2>
-                    <p className="text-sm text-zinc-500 mt-0.5">Real-time insights across your virtual exhibition presence.</p>
+                    <h2 className="text-2xl font-black text-zinc-900 tracking-tight">{t('enterprise.analytics.title')}</h2>
+                    <p className="text-sm text-zinc-500 mt-0.5">{t('enterprise.analytics.subtitle')}</p>
                 </div>
                 <div className="flex gap-3 flex-wrap">
                     {/* Fixed: now shows event title + stand name for clarity */}
@@ -239,10 +241,10 @@ export default function EnterpriseAnalyticsPage() {
                         value={selectedStand}
                         onChange={e => setSelectedStand(e.target.value)}
                     >
-                        <option value="all">📊 Combined Overview ({stands.length} stands)</option>
+                        <option value="all">{t('enterprise.analytics.standSelector.combined', { count: stands.length })}</option>
                         {stands.map(s => (
                             <option key={s.id} value={s.id}>
-                                🗂 {s.event_title} — {s.name}
+                                {t('enterprise.analytics.standSelector.stand', { eventTitle: s.event_title, standName: s.name })}
                             </option>
                         ))}
                     </select>
@@ -252,7 +254,7 @@ export default function EnterpriseAnalyticsPage() {
                         onClick={() => fetchData(true)}
                         isLoading={isRefreshing}
                     >
-                        <RefreshCw size={14} /> Refresh
+                        <RefreshCw size={14} /> {t('enterprise.analytics.actions.refresh')}
                     </Button>
                 </div>
             </div>
@@ -261,32 +263,30 @@ export default function EnterpriseAnalyticsPage() {
             {selectedStand !== 'all' && selectedStandEntry && (
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl w-fit text-sm text-indigo-700 font-semibold">
                     <Calendar size={14} />
-                    Showing: <span className="font-bold">{selectedStandEntry.event_title}</span>
-                    <span className="text-indigo-400">·</span>
-                    <span className="font-normal text-indigo-600">{selectedStandEntry.name}</span>
+                    {t('enterprise.analytics.showing', { eventTitle: selectedStandEntry.event_title, standName: selectedStandEntry.name })}
                 </div>
             )}
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <MetricCard
-                    title="Impressions"
+                    title={t('enterprise.analytics.kpi.impressions')}
                     value={currentStats.total_visits}
-                    subValue="Total Views"
+                    subValue={t('enterprise.analytics.kpi.impressionsSub')}
                     icon={Eye}
                     color="bg-indigo-600"
                 />
                 <MetricCard
-                    title="Engagement"
+                    title={t('enterprise.analytics.kpi.engagement')}
                     value={currentStats.interaction_count}
-                    subValue="Interactions"
+                    subValue={t('enterprise.analytics.kpi.engagementSub')}
                     icon={MousePointer2}
                     color="bg-emerald-600"
                 />
                 <MetricCard
-                    title="Unique Leads"
+                    title={t('enterprise.analytics.kpi.uniqueLeads')}
                     value={currentStats.unique_visitors}
-                    subValue="Visitors"
+                    subValue={t('enterprise.analytics.kpi.uniqueLeadsSub')}
                     icon={Users}
                     color="bg-purple-600"
                 />
@@ -297,14 +297,14 @@ export default function EnterpriseAnalyticsPage() {
                 <Card className="border-zinc-200 shadow-sm">
                     <CardHeader className="border-b border-zinc-100 bg-zinc-50/40 pb-3">
                         <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                            <MousePointer2 size={14} /> Interaction Breakdown
+                            <MousePointer2 size={14} /> {t('enterprise.analytics.interactionBreakdown')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
                         {breakdownItems.length === 0 ? (
                             <div className="h-48 flex flex-col items-center justify-center text-zinc-300 space-y-2">
                                 <MousePointer2 size={36} />
-                                <p className="text-xs italic text-zinc-400">No interaction data available yet</p>
+                                <p className="text-xs italic text-zinc-400">{t('enterprise.analytics.noData')}</p>
                             </div>
                         ) : breakdownItems.map(([type, count], i) => {
                             const pct = currentStats.interaction_count > 0
@@ -329,7 +329,7 @@ export default function EnterpriseAnalyticsPage() {
                         })}
                         {breakdownItems.length > 0 && (
                             <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
-                                <span>Total interactions</span>
+                                <span>{t('enterprise.analytics.totalInteractions')}</span>
                                 <span className="font-black text-zinc-900 text-lg">{currentStats.interaction_count}</span>
                             </div>
                         )}
@@ -340,14 +340,14 @@ export default function EnterpriseAnalyticsPage() {
                 <Card className="border-zinc-200 shadow-sm">
                     <CardHeader className="border-b border-zinc-100 bg-zinc-50/40 pb-3">
                         <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                            <TrendingUp size={14} /> Activity Trend (Last 30 Days)
+                            <TrendingUp size={14} /> {t('enterprise.analytics.activityTrend')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
                         {chartData.length === 0 ? (
                             <div className="h-56 flex flex-col items-center justify-center text-zinc-300 space-y-2">
                                 <BarChart3 size={36} />
-                                <p className="text-xs italic text-zinc-400">Insufficient data for trend analysis</p>
+                                <p className="text-xs italic text-zinc-400">{t('enterprise.analytics.insufficientData')}</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -376,7 +376,7 @@ export default function EnterpriseAnalyticsPage() {
                                                 />
                                                 {/* Tooltip */}
                                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-zinc-900 text-white text-[9px] px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap shadow-xl pointer-events-none">
-                                                    <p className="font-bold">{p.value} views</p>
+                                                    <p className="font-bold">{t('enterprise.analytics.views', { count: p.value })}</p>
                                                     <p className="text-white/60">{p.timestamp.split('T')[0]}</p>
                                                 </div>
                                             </div>
@@ -386,18 +386,18 @@ export default function EnterpriseAnalyticsPage() {
                                 {/* X-axis labels */}
                                 <div className="flex justify-between border-t border-zinc-100 pt-2 px-1">
                                     <span className="text-[10px] font-semibold text-zinc-400">
-                                        {chartData[0]?.timestamp?.split('T')[0] || '30d ago'}
+                                        {chartData[0]?.timestamp?.split('T')[0] || t('enterprise.analytics.labels.thirtyDaysAgo')}
                                     </span>
-                                    <span className="text-[10px] font-semibold text-zinc-400">Today</span>
+                                    <span className="text-[10px] font-semibold text-zinc-400">{t('enterprise.analytics.labels.today')}</span>
                                 </div>
                                 {/* Summary Row */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-indigo-50 rounded-xl p-3 text-center">
-                                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wide">Peak Day</p>
+                                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wide">{t('enterprise.analytics.peakDay')}</p>
                                         <p className="text-lg font-black text-indigo-700">{Math.max(...chartData.map(p => p.value))}</p>
                                     </div>
                                     <div className="bg-zinc-50 rounded-xl p-3 text-center">
-                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">Daily Avg</p>
+                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wide">{t('enterprise.analytics.dailyAvg')}</p>
                                         <p className="text-lg font-black text-zinc-700">
                                             {chartData.length > 0 ? Math.round(chartData.reduce((a, p) => a + p.value, 0) / chartData.length) : 0}
                                         </p>
@@ -413,8 +413,8 @@ export default function EnterpriseAnalyticsPage() {
             {stands.length === 0 && (
                 <div className="text-center py-12 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200">
                     <BarChart3 className="mx-auto text-zinc-200 mb-3" size={40} />
-                    <h3 className="font-bold text-zinc-700 mb-1">No approved event participations yet</h3>
-                    <p className="text-sm text-zinc-500">Once your stand is approved for an event, analytics will appear here.</p>
+                    <h3 className="font-bold text-zinc-700 mb-1">{t('enterprise.analytics.empty.title')}</h3>
+                    <p className="text-sm text-zinc-500">{t('enterprise.analytics.empty.subtitle')}</p>
                 </div>
             )}
         </div>

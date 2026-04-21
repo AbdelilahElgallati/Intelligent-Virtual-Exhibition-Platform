@@ -75,3 +75,174 @@ All new keys added to frontend/messages/en.json (exact JSON path):
 - enterprise.eventRequests.actions.markAsStatus
 - enterprise.eventRequests.actions.confirmServiceDetails
 - enterprise.eventRequests.actions.completed
+
+---
+
+File: frontend/src/app/(enterprise)/enterprise/events/[eventId]/stand/page.tsx
+- NEW keys added:
+  - enterprise.stand.messages.invalidQuantityForProduct
+  - enterprise.stand.messages.resourceAddFailed
+  - enterprise.stand.labels.customBackgroundPlaceholder
+  - enterprise.stand.labels.backgroundPresetWoodWave
+  - enterprise.stand.labels.backgroundPresetNeonWhite
+  - enterprise.stand.labels.backgroundPresetNeonDark
+  - enterprise.stand.labels.backgroundPresetClassicWood
+  - enterprise.stand.labels.backgroundPresetOffice
+  - enterprise.stand.labels.themeColor
+  - enterprise.stand.labels.presenterAvatar
+  - enterprise.stand.labels.auto
+  - enterprise.stand.labels.defaultAvatarSelection
+  - enterprise.stand.labels.customAvatarUrl
+  - enterprise.stand.labels.customAvatarPlaceholder
+  - enterprise.stand.labels.presenterMale
+  - enterprise.stand.labels.presenterFemale
+  - enterprise.stand.labels.quoteOnly
+  - enterprise.stand.labels.urlLinkLabel
+
+File: frontend/src/app/(enterprise)/enterprise/events/[eventId]/analytics/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(enterprise)/enterprise/events/[eventId]/conferences/page.tsx
+- NEW keys added:
+  - enterprise.eventConferences.goLiveIn
+  - enterprise.eventConferences.goLiveAvailableTooltip
+
+File: frontend/src/app/(enterprise)/enterprise/events/[eventId]/conferences/[confId]/live/page.tsx
+- NEW keys added:
+  - enterprise.eventConferences.timeouts.loadingEventTimeline
+  - enterprise.eventConferences.timeouts.loadingConferenceDetails
+  - enterprise.eventConferences.timeouts.startingConferenceRoom
+  - enterprise.eventConferences.timeouts.refreshingConferenceDetails
+  - enterprise.eventConferences.timeouts.requestingLiveAccessToken
+  - enterprise.eventConferences.timeouts.refreshingLiveAccessToken
+
+File: frontend/src/app/(enterprise)/enterprise/conferences/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(enterprise)/enterprise/communications/page.tsx
+- NEW keys added:
+  - enterprise.communications.chats.b2bChat
+
+File: frontend/src/app/(enterprise)/enterprise/analytics/page.tsx
+- NEW keys added: None
+
+File: frontend/src/app/(enterprise)/enterprise/layout.tsx
+- NEW keys added: None
+
+File: frontend/src/components/conferences/SpeakerRoom.tsx
+- NEW keys added:
+  - enterprise.speakerRoom.sessionState.liveSession
+  - enterprise.speakerRoom.sessionState.startsIn
+  - enterprise.speakerRoom.sessionState.endsIn
+  - enterprise.speakerRoom.sessionState.endedAgo
+  - enterprise.speakerRoom.panels.speakerChat
+  - enterprise.speakerRoom.panels.liveChat
+  - enterprise.speakerRoom.panels.qa
+  - enterprise.speakerRoom.labels.broadcastingLive
+  - enterprise.speakerRoom.labels.recoveringConnection
+  - enterprise.speakerRoom.labels.studioActive
+  - enterprise.speakerRoom.labels.sharing
+  - enterprise.speakerRoom.labels.streamDisturbance
+  - enterprise.speakerRoom.labels.producerCenter
+  - enterprise.speakerRoom.labels.studioDashboard
+  - enterprise.speakerRoom.labels.conferenceManagement
+  - enterprise.speakerRoom.labels.leadSpeaker
+  - enterprise.speakerRoom.labels.live
+  - enterprise.speakerRoom.labels.assignedSpeaker
+  - enterprise.speakerRoom.labels.broadcastingNow
+  - enterprise.speakerRoom.labels.liveAudience
+  - enterprise.speakerRoom.labels.totalAccess
+  - enterprise.speakerRoom.labels.activeRoster
+  - enterprise.speakerRoom.labels.remoteCount
+  - enterprise.speakerRoom.labels.youProducer
+  - enterprise.speakerRoom.labels.waitingForAudience
+  - enterprise.speakerRoom.labels.moderation
+  - enterprise.speakerRoom.labels.noAudienceConnected
+  - enterprise.speakerRoom.actions.eventSettings
+  - enterprise.speakerRoom.actions.ending
+  - enterprise.speakerRoom.actions.endSession
+  - enterprise.speakerRoom.actions.mute
+  - enterprise.speakerRoom.actions.unmute
+  - enterprise.speakerRoom.actions.stopVideo
+  - enterprise.speakerRoom.actions.startVideo
+  - enterprise.speakerRoom.actions.shareScreen
+  - enterprise.speakerRoom.actions.sync
+  - enterprise.speakerRoom.actions.resumeBroadcast
+  - enterprise.speakerRoom.actions.remove
+  - enterprise.speakerRoom.messages.confirmEndSession
+  - enterprise.speakerRoom.messages.audienceInteractionDisabled
+  - enterprise.speakerRoom.messages.connectionDropDetected
+  - enterprise.speakerRoom.messages.participantRemoved
+  - enterprise.speakerRoom.messages.participantRemovalUnavailable
+
+All new keys added to frontend/messages/en.json (exact JSON path):
+- enterprise.stand.messages.invalidQuantityForProduct
+- enterprise.stand.messages.resourceAddFailed
+- enterprise.stand.labels.customBackgroundPlaceholder
+- enterprise.stand.labels.backgroundPresetWoodWave
+- enterprise.stand.labels.backgroundPresetNeonWhite
+- enterprise.stand.labels.backgroundPresetNeonDark
+- enterprise.stand.labels.backgroundPresetClassicWood
+- enterprise.stand.labels.backgroundPresetOffice
+- enterprise.stand.labels.themeColor
+- enterprise.stand.labels.presenterAvatar
+- enterprise.stand.labels.auto
+- enterprise.stand.labels.defaultAvatarSelection
+- enterprise.stand.labels.customAvatarUrl
+- enterprise.stand.labels.customAvatarPlaceholder
+- enterprise.stand.labels.presenterMale
+- enterprise.stand.labels.presenterFemale
+- enterprise.stand.labels.quoteOnly
+- enterprise.stand.labels.urlLinkLabel
+- enterprise.eventConferences.goLiveIn
+- enterprise.eventConferences.goLiveAvailableTooltip
+- enterprise.eventConferences.timeouts.loadingEventTimeline
+- enterprise.eventConferences.timeouts.loadingConferenceDetails
+- enterprise.eventConferences.timeouts.startingConferenceRoom
+- enterprise.eventConferences.timeouts.refreshingConferenceDetails
+- enterprise.eventConferences.timeouts.requestingLiveAccessToken
+- enterprise.eventConferences.timeouts.refreshingLiveAccessToken
+- enterprise.communications.chats.b2bChat
+- enterprise.speakerRoom.sessionState.liveSession
+- enterprise.speakerRoom.sessionState.startsIn
+- enterprise.speakerRoom.sessionState.endsIn
+- enterprise.speakerRoom.sessionState.endedAgo
+- enterprise.speakerRoom.panels.speakerChat
+- enterprise.speakerRoom.panels.liveChat
+- enterprise.speakerRoom.panels.qa
+- enterprise.speakerRoom.labels.broadcastingLive
+- enterprise.speakerRoom.labels.recoveringConnection
+- enterprise.speakerRoom.labels.studioActive
+- enterprise.speakerRoom.labels.sharing
+- enterprise.speakerRoom.labels.streamDisturbance
+- enterprise.speakerRoom.labels.producerCenter
+- enterprise.speakerRoom.labels.studioDashboard
+- enterprise.speakerRoom.labels.conferenceManagement
+- enterprise.speakerRoom.labels.leadSpeaker
+- enterprise.speakerRoom.labels.live
+- enterprise.speakerRoom.labels.assignedSpeaker
+- enterprise.speakerRoom.labels.broadcastingNow
+- enterprise.speakerRoom.labels.liveAudience
+- enterprise.speakerRoom.labels.totalAccess
+- enterprise.speakerRoom.labels.activeRoster
+- enterprise.speakerRoom.labels.remoteCount
+- enterprise.speakerRoom.labels.youProducer
+- enterprise.speakerRoom.labels.waitingForAudience
+- enterprise.speakerRoom.labels.moderation
+- enterprise.speakerRoom.labels.noAudienceConnected
+- enterprise.speakerRoom.actions.eventSettings
+- enterprise.speakerRoom.actions.ending
+- enterprise.speakerRoom.actions.endSession
+- enterprise.speakerRoom.actions.mute
+- enterprise.speakerRoom.actions.unmute
+- enterprise.speakerRoom.actions.stopVideo
+- enterprise.speakerRoom.actions.startVideo
+- enterprise.speakerRoom.actions.shareScreen
+- enterprise.speakerRoom.actions.sync
+- enterprise.speakerRoom.actions.resumeBroadcast
+- enterprise.speakerRoom.actions.remove
+- enterprise.speakerRoom.messages.confirmEndSession
+- enterprise.speakerRoom.messages.audienceInteractionDisabled
+- enterprise.speakerRoom.messages.connectionDropDetected
+- enterprise.speakerRoom.messages.participantRemoved
+- enterprise.speakerRoom.messages.participantRemovalUnavailable

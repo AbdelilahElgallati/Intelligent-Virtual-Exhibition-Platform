@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Conference } from '@/types/conference';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { http } from '@/lib/http';
+import { useTranslation } from 'react-i18next';
 
 function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
+    const { t } = useTranslation();
     const router = useRouter();
     const [conferences, setConferences] = useState<Conference[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,11 +29,11 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
             await http.post(`/conferences/${confId}/start`, {});
             router.push(`/enterprise/events/${eventId}/conferences/${confId}/live`);
         } catch (err: any) {
-            alert(err?.message || 'Failed to start session');
+            alert(err?.message || t('enterprise.eventManagement.conferences.live.startFailed'));
         }
     };
 
-    if (loading) return <LoadingState message="Loading your conferences…" />;
+    if (loading) return <LoadingState message={t('enterprise.eventManagement.conferences.live.loading')} />;
 
     return (
         <div style={{ minHeight: '100vh', background: '#060B18', color: '#e2e8f0', padding: '32px 24px', fontFamily: 'Inter, sans-serif' }}>
@@ -41,11 +43,11 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                     onClick={() => router.back()}
                     style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: 14, marginBottom: 24, padding: 0 }}
                 >
-                    ← Back
+                    {`← ${t('enterprise.conferences.card.back')}`}
                 </button>
-                <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 8px 0' }}>My Assigned Conferences</h1>
+                <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 8px 0' }}>{t('enterprise.eventManagement.conferences.title')}</h1>
                 <p style={{ color: '#94a3b8', fontSize: 14, margin: '0 0 32px 0' }}>
-                    Conferences assigned to you by the event organizer. Click "Go Live" when ready to broadcast.
+                    {t('enterprise.eventManagement.conferences.subtitle')}
                 </p>
 
                 {conferences.length === 0 ? (
@@ -55,8 +57,8 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                         border: '2px dashed rgba(255,255,255,0.08)',
                     }}>
                         <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
-                        <h3 style={{ fontWeight: 700, fontSize: 18, margin: '0 0 8px 0' }}>No conferences assigned</h3>
-                        <p style={{ color: '#64748b', fontSize: 14 }}>The organizer will assign conferences to you.</p>
+                        <h3 style={{ fontWeight: 700, fontSize: 18, margin: '0 0 8px 0' }}>{t('enterprise.eventManagement.conferences.empty')}</h3>
+                        <p style={{ color: '#64748b', fontSize: 14 }}>{t('enterprise.eventManagement.conferences.subtitle')}</p>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -83,7 +85,7 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                                 color: isLive ? '#34d399' : '#818cf8',
                                                 textTransform: 'uppercase',
                                             }}>
-                                                {isLive ? '🔴 Live Now' : conf.status}
+                                                {isLive ? `🔴 ${t('enterprise.eventManagement.conferences.liveBadge')}` : conf.status}
                                             </span>
                                             <h3 style={{ fontSize: 18, fontWeight: 700, margin: '6px 0 4px 0', color: '#f1f5f9' }}>{conf.title}</h3>
                                             {conf.description && (
@@ -95,7 +97,7 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                             <div style={{ fontWeight: 600 }}>
                                                 {start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                             </div>
-                                            <div style={{ marginTop: 4, color: '#7c3aed' }}>👥 {conf.attendee_count} registered</div>
+                                            <div style={{ marginTop: 4, color: '#7c3aed' }}>👥 {t('enterprise.eventManagement.conferences.attendeesCount', { count: conf.attendee_count })}</div>
                                         </div>
                                     </div>
 
@@ -110,7 +112,7 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                                     boxShadow: '0 0 20px rgba(16,185,129,0.3)',
                                                 }}
                                             >
-                                                Re-enter Speaker Room →
+                                                {`${t('enterprise.eventManagement.conferences.enterStudio')} →`}
                                             </button>
                                         )}
                                         {conf.status === 'scheduled' && (
@@ -126,13 +128,13 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
                                                     padding: '10px 24px', fontWeight: 700,
                                                     cursor: canGoLive ? 'pointer' : 'not-allowed', fontSize: 13,
                                                 }}
-                                                title={!canGoLive ? `Go Live available 20 minutes before start (${Math.ceil(minutesUntil)} min away)` : ''}
+                                                title={!canGoLive ? t('enterprise.eventConferences.goLiveAvailableTooltip', { minutes: Math.ceil(minutesUntil) }) : ''}
                                             >
-                                                {canGoLive ? '🔴 Go Live' : `⏰ Go Live in ${Math.ceil(minutesUntil)} min`}
+                                                {canGoLive ? `🔴 ${t('enterprise.eventManagement.conferences.goLive')}` : `⏰ ${t('enterprise.eventConferences.goLiveIn', { minutes: Math.ceil(minutesUntil) })}`}
                                             </button>
                                         )}
                                         {conf.status === 'ended' && (
-                                            <span style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>✅ Session ended</span>
+                                            <span style={{ color: '#64748b', fontSize: 13, padding: '10px 0' }}>✅ {t('enterprise.conferences.card.sessionEnded')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -146,9 +148,10 @@ function EnterpriseConferencesContent({ eventId }: { eventId: string }) {
 }
 
 export default function EnterpriseEventConferencesPage({ params }: { params: Promise<{ eventId: string }> }) {
+    const { t } = useTranslation();
     const { eventId } = use(params);
     return (
-        <Suspense fallback={<LoadingState message="Loading…" />}>
+        <Suspense fallback={<LoadingState message={t('enterprise.eventManagement.conferences.live.loading')} />}>
             <EnterpriseConferencesContent eventId={eventId} />
         </Suspense>
     );

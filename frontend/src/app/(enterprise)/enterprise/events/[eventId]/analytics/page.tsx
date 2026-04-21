@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { http } from '@/lib/http';
@@ -93,6 +94,7 @@ const MetricCard = ({ title, value, subValue, icon: Icon, trend, color }: any) =
 );
 
 export default function EventAnalyticsPage() {
+    const { t } = useTranslation();
     const params = useParams();
     const router = useRouter();
     const eventId = params.eventId as string;
@@ -154,16 +156,16 @@ export default function EventAnalyticsPage() {
                 <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center mb-8">
                     <Clock size={48} className="text-amber-500 animate-pulse" />
                 </div>
-                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">Analytics Pending</h2>
+                <h2 className="text-3xl font-black text-zinc-900 mb-4 tracking-tight">{t('enterprise.eventAnalytics.pending.title')}</h2>
                 <p className="text-zinc-500 max-w-md leading-relaxed mb-10">
-                    Your stand analytics will be available once your participation is approved by the organizers.
+                    {t('enterprise.eventAnalytics.pending.subtitle')}
                 </p>
                 <div className="flex gap-4">
                     <Button variant="outline" onClick={() => router.push('/enterprise/events')}>
-                        <ArrowLeft size={16} className="mr-2" /> Back to Events
+                        <ArrowLeft size={16} className="mr-2" /> {t('enterprise.eventAnalytics.actions.backToEvents')}
                     </Button>
                     <Button onClick={() => fetchData()}>
-                        <Loader2 size={16} className="mr-2" /> Refresh Status
+                        <Loader2 size={16} className="mr-2" /> {t('enterprise.eventAnalytics.actions.refreshStatus')}
                     </Button>
                 </div>
             </div>
@@ -194,9 +196,9 @@ export default function EventAnalyticsPage() {
                     </button>
                     <div>
                         <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
-                            {stand?.name} Analytics
+                            {stand?.name} {t('enterprise.eventAnalytics.title')}
                         </h2>
-                        <p className="text-sm text-zinc-500">Performance insights for this specific event.</p>
+                        <p className="text-sm text-zinc-500">{t('enterprise.eventAnalytics.header.subtitle')}</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -205,7 +207,7 @@ export default function EventAnalyticsPage() {
                     </Button>
                     {isLive && (
                         <Button size="sm" onClick={() => router.push(`/enterprise/events/${eventId}/manage`)}>
-                            Manage Hub
+                            {t('enterprise.eventAnalytics.actions.manageHub')}
                         </Button>
                     )}
                 </div>
@@ -214,25 +216,25 @@ export default function EventAnalyticsPage() {
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <MetricCard
-                    title="Impressions"
+                    title={t('enterprise.eventAnalytics.metrics.impressions')}
                     value={stats.total_visits}
-                    subValue="Total Views"
+                    subValue={t('enterprise.eventAnalytics.metrics.impressionsSub')}
                     icon={Eye}
                     trend={8}
                     color="bg-indigo-600"
                 />
                 <MetricCard
-                    title="Engagement"
+                    title={t('enterprise.eventAnalytics.metrics.engagement')}
                     value={stats.interaction_count}
-                    subValue="Interactions"
+                    subValue={t('enterprise.eventAnalytics.metrics.engagementSub')}
                     icon={MousePointer2}
                     trend={4}
                     color="bg-emerald-600"
                 />
                 <MetricCard
-                    title="Unique Leads"
+                    title={t('enterprise.eventAnalytics.metrics.uniqueLeads')}
                     value={stats.unique_visitors}
-                    subValue="Visitors"
+                    subValue={t('enterprise.eventAnalytics.metrics.uniqueLeadsSub')}
                     icon={Users}
                     trend={-1}
                     color="bg-purple-600"
@@ -243,23 +245,23 @@ export default function EventAnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card className="border-zinc-200">
                     <CardHeader className="border-b border-zinc-50 bg-zinc-50/30">
-                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Interaction Status</CardTitle>
+                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">{t('enterprise.eventAnalytics.interactionStatus')}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-10 flex flex-col items-center justify-center text-center space-y-4">
                         <div className="w-48 h-48 rounded-full border-8 border-emerald-50 flex items-center justify-center relative">
                             <div className="text-center">
                                 <p className="text-3xl font-black text-zinc-900">{stats.interaction_count}</p>
-                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Actions</p>
+                                <p className="text-[10px] text-zinc-400 font-bold uppercase">{t('enterprise.eventAnalytics.actionsLabel')}</p>
                             </div>
                             <div className="absolute inset-0 rounded-full border-8 border-emerald-500 border-t-transparent animate-pulse-slow" />
                         </div>
-                        <p className="text-xs text-zinc-500 max-w-[200px]">Total interactions captured at your stand during this event.</p>
+                        <p className="text-xs text-zinc-500 max-w-[200px]">{t('enterprise.eventAnalytics.interactionSummary')}</p>
                     </CardContent>
                 </Card>
 
                 <Card className="border-zinc-200">
                     <CardHeader className="border-b border-zinc-50 bg-zinc-50/30">
-                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">Real-time Visitor Pulse</CardTitle>
+                        <CardTitle className="text-sm font-bold uppercase tracking-widest text-zinc-500">{t('enterprise.eventAnalytics.pulseTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-8">
                         <div className="h-64 flex flex-col justify-between">
@@ -276,7 +278,7 @@ export default function EventAnalyticsPage() {
                                                         item.value > 0 ? "bg-emerald-500" : "bg-emerald-500/5"
                                                     )}
                                                     style={{ height: `${Math.max(h, 4)}%` }}
-                                                    title={`${item.hour}: ${item.value} visits`}
+                                                    title={t('enterprise.eventAnalytics.visitTooltip', { hour: item.hour, count: item.value })}
                                                 />
                                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-bold">
                                                     {item.value}
@@ -286,7 +288,7 @@ export default function EventAnalyticsPage() {
                                     })
                                 ) : (
                                     <div className="flex-1 flex items-center justify-center text-zinc-300 text-[10px] font-bold uppercase tracking-widest italic">
-                                        No recent activity
+                                        {t('enterprise.eventAnalytics.recentActivityEmpty')}
                                     </div>
                                 )}
                             </div>
