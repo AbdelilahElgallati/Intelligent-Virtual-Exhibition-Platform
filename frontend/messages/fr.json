@@ -285,7 +285,7 @@
         "placeholder": "Acme Corporation"
       },
       "industry": {
-        "label": "Industrie",
+        "label": "Secteur d'activité",
         "placeholder": "Technologie"
       },
       "country": {
@@ -298,7 +298,7 @@
       },
       "companySize": {
         "label": "Taille de l'entreprise",
-        "placeholder": "51-200"
+        "placeholder": "10-50"
       },
       "professionalEmail": {
         "label": "Email professionnel",
@@ -338,8 +338,8 @@
         "label": "Profil LinkedIn",
         "placeholder": "https://linkedin.com/company/acme"
       },
-      "saveChanges": "Enregistrer toutes les modifications",
-      "success": "Profil mis à jour avec succès !",
+      "saveChanges": "Enregistrer les modifications",
+      "success": "Profil de l'entreprise mis à jour !",
       "error": "Échec de la mise à jour du profil.",
       "logoUploaded": "Logo téléchargé !",
       "bannerUploaded": "Bannière téléchargée !",
@@ -605,6 +605,24 @@
       "unauthorized": "Non autorisé",
       "notFound": "Non trouvé."
     },
+    "diag": {
+      "apiUrl": "NEXT_PUBLIC_API_URL = \"{value}\""
+    },
+    "assistant": {
+      "openAssistantAria": "Open assistant",
+      "chat": {
+        "authRequired": "Please log in to use the assistant.",
+        "requestFailed": "Assistant request failed",
+        "emptyTitle": "How can I help you?",
+        "emptySubtitle": "Ask anything about the platform or this event.",
+        "loginPromptPrefix": "Please",
+        "loginPromptSuffix": "to chat with the assistant.",
+        "composerPlaceholder": "Ask the assistant...",
+        "composerStopAria": "Stop",
+        "composerSendAria": "Send",
+        "composerHint": "Enter to send · Shift+Enter for new line"
+      }
+    },
     "roles": {
       "admin": "administrateur",
       "organizer": "organisateur",
@@ -646,6 +664,10 @@
         "slotPlaceholder": "Activité / description...",
         "removeSlotTooltip": "Supprimer le créneau",
         "dayLabel": "Jour {day_number}",
+        "summary": "Résumé du programme",
+        "emptySlotsPrefix": "Vous avez",
+        "emptySlotsCta": "créneaux vides",
+        "emptySlotsSuffix": "disponibles.",
         "emptySlots": "Pas encore de créneaux — cliquez sur + Ajouter un créneau ci-dessous",
         "addSlot": "+ Ajouter un créneau horaire",
         "noDatesPlaceholder": "Sélectionnez une date de début et de fin ci-dessus",
@@ -693,6 +715,7 @@
       "revisitStand": "Revisiter le stand",
       "product": "Produit",
       "service": "Service",
+      "quantityShort": "Qté",
       "paidOrdersHint": "Vous avez {count} commande{plural} payée{plural}. Chaque carte regroupe les produits et services issus du même paiement.",
       "payment": {
         "stripe": "Stripe",
@@ -810,6 +833,14 @@
     "socialProof": {
       "title": "Approuvé par des Équipes d’Événements Modernes",
       "subtitle": "Conçu pour les organisateurs et entreprises soucieux d’offrir une expérience premium aux participants.",
+      "partners": {
+        "acmeCorp": "Acme Corp",
+        "zenithTech": "Zenith Tech",
+        "horizonDynamics": "Horizon Dynamics",
+        "nexusIndustries": "Nexus Industries",
+        "quantumSolutions": "Quantum Solutions",
+        "apexInnovations": "Apex Innovations"
+      },
       "stats": {
         "eventsHosted": {
           "label": "Événements Organisés",
@@ -852,6 +883,10 @@
     }
   },
   "layout": {
+    "metadata": {
+      "title": "IVEP - Intelligent Virtual Exhibition Platform",
+      "description": "Experience the future of exhibitions with IVEP."
+    },
     "navbar": {
       "home": "Accueil",
       "events": "Événements",
@@ -980,6 +1015,7 @@
     },
     "detail": {
       "loading": "Chargement des détails de l'événement...",
+      "failedToLoad": "Échec du chargement des détails de l'événement.",
       "notFound": "Événement introuvable",
       "tryAgain": "Réessayer",
       "organizerFallback": "Organisateur IVEP",
@@ -1017,6 +1053,7 @@
         "title": "Points forts du programme",
         "dayLabel": "Jour {day_number}",
         "nextDayBadge": "+1 jour",
+        "sessionFallback": "Session",
         "noSchedule": "Les détails complets du programme apparaîtront ici dès que les créneaux de la chronologie seront publiés.",
         "unlockFullSchedule": "Inscrivez-vous pour accéder au programme complet et à toutes les sections en direct."
       },
@@ -1085,7 +1122,8 @@
           "pending": "EN ATTENTE",
           "rejected": "REJETÉ",
           "notJoined": "NON INSCRIT"
-        }
+        },
+        "nextSlotIn": "Next slot in {time}"
       },
       "receiptDownload": {
         "payerDefault": "Visiteur",
@@ -1095,6 +1133,143 @@
       "joinAlert": {
         "failed": "Échec de la participation à l'événement. Veuillez réessayer.",
         "notFound": "Événement introuvable."
+      }
+    },
+    "live": {
+      "loading": "Loading event..."
+    },
+    "payment": {
+      "loading": "Loading payment details...",
+      "title": "Event Payment",
+      "subtitle": "Secure payment for {title}",
+      "ticketPrice": "Ticket Price",
+      "freeEvent": {
+        "title": "This event is free",
+        "message": "No payment is required for this event."
+      },
+      "actions": {
+        "backToEvent": "← Back to Event",
+        "enterEvent": "Enter Event →",
+        "downloadInvoice": "Download Invoice (PDF)"
+      },
+      "cancelled": {
+        "title": "Payment Cancelled",
+        "message": "Your payment was cancelled. You can try again below."
+      },
+      "verifying": {
+        "title": "Verifying Payment...",
+        "message": "Please wait while we confirm your payment.",
+        "error": "Payment verification failed. Please contact support."
+      },
+      "confirmed": {
+        "title": "Payment Confirmed!",
+        "message": "Your payment has been verified. You now have full access to this event."
+      },
+      "checkout": {
+        "title": "Secure Payment",
+        "description": "Click the button below to securely pay {amount} MAD via Stripe. You will be redirected to Stripe's secure checkout page.",
+        "payNow": "Pay Now",
+        "redirecting": "Redirecting to Stripe...",
+        "startError": "Failed to start checkout. Please try again.",
+        "poweredBy": "Powered by Stripe. Your payment information is handled securely."
+      },
+      "receipt": {
+        "paymentMethod": {
+          "cod": "Pay on Reception (COD)",
+          "stripe": "Stripe (Online Card Payment)"
+        }
+      }
+    },
+    "standPage": {
+      "loading": "Loading stand...",
+      "unavailable": "Stand or event unavailable",
+      "aboutUs": "About Us",
+      "assistantTitle": "{stand_name} Assistant",
+      "registrationRequired": {
+        "title": "Registration Required",
+        "action": "Go to Event Registration"
+      },
+      "accessState": {
+        "inProgress": "Event In Progress",
+        "ended": "Event Ended",
+        "notStarted": "Event Not Started"
+      },
+      "accessMessage": {
+        "closedBetweenSlots": "Stand access is temporarily closed. Reopens at the next active slot.",
+        "closedAfterEvent": "Cet événement est terminé.",
+        "closedBeforeStart": "Stand access opens when the event starts."
+      },
+      "actions": {
+        "backToDetails": "Back to Details"
+      }
+    },
+    "standCatalog": {
+      "error": {
+        "generic": "Something went wrong. Please try again."
+      },
+      "itemType": {
+        "service": "Service",
+        "product": "Product"
+      },
+      "requestModal": {
+        "successTitle": "Request Sent!",
+        "successMessage": "The enterprise will be notified of your inquiry and will contact you soon.",
+        "quantityLabel": "Quantity",
+        "messageLabel": "Message",
+        "messagePlaceholder": {
+          "service": "Describe what you need from this service…",
+          "product": "Add any specific requirements or questions…"
+        },
+        "submit": "Send Request"
+      },
+      "actions": {
+        "signInToRequest": "Sign in to request",
+        "requestService": "Request Service",
+        "requestProduct": "Request Product"
+      }
+    },
+    "liveStandPlaceholder": {
+      "title": "Stand Page",
+      "message": "This dedicated stand route is being prepared. You can continue browsing stands from the live event page.",
+      "back": "Back to Live Event"
+    },
+    "conferenceWatch": {
+      "loading": {
+        "joining": "Joining conference…",
+        "gettingToken": "Getting your access token…",
+        "default": "Loading…"
+      },
+      "actions": {
+        "goToEvent": "Go to Event",
+        "backToEvent": "← Back to Event",
+        "registerNow": "Register Now"
+      },
+      "registrationRequired": {
+        "title": "Registration Required",
+        "message": "You need approved participation to join conference sessions."
+      },
+      "sessionRegistrationRequired": {
+        "title": "Inscription requise",
+        "message": "You are an approved participant of this event, but you haven't registered for this specific conference session yet."
+      },
+      "statusTitle": {
+        "scheduled": "Conference Not Started Yet",
+        "ended": "Conference Has Ended",
+        "timelineNotPublished": "Timeline Not Published Yet",
+        "eventTimelineEnded": "Event Timeline Ended",
+        "eventInProgress": "Event In Progress",
+        "eventNotLiveYet": "Event Not Live Yet"
+      },
+      "statusMessage": {
+        "scheduled": "This conference has not started yet. Come back when the speaker goes live!",
+        "ended": "This conference has ended.",
+        "timelineNotPublished": "Conference access is enabled only during published live schedule slots.",
+        "eventEnded": "This event has ended, so conference access is now closed.",
+        "betweenSlots": "There is no active slot right now. Access opens automatically at the next slot."
+      },
+      "errors": {
+        "loadFailed": "Failed to load conference",
+        "notAvailable": "Conference not available"
       }
     }
   },
@@ -1119,7 +1294,8 @@
         "processingIndicator": "…"
       },
       "ui": {
-        "emptyValue": "—"
+        "emptyValue": "—",
+        "unnamedOrg": "Unnamed Organization"
       }
     },
     "dashboard": {
@@ -1202,6 +1378,10 @@
         "generating": "Génération…",
         "exporting": "Exportation…"
       },
+      "errors": {
+        "exportPdfFailed": "Platform report export failed.",
+        "exportCsvFailed": "CSV export failed."
+      },
       "refresh": "Actualiser",
       "deepMetrics": {
         "title": "Métriques détaillées de l'événement",
@@ -1218,6 +1398,9 @@
           "activityTrend": "Tendance d'activité sur 14 jours",
           "interactionBreakdown": "Répartition des interactions",
           "activity": "Activité"
+        },
+        "errors": {
+          "failedToLoad": "Failed to load event analytics"
         }
       }
     },
@@ -1373,6 +1556,7 @@
         "schedule": "Programme de l'événement",
         "additionalInfo": "Informations supplémentaires",
         "tags": "Tags",
+        "links": "Links",
         "enterpriseLink": "Lien entreprise",
         "visitorLink": "Lien visiteur",
         "rejectionReason": "Raison du rejet",
@@ -1448,7 +1632,8 @@
         "autoStartScheduled": "⏰ Le démarrage automatique est programmé pour le {date}.",
         "autoCloseScheduled": "🟢 L'événement est en direct. La fermeture automatique est programmée après le {date}.",
         "startDate": "date de début",
-        "endDate": "date de fin"
+        "endDate": "date de fin",
+        "createdOn": "Created"
       },
       "confirm": {
         "paymentTitle": "Confirmer la preuve de paiement",
@@ -1600,6 +1785,9 @@
       "loadingRegistry": "Chargement du registre…",
       "noEnterprises": "Aucune entreprise trouvée",
       "exhibition": "Exposition",
+      "errors": {
+        "loadFailed": "Failed to load enterprises"
+      },
       "table": {
         "company": "Entreprise",
         "industry": "Secteur",
@@ -1799,33 +1987,33 @@
         "markAsPaid": "Marquer comme payé",
         "noAction": "Aucune action",
         "noTransactions": "Aucune transaction trouvée pour les filtres sélectionnés."
-      },
-      "payouts": {
-        "title": "Historique des paiements",
-        "receiver": "Bénéficiaire",
-        "amount": "Montant",
-        "admin": "Administrateur",
-        "date": "Date",
-        "note": "Note",
-        "actions": "Actions",
-        "noRecords": "Aucun enregistrement de paiement pour le moment.",
-        "edit": "Modifier",
-        "delete": "Supprimer",
-        "deleteConfirm": "Supprimer cet enregistrement d'historique de paiement ? Cette action est irréversible.",
-        "deleteSuccess": "Historique des paiements supprimé avec succès",
-        "deleteFailed": "Échec de la suppression de l'historique des paiements",
-        "editSuccess": "Historique des paiements mis à jour avec succès",
-        "editFailed": "Échec de la mise à jour de l'historique des paiements",
-        "invalidId": "Identifiant de paiement invalide",
-        "confirmTitle": "Confirmer le règlement du paiement",
-        "confirmDescription": "Vous procédez au règlement de {source} pour {amount}.",
-        "optionalNote": "Note optionnelle",
-        "notePlaceholder": "Note de règlement (optionnelle)",
-        "editTitle": "Modifier l'historique des paiements",
-        "statusLabel": "Statut",
-        "completed": "Terminé",
-        "pending": "En attente"
       }
+    },
+    "payouts": {
+      "title": "Payout History",
+      "receiver": "Receiver",
+      "amount": "Amount",
+      "admin": "Admin",
+      "date": "Date",
+      "note": "Note",
+      "actions": "Actions",
+      "noRecords": "No payout records yet.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Supprimer cet historique de paiement ? Cette action est irréversible.",
+      "deleteSuccess": "Payout history deleted successfully",
+      "deleteFailed": "Failed to delete payout history",
+      "editSuccess": "Payout history updated successfully",
+      "editFailed": "Failed to update payout history",
+      "invalidId": "Invalid payout id",
+      "confirmTitle": "Confirm Payout Settlement",
+      "confirmDescription": "You are settling {source} for {amount}.",
+      "optionalNote": "Optional note",
+      "notePlaceholder": "Settlement note (optional)",
+      "editTitle": "Edit Payout History",
+      "statusLabel": "Status",
+      "completed": "Completed",
+      "pending": "Pending"
     },
     "subscriptions": {
       "title": "Abonnements",
@@ -1992,10 +2180,19 @@
       "disabledMessage": "Cette page est temporairement désactivée pendant que le processus de modération des paiements est en cours de stabilisation."
     },
     "sessions": {
+      "title": "Conference Sessions",
       "managementTitle": "Gestion des sessions",
       "description": "Importez depuis votre planning d'événements ou créez manuellement — puis cliquez sur Démarrer pour toute session programmée afin de la diffuser en direct.",
       "importFromSchedule": "Importer depuis le planning",
       "newSession": "Nouvelle session",
+      "count": "{count} sessions",
+      "liveCount": "{count} live",
+      "loading": "Loading sessions…",
+      "emptyHelp": "Create a session manually or use Import from Schedule to auto-import conference slots.",
+      "timelineTitle": "Timeline",
+      "liveNow": "Live Now ({count})",
+      "scheduledCount": "Scheduled ({count})",
+      "endedCount": "Ended ({count})",
       "form": {
         "titleLabel": "Titre",
         "titlePlaceholder": "Discours d'ouverture",
@@ -2044,6 +2241,8 @@
         "endSuccess": "Session \"{name}\" terminée",
         "startFailed": "Échec du démarrage de la session",
         "endFailed": "Échec de la fermeture de la session",
+        "created": "Session \"{name}\" created",
+        "noNewSessions": "No new conference sessions found in schedule",
         "syncSuccess": "{count} session(s) importée(s) depuis le planning",
         "syncFailed": "Aucun planning trouvé pour cet événement. Veuillez d'abord ajouter des créneaux conférences dans le constructeur de planning de l'événement."
       },
@@ -2098,6 +2297,9 @@
         "exporting": "Exportation en cours…",
         "retry": "Réessayer",
         "exportFailed": "Échec de l’exportation PDF."
+      },
+      "errors": {
+        "loadFailed": "Failed to load organizer report."
       }
     },
     "eventLiveMonitoring": {
@@ -2335,6 +2537,7 @@
       "form": {
         "eventTitle": "Titre de l'événement",
         "urlSlug": "Slug URL (ID convivial)",
+        "slugPlaceholder": "e.g. tech-expo-2025",
         "timezone": "Fuseau horaire de l'événement",
         "registrationDeadline": "Date limite d'inscription",
         "startDate": "Date de début",
@@ -2435,6 +2638,19 @@
       "loadFailed": "Impossible de charger les détails de l'événement.",
       "overview": {
         "eventInformation": "Informations sur l'événement",
+        "descriptionGoals": "Description & Goals",
+        "extendedContext": "Extended Context",
+        "operationalNotes": "Operational Notes",
+        "quickInfo": "Quick Info",
+        "category": "Category",
+        "location": "Location",
+        "enterpriseAllocation": "Enterprise Allocation",
+        "standPrice": "Stand Price",
+        "perEnterprise": "Per Enterprise",
+        "visitorAccess": "Visitor Access",
+        "paidEntry": "Paid Entry",
+        "freeAccess": "Free Access",
+        "scheduleSubtitle": "Timeline and session breakdown across the event duration.",
         "pricing": "Tarification",
         "inviteLinks": "Liens d'invitation",
         "enterpriseInvite": "Lien d'invitation entreprise",
@@ -2468,6 +2684,7 @@
         "subtitle": "Accès et partage des liens pour votre événement.",
         "enterpriseAccess": "Accès entreprise",
         "visitorAccess": "Accès visiteur",
+        "notGenerated": "Links Not Generated",
         "noEnterpriseLink": "Aucun lien entreprise généré pour le moment.",
         "noVisitorLink": "Aucun lien visiteur généré pour le moment.",
         "linkNotAvailable": "Lien non disponible"
@@ -2641,6 +2858,65 @@
       "help": {
         "title": "Besoin d'aide ?",
         "description": "Pour des modifications au niveau de l'organisation ou des migrations de rôle, veuillez contacter notre équipe de support."
+      }
+    },
+    "layout": {
+      "authChecking": "Checking authorization...",
+      "workspace": "Organizer Workspace",
+      "breadcrumbOrganizer": "Organizer",
+      "notifications": "Notifications",
+      "nav": {
+        "dashboard": "Dashboard",
+        "myEvents": "My Events",
+        "profile": "Profile",
+        "signOut": "Sign Out"
+      }
+    },
+    "scheduleEditor": {
+      "day": "Day",
+      "addSlot": "Add Slot",
+      "removeSlot": "Remove Slot",
+      "autoBlocked": "Auto Blocked",
+      "passed": "PASSED: THIS SESSION'S TIME HAS ALREADY ELAPSED",
+      "timeRange": "Time Range",
+      "spillsNextDay": "This session spills into the next day.",
+      "nextDay": "Next Day",
+      "activityDescription": "Activity Description",
+      "activityPlaceholder": "e.g. Keynote Presentation",
+      "choosePartner": "Choose Partner...",
+      "partnerEnterprise": "Partner Enterprise",
+      "overridesEnterprise": "Overrides Enterprise",
+      "emptyDay": "Empty day. Add your first time slot.",
+      "invalidSchedule": "Invalid Schedule",
+      "blockedSlotTitle": "This slot is unavailable because a session from the previous day spills into this timeframe.",
+      "resolveConflicts": "Please resolve all conflicts before saving.",
+      "saveFailed": "Failed to save schedule",
+      "unknownEnterprise": "Unknown Enterprise",
+      "untitled": "Untitled",
+      "continuingSession": "Continuing session: {label}"
+    },
+    "eventConferences": {
+      "title": "Conference Assignments",
+      "assignHint": "Click \"Assign Speaker\" on any slot to turn it into a live conference with an enterprise speaker.",
+      "invalidDate": "Invalid date",
+      "speaker": "Speaker",
+      "assignSpeaker": "Assign Speaker",
+      "enterpriseSpeaker": "Intervenant de l'entreprise *",
+      "selectEnterprise": "— Select enterprise —",
+      "speakerDisplayName": "Speaker Display Name",
+      "speakerDisplayPlaceholder": "Optional — defaults to enterprise name",
+      "saveAssignment": "Save Assignment",
+      "noSchedule": "No schedule defined for this event.",
+      "allConferences": "All Conferences",
+      "qa": "Q&A",
+      "registered": "{count} registered",
+      "confirm": {
+        "removeAssignment": "Remove conference assignment from this slot?",
+        "cancelConference": "Cancel this conference?"
+      },
+      "errors": {
+        "assignConference": "Failed to assign conference",
+        "removeAssignment": "Failed to remove assignment"
       }
     }
   },
@@ -3007,6 +3283,8 @@
         "resourceUrlRequired": "Veuillez fournir une URL valide pour cette ressource.",
         "resourceFileRequired": "Veuillez sélectionner un fichier à télécharger.",
         "standConfigNotLoaded": "Configuration du stand pas encore complètement chargée.",
+        "resourceAddFailed": "Failed to add resource",
+        "invalidQuantityForProduct": "Invalid quantity for {product}. Please choose a value between 1 and available stock.",
         "aiActivationSuccess": "Assistant IA activé ! {indexed_documents} document(s) indexé(s).",
         "aiActivationFailed": "Activation RAG échouée",
         "loadingStandConfig": "Chargement de la configuration du stand...",
@@ -3021,13 +3299,28 @@
         "companyBioPlaceholder": "Que trouveront les visiteurs à votre stand ?",
         "logoUrl": "URL du Logo",
         "logoUrlPlaceholder": "https://...",
+        "customBackgroundPlaceholder": "https://... or /stands/...",
         "uploadLogoImage": "Télécharger l'Image du Logo",
         "uploadLogoHelper": "Utilisez une URL ou téléchargez un fichier.",
         "standBackgroundPresets": "Préréglages de Fond du Stand",
+        "backgroundPresetWoodWave": "Bureau Wood Wave",
+        "backgroundPresetNeonWhite": "Neon White Tech",
+        "backgroundPresetNeonDark": "Neon Dark Tech",
+        "backgroundPresetClassicWood": "Classic Wood Desk",
+        "backgroundPresetOffice": "Office Stand",
         "saveBranding": "Enregistrer l'Image de Marque",
+        "themeColor": "Theme Color",
+        "presenterAvatar": "Presenter Avatar",
+        "auto": "Auto",
+        "defaultAvatarSelection": "Use the default avatar selection.",
+        "customAvatarUrl": "Custom Avatar URL",
+        "customAvatarPlaceholder": "https://... or /stands/...",
+        "presenterMale": "Male Presenter",
+        "presenterFemale": "Female Presenter",
         "selectProductsDescription": "Sélectionnez les produits de votre catalogue à afficher sur ce stand.",
         "noProductsInCatalog": "Aucun produit dans votre catalogue pour le moment.",
         "addProductsFirst": "Ajoutez d'abord des produits.",
+        "quoteOnly": "Devis uniquement",
         "productTypeService": "Service",
         "productTypeProduct": "Produit",
         "productStatusAvailable": "disponible",
@@ -3042,6 +3335,7 @@
         "resourceTypeImage": "Image",
         "resourceTypeVideo": "URL Vidéo",
         "resourceTypeLink": "Lien",
+        "urlLinkLabel": "URL / Link",
         "urlPlaceholder": "https://...",
         "uploadFileLabel": "Télécharger le Fichier",
         "addResourceButton": "Ajouter une Ressource",
@@ -3286,6 +3580,32 @@
         "cancelConfirm": "Annuler la commande pour « {product} » ? Cela marquera la commande comme annulée et restaurera le stock des articles.",
         "cancelNote": "Note d'annulation facultative"
       },
+      "labels": {
+        "quantity": "Quantity",
+        "payment": "Payment",
+        "stripeIntent": "Intention Stripe",
+        "pending": "Pending",
+        "receiver": "Receiver",
+        "receiverPhone": "Receiver phone",
+        "shipping": "Shipping",
+        "noShippingAddress": "Aucune adresse de livraison fournie",
+        "deliveryNotes": "Delivery notes",
+        "fulfillmentTimeline": "Fulfillment timeline",
+        "current": "Current",
+        "latestInternalNote": "Latest internal note",
+        "optionalInternalNote": "Optional internal note for this status change",
+        "visitor": "Visitor",
+        "company": "Company",
+        "paymentToConfirmWithVisitor": "To be confirmed with visitor",
+        "payOnReceptionCod": "Pay on reception (COD)"
+      },
+      "actions": {
+        "emailVisitor": "Email visitor",
+        "callVisitor": "Call visitor",
+        "markAsStatus": "Marquer comme {status}",
+        "confirmServiceDetails": "Confirm Service Details",
+        "completed": "Completed"
+      },
       "refresh": "Actualiser les données",
       "syncing": "Synchronisation des enregistrements...",
       "kpi": {
@@ -3352,7 +3672,72 @@
       "live": "En direct",
       "scheduled": "Planifié",
       "goLive": "Diffuser en direct",
-      "enterStudio": "Entrer dans le studio"
+      "enterStudio": "Entrer dans le studio",
+      "goLiveIn": "Go Live in {minutes} min",
+      "goLiveAvailableTooltip": "Go Live available 20 minutes before start ({minutes} min away)",
+      "timeouts": {
+        "loadingEventTimeline": "Loading event timeline timed out. Please check your connection and retry.",
+        "loadingConferenceDetails": "Loading conference details timed out. Please check your connection and retry.",
+        "startingConferenceRoom": "Starting conference room timed out. Please check your connection and retry.",
+        "refreshingConferenceDetails": "Refreshing conference details timed out. Please check your connection and retry.",
+        "requestingLiveAccessToken": "Requesting live access token timed out. Please check your connection and retry.",
+        "refreshingLiveAccessToken": "Refreshing live access token timed out. Please check your connection and retry."
+      }
+    },
+    "speakerRoom": {
+      "sessionState": {
+        "liveSession": "Live session",
+        "startsIn": "Starts in {duration}",
+        "endsIn": "Ends in {duration}",
+        "endedAgo": "Ended {duration} ago"
+      },
+      "panels": {
+        "speakerChat": "Speaker Chat",
+        "liveChat": "Live Chat",
+        "qa": "Q&A"
+      },
+      "labels": {
+        "broadcastingLive": "Broadcasting Live",
+        "recoveringConnection": "Recovering Connection…",
+        "studioActive": "Studio Active",
+        "sharing": "Sharing",
+        "streamDisturbance": "Stream Disturbance",
+        "producerCenter": "Producer Center",
+        "studioDashboard": "Studio Dashboard",
+        "conferenceManagement": "Conference Management",
+        "leadSpeaker": "Lead Speaker",
+        "live": "LIVE",
+        "assignedSpeaker": "Assigned speaker",
+        "broadcastingNow": "Broadcasting Now",
+        "liveAudience": "Live Audience",
+        "totalAccess": "Total Access",
+        "activeRoster": "Active Roster",
+        "remoteCount": "{count} remote",
+        "youProducer": "You (Producer)",
+        "waitingForAudience": "Waiting for audience",
+        "moderation": "Moderation",
+        "noAudienceConnected": "No audience connected."
+      },
+      "actions": {
+        "eventSettings": "Event Settings",
+        "ending": "Ending…",
+        "endSession": "End Session",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "stopVideo": "Stop Video",
+        "startVideo": "Start Video",
+        "shareScreen": "Share Screen",
+        "sync": "Sync",
+        "resumeBroadcast": "Resume Broadcast",
+        "remove": "Remove"
+      },
+      "messages": {
+        "confirmEndSession": "Are you sure you want to end this session for everyone?",
+        "audienceInteractionDisabled": "Audience interaction is disabled for this session.",
+        "connectionDropDetected": "We've detected a connection drop. Your audience is still waiting in the room.",
+        "participantRemoved": "{name} was removed from the conference.",
+        "participantRemovalUnavailable": "Participant removal is not available in this browser session."
+      }
     },
     "liveConference": {
       "title": "Studio Orateur",
@@ -3641,7 +4026,8 @@
         "subtitle": "Sélectionnez un visiteur ou une entreprise dans la liste pour démarrer ou poursuivre votre conversation.",
         "conversation": "Conversation",
         "member": "Membre",
-        "noMessages": "Pas encore de messages"
+        "noMessages": "Pas encore de messages",
+        "b2bChat": "B2B Chat"
       },
       "meetings": {
         "requestLabel": "Demande de visiteur #{id}",
@@ -3714,6 +4100,19 @@
         "title": "Invitation invalide ou expirée.",
         "subtitle": "Ce lien d'invitation n'est plus valide.",
         "action": "Retour à l'accueil"
+      }
+    },
+    "inviteAccept": {
+      "title": "Enterprise Invite",
+      "processing": "Processing your enterprise invite...",
+      "missingEventId": "Missing event identifier in the invite link.",
+      "enterpriseOnly": "This invite is for enterprise accounts. Please log in with an enterprise account.",
+      "success": "Your enterprise is now accepted as a guest participant with stand access.",
+      "error": "Impossible d'accepter l'invitation. Elle est peut-être invalide ou expirée.",
+      "actions": {
+        "configureStand": "Configure Your Stand",
+        "goToEvents": "Go to Enterprise Events",
+        "backToEvents": "Back to Enterprise Events"
       }
     }
   },
@@ -3795,7 +4194,13 @@
         "unreachableRoute": "Itinéraire inaccessible",
         "eventRemoved": "Identité de l'événement supprimée",
         "standRemoved": "Identité du stand supprimée",
-        "organizationRemoved": "Identité de l'organisation supprimée"
+        "organizationRemoved": "Identité de l'organisation supprimée",
+        "unknownEvent": "Unknown Event",
+        "unknownStand": "Unknown Stand",
+        "unknownOrganization": "Unknown Organization",
+        "noDescription": "No description provided.",
+        "identityRemoved": "{type} Identity Removed",
+        "idPrefix": "ID: {id}"
       },
       "errors": {
         "loadFailed": "Échec du chargement des favoris",
@@ -3803,9 +4208,18 @@
       }
     },
     "marketplace": {
+      "landing": {
+        "title": "Marketplace",
+        "subtitle": "Browse products and services offered by enterprise stands across all events. Visit a live event to explore stand marketplaces.",
+        "actions": {
+          "browseEvents": "Browse Events"
+        }
+      },
       "success": {
         "title": "Paiement réussi !",
         "subtitle": "Merci pour votre achat. Votre commande a été confirmée.",
+        "buyerFallback": "Visitor",
+        "moreItemsSuffix": " + {count} more",
         "paymentLabels": {
           "cashOnReception": "Paiement en espèces à la réception",
           "stripePayment": "Paiement via Stripe"
@@ -3880,6 +4294,12 @@
       "emptyHall": "Le hall d'exposition est actuellement vide. Revenez plus tard !",
       "sponsor": "Sponsor",
       "favorite": "Favori",
+      "favorited": "Favorited",
+      "addFavorite": "Add stand to favorites",
+      "removeFavorite": "Remove stand from favorites",
+      "loadingHall": "Loading Exhibition Hall...",
+      "loadFailed": "Échec du chargement des stands. Veuillez réessayer plus tard.",
+      "pageOf": "Page {current} sur {total}",
       "goToPage": "Aller à la page"
     },
     "conferencesTab": {
@@ -3899,10 +4319,48 @@
         "subtitle": "Revenez plus tard pour les sessions à venir."
       }
     },
+    "conferenceCard": {
+      "status": {
+        "scheduled": "Programmé",
+        "canceled": "Annulé"
+      },
+      "attendeeCountRegistered": "{count} inscrit(s)",
+      "features": {
+        "chatEnabled": "Chat activé",
+        "qaOpen": "Q&A ouvert"
+      },
+      "actions": {
+        "joinLive": "Rejoindre en direct",
+        "registerSession": "S'inscrire à la session",
+        "registered": "Inscrit"
+      }
+    },
     "scheduleTab": {
       "title": "Programme de l'événement",
       "daysLabel": "Jours du programme",
       "dayLabel": "Jour {day}",
+      "visitorTimeline": "Chronologie du visiteur",
+      "activitySchedule": "Programme des activités de l'événement",
+      "followActivity": "Suivez chaque activité par chronologie et suivez ce qui se passe en direct.",
+      "timesShown": "Heures affichées dans votre fuseau horaire : {tz}",
+      "happeningNow": "En cours",
+      "nextUp": "À suivre",
+      "noLiveSession": "Aucune session n'est actuellement en direct.",
+      "noUpcoming": "Aucune activité à venir disponible.",
+      "sessionsCount": "{n} sessions",
+      "liveCount": "{n} en direct",
+      "upcomingCount": "{n} à venir",
+      "noSessionsDay": "Aucune session programmée pour ce jour pour le moment.",
+      "loadingDetails": "Chargement des détails de l'événement...",
+      "notPublished": "Le programme de l'événement n'a pas encore été publié. Revenez plus tard pour les mises à jour.",
+      "toLabel": "à",
+      "untitledSession": "Session sans titre",
+      "nextDayBadge": "(+1 jour)",
+      "kind": {
+        "conference": "Conférence",
+        "talk": "Présentation",
+        "activity": "Activité"
+      },
       "status": {
         "liveNow": "En direct maintenant",
         "upcoming": "À venir",
@@ -3917,7 +4375,7 @@
       "searchPlaceholder": "Rechercher des participants...",
       "empty": "Aucun participant trouvé",
       "total": "Total {n}",
-      "visiteurs": "Visiteurs {n}",
+      "visitors": "Visiteurs {n}",
       "enterprises": "Entreprises {n}",
       "attendees": "Participants",
       "visible": "{n} visible",
@@ -4144,6 +4602,8 @@
       "noValidDurations": "Aucune durée valide pour cette heure de début.",
       "messageOptional": "Message (optionnel)",
       "messagePlaceholder": "Décrivez brièvement ce que vous souhaitez discuter...",
+      "constraintNotice": "Les demandes de réunion sont limitées par le programme de l'événement, votre disponibilité, la disponibilité de l'entreprise et les chevauchements de conférences.",
+      "checkingAvailability": "Vérification de la disponibilité...",
       "backToMeetings": "Retour aux réunions",
       "sendingRequest": "Envoi de la demande...",
       "sendRequest": "Envoyer la demande",
@@ -4195,10 +4655,12 @@
       "onlineCount": "{n} en ligne",
       "noOtherAttendees": "Pas encore d'autres participants",
       "chatPlaceholder": "Tapez un message",
+      "noMessages": "Pas encore de messages",
       "sending": "Envoi",
       "send": "Envoyer",
       "liveChat": "Chat en direct",
-      "notSet": "Non défini"
+      "notSet": "Non défini",
+      "you": "Vous"
     },
     "qaPanel": {
       "title": "Questions & Réponses",
@@ -4252,6 +4714,8 @@
       "quietRoom": "La salle est actuellement silencieuse",
       "waitingStreams": "En attente du début des flux",
       "switchMainPip": "Basculer les vidéos principale et image dans l'image",
+      "switch": "Changer",
+      "you": "Vous",
       "screenShared": "Écran partagé",
       "streamPaused": "Flux en pause"
     },
@@ -4266,6 +4730,20 @@
         "goToEvent": "Aller à la page de l'événement",
         "enterLive": "Entrer dans l'expérience en direct",
         "backToEvents": "Retour aux événements"
+      }
+    },
+    "assistantPage": {
+      "badge": "Guidage assisté par IA",
+      "title": "Assistant de la plateforme",
+      "subtitle": "Posez n'importe quelle question sur l'exposition. L'assistant peut vous aider à découvrir des événements, des stands et des ressources adaptés à vos intérêts.",
+      "chat": {
+        "title": "Assistant de la plateforme",
+        "subtitle": "Obtenez des réponses instantanées avec des mises à jour en direct de notre base de connaissances."
+      },
+      "suggestedPrompts": {
+        "trendingEvents": "Quels sont les événements tendance aujourd'hui ?",
+        "navigateExhibition": "Aidez-moi à naviguer dans cette exposition.",
+        "recommendStands": "Recommandez-moi des stands en fonction de mes intérêts."
       }
     },
     "aiAssistant": {
@@ -4300,7 +4778,35 @@
       "title": "Webinaires",
       "subtitle": "Regardez les sessions et téléchargez les enregistrements...",
       "transcriptViewer": "Visionneuse de transcription",
-      "transcriptUpload": "Téléchargez un enregistrement audio pour générer une transcription."
+      "transcriptUpload": "Téléchargez un enregistrement audio pour générer une transcription.",
+      "transcriptUploader": {
+        "labels": {
+          "uploadAudio": "Télécharger l'audio",
+          "segments": "Segments"
+        },
+        "actions": {
+          "transcribe": "Transcrire"
+        },
+        "meta": {
+          "language": "Langue",
+          "duration": "Durée"
+        },
+        "errors": {
+          "transcribeFailed": "Échec de la transcription"
+        }
+      },
+      "items": {
+        "futureTechExpo": {
+          "title": "Keynote Future Tech Expo",
+          "date": "17 fév. 2026",
+          "description": "Points forts des démos IA, cloud et XR sur les stands virtuels."
+        },
+        "healthcareInnovations": {
+          "title": "Sommet sur les innovations en santé",
+          "date": "17 fév. 2026",
+          "description": "Sessions sur la santé numérique et la biotechnologie avec Q&A."
+        }
+      }
     },
     "eventPayment": {
       "loading": "Chargement des détails de paiement...",
@@ -4329,7 +4835,13 @@
       "viewDetails": "Voir les détails",
       "viewSummary": "Voir le résumé",
       "nextSlot": "Créneau suivant :",
-      "currentSlot": "Actuel : {label}"
+      "currentSlot": "Actuel : {label}",
+      "virtual": "Virtuel",
+      "defaultCategory": "Exposition"
+    },
+    "standCard": {
+      "descriptionFallback": "Visitez notre stand pour découvrir nos solutions premium et entrer en contact avec notre équipe.",
+      "visitStand": "Visiter le stand"
     },
     "eventsGrid": {
       "noEvents": "Aucun événement trouvé",
@@ -4397,6 +4909,7 @@
       "liveSessionsCount": "{n} sessions en direct",
       "myMeetings": "Mes réunions",
       "myMeetingsSubtitle": "Inclut les personnes que vous allez rencontrer, l'heure de début, la durée, le compte à rebours et la connexion en direct.",
+      "conferencesTitle": "Conférences",
       "noMeetings": "Aucune réunion pour cet événement pour le moment.",
       "with": "Avec",
       "start": "Début",
@@ -4420,6 +4933,22 @@
       "startsInDaysHours": "Commence dans {d}j {h}h",
       "startsInHoursMinutes": "Commence dans {h}h {m}m",
       "startsInMinutes": "Commence dans {m}m"
+    },
+    "hall3d": {
+      "scene": {
+        "clickStandPrompt": "▼ Cliquez sur un stand pour le visiter ▼",
+        "viewAllStands": "Voir tous les stands",
+        "actions": {
+          "viewFullscreen": "Plein écran",
+          "exitFullscreen": "Quitter le plein écran",
+          "fullscreen": "Plein écran"
+        }
+      },
+      "booth": {
+        "defaults": {
+          "standName": "Stand"
+        }
+      }
     },
     "floatingAssistant": {
       "buttonLabel": "Assistant",

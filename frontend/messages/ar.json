@@ -605,6 +605,24 @@
       "unauthorized": "غير مصرح",
       "notFound": "غير موجود."
     },
+    "diag": {
+      "apiUrl": "NEXT_PUBLIC_API_URL = \"{value}\""
+    },
+    "assistant": {
+      "openAssistantAria": "فتح المساعد",
+      "chat": {
+        "authRequired": "يرجى تسجيل الدخول لاستخدام المساعد.",
+        "requestFailed": "فشل طلب المساعد",
+        "emptyTitle": "كيف يمكنني مساعدتك؟",
+        "emptySubtitle": "اسأل عن أي شيء بخصوص المنصة أو هذا الحدث.",
+        "loginPromptPrefix": "يرجى",
+        "loginPromptSuffix": "للدردشة مع المساعد.",
+        "composerPlaceholder": "اسأل المساعد...",
+        "composerStopAria": "إيقاف",
+        "composerSendAria": "إرسال",
+        "composerHint": "اضغط إدخال للإرسال · شيفت+إدخال لسطر جديد"
+      }
+    },
     "roles": {
       "admin": "مسؤول",
       "organizer": "منظم",
@@ -646,6 +664,10 @@
         "slotPlaceholder": "النشاط / الوصف...",
         "removeSlotTooltip": "إزالة الحجز",
         "dayLabel": "اليوم {day_number}",
+        "summary": "{range} · {count} خانة{plural}",
+        "emptySlotsPrefix": "لا توجد أوقات متاحة بعد -- انقر",
+        "emptySlotsCta": "+ إضافة فترة زمنية",
+        "emptySlotsSuffix": "أسفل",
         "emptySlots": "لا توجد أوقات مجدولة بعد -- اضغط + لإضافة حجز أدناه",
         "addSlot": "+ إضافة فترة زمنية",
         "noDatesPlaceholder": "حدد تاريخ البدء والنهاية أعلاه",
@@ -693,6 +715,7 @@
       "revisitStand": "زيارة الجناح مرة أخرى",
       "product": "منتج",
       "service": "خدمة",
+      "quantityShort": "الكمية {count}",
       "paidOrdersHint": "لديك {count} طلب مدفوع{plural}. كل بطاقة تجمع بين المنتجات والخدمات من نفس الدفع.",
       "payment": {
         "stripe": "سترايب",
@@ -810,6 +833,14 @@
     "socialProof": {
       "title": "موثوق به من فرق الفعاليات الحديثة",
       "subtitle": "مصمم للمنظمين والشركات التي تهتم بتجارب الحضور المميزة.",
+      "partners": {
+        "acmeCorp": "شركة أكمي",
+        "zenithTech": "زينيث تك",
+        "horizonDynamics": "هورايزن ديناميكس",
+        "nexusIndustries": "صناعات نيكسوس",
+        "quantumSolutions": "حلول الكم",
+        "apexInnovations": "الابتكارات القصوى"
+      },
       "stats": {
         "eventsHosted": {
           "label": "الفعاليات المستضافة",
@@ -852,6 +883,10 @@
     }
   },
   "layout": {
+    "metadata": {
+      "title": "IVEP - منصة المعرض الافتراضي الذكية",
+      "description": "اختبر مستقبل المعارض مع IVEP."
+    },
     "navbar": {
       "home": "الرئيسية",
       "events": "الفعاليات",
@@ -980,6 +1015,7 @@
     },
     "detail": {
       "loading": "جارٍ تحميل تفاصيل الحدث...",
+      "failedToLoad": "فشل في تحميل تفاصيل الحدث. يرجى المحاولة مرة أخرى لاحقًا.",
       "notFound": "الحدث غير موجود",
       "tryAgain": "حاول مرة أخرى",
       "organizerFallback": "منظم IVEP",
@@ -1017,6 +1053,7 @@
         "title": "أبرز الجدول",
         "dayLabel": "اليوم {day_number}",
         "nextDayBadge": "+1 يوم",
+        "sessionFallback": "الجلسة",
         "noSchedule": "سيتم عرض تفاصيل الجدول الكامل هنا بمجرد نشر فترات الجدول الزمني.",
         "unlockFullSchedule": "قم بالتسجيل لفتح الجدول الكامل وكل الأقسام المباشرة."
       },
@@ -1085,7 +1122,8 @@
           "pending": "قيد الانتظار",
           "rejected": "مرفوض",
           "notJoined": "لم ينضم"
-        }
+        },
+        "nextSlotIn": "الفترة التالية خلال {time}"
       },
       "receiptDownload": {
         "payerDefault": "زائر",
@@ -1095,6 +1133,143 @@
       "joinAlert": {
         "failed": "فشل الانضمام إلى الحدث. يرجى المحاولة مرة أخرى.",
         "notFound": "الحدث غير موجود."
+      }
+    },
+    "live": {
+      "loading": "جارٍ تحميل الحدث..."
+    },
+    "payment": {
+      "loading": "جارٍ تحميل تفاصيل الدفع...",
+      "title": "دفع الحدث",
+      "subtitle": "دفع آمن لـ {title}",
+      "ticketPrice": "سعر التذكرة",
+      "freeEvent": {
+        "title": "هذا الحدث مجاني",
+        "message": "لا حاجة للدفع لهذا الحدث."
+      },
+      "actions": {
+        "backToEvent": "← العودة إلى الحدث",
+        "enterEvent": "أدخل الحدث →",
+        "downloadInvoice": "تحميل الفاتورة (PDF)"
+      },
+      "cancelled": {
+        "title": "تم إلغاء الدفع",
+        "message": "تم إلغاء دفعتك. يمكنك المحاولة مرة أخرى أدناه."
+      },
+      "verifying": {
+        "title": "جارٍ التحقق من الدفع...",
+        "message": "يرجى الانتظار بينما نؤكد عملية الدفع الخاصة بك.",
+        "error": "فشل التحقق من الدفع. يرجى الاتصال بالدعم."
+      },
+      "confirmed": {
+        "title": "تم تأكيد الدفع!",
+        "message": "تم التحقق من دفعتك. لديك الآن وصول كامل إلى هذا الحدث."
+      },
+      "checkout": {
+        "title": "دفع آمن",
+        "description": "انقر على الزر أدناه لدفع {amount} درهم مغربي بأمان عبر Stripe. سيتم توجيهك إلى صفحة الدفع الآمنة على Stripe.",
+        "payNow": "ادفع الآن",
+        "redirecting": "جارٍ إعادة التوجيه إلى Stripe...",
+        "startError": "فشل في بدء إتمام الشراء. يرجى المحاولة مرة أخرى.",
+        "poweredBy": "مدعوم من Stripe. يتم التعامل مع معلومات الدفع الخاصة بك بأمان."
+      },
+      "receipt": {
+        "paymentMethod": {
+          "cod": "الدفع عند الاستلام (الدفع النقدي عند التسليم)",
+          "stripe": "سترايب (الدفع عبر البطاقة الإلكترونية)"
+        }
+      }
+    },
+    "standPage": {
+      "loading": "جاري تحميل الجناح...",
+      "unavailable": "الكشك أو الحدث غير متاح",
+      "aboutUs": "معلومات عنا",
+      "assistantTitle": "مساعد {stand_name}",
+      "registrationRequired": {
+        "title": "التسجيل مطلوب",
+        "action": "الذهاب إلى تسجيل الفعالية"
+      },
+      "accessState": {
+        "inProgress": "الحدث جارٍ",
+        "ended": "انتهى الحدث",
+        "notStarted": "لم يبدأ الحدث"
+      },
+      "accessMessage": {
+        "closedBetweenSlots": "الوصول إلى الجناح مغلق مؤقتًا. سيفتح عند الفترة النشطة التالية.",
+        "closedAfterEvent": "انتهى هذا الحدث.",
+        "closedBeforeStart": "يتم فتح الدخول إلى الكشك عند بدء الحدث."
+      },
+      "actions": {
+        "backToDetails": "العودة إلى التفاصيل"
+      }
+    },
+    "standCatalog": {
+      "error": {
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+      },
+      "itemType": {
+        "service": "الخدمة",
+        "product": "منتج"
+      },
+      "requestModal": {
+        "successTitle": "تم إرسال الطلب!",
+        "successMessage": "سيتم إخطار المؤسسة باستفسارك وستتواصل معك قريبًا.",
+        "quantityLabel": "الكمية",
+        "messageLabel": "رسالة",
+        "messagePlaceholder": {
+          "service": "صف ما تحتاجه من هذه الخدمة…",
+          "product": "أضف أي متطلبات أو أسئلة محددة…"
+        },
+        "submit": "إرسال الطلب"
+      },
+      "actions": {
+        "signInToRequest": "تسجيل الدخول لطلب",
+        "requestService": "طلب الخدمة",
+        "requestProduct": "طلب المنتج"
+      }
+    },
+    "liveStandPlaceholder": {
+      "title": "صفحة الوقوف",
+      "message": "يتم إعداد مسار الجناح المخصص هذا. يمكنك الاستمرار في تصفح الأجنحة من صفحة الحدث المباشر.",
+      "back": "العودة إلى الحدث المباشر"
+    },
+    "conferenceWatch": {
+      "loading": {
+        "joining": "جارٍ الانضمام إلى المؤتمر…",
+        "gettingToken": "جاري الحصول على رمز الوصول الخاص بك...",
+        "default": "جارٍ التحميل…"
+      },
+      "actions": {
+        "goToEvent": "اذهب إلى الحدث",
+        "backToEvent": "← العودة إلى الحدث",
+        "registerNow": "سجل الآن"
+      },
+      "registrationRequired": {
+        "title": "التسجيل مطلوب",
+        "message": "تحتاج إلى مشاركة معتمدة للانضمام إلى جلسات المؤتمر."
+      },
+      "sessionRegistrationRequired": {
+        "title": "التسجيل مطلوب",
+        "message": "أنت مشارك معتمد في هذا الحدث، ولكنك لم تسجل بعد لهذه الجلسة المحددة من المؤتمر."
+      },
+      "statusTitle": {
+        "scheduled": "المؤتمر لم يبدأ بعد",
+        "ended": "انتهى المؤتمر",
+        "timelineNotPublished": "الجدول الزمني لم يُنشر بعد",
+        "eventTimelineEnded": "انتهى الجدول الزمني للحدث",
+        "eventInProgress": "الحدث جارٍ",
+        "eventNotLiveYet": "الحدث لم يبدأ بعد"
+      },
+      "statusMessage": {
+        "scheduled": "لم تبدأ هذه المؤتمر بعد. عد عندما يبدأ المتحدث بالبث المباشر!",
+        "ended": "انتهى هذا المؤتمر.",
+        "timelineNotPublished": "الوصول إلى المؤتمر ممكن فقط خلال الفترات الزمنية المجدولة المباشرة المنشورة.",
+        "eventEnded": "لقد انتهى هذا الحدث، لذا تم إغلاق الوصول إلى المؤتمر الآن.",
+        "betweenSlots": "لا يوجد فترة نشطة حالياً. الوصول يفتح تلقائياً في الفترة التالية."
+      },
+      "errors": {
+        "loadFailed": "فشل في تحميل المؤتمر",
+        "notAvailable": "المؤتمر غير متاح"
       }
     }
   },
@@ -1119,7 +1294,8 @@
         "processingIndicator": "…"
       },
       "ui": {
-        "emptyValue": "—"
+        "emptyValue": "—",
+        "unnamedOrg": "منظمة بدون اسم"
       }
     },
     "dashboard": {
@@ -1202,6 +1378,10 @@
         "generating": "جارٍ الإنشاء…",
         "exporting": "جارٍ التصدير…"
       },
+      "errors": {
+        "exportPdfFailed": "فشل تصدير تقرير المنصة.",
+        "exportCsvFailed": "فشل تصدير ملف CSV."
+      },
       "refresh": "تحديث",
       "deepMetrics": {
         "title": "مقاييس متعمقة للحدث",
@@ -1218,6 +1398,9 @@
           "activityTrend": "اتجاه النشاط خلال 14 يومًا",
           "interactionBreakdown": "تحليل التفاعل",
           "activity": "النشاط"
+        },
+        "errors": {
+          "failedToLoad": "فشل تحميل تحليلات الحدث"
         }
       }
     },
@@ -1373,6 +1556,7 @@
         "schedule": "جدول الحدث",
         "additionalInfo": "معلومات إضافية",
         "tags": "الوسوم",
+        "links": "روابط",
         "enterpriseLink": "رابط المؤسسة",
         "visitorLink": "رابط الزائر",
         "rejectionReason": "سبب الرفض",
@@ -1448,7 +1632,8 @@
         "autoStartScheduled": "⏰ تم جدولة بدء تلقائي عند الوصول إلى {date}.",
         "autoCloseScheduled": "🟢 الفعالية مباشرة. تم جدولة إغلاق تلقائي عند مرور {date}.",
         "startDate": "تاريخ البدء",
-        "endDate": "تاريخ الانتهاء"
+        "endDate": "تاريخ الانتهاء",
+        "createdOn": "تم الإنشاء"
       },
       "confirm": {
         "paymentTitle": "تأكيد إثبات الدفع",
@@ -1600,6 +1785,9 @@
       "loadingRegistry": "جارٍ تحميل السجل…",
       "noEnterprises": "لا توجد شركات",
       "exhibition": "المعرض",
+      "errors": {
+        "loadFailed": "فشل في تحميل الشركات"
+      },
       "table": {
         "company": "الشركة",
         "industry": "الصناعة",
@@ -1799,33 +1987,33 @@
         "markAsPaid": "تمييز كمدفوع",
         "noAction": "لا توجد إجراءات",
         "noTransactions": "لا توجد معاملات للمرشحات المختارة."
-      },
-      "payouts": {
-        "title": "تاريخ المدفوعات",
-        "receiver": "المتلقي",
-        "amount": "المبلغ",
-        "admin": "المسؤول",
-        "date": "التاريخ",
-        "note": "ملاحظة",
-        "actions": "الإجراءات",
-        "noRecords": "لا توجد سجلات للمدفوعات حتى الآن.",
-        "edit": "تعديل",
-        "delete": "حذف",
-        "deleteConfirm": "هل تريد حذف سجل تاريخ الدفع هذا؟ لا يمكن التراجع عن هذا الإجراء.",
-        "deleteSuccess": "تم حذف تاريخ الدفع بنجاح",
-        "deleteFailed": "فشل في حذف تاريخ الدفع",
-        "editSuccess": "تم تحديث تاريخ الدفع بنجاح",
-        "editFailed": "فشل في تحديث تاريخ الدفع",
-        "invalidId": "معرف دفع غير صالح",
-        "confirmTitle": "تأكيد تسوية الدفع",
-        "confirmDescription": "أنت تقوم بتسوية {source} بمبلغ {amount}.",
-        "optionalNote": "ملاحظة اختيارية",
-        "notePlaceholder": "ملاحظة التسوية (اختياري)",
-        "editTitle": "تعديل تاريخ الدفع",
-        "statusLabel": "الحالة",
-        "completed": "مكتمل",
-        "pending": "قيد الانتظار"
       }
+    },
+    "payouts": {
+      "title": "تاريخ المدفوعات",
+      "receiver": "المستلم",
+      "amount": "المبلغ",
+      "admin": "مسؤول",
+      "date": "التاريخ",
+      "note": "ملاحظة",
+      "actions": "الإجراءات",
+      "noRecords": "لا توجد سجلات صرف حتى الآن.",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "deleteConfirm": "هل تريد حذف سجل دفع هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+      "deleteSuccess": "تم حذف سجل المدفوعات بنجاح",
+      "deleteFailed": "فشل في حذف سجل المدفوعات",
+      "editSuccess": "تم تحديث سجل المدفوعات بنجاح",
+      "editFailed": "فشل في تحديث سجل المدفوعات",
+      "invalidId": "معرّف الدفع غير صالح",
+      "confirmTitle": "تأكيد تسوية الدفعة",
+      "confirmDescription": "أنت تقوم بتسوية {source} مقابل {amount}.",
+      "optionalNote": "ملاحظة اختيارية",
+      "notePlaceholder": "ملاحظة التسوية (اختياري)",
+      "editTitle": "تعديل سجل المدفوعات",
+      "statusLabel": "الحالة",
+      "completed": "مكتمل",
+      "pending": "قيد الانتظار"
     },
     "subscriptions": {
       "title": "الاشتراكات",
@@ -1992,10 +2180,19 @@
       "disabledMessage": "تم تعطيل هذه الصفحة مؤقتًا بينما يتم استقرار سير العمل الخاص بمراجعة الدفع."
     },
     "sessions": {
+      "title": "جلسات المؤتمر",
       "managementTitle": "إدارة الجلسات",
       "description": "استورد من جدول أحداثك أو أنشئ يدويًا — ثم اضغط بدء على أي جلسة مجدولة للبث المباشر.",
       "importFromSchedule": "استيراد من الجدول",
       "newSession": "جلسة جديدة",
+      "count": "{count} جلسة",
+      "liveCount": "{count} مباشر",
+      "loading": "جارٍ تحميل الجلسات…",
+      "emptyHelp": "أنشئ جلسة يدويًا أو استخدم الاستيراد من الجدول لاستيراد فترات المؤتمر تلقائيًا.",
+      "timelineTitle": "الجدول الزمني",
+      "liveNow": "عَلى الهواء الآن ({count})",
+      "scheduledCount": "مجدول ({count})",
+      "endedCount": "انتهى ({count})",
       "form": {
         "titleLabel": "العنوان",
         "titlePlaceholder": "الكلمة الافتتاحية",
@@ -2044,6 +2241,8 @@
         "endSuccess": "تم إنهاء الجلسة \"{name}\"",
         "startFailed": "فشل في بدء الجلسة",
         "endFailed": "فشل في إنهاء الجلسة",
+        "created": "تم إنشاء الجلسة \"{name}\"",
+        "noNewSessions": "لم يتم العثور على جلسات مؤتمر جديدة في الجدول",
         "syncSuccess": "تم استيراد {count} جلسة من الجدول",
         "syncFailed": "لم يتم العثور على جدول لهذا الحدث. يرجى إضافة فترات المؤتمر في منشئ جدول الحدث أولاً."
       },
@@ -2098,6 +2297,9 @@
         "exporting": "جارِ التصدير…",
         "retry": "حاول مرة أخرى",
         "exportFailed": "فشل تصدير ملف PDF."
+      },
+      "errors": {
+        "loadFailed": "فشل في تحميل تقرير المنظم."
       }
     },
     "eventLiveMonitoring": {
@@ -2335,6 +2537,7 @@
       "form": {
         "eventTitle": "عنوان الفعالية",
         "urlSlug": "رابط URL (معرف سهل)",
+        "slugPlaceholder": "مثال: tech-expo-2025",
         "timezone": "المنطقة الزمنية للفعالية",
         "registrationDeadline": "موعد انتهاء التسجيل",
         "startDate": "تاريخ البدء",
@@ -2435,6 +2638,19 @@
       "loadFailed": "تعذر تحميل تفاصيل الفعالية.",
       "overview": {
         "eventInformation": "معلومات الفعالية",
+        "descriptionGoals": "الوصف والأهداف",
+        "extendedContext": "السياق الموسع",
+        "operationalNotes": "ملاحظات تشغيلية",
+        "quickInfo": "معلومات سريعة",
+        "category": "الفئة",
+        "location": "الموقع",
+        "enterpriseAllocation": "تخصيص المؤسسة",
+        "standPrice": "سعر الكشك",
+        "perEnterprise": "لكل مؤسسة",
+        "visitorAccess": "وصول الزوار",
+        "paidEntry": "دخول مدفوع",
+        "freeAccess": "دخول مجاني",
+        "scheduleSubtitle": "الجدول الزمني وتوزيع الجلسات عبر مدة الحدث.",
         "pricing": "التسعير",
         "inviteLinks": "روابط الدعوة",
         "enterpriseInvite": "رابط دعوة الشركات",
@@ -2468,6 +2684,7 @@
         "subtitle": "الوصول و روابط المشاركة لفعاليتك.",
         "enterpriseAccess": "وصول الشركات",
         "visitorAccess": "وصول الزوار",
+        "notGenerated": "الروابط لم تُنشأ",
         "noEnterpriseLink": "لم يتم إنشاء رابط للشركات بعد.",
         "noVisitorLink": "لم يتم إنشاء رابط للزوار بعد.",
         "linkNotAvailable": "الرابط غير متوفر"
@@ -2641,6 +2858,65 @@
       "help": {
         "title": "هل تحتاج إلى مساعدة؟",
         "description": "للتغييرات على مستوى المنظمة أو نقل الأدوار، يرجى الاتصال بفريق الدعم لدينا."
+      }
+    },
+    "layout": {
+      "authChecking": "جارٍ التحقق من التفويض...",
+      "workspace": "مساحة عمل المنظم",
+      "breadcrumbOrganizer": "المنظم",
+      "notifications": "الإشعارات",
+      "nav": {
+        "dashboard": "لوحة التحكم",
+        "myEvents": "فعالياتي",
+        "profile": "الملف الشخصي",
+        "signOut": "تسجيل الخروج"
+      }
+    },
+    "scheduleEditor": {
+      "day": "اليوم",
+      "addSlot": "أضف خانة",
+      "removeSlot": "إزالة الفتحة",
+      "autoBlocked": "محجوبة تلقائيًا",
+      "passed": "مُنجز: لقد انقضى وقت هذه الجلسة بالفعل",
+      "timeRange": "نطاق الوقت",
+      "spillsNextDay": "تستمر هذه الجلسة إلى اليوم التالي.",
+      "nextDay": "اليوم التالي",
+      "activityDescription": "وصف النشاط",
+      "activityPlaceholder": "مثال: العرض الرئيسي",
+      "choosePartner": "اختر شريكًا...",
+      "partnerEnterprise": "شركة شريكة",
+      "overridesEnterprise": "تجاوزات المؤسسة",
+      "emptyDay": "يوم فارغ. أضف أول فترة زمنية لك.",
+      "invalidSchedule": "جدول غير صالح",
+      "blockedSlotTitle": "هذه الفترة غير متاحة لأن جلسة من اليوم السابق تمتد إلى هذا الإطار الزمني.",
+      "resolveConflicts": "يرجى حل جميع التعارضات قبل الحفظ.",
+      "saveFailed": "فشل حفظ الجدول",
+      "unknownEnterprise": "مؤسسة غير معروفة",
+      "untitled": "بدون عنوان",
+      "continuingSession": "استمرار الجلسة: {label}"
+    },
+    "eventConferences": {
+      "title": "تعيينات المؤتمر",
+      "assignHint": "انقر على \"تعيين المتحدث\" على أي فترة زمنية لتحويلها إلى مؤتمر مباشر مع متحدث مؤسسي.",
+      "invalidDate": "تاريخ غير صالح",
+      "speaker": "المتحدث",
+      "assignSpeaker": "تعيين المتحدث",
+      "enterpriseSpeaker": "متحدث المؤسسة *",
+      "selectEnterprise": "— اختر المؤسسة —",
+      "speakerDisplayName": "اسم المتحدث المعروض",
+      "speakerDisplayPlaceholder": "اختياري — الافتراضي هو اسم المؤسسة",
+      "saveAssignment": "حفظ التعيين",
+      "noSchedule": "لا يوجد جدول محدد لهذا الحدث.",
+      "allConferences": "جميع المؤتمرات",
+      "qa": "الأسئلة والأجوبة",
+      "registered": "{count} مسجل",
+      "confirm": {
+        "removeAssignment": "هل تريد إزالة تخصيص المؤتمر من هذه الفتحة؟",
+        "cancelConference": "هل تود إلغاء هذا المؤتمر؟"
+      },
+      "errors": {
+        "assignConference": "فشل في تعيين المؤتمر",
+        "removeAssignment": "فشل في إزالة التعيين"
       }
     }
   },
@@ -3007,6 +3283,8 @@
         "resourceUrlRequired": "يرجى تقديم رابط صالح لهذا النوع من الموارد.",
         "resourceFileRequired": "يرجى اختيار ملف للتحميل.",
         "standConfigNotLoaded": "لم يتم تحميل تكوين الجناح بالكامل بعد.",
+        "resourceAddFailed": "فشل في إضافة المورد",
+        "invalidQuantityForProduct": "كمية غير صالحة لـ {product}. يرجى اختيار قيمة بين 1 والمخزون المتوفر.",
         "aiActivationSuccess": "تم تمكين مساعد الذكاء الاصطناعي! تم فهرسة {indexed_documents} مستند(ات).",
         "aiActivationFailed": "فشل تفعيل RAG",
         "loadingStandConfig": "جارٍ تحميل تكوين الجناح...",
@@ -3021,13 +3299,28 @@
         "companyBioPlaceholder": "ماذا سيجد الزوار في جناحك؟",
         "logoUrl": "رابط الشعار",
         "logoUrlPlaceholder": "https://...",
+        "customBackgroundPlaceholder": "https://... أو /stands/...",
         "uploadLogoImage": "تحميل صورة الشعار",
         "uploadLogoHelper": "استخدم رابط URL أو قم بتحميل ملف.",
         "standBackgroundPresets": "إعدادات خلفية الجناح الجاهزة",
+        "backgroundPresetWoodWave": "مكتب وود ويف",
+        "backgroundPresetNeonWhite": "نيون وايت تك",
+        "backgroundPresetNeonDark": "نيون داكن تقني",
+        "backgroundPresetClassicWood": "مكتب خشبي كلاسيكي",
+        "backgroundPresetOffice": "حامل المكتب",
         "saveBranding": "حفظ العلامة التجارية",
+        "themeColor": "لون السمة",
+        "presenterAvatar": "صورة المقدم",
+        "auto": "تلقائي",
+        "defaultAvatarSelection": "استخدم اختيار الصورة الرمزية الافتراضية.",
+        "customAvatarUrl": "رابط الصورة الرمزية المخصصة",
+        "customAvatarPlaceholder": "https://... أو /stands/...",
+        "presenterMale": "مقدم ذكر",
+        "presenterFemale": "مقدمة أنثى",
         "selectProductsDescription": "اختر المنتجات من كتالوجك لعرضها في هذا الجناح.",
         "noProductsInCatalog": "لا توجد منتجات في كتالوجك بعد.",
         "addProductsFirst": "أضف منتجات أولاً.",
+        "quoteOnly": "اقتباس فقط",
         "productTypeService": "خدمة",
         "productTypeProduct": "منتج",
         "productStatusAvailable": "متوفر",
@@ -3042,6 +3335,7 @@
         "resourceTypeImage": "صورة",
         "resourceTypeVideo": "رابط فيديو",
         "resourceTypeLink": "رابط",
+        "urlLinkLabel": "الرابط / عنوان الموقع",
         "urlPlaceholder": "https://...",
         "uploadFileLabel": "تحميل ملف",
         "addResourceButton": "إضافة مورد",
@@ -3286,6 +3580,32 @@
         "cancelConfirm": "هل ترغب في إلغاء الطلب لـ \"{product}\"؟ سيؤدي ذلك إلى وضع علامة على الطلب كملغى واستعادة المخزون لعناصر المنتج.",
         "cancelNote": "ملاحظة إلغاء اختيارية"
       },
+      "labels": {
+        "quantity": "الكمية",
+        "payment": "الدفع",
+        "stripeIntent": "نية Stripe",
+        "pending": "قيد الانتظار",
+        "receiver": "المستلم",
+        "receiverPhone": "هاتف المستلم",
+        "shipping": "الشحن",
+        "noShippingAddress": "لم يتم توفير عنوان الشحن",
+        "deliveryNotes": "ملاحظات التسليم",
+        "fulfillmentTimeline": "الجدول الزمني للتنفيذ",
+        "current": "الحالي",
+        "latestInternalNote": "آخر ملاحظة داخلية",
+        "optionalInternalNote": "ملاحظة داخلية اختيارية لتغيير الحالة هذا",
+        "visitor": "زائر",
+        "company": "الشركة",
+        "paymentToConfirmWithVisitor": "يتم التأكيد مع الزائر",
+        "payOnReceptionCod": "الدفع عند الاستلام (COD)"
+      },
+      "actions": {
+        "emailVisitor": "إرسال بريد إلكتروني للزائر",
+        "callVisitor": "اتصل بالزائر",
+        "markAsStatus": "وضع علامة كـ {status}",
+        "confirmServiceDetails": "تأكيد تفاصيل الخدمة",
+        "completed": "مكتمل"
+      },
       "refresh": "تحديث البيانات",
       "syncing": "جاري مزامنة السجلات...",
       "kpi": {
@@ -3352,7 +3672,72 @@
       "live": "مباشر",
       "scheduled": "مجدول",
       "goLive": "ابدأ البث المباشر",
-      "enterStudio": "دخول الاستوديو"
+      "enterStudio": "دخول الاستوديو",
+      "goLiveIn": "ابدأ البث المباشر خلال {minutes} دقيقة",
+      "goLiveAvailableTooltip": "البث المباشر متاح قبل 20 دقيقة من البداية ({minutes} دقيقة متبقية)",
+      "timeouts": {
+        "loadingEventTimeline": "انتهت مهلة تحميل الجدول الزمني للحدث. يرجى التحقق من الاتصال وحاول مرة أخرى.",
+        "loadingConferenceDetails": "انتهى وقت تحميل تفاصيل المؤتمر. يرجى التحقق من الاتصال وإعادة المحاولة.",
+        "startingConferenceRoom": "انتهى وقت بدء غرفة المؤتمر. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
+        "refreshingConferenceDetails": "انتهى وقت تحديث تفاصيل المؤتمر. يرجى التحقق من اتصالك وأعد المحاولة.",
+        "requestingLiveAccessToken": "انتهت مهلة طلب رمز الوصول المباشر. يرجى التحقق من الاتصال وإعادة المحاولة.",
+        "refreshingLiveAccessToken": "انتهى وقت تحديث رمز الوصول المباشر. يرجى التحقق من اتصالك والمحاولة مرة أخرى."
+      }
+    },
+    "speakerRoom": {
+      "sessionState": {
+        "liveSession": "الجلسة المباشرة",
+        "startsIn": "يبدأ خلال {duration}",
+        "endsIn": "ينتهي خلال {duration}",
+        "endedAgo": "انتهى من {duration} مضت"
+      },
+      "panels": {
+        "speakerChat": "دردشة المتحدث",
+        "liveChat": "الدردشة الحية",
+        "qa": "الأسئلة والأجوبة"
+      },
+      "labels": {
+        "broadcastingLive": "البث مباشر",
+        "recoveringConnection": "جارٍ استعادة الاتصال…",
+        "studioActive": "الاستوديو نشط",
+        "sharing": "المشاركة",
+        "streamDisturbance": "اضطراب البث",
+        "producerCenter": "مركز المنتج",
+        "studioDashboard": "لوحة تحكم الاستوديو",
+        "conferenceManagement": "إدارة المؤتمر",
+        "leadSpeaker": "المتحدث الرئيسي",
+        "live": "مباشر",
+        "assignedSpeaker": "المتحدث المعين",
+        "broadcastingNow": "يتم البث الآن",
+        "liveAudience": "الجمهور المباشر",
+        "totalAccess": "الوصول الكلي",
+        "activeRoster": "القائمة النشطة",
+        "remoteCount": "{count} عن بعد",
+        "youProducer": "أنت (المنتج)",
+        "waitingForAudience": "في انتظار الجمهور",
+        "moderation": "الإشراف",
+        "noAudienceConnected": "لا يوجد جمهور متصل."
+      },
+      "actions": {
+        "eventSettings": "إعدادات الحدث",
+        "ending": "جارٍ الإنهاء…",
+        "endSession": "إنهاء الجلسة",
+        "mute": "كتم الصوت",
+        "unmute": "كتم الصوت",
+        "stopVideo": "إيقاف الفيديو",
+        "startVideo": "بدء الفيديو",
+        "shareScreen": "مشاركة الشاشة",
+        "sync": "مزامنة",
+        "resumeBroadcast": "استئناف البث",
+        "remove": "إزالة"
+      },
+      "messages": {
+        "confirmEndSession": "هل أنت متأكد من أنك تريد إنهاء هذه الجلسة للجميع؟",
+        "audienceInteractionDisabled": "التفاعل مع الجمهور معطل لهذه الجلسة.",
+        "connectionDropDetected": "لقد اكتشفنا انقطاعاً في الاتصال. جمهورك لا يزال في الغرفة في انتظارك.",
+        "participantRemoved": "تم حذف {name} من المؤتمر.",
+        "participantRemovalUnavailable": "لا تتوفر إزالة المشارك في جلسة المتصفح هذه."
+      }
     },
     "liveConference": {
       "title": "استوديو المتحدث",
@@ -3641,7 +4026,8 @@
         "subtitle": "اختر زائرًا أو مؤسسة من القائمة لبدء المحادثة أو الاستمرار فيها.",
         "conversation": "المحادثة",
         "member": "عضو",
-        "noMessages": "لا توجد رسائل بعد"
+        "noMessages": "لا توجد رسائل بعد",
+        "b2bChat": "دردشة بين الشركات"
       },
       "meetings": {
         "requestLabel": "طلب الزائر #{id}",
@@ -3714,6 +4100,19 @@
         "title": "دعوة غير صالحة أو منتهية الصلاحية.",
         "subtitle": "رابط هذه الدعوة لم يعد صالحًا.",
         "action": "العودة إلى الصفحة الرئيسية"
+      }
+    },
+    "inviteAccept": {
+      "title": "دعوة المؤسسة",
+      "processing": "جاري معالجة دعوتك للمؤسسة...",
+      "missingEventId": "معرف الحدث مفقود في رابط الدعوة.",
+      "enterpriseOnly": "هذه الدعوة مخصصة لحسابات المؤسسات. يرجى تسجيل الدخول بحساب مؤسسة.",
+      "success": "تم قبول مؤسستك الآن كمشارك ضيف مع إمكانية الوصول إلى الجناح.",
+      "error": "تعذر قبول الدعوة. قد تكون غير صالحة أو منتهية الصلاحية.",
+      "actions": {
+        "configureStand": "تكوين جناحك",
+        "goToEvents": "اذهب إلى أحداث المؤسسة",
+        "backToEvents": "العودة إلى فعاليات المؤسسة"
       }
     }
   },
@@ -3795,7 +4194,13 @@
         "unreachableRoute": "مسار غير متاح",
         "eventRemoved": "تمت إزالة هوية الحدث",
         "standRemoved": "تمت إزالة هوية الجناح",
-        "organizationRemoved": "تمت إزالة هوية المنظمة"
+        "organizationRemoved": "تمت إزالة هوية المنظمة",
+        "unknownEvent": "حدث غير معروف",
+        "unknownStand": "كشك غير معروف",
+        "unknownOrganization": "منظمة غير معروفة",
+        "noDescription": "لم يتم تقديم وصف.",
+        "identityRemoved": "تمت إزالة هوية {type}",
+        "idPrefix": "المعرف: {id}"
       },
       "errors": {
         "loadFailed": "فشل تحميل المفضلات",
@@ -3803,9 +4208,18 @@
       }
     },
     "marketplace": {
+      "landing": {
+        "title": "السوق",
+        "subtitle": "تصفح المنتجات والخدمات التي تقدمها أجنحة الشركات في جميع الأحداث. زر حدثًا مباشرًا لاستكشاف أسواق الأجنحة.",
+        "actions": {
+          "browseEvents": "تصفح الأحداث"
+        }
+      },
       "success": {
         "title": "تم الدفع بنجاح!",
         "subtitle": "شكرًا لشرائك. تم تأكيد طلبك.",
+        "buyerFallback": "زائر",
+        "moreItemsSuffix": "+ {count} المزيد",
         "paymentLabels": {
           "cashOnReception": "نقدًا عند الاستلام",
           "stripePayment": "دفع عبر Stripe"
@@ -3880,6 +4294,12 @@
       "emptyHall": "صالة المعرض فارغة حالياً. تحقق لاحقًا!",
       "sponsor": "الراعي",
       "favorite": "مفضل",
+      "favorited": "تمت الإضافة إلى المفضلة",
+      "addFavorite": "أضف الجناح إلى المفضلة",
+      "removeFavorite": "إزالة الجناح من المفضلة",
+      "loadingHall": "جارٍ تحميل قاعة المعرض...",
+      "loadFailed": "فشل تحميل الأجنحة. يرجى المحاولة مرة أخرى لاحقًا.",
+      "pageOf": "الصفحة {current} من {total}",
       "goToPage": "اذهب إلى الصفحة"
     },
     "conferencesTab": {
@@ -3899,10 +4319,48 @@
         "subtitle": "تحقق مرة أخرى لاحقًا للجلسات القادمة."
       }
     },
+    "conferenceCard": {
+      "status": {
+        "scheduled": "تم الجدولة",
+        "canceled": "ملغى"
+      },
+      "attendeeCountRegistered": "{count} مسجل",
+      "features": {
+        "chatEnabled": "المحادثة مفعلة",
+        "qaOpen": "الأسئلة والأجوبة مفتوحة"
+      },
+      "actions": {
+        "joinLive": "انضم مباشرة",
+        "registerSession": "سجل للجلسة",
+        "registered": "مسجل"
+      }
+    },
     "scheduleTab": {
       "title": "جدول الفعاليات",
       "daysLabel": "أيام الجدول",
       "dayLabel": "اليوم {day}",
+      "visitorTimeline": "الجدول الزمني للزائر",
+      "activitySchedule": "جدول فعاليات النشاط",
+      "followActivity": "تابع كل نشاط حسب الجدول الزمني وتتبع ما يحدث مباشرة.",
+      "timesShown": "الأوقات المعروضة حسب منطقتك الزمنية: {tz}",
+      "happeningNow": "يحدث الآن",
+      "nextUp": "التالي",
+      "noLiveSession": "لا توجد جلسة مباشرة حالياً.",
+      "noUpcoming": "لا توجد أنشطة قادمة متاحة.",
+      "sessionsCount": "{n} جلسات",
+      "liveCount": "{n} مباشر",
+      "upcomingCount": "{n} قادم",
+      "noSessionsDay": "لا توجد جلسات مجدولة لهذا اليوم حتى الآن.",
+      "loadingDetails": "جارٍ تحميل تفاصيل الحدث...",
+      "notPublished": "لم يتم نشر جدول الفعالية بعد. تحقق مرة أخرى لاحقًا للحصول على التحديثات.",
+      "toLabel": "إلى",
+      "untitledSession": "جلسة بدون عنوان",
+      "nextDayBadge": "(+1 يوم)",
+      "kind": {
+        "conference": "المؤتمر",
+        "talk": "حديث",
+        "activity": "النشاط"
+      },
       "status": {
         "liveNow": "يُبث الآن",
         "upcoming": "قادم",
@@ -4144,6 +4602,8 @@
       "noValidDurations": "لا توجد مدد صالحة لوقت البدء هذا.",
       "messageOptional": "رسالة (اختياري)",
       "messagePlaceholder": "صف باختصار ما ترغب في مناقشته...",
+      "constraintNotice": "طلبات الاجتماع مقيدة بجدول الحدث، وتوافرك، وتوافر المؤسسة، وتداخل المؤتمرات.",
+      "checkingAvailability": "جارٍ التحقق من التوفر...",
       "backToMeetings": "العودة إلى الاجتماعات",
       "sendingRequest": "جارٍ إرسال الطلب...",
       "sendRequest": "إرسال الطلب",
@@ -4195,10 +4655,12 @@
       "onlineCount": "{n} متصل",
       "noOtherAttendees": "لا يوجد حضور آخر حتى الآن",
       "chatPlaceholder": "اكتب رسالة",
+      "noMessages": "لا توجد رسائل بعد",
       "sending": "جارٍ الإرسال",
       "send": "إرسال",
       "liveChat": "الدردشة المباشرة",
-      "notSet": "غير محدد"
+      "notSet": "غير محدد",
+      "you": "أنت"
     },
     "qaPanel": {
       "title": "الأسئلة والأجوبة",
@@ -4252,6 +4714,8 @@
       "quietRoom": "الغرفة هادئة حاليًا",
       "waitingStreams": "في انتظار بدء البث",
       "switchMainPip": "تبديل الفيديو الرئيسي وفيديو الصورة داخل الصورة",
+      "switch": "تبديل",
+      "you": "أنت",
       "screenShared": "تمت مشاركة الشاشة",
       "streamPaused": "تم إيقاف البث مؤقتًا"
     },
@@ -4266,6 +4730,20 @@
         "goToEvent": "اذهب إلى صفحة الحدث",
         "enterLive": "ادخل التجربة المباشرة",
         "backToEvents": "العودة إلى الأحداث"
+      }
+    },
+    "assistantPage": {
+      "badge": "إرشادات مدعومة بالذكاء الاصطناعي",
+      "title": "مساعد المنصة",
+      "subtitle": "اسأل عن أي شيء حول المعرض. يمكن للمساعد مساعدتك في اكتشاف الفعاليات والأجنحة والموارد التي تناسب اهتماماتك.",
+      "chat": {
+        "title": "مساعد المنصة",
+        "subtitle": "احصل على إجابات فورية مع تحديثات مباشرة من قاعدة معرفتنا."
+      },
+      "suggestedPrompts": {
+        "trendingEvents": "ما هي الأحداث الرائجة اليوم؟",
+        "navigateExhibition": "ساعدني في التنقل داخل هذا المعرض.",
+        "recommendStands": "توصية بالأجنحة بناءً على اهتماماتي."
       }
     },
     "aiAssistant": {
@@ -4300,7 +4778,35 @@
       "title": "الندوات عبر الويب",
       "subtitle": "شاهد الجلسات وقم بتحميل التسجيلات...",
       "transcriptViewer": "عارض النصوص المكتوبة",
-      "transcriptUpload": "قم بتحميل تسجيل صوتي لإنشاء نص مكتوب."
+      "transcriptUpload": "قم بتحميل تسجيل صوتي لإنشاء نص مكتوب.",
+      "transcriptUploader": {
+        "labels": {
+          "uploadAudio": "رفع الصوت",
+          "segments": "الأقسام"
+        },
+        "actions": {
+          "transcribe": "تدوين النص"
+        },
+        "meta": {
+          "language": "اللغة",
+          "duration": "المدة"
+        },
+        "errors": {
+          "transcribeFailed": "فشل في النسخ"
+        }
+      },
+      "items": {
+        "futureTechExpo": {
+          "title": "الكلمة الرئيسية لمعرض التكنولوجيا المستقبلية",
+          "date": "17 فبراير 2026",
+          "description": "أبرز المعروضات من عروض الذكاء الاصطناعي والسحابة والواقع الممتد عبر الأجنحة الافتراضية."
+        },
+        "healthcareInnovations": {
+          "title": "قمة الابتكارات الصحية",
+          "date": "17 فبراير 2026",
+          "description": "جلسات الصحة الرقمية والتكنولوجيا الحيوية مع جلسة أسئلة وأجوبة."
+        }
+      }
     },
     "eventPayment": {
       "loading": "جارٍ تحميل تفاصيل الدفع...",
@@ -4329,7 +4835,13 @@
       "viewDetails": "عرض التفاصيل",
       "viewSummary": "عرض الملخص",
       "nextSlot": "الفقرة التالية:",
-      "currentSlot": "الحالي: {label}"
+      "currentSlot": "الحالي: {label}",
+      "virtual": "افتراضي",
+      "defaultCategory": "المعرض"
+    },
+    "standCard": {
+      "descriptionFallback": "قم بزيارة جناحنا لتتعرف على حلولنا المميزة وتتواصل مع فريقنا.",
+      "visitStand": "زيارة الكشك"
     },
     "eventsGrid": {
       "noEvents": "لم يتم العثور على فعاليات",
@@ -4397,6 +4909,7 @@
       "liveSessionsCount": "{n} جلسة مباشرة",
       "myMeetings": "اجتماعاتي",
       "myMeetingsSubtitle": "يتضمن من ستلتقي بهم، وقت البدء، المدة، العد التنازلي، والانضمام المباشر.",
+      "conferencesTitle": "المؤتمرات",
       "noMeetings": "لا توجد اجتماعات لهذا الحدث بعد.",
       "with": "مع",
       "start": "البدء",
@@ -4420,6 +4933,22 @@
       "startsInDaysHours": "يبدأ خلال {d}ي {h}س",
       "startsInHoursMinutes": "يبدأ خلال {h}س {m}د",
       "startsInMinutes": "يبدأ خلال {m}د"
+    },
+    "hall3d": {
+      "scene": {
+        "clickStandPrompt": "▼ انقر على منصة للزيارة ▼",
+        "viewAllStands": "عرض جميع الأجنحة",
+        "actions": {
+          "viewFullscreen": "عرض ملء الشاشة",
+          "exitFullscreen": "الخروج من ملء الشاشة",
+          "fullscreen": "ملء الشاشة"
+        }
+      },
+      "booth": {
+        "defaults": {
+          "standName": "الوقوف"
+        }
+      }
     },
     "floatingAssistant": {
       "buttonLabel": "المساعد",
