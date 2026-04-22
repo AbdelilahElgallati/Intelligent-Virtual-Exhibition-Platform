@@ -1,45 +1,37 @@
 frontend/src/app/dashboard/components/JoinedEvents.tsx
-NEW keys added:
-- None (used existing keys)
+Suggested i18n keys:
+- dashboard.visitor.joinedEvents.empty.title
+- dashboard.visitor.joinedEvents.empty.message
+- dashboard.visitor.joinedEvents.empty.browseLink
 
 frontend/src/app/dashboard/components/NotificationsPanel.tsx
-NEW keys added:
-- None (used existing keys)
+Suggested i18n keys:
+- dashboard.notifications.title
+- dashboard.notifications.markAllRead
+- dashboard.notifications.empty
+- dashboard.notifications.markAsRead
+- dashboard.notifications.unread
 
 frontend/src/app/dashboard/components/RecommendedEvents.tsx
-NEW keys added:
-- None (used existing keys)
+Suggested i18n keys:
+- dashboard.visitor.recommended.empty
+- dashboard.visitor.recommended.highMatch
+- dashboard.visitor.recommended.viewDetails
 
 frontend/src/app/events/[id]/live/stands/[standId]/components/StandCatalog.tsx
-NEW keys added:
+Suggested i18n keys:
 - events.standCatalog.error.generic
 - events.standCatalog.itemType.service
 - events.standCatalog.itemType.product
 - events.standCatalog.requestModal.successTitle
 - events.standCatalog.requestModal.successMessage
+- common.buttons.close
 - events.standCatalog.requestModal.quantityLabel
 - events.standCatalog.requestModal.messageLabel
 - events.standCatalog.requestModal.messagePlaceholder.service
 - events.standCatalog.requestModal.messagePlaceholder.product
+- common.buttons.cancel
 - events.standCatalog.requestModal.submit
 - events.standCatalog.actions.signInToRequest
 - events.standCatalog.actions.requestService
 - events.standCatalog.actions.requestProduct
-
-ALL new keys added to en.json:
-- events.standCatalog.error.generic
-- events.standCatalog.itemType.service
-- events.standCatalog.itemType.product
-- events.standCatalog.requestModal.successTitle
-- events.standCatalog.requestModal.successMessage
-- events.standCatalog.requestModal.quantityLabel
-- events.standCatalog.requestModal.messageLabel
-- events.standCatalog.requestModal.messagePlaceholder.service
-- events.standCatalog.requestModal.messagePlaceholder.product
-- events.standCatalog.requestModal.submit
-- events.standCatalog.actions.signInToRequest
-- events.standCatalog.actions.requestService
-- events.standCatalog.actions.requestProduct
-
-EXACT location (JSON path):
-- translation.events.standCatalog

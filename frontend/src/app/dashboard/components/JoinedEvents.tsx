@@ -4,6 +4,7 @@ import { EventCard } from '@/components/events/EventCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 interface JoinedEventsProps {
   events: Event[];
@@ -11,6 +12,8 @@ interface JoinedEventsProps {
 }
 
 export const JoinedEvents: React.FC<JoinedEventsProps> = ({ events, loading }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -24,11 +27,11 @@ export const JoinedEvents: React.FC<JoinedEventsProps> = ({ events, loading }) =
   if (events.length === 0) {
     return (
       <EmptyState
-        title="No events joined yet"
-        message="You haven't joined any events. Explore recommended events to get started!"
+        title={t('dashboard.visitor.joinedEvents.empty.title')}
+        message={t('dashboard.visitor.joinedEvents.empty.message')}
         action={
           <Button asChild variant="outline">
-            <Link href="/events">Browse All Events</Link>
+            <Link href="/events">{t('dashboard.visitor.joinedEvents.empty.browseLink')}</Link>
           </Button>
         }
       />

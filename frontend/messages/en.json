@@ -1203,6 +1203,31 @@
         "backToDetails": "Back to Details"
       }
     },
+    "standCatalog": {
+      "error": {
+        "generic": "Something went wrong. Please try again."
+      },
+      "itemType": {
+        "service": "Service",
+        "product": "Product"
+      },
+      "requestModal": {
+        "successTitle": "Request Sent!",
+        "successMessage": "The enterprise will be notified of your inquiry and will contact you soon.",
+        "quantityLabel": "Quantity",
+        "messageLabel": "Message",
+        "messagePlaceholder": {
+          "service": "Describe what you need from this service…",
+          "product": "Add any specific requirements or questions…"
+        },
+        "submit": "Send Request"
+      },
+      "actions": {
+        "signInToRequest": "Sign in to request",
+        "requestService": "Request Service",
+        "requestProduct": "Request Product"
+      }
+    },
     "liveStandPlaceholder": {
       "title": "Stand Page",
       "message": "This dedicated stand route is being prepared. You can continue browsing stands from the live event page.",

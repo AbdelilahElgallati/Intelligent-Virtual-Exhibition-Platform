@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatDateTime } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationsPanelProps {
   notifications: Notification[];
@@ -18,6 +19,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   onMarkRead,
   onMarkAllRead,
 }) => {
+  const { t } = useTranslation();
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const getNotificationId = (notification: Notification): string =>
     String((notification as Notification & { _id?: string }).id || (notification as Notification & { _id?: string })._id || '');
@@ -26,7 +28,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     <Card className="h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
         <div className="flex items-center space-x-2">
-          <CardTitle className="text-lg">Notifications</CardTitle>
+          <CardTitle className="text-lg">{t('dashboard.notifications.title')}</CardTitle>
           {unreadCount > 0 && (
             <Badge variant="destructive" className="rounded-full px-2 py-0.5 text-[10px]">
               {unreadCount}
@@ -40,7 +42,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           disabled={unreadCount === 0 || loading}
           onClick={onMarkAllRead}
         >
-          Mark all read
+          {t('dashboard.notifications.markAllRead')}
         </Button>
       </CardHeader>
       <CardContent className="flex-grow overflow-auto p-0">
@@ -52,7 +54,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">No notifications</p>
+            <p className="text-sm text-muted-foreground">{t('dashboard.notifications.empty')}</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -69,7 +71,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                     <button
                       onClick={() => onMarkRead(getNotificationId(notification))}
                       className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"
-                      title="Mark as read"
+                      title={t('dashboard.notifications.markAsRead')}
                     />
                   )}
                 </div>
@@ -78,7 +80,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
                     {formatDateTime(notification.created_at)}
                   </span>
                   {!notification.is_read && (
-                    <span className="text-[10px] text-primary font-medium">Unread</span>
+                    <span className="text-[10px] text-primary font-medium">{t('dashboard.notifications.unread')}</span>
                   )}
                 </div>
               </div>
