@@ -20,6 +20,7 @@ import {
 import { adminService } from '@/services/admin.service';
 import { Session, SessionStatus, CreateSessionPayload } from '@/types/sessions';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,11 +70,17 @@ const STATUS_CFG: Record<SessionStatus, { label: string; cls: string; dot: strin
 };
 
 function StatusBadge({ status }: { status: SessionStatus }) {
+    const { t } = useTranslation();
     const c = STATUS_CFG[status];
+    const labels: Record<SessionStatus, string> = {
+        scheduled: t('admin.sessions.status.scheduled'),
+        live: t('admin.sessions.status.live'),
+        ended: t('admin.sessions.status.ended'),
+    };
     return (
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${c.cls}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-            {c.label}
+            {labels[status]}
         </span>
     );
 }
@@ -95,14 +102,15 @@ function ConfirmModal({ title, message, onConfirm, onCancel }: {
     title: string; message: string;
     onConfirm: () => void; onCancel: () => void;
 }) {
+    const { t } = useTranslation();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 p-6">
                 <h3 className="text-lg font-semibold text-zinc-900 mb-2">{title}</h3>
                 <p className="text-sm text-zinc-600 mb-6">{message}</p>
                 <div className="flex gap-3 justify-end">
-                    <button onClick={onCancel} className="px-4 py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">Cancel</button>
-                    <button onClick={onConfirm} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">Confirm</button>
+                    <button onClick={onCancel} className="px-4 py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">{t('common.actions.cancel')}</button>
+                    <button onClick={onConfirm} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">{t('common.buttons.confirm')}</button>
                 </div>
             </div>
         </div>
@@ -138,6 +146,7 @@ const BLOCK_STYLE: Record<SessionStatus, { bg: string; text: string; border: str
 };
 
 function TimelineView({ sessions }: { sessions: Session[] }) {
+    const { t } = useTranslation();
     if (sessions.length === 0) return null;
     const grouped = groupByDay(sessions);
 
@@ -147,15 +156,15 @@ function TimelineView({ sessions }: { sessions: Session[] }) {
             <div className="flex items-center gap-5 flex-wrap text-xs text-zinc-500">
                 <span className="flex items-center gap-1.5 font-medium">
                     <span className="w-3 h-3 rounded border border-slate-300 bg-slate-100 flex-shrink-0" />
-                    Scheduled
+                    {t('admin.sessions.timeline.legend.scheduled')}
                 </span>
                 <span className="flex items-center gap-1.5 font-medium">
                     <span className="w-3 h-3 rounded bg-gradient-to-r from-emerald-500 to-teal-500 flex-shrink-0" />
-                    Live
+                    {t('admin.sessions.timeline.legend.live')}
                 </span>
                 <span className="flex items-center gap-1.5 font-medium">
                     <span className="w-3 h-3 rounded bg-gradient-to-r from-blue-400 to-indigo-400 flex-shrink-0" />
-                    Ended
+                    {t('admin.sessions.timeline.legend.ended')}
                 </span>
             </div>
 
@@ -260,6 +269,7 @@ function SessionCard({
     onEnd: (id: string) => void;
     loading: boolean;
 }) {
+    const { t } = useTranslation();
     return (
         <div className={`rounded-xl border p-4 transition-all ${session.status === 'live'
             ? 'border-emerald-200 bg-emerald-50/50 shadow-sm'
@@ -279,7 +289,7 @@ function SessionCard({
                         )}
                         {session.status === 'live' && (
                             <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                                Transcript Active
+                                {t('admin.sessions.status.transcriptActive')}
                             </span>
                         )}
                     </div>
@@ -306,7 +316,7 @@ function SessionCard({
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
                         >
                             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                            Start
+                            {t('admin.sessions.actions.start')}
                         </button>
                     )}
                     {session.status === 'live' && (
@@ -316,7 +326,7 @@ function SessionCard({
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
                         >
                             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Square className="w-3.5 h-3.5" />}
-                            End
+                            {t('admin.sessions.actions.end')}
                         </button>
                     )}
                 </div>
@@ -338,6 +348,7 @@ function CreateSessionForm({
     onCreated: (s: Session) => void;
     onSynced: (sessions: Session[]) => void;
 }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -357,11 +368,11 @@ function CreateSessionForm({
         e.preventDefault();
         setError('');
         if (!form.title || !form.start_time || !form.end_time) {
-            setError('Title, start time, and end time are required.');
+            setError(t('admin.sessions.validation.requiredFields'));
             return;
         }
         if (new Date(form.start_time) >= new Date(form.end_time)) {
-            setError('Start time must be before end time.');
+            setError(t('admin.sessions.validation.timeOrder'));
             return;
         }
         setSubmitting(true);
@@ -380,7 +391,7 @@ function CreateSessionForm({
             setForm({ title: '', speaker: '', description: '', start_time: '', end_time: '' });
             setOpen(false);
         } catch (e: unknown) {
-            setError((e as { message?: string })?.message ?? 'Failed to create session. Check dates are within event range.');
+            setError((e as { message?: string })?.message ?? t('admin.sessions.validation.createFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -406,29 +417,28 @@ function CreateSessionForm({
                     <div>
                         <h2 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                             <Plus className="w-4 h-4 text-violet-500" />
-                            Session Management
+                            {t('admin.sessions.managementTitle')}
                         </h2>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                            Import from your event schedule or create manually → then hit{' '}
-                            <span className="text-emerald-600 font-semibold">Start</span> on any scheduled session to go live.
+                            {t('admin.sessions.description')}
                         </p>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                         <button
                             onClick={handleSync}
                             disabled={syncing}
-                            title="Import conference slots from event schedule"
+                            title={t('admin.sessions.importFromSchedule')}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-medium transition-colors disabled:opacity-50"
                         >
                             {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                            Import from Schedule
+                            {t('admin.sessions.importFromSchedule')}
                         </button>
                         <button
                             onClick={() => setOpen((o) => !o)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-700 text-white text-xs font-medium transition-colors"
                         >
                             <Plus className="w-3.5 h-3.5" />
-                            New Session
+                            {t('admin.sessions.newSession')}
                         </button>
                     </div>
                 </div>
@@ -444,26 +454,26 @@ function CreateSessionForm({
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-zinc-600">Title *</label>
+                            <label className="text-xs font-medium text-zinc-600">{t('admin.sessions.form.titleLabel')} *</label>
                             <input
                                 required
                                 value={form.title}
                                 onChange={(e) => handleChange('title', e.target.value)}
-                                placeholder="Opening Keynote"
+                                placeholder={t('admin.sessions.form.titlePlaceholder')}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-zinc-600">Speaker</label>
+                            <label className="text-xs font-medium text-zinc-600">{t('admin.sessions.form.speakerLabel')}</label>
                             <input
                                 value={form.speaker}
                                 onChange={(e) => handleChange('speaker', e.target.value)}
-                                placeholder="Dr. Jane Smith"
+                                placeholder={t('admin.sessions.form.speakerPlaceholder')}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-zinc-600">Start Time *</label>
+                            <label className="text-xs font-medium text-zinc-600">{t('admin.sessions.form.startTime')} *</label>
                             <input
                                 required
                                 type="datetime-local"
@@ -475,7 +485,7 @@ function CreateSessionForm({
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-zinc-600">End Time *</label>
+                            <label className="text-xs font-medium text-zinc-600">{t('admin.sessions.form.endTime')} *</label>
                             <input
                                 required
                                 type="datetime-local"
@@ -488,12 +498,12 @@ function CreateSessionForm({
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <label className="text-xs font-medium text-zinc-600">Description</label>
+                        <label className="text-xs font-medium text-zinc-600">{t('admin.sessions.form.descriptionLabel')}</label>
                         <textarea
                             rows={2}
                             value={form.description}
                             onChange={(e) => handleChange('description', e.target.value)}
-                            placeholder="Optional description..."
+                            placeholder={t('admin.sessions.form.descriptionPlaceholder')}
                             className="w-full text-sm px-3 py-2 rounded-lg border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none"
                         />
                     </div>
@@ -503,7 +513,7 @@ function CreateSessionForm({
                             onClick={() => setOpen(false)}
                             className="px-4 py-2 rounded-lg border border-zinc-200 text-sm text-zinc-600 hover:bg-zinc-50 transition-colors"
                         >
-                            Cancel
+                            {t('common.actions.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -511,7 +521,7 @@ function CreateSessionForm({
                             className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-1.5"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            Create Session
+                            {submitting ? t('admin.sessions.form.creating') : t('admin.sessions.form.createSession')}
                         </button>
                     </div>
                 </form>
@@ -523,6 +533,7 @@ function CreateSessionForm({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminSessionsPage() {
+    const { t } = useTranslation();
     const { id: eventId } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -562,9 +573,9 @@ export default function AdminSessionsPage() {
         try {
             const updated = await adminService.startSession(sessionId);
             setSessions((prev) => prev.map((s) => s.id === sessionId ? updated : s));
-            showToast('Session started', 'success');
+            showToast(t('admin.sessions.toast.startSuccess', { name: updated.title }), 'success');
         } catch (e: unknown) {
-            showToast((e as { message?: string })?.message ?? 'Failed to start session', 'error');
+            showToast((e as { message?: string })?.message ?? t('admin.sessions.toast.startFailed'), 'error');
         } finally {
             setMutatingId(null);
         }
@@ -576,9 +587,9 @@ export default function AdminSessionsPage() {
         try {
             const updated = await adminService.endSession(sessionId);
             setSessions((prev) => prev.map((s) => s.id === sessionId ? updated : s));
-            showToast('Session ended', 'success');
+            showToast(t('admin.sessions.toast.endSuccess', { name: updated.title }), 'success');
         } catch (e: unknown) {
-            showToast((e as { message?: string })?.message ?? 'Failed to end session', 'error');
+            showToast((e as { message?: string })?.message ?? t('admin.sessions.toast.endFailed'), 'error');
         } finally {
             setMutatingId(null);
         }
@@ -588,19 +599,19 @@ export default function AdminSessionsPage() {
         setSessions((prev) =>
             [...prev, s].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
         );
-        showToast(`Session "${s.title}" created`, 'success');
+            showToast(t('admin.sessions.toast.created', { name: s.title }), 'success');
     };
 
     const handleSynced = (imported: Session[]) => {
         if (imported.length === 0) {
-            showToast('No new conference sessions found in schedule', 'success');
+            showToast(t('admin.sessions.toast.noNewSessions'), 'success');
         } else {
             setSessions((prev) => {
                 const ids = new Set(prev.map((s) => s.id));
                 const merged = [...prev, ...imported.filter((s) => !ids.has(s.id))];
                 return merged.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
             });
-            showToast(`Imported ${imported.length} session${imported.length > 1 ? 's' : ''} from schedule`, 'success');
+            showToast(t('admin.sessions.toast.syncSuccess', { count: imported.length }), 'success');
         }
     };
 
@@ -618,15 +629,15 @@ export default function AdminSessionsPage() {
                     className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 text-sm font-medium transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Event Details
+                    {t('admin.events.panel.eventDetails')}
                 </button>
                 <button
                     onClick={fetchSessions}
                     className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
-                    title="Refresh"
+                        title={t('admin.events.refresh')}
                 >
                     <RefreshCcw className="w-3.5 h-3.5" />
-                    Refresh
+                    {t('admin.events.refresh')}
                 </button>
             </div>
 
@@ -636,13 +647,13 @@ export default function AdminSessionsPage() {
                     <Calendar className="w-5 h-5 text-violet-600" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold text-zinc-900">Conference Sessions</h1>
+                    <h1 className="text-xl font-bold text-zinc-900">{t('admin.sessions.title')}</h1>
                     <p className="text-sm text-zinc-500">
-                        {sessions.length > 0 ? `${sessions.length} session${sessions.length > 1 ? 's' : ''}` : 'No sessions yet'}
+                        {sessions.length > 0 ? t('admin.sessions.count', { count: sessions.length }) : t('admin.sessions.noSessions')}
                         {liveSessions.length > 0 && (
                             <span className="ml-2 inline-flex items-center gap-1 text-emerald-600 font-medium">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                {liveSessions.length} live
+                                {t('admin.sessions.liveCount', { count: liveSessions.length })}
                             </span>
                         )}
                     </p>
@@ -656,7 +667,7 @@ export default function AdminSessionsPage() {
             {loading && (
                 <div className="flex items-center justify-center py-16 text-zinc-400">
                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                    Loading sessions…
+                    {t('admin.sessions.loading')}
                 </div>
             )}
 
@@ -664,10 +675,9 @@ export default function AdminSessionsPage() {
             {!loading && sessions.length === 0 && (
                 <div className="bg-white rounded-2xl border border-dashed border-zinc-300 py-16 text-center">
                     <Calendar className="w-8 h-8 text-zinc-300 mx-auto mb-3" />
-                    <p className="text-zinc-500 font-medium text-sm">No sessions yet</p>
+                    <p className="text-zinc-500 font-medium text-sm">{t('admin.sessions.noSessions')}</p>
                     <p className="text-zinc-400 text-xs mt-1">
-                        Create a session manually or use{' '}
-                        <span className="font-medium text-violet-500">Import from Schedule</span> to auto-import conference slots.
+                        {t('admin.sessions.emptyHelp')}
                     </p>
                 </div>
             )}
@@ -678,7 +688,7 @@ export default function AdminSessionsPage() {
                     <div className="px-5 py-4 border-b border-zinc-100">
                         <h2 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                             <ChevronRight className="w-4 h-4 text-zinc-400" />
-                            Timeline
+                            {t('admin.sessions.timelineTitle')}
                         </h2>
                     </div>
                     <div className="px-5 py-5">
@@ -692,7 +702,7 @@ export default function AdminSessionsPage() {
                 <div className="space-y-3">
                     <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Live Now ({liveSessions.length})
+                        {t('admin.sessions.liveNow', { count: liveSessions.length })}
                     </h2>
                     {liveSessions.map((s) => (
                         <SessionCard
@@ -711,7 +721,7 @@ export default function AdminSessionsPage() {
                 <div className="space-y-3">
                     <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-zinc-400" />
-                        Scheduled ({scheduledSessions.length})
+                        {t('admin.sessions.scheduledCount', { count: scheduledSessions.length })}
                     </h2>
                     {scheduledSessions.map((s) => (
                         <SessionCard
@@ -730,7 +740,7 @@ export default function AdminSessionsPage() {
                 <div className="space-y-3">
                     <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-400" />
-                        Ended ({endedSessions.length})
+                        {t('admin.sessions.endedCount', { count: endedSessions.length })}
                     </h2>
                     {endedSessions.map((s) => (
                         <SessionCard
@@ -747,8 +757,8 @@ export default function AdminSessionsPage() {
             {/* Confirm end modal */}
             {confirmEnd && (
                 <ConfirmModal
-                    title="End session?"
-                    message="This will end the live session and close the transcript WebSocket. This action cannot be undone."
+                    title={t('admin.sessions.confirm.endTitle')}
+                    message={t('admin.sessions.confirm.endMessage')}
                     onConfirm={() => handleEnd(confirmEnd)}
                     onCancel={() => setConfirmEnd(null)}
                 />

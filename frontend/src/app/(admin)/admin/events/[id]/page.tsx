@@ -25,6 +25,7 @@ import { OrganizerEvent } from '@/types/event';
 import { resolveMediaUrl } from '@/lib/media';
 import { formatInUserTZ } from '@/lib/timezone';
 import { getEffectiveWorkflowState, getLiveWorkflowLabel } from '@/lib/eventWorkflowBadge';
+import { useTranslation } from 'react-i18next';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,7 @@ const STATE_CONFIG: Record<
 // ── State Badge ──────────────────────────────────────────────────────────────
 
 function StateBadge({ event }: { event: OrganizerEvent }) {
+    const { t } = useTranslation();
     const effective = getEffectiveWorkflowState(event);
     if (event.state === 'live') {
         const live = getLiveWorkflowLabel(event);
@@ -134,7 +136,7 @@ function StateBadge({ event }: { event: OrganizerEvent }) {
                 >
                     <span className={`w-2 h-2 rounded-full ${liveCfg.dot} ${pulse ? 'animate-pulse' : ''}`} />
                     {liveCfg.icon}
-                    {live.label}
+                    {live.kind === 'upcoming' ? t('admin.eventDetail.states.upcoming') : live.kind === 'between_slots' ? t('admin.eventDetail.states.inProgress') : live.label}
                 </span>
             );
         }
@@ -146,13 +148,23 @@ function StateBadge({ event }: { event: OrganizerEvent }) {
         dot: 'bg-zinc-400',
         icon: null,
     };
+    const stateLabelMap: Record<string, string> = {
+        pending_approval: t('admin.eventDetail.states.pendingApproval'),
+        approved: t('admin.eventDetail.states.approved'),
+        waiting_for_payment: t('admin.eventDetail.states.waitingForPayment'),
+        payment_proof_submitted: t('admin.eventDetail.states.reviewingPayment'),
+        payment_done: t('admin.eventDetail.states.paymentDone'),
+        live: t('admin.eventDetail.states.live'),
+        closed: t('admin.eventDetail.states.closed'),
+        rejected: t('admin.eventDetail.states.rejected'),
+    };
     return (
         <span
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.bg} ${cfg.text}`}
         >
             <span className={`w-2 h-2 rounded-full ${cfg.dot} ${effective === 'live' ? 'animate-pulse' : ''}`} />
             {cfg.icon}
-            {cfg.label}
+            {stateLabelMap[effective] ?? cfg.label}
         </span>
     );
 }
@@ -191,6 +203,7 @@ function formatDuration(ms: number): string {
 }
 
 function CountdownBanner({ event }: { event: OrganizerEvent }) {
+    const { t } = useTranslation();
     const state = event.state as EventState;
     const startDate = event.start_date ? new Date(event.start_date) : null;
     const endDate = event.end_date ? new Date(event.end_date) : null;
@@ -206,9 +219,9 @@ function CountdownBanner({ event }: { event: OrganizerEvent }) {
         return null;
     }
 
-    const label = state === 'payment_done' ? 'Event starts in' : 'Event ends in';
+    const label = state === 'payment_done' ? t('admin.eventDetail.countdown.startsIn') : t('admin.eventDetail.countdown.endsIn');
     const isPast = remaining !== null && remaining <= 0;
-    const pastLabel = state === 'payment_done' ? 'Scheduled start has passed — auto-start pending' : 'Scheduled end has passed — auto-close pending';
+    const pastLabel = state === 'payment_done' ? t('admin.eventDetail.countdown.startPassed') : t('admin.eventDetail.countdown.endPassed');
 
     const color = state === 'live' ? 'from-emerald-50 to-teal-50 border-emerald-200' : 'from-indigo-50 to-blue-50 border-indigo-200';
     const textColor = state === 'live' ? 'text-emerald-700' : 'text-indigo-700';
@@ -233,12 +246,12 @@ function CountdownBanner({ event }: { event: OrganizerEvent }) {
 // ── Timeline ─────────────────────────────────────────────────────────────────
 
 const TIMELINE_NODES: { key: EventState | string; label: string; color: string; active: string }[] = [
-    { key: 'pending_approval', label: 'Pending', color: 'bg-zinc-200 text-zinc-500', active: 'bg-amber-400 text-white' },
-    { key: 'waiting_for_payment', label: 'Payment Due', color: 'bg-zinc-200 text-zinc-500', active: 'bg-orange-400 text-white' },
-    { key: 'payment_proof_submitted', label: 'Verifying', color: 'bg-zinc-200 text-zinc-500', active: 'bg-blue-400 text-white' },
-    { key: 'payment_done', label: 'Payment Done', color: 'bg-zinc-200 text-zinc-500', active: 'bg-indigo-500 text-white' },
-    { key: 'live', label: 'Live', color: 'bg-zinc-200 text-zinc-500', active: 'bg-emerald-500 text-white' },
-    { key: 'closed', label: 'Closed', color: 'bg-zinc-200 text-zinc-500', active: 'bg-zinc-500 text-white' },
+    { key: 'pending_approval', label: 'pending', color: 'bg-zinc-200 text-zinc-500', active: 'bg-amber-400 text-white' },
+    { key: 'waiting_for_payment', label: 'paymentDue', color: 'bg-zinc-200 text-zinc-500', active: 'bg-orange-400 text-white' },
+    { key: 'payment_proof_submitted', label: 'verifying', color: 'bg-zinc-200 text-zinc-500', active: 'bg-blue-400 text-white' },
+    { key: 'payment_done', label: 'paymentDone', color: 'bg-zinc-200 text-zinc-500', active: 'bg-indigo-500 text-white' },
+    { key: 'live', label: 'live', color: 'bg-zinc-200 text-zinc-500', active: 'bg-emerald-500 text-white' },
+    { key: 'closed', label: 'closed', color: 'bg-zinc-200 text-zinc-500', active: 'bg-zinc-500 text-white' },
 ];
 
 const STATE_ORDER: Record<string, number> = {
@@ -253,11 +266,12 @@ const STATE_ORDER: Record<string, number> = {
 };
 
 function EventTimeline({ event }: { event: OrganizerEvent }) {
+    const { t } = useTranslation();
     const currentIdx = STATE_ORDER[event.state] ?? 0;
 
     return (
         <div className="mt-6">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">Event Timeline</h3>
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">{t('admin.eventDetail.timeline.title')}</h3>
             <div className="relative flex items-start">
                 {/* connector line */}
                 <div className="absolute top-4 left-4 right-4 h-0.5 bg-zinc-200" />
@@ -292,7 +306,7 @@ function EventTimeline({ event }: { event: OrganizerEvent }) {
                                     {isDone ? '✓' : idx + 1}
                                 </div>
                                 <span className={`text-xs font-medium whitespace-nowrap ${isCurrent ? 'text-indigo-600' : isDone ? 'text-indigo-400' : 'text-zinc-400'}`}>
-                                    {node.label}
+                                    {t(`admin.eventDetail.timeline.${node.label}`)}
                                 </span>
                                 {date && (node.key === 'live' || node.key === 'closed') && (
                                     <span className="text-xs text-zinc-400">
@@ -362,6 +376,7 @@ function ConfirmModal({
     onConfirm: () => void;
     onCancel: () => void;
 }) {
+    const { t } = useTranslation();
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl border border-zinc-200 w-full max-w-md mx-4 p-6">
@@ -372,7 +387,7 @@ function ConfirmModal({
                         onClick={onCancel}
                         className="px-4 py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
                     >
-                        Cancel
+                        {t('common.actions.cancel')}
                     </button>
                     <button
                         onClick={onConfirm}
@@ -389,6 +404,7 @@ function ConfirmModal({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminEventDetailPage() {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
 
@@ -408,7 +424,7 @@ export default function AdminEventDetailPage() {
             setEvent(data);
             setError(null);
         } catch {
-            setError('Failed to load event. Please try again.');
+            setError(t('admin.eventDetail.errors.failedToLoad'));
         } finally {
             setLoading(false);
         }
@@ -426,9 +442,9 @@ export default function AdminEventDetailPage() {
         try {
             const updated = await adminService.forceStartEvent(id);
             setEvent(updated);
-            showToast('Event started successfully', 'success');
+            showToast(t('admin.eventDetail.toast.startSuccess'), 'success');
         } catch (e: unknown) {
-            const msg = (e as { message?: string })?.message || 'Failed to start event';
+            const msg = (e as { message?: string })?.message || t('admin.eventDetail.toast.startFailed');
             showToast(msg, 'error');
         } finally {
             setMutating(false);
@@ -441,9 +457,9 @@ export default function AdminEventDetailPage() {
         try {
             const updated = await adminService.forceCloseEvent(id);
             setEvent(updated);
-            showToast('Event closed successfully', 'success');
+            showToast(t('admin.eventDetail.toast.closeSuccess'), 'success');
         } catch (e: unknown) {
-            const msg = (e as { message?: string })?.message || 'Failed to close event';
+            const msg = (e as { message?: string })?.message || t('admin.eventDetail.toast.closeFailed');
             showToast(msg, 'error');
         } finally {
             setMutating(false);
@@ -456,9 +472,9 @@ export default function AdminEventDetailPage() {
         try {
             const updated = await adminService.confirmEventPayment(id);
             setEvent(updated);
-            showToast('Payment confirmed and event activated', 'success');
+            showToast(t('admin.eventDetail.toast.paymentSuccess'), 'success');
         } catch (e: unknown) {
-            const msg = (e as { message?: string })?.message || 'Failed to confirm payment';
+            const msg = (e as { message?: string })?.message || t('admin.eventDetail.toast.paymentFailed');
             showToast(msg, 'error');
         } finally {
             setMutating(false);
@@ -472,13 +488,13 @@ export default function AdminEventDetailPage() {
         return (
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <button onClick={() => router.back()} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-700 text-sm mb-6">
-                    <ArrowLeft className="w-4 h-4" /> Back
+                    <ArrowLeft className="w-4 h-4" /> {t('common.buttons.back')}
                 </button>
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
                     <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
-                    <p className="text-red-700 font-medium">{error ?? 'Event not found'}</p>
+                    <p className="text-red-700 font-medium">{error ?? t('admin.eventDetail.errors.eventNotFound')}</p>
                     <button onClick={fetchEvent} className="mt-4 text-sm text-red-600 hover:text-red-800 underline">
-                        Try again
+                        {t('admin.eventDetail.actions.tryAgain')}
                     </button>
                 </div>
             </div>
@@ -499,15 +515,15 @@ export default function AdminEventDetailPage() {
                     className="flex items-center gap-2 text-zinc-500 hover:text-zinc-800 text-sm font-medium transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    All Events
+                    {t('admin.events.detail.backToEvents')}
                 </button>
                 <button
                     onClick={fetchEvent}
                     className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
-                    title="Refresh"
+                        title={t('admin.events.detail.refresh')}
                 >
                     <RefreshCcw className="w-3.5 h-3.5" />
-                    Refresh
+                    {t('admin.events.detail.refresh')}
                 </button>
             </div>
 
@@ -536,7 +552,7 @@ export default function AdminEventDetailPage() {
                                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                             >
                                 <BarChart2 className="w-4 h-4" />
-                                Organizer Report
+                                {t('admin.eventDetail.actions.organizerReport')}
                             </button>
                             {/* Live Monitor button — always shown for live events */}
                             {state === 'live' && (
@@ -545,7 +561,7 @@ export default function AdminEventDetailPage() {
                                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                                 >
                                     <BarChart2 className="w-4 h-4" />
-                                    Live Monitor
+                                    {t('admin.eventDetail.actions.liveMonitor')}
                                 </button>
                             )}
 
@@ -557,7 +573,7 @@ export default function AdminEventDetailPage() {
                                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                                 >
                                     <CheckCircle2 className="w-4 h-4" />
-                                    Verify Payment
+                                    {t('admin.eventDetail.actions.verifyPayment')}
                                 </button>
                             )}
                             {canForceStart && (
@@ -568,7 +584,7 @@ export default function AdminEventDetailPage() {
                                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                                 >
                                     <Zap className="w-4 h-4" />
-                                    Force Start
+                                    {t('admin.eventDetail.actions.forceStart')}
                                 </button>
                             )}
                             {canForceClose && (
@@ -579,7 +595,7 @@ export default function AdminEventDetailPage() {
                                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                                 >
                                     <XCircle className="w-4 h-4" />
-                                    Force Close
+                                    {t('admin.eventDetail.actions.forceClose')}
                                 </button>
                             )}
                         </div>
@@ -601,7 +617,7 @@ export default function AdminEventDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Event info */}
                 <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 space-y-4">
-                    <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Event Details</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">{t('admin.eventDetail.sections.eventDetails')}</h2>
                     {event.description && (
                         <p className="text-sm text-zinc-600 leading-relaxed">{event.description}</p>
                     )}
@@ -611,7 +627,7 @@ export default function AdminEventDetailPage() {
                             <span>
                                 {event.start_date
                                     ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' })
-                                    : '—'}
+                                    : t('admin.common.ui.emptyValue')}
                             </span>
                             <span className="text-zinc-300">→</span>
                             <span>
@@ -629,7 +645,7 @@ export default function AdminEventDetailPage() {
                         {event.num_enterprises != null && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-600">
                                 <Building2 className="w-4 h-4 text-zinc-400" />
-                                {event.num_enterprises} enterprise{event.num_enterprises !== 1 ? 's' : ''}
+                                {t('admin.events.panel.enterprises')}: {event.num_enterprises}
                             </div>
                         )}
                         {event.organizer_name && (
@@ -643,18 +659,18 @@ export default function AdminEventDetailPage() {
 
                 {/* Payment / lifecycle info */}
                 <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5 space-y-4">
-                    <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">Lifecycle Info</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">{t('admin.eventDetail.sections.lifecycleInfo')}</h2>
                     <div className="space-y-2.5">
                         {event.payment_amount != null && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-600">
                                 <DollarSign className="w-4 h-4 text-zinc-400" />
-                                Payment: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} MAD</span>
+                                {t('admin.events.panel.payment')}: <span className="font-semibold text-zinc-800">{event.payment_amount.toFixed(2)} MAD</span>
                             </div>
                         )}
                         {event.payment_proof_url && (
                             <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
                                 <div className="text-[10px] font-bold uppercase text-blue-400 tracking-wider">
-                                    Payment Proof
+                                    {t('admin.eventDetail.sections.paymentProof')}
                                 </div>
                                 <a
                                     href={resolveMediaUrl(event.payment_proof_url)}
@@ -663,7 +679,7 @@ export default function AdminEventDetailPage() {
                                     className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900 font-medium transition-colors"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    View Submitted Proof
+                                    {t('admin.eventDetail.actions.viewProof')}
                                 </a>
                             </div>
                         )}
@@ -676,29 +692,25 @@ export default function AdminEventDetailPage() {
                         {event.created_at && (
                             <div className="flex items-center gap-2.5 text-sm text-zinc-500">
                                 <Clock className="w-4 h-4 text-zinc-400" />
-                                Created{' '}
+                                {t('admin.eventDetail.info.createdOn')}{' '}
                                 {formatInUserTZ(event.created_at, { year: 'numeric', month: 'short', day: 'numeric' })}
                             </div>
                         )}
                         {state === 'payment_done' && (
                             <div className="mt-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
                                 <p className="text-xs text-indigo-700 font-medium">
-                                    ⏰ Auto-start is scheduled when{' '}
-                                    <span className="font-bold">
-                                        {event.start_date ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'start date'}
-                                    </span>{' '}
-                                    is reached.
+                                    {t('admin.eventDetail.info.autoStartScheduled', {
+                                        date: event.start_date ? formatInUserTZ(event.start_date, { dateStyle: 'medium', timeStyle: 'short' }) : t('admin.eventDetail.info.startDate'),
+                                    })}
                                 </p>
                             </div>
                         )}
                         {state === 'live' && (
                             <div className="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
                                 <p className="text-xs text-emerald-700 font-medium">
-                                    🟢 Event is live. Auto-close scheduled when{' '}
-                                    <span className="font-bold">
-                                        {event.end_date ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' }) : 'end date'}
-                                    </span>{' '}
-                                    passes.
+                                    {t('admin.eventDetail.info.autoCloseScheduled', {
+                                        date: event.end_date ? formatInUserTZ(event.end_date, { dateStyle: 'medium', timeStyle: 'short' }) : t('admin.eventDetail.info.endDate'),
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -710,7 +722,7 @@ export default function AdminEventDetailPage() {
                                 onClick={() => router.push(`/admin/events/${id}/enterprises`)}
                                 className="text-sm text-indigo-600 hover:text-indigo-800 font-medium underline underline-offset-2 transition-colors"
                             >
-                                View Enterprise Requests →
+                                {t('admin.eventDetail.actions.viewEnterpriseRequests')}
                             </button>
                         </div>
                     )}
@@ -720,9 +732,9 @@ export default function AdminEventDetailPage() {
             {/* Confirm modals */}
             {confirm === 'payment' && (
                 <ConfirmModal
-                    title="Confirm Payment Proof"
-                    message={`Are you sure you want to verify the payment proof for "${event.title}"? This will activate the event and generate access links.`}
-                    confirmLabel="Yes, Confirm Payment"
+                    title={t('admin.eventDetail.confirm.paymentTitle')}
+                    message={t('admin.eventDetail.confirm.paymentMessage', { title: event.title })}
+                    confirmLabel={t('admin.eventDetail.confirm.paymentLabel')}
                     confirmClass="bg-blue-600 hover:bg-blue-700"
                     onConfirm={handleConfirmPayment}
                     onCancel={() => setConfirm(null)}
@@ -730,9 +742,9 @@ export default function AdminEventDetailPage() {
             )}
             {confirm === 'start' && (
                 <ConfirmModal
-                    title="Force Start Event"
-                    message={`This will immediately transition "${event.title}" from Payment Done → Live, bypassing the scheduled start time. This action is logged.`}
-                    confirmLabel="Yes, Start Now"
+                    title={t('admin.eventDetail.confirm.startTitle')}
+                    message={t('admin.eventDetail.confirm.startMessage', { title: event.title })}
+                    confirmLabel={t('admin.eventDetail.confirm.startLabel')}
                     confirmClass="bg-indigo-600 hover:bg-indigo-700"
                     onConfirm={handleForceStart}
                     onCancel={() => setConfirm(null)}
@@ -740,9 +752,9 @@ export default function AdminEventDetailPage() {
             )}
             {confirm === 'close' && (
                 <ConfirmModal
-                    title="Force Close Event"
-                    message={`This will immediately close "${event.title}" and transition it from Live → Closed. This action cannot be undone and is logged.`}
-                    confirmLabel="Yes, Close Now"
+                    title={t('admin.eventDetail.confirm.closeTitle')}
+                    message={t('admin.eventDetail.confirm.closeMessage', { title: event.title })}
+                    confirmLabel={t('admin.eventDetail.confirm.closeLabel')}
                     confirmClass="bg-red-600 hover:bg-red-700"
                     onConfirm={handleForceClose}
                     onCancel={() => setConfirm(null)}

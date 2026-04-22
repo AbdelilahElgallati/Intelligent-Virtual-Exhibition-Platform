@@ -1,4 +1,5 @@
-I18n Integration Report (react-i18next)
+IVEP i18n Missed Integration Report - Admin Interface Pages
+Generated: 2026-04-21
 
 File: frontend/src/app/(enterprise)/enterprise/page.tsx
 - NEW keys added: None
@@ -246,3 +247,93 @@ All new keys added to frontend/messages/en.json (exact JSON path):
 - enterprise.speakerRoom.messages.connectionDropDetected
 - enterprise.speakerRoom.messages.participantRemoved
 - enterprise.speakerRoom.messages.participantRemovalUnavailable
+Files processed and i18n integrated:
+
+- frontend/src/app/(admin)/admin/organizations/page.tsx (Organization Management)
+  NEW keys added:
+    - admin.organizations.toast.verified
+    - admin.organizations.toast.flagToggled
+    - admin.organizations.toast.suspensionToggled
+
+- frontend/src/app/(admin)/admin/organizer-registrations/page.tsx (Organizer Approval Queue)
+  NEW keys added: None (Used existing keys)
+
+- frontend/src/app/(admin)/admin/payments/page.tsx (Payment History)
+  NEW keys added:
+    - admin.payments.title
+    - admin.payments.disabledDescription
+
+- frontend/src/app/(admin)/admin/profile/page.tsx (Admin Profile)
+  NEW keys added: None (Used existing keys)
+
+- frontend/src/app/(admin)/admin/security/page.tsx (Admin Security Settings)
+  NEW keys added: None (Used existing placeholder navigation key)
+
+- frontend/src/app/(admin)/admin/subscriptions/page.tsx (Subscription & Billing Management)
+  NEW keys added:
+    - admin.subscriptions.title
+    - admin.subscriptions.description
+    - admin.subscriptions.stats.totalOrganizations
+    - admin.subscriptions.stats.proPlans
+    - admin.subscriptions.stats.freePlans
+    - admin.subscriptions.table.organization
+    - admin.subscriptions.table.plan
+    - admin.subscriptions.table.status
+    - admin.subscriptions.table.actions
+    - admin.subscriptions.loading
+    - admin.subscriptions.noSubscriptions
+    - admin.subscriptions.upgrade
+    - admin.subscriptions.downgrade
+    - admin.subscriptions.cancel
+    - admin.subscriptions.alreadyFree
+    - admin.subscriptions.cancelToFree
+    - admin.subscriptions.failedToLoad
+    - admin.subscriptions.actionFailed
+    - admin.subscriptions.toast.switched
+    - admin.subscriptions.toast.cancelled
+
+- frontend/src/app/(admin)/admin/users/page.tsx (Global User Registry & Governance)
+  NEW keys added: None (Used existing keys)
+
+- frontend/src/app/(admin)/admin/layout.tsx (Admin Sidebar & Topbar Layout)
+  NEW keys added: None (Used existing keys)
+
+--------------------------------------------------------------------------------
+ALL NEW KEYS ADDED TO en.json:
+
+Location: admin.payments
+  "title": "Payment Reviews",
+  "disabledDescription": "This page is temporarily disabled while the payment moderation flow is being stabilized."
+
+Location: admin.subscriptions
+  "title": "Subscriptions",
+  "description": "View and override billing plans for any organization",
+  "stats": {
+    "totalOrganizations": "Total Organizations",
+    "proPlans": "PRO Plans",
+    "freePlans": "FREE Plans"
+  },
+  "table": {
+    "organization": "Organization",
+    "plan": "Plan",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "loading": "Loading subscriptions…",
+  "noSubscriptions": "No subscriptions found",
+  "upgrade": "Upgrade",
+  "downgrade": "Downgrade",
+  "cancel": "Cancel",
+  "alreadyFree": "Already on FREE plan",
+  "cancelToFree": "Cancel to FREE",
+  "failedToLoad": "Failed to load subscriptions",
+  "actionFailed": "Action failed",
+  "toast": {
+    "switched": "{name} switched to {plan}.",
+    "cancelled": "{name} subscription cancelled."
+  }
+
+Location: admin.organizations.toast
+  "verified": "{name} verified.",
+  "flagToggled": "{name} flag toggled.",
+  "suspensionToggled": "{name} suspension toggled."

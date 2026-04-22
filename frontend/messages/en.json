@@ -1269,7 +1269,8 @@
         "processingIndicator": "…"
       },
       "ui": {
-        "emptyValue": "—"
+        "emptyValue": "—",
+        "unnamedOrg": "Unnamed Organization"
       }
     },
     "dashboard": {
@@ -1352,6 +1353,10 @@
         "generating": "Generating…",
         "exporting": "Exporting…"
       },
+      "errors": {
+        "exportPdfFailed": "Platform report export failed.",
+        "exportCsvFailed": "CSV export failed."
+      },
       "refresh": "Refresh",
       "deepMetrics": {
         "title": "Event Deep Metrics",
@@ -1368,6 +1373,9 @@
           "activityTrend": "14-Day Activity Trend",
           "interactionBreakdown": "Interaction Breakdown",
           "activity": "Activity"
+        },
+        "errors": {
+          "failedToLoad": "Failed to load event analytics"
         }
       }
     },
@@ -1557,6 +1565,7 @@
         "schedule": "Event Schedule",
         "additionalInfo": "Additional Information",
         "tags": "Tags",
+        "links": "Links",
         "enterpriseLink": "Enterprise Link",
         "visitorLink": "Visitor Link",
         "rejectionReason": "Rejection reason",
@@ -1632,7 +1641,8 @@
         "autoStartScheduled": "⏰ Auto-start is scheduled when {date} is reached.",
         "autoCloseScheduled": "🟢 Event is live. Auto-close scheduled when {date} passes.",
         "startDate": "start date",
-        "endDate": "end date"
+        "endDate": "end date",
+        "createdOn": "Created"
       },
       "confirm": {
         "paymentTitle": "Confirm Payment Proof",
@@ -1784,6 +1794,9 @@
       "loadingRegistry": "Loading registry…",
       "noEnterprises": "No enterprises found",
       "exhibition": "Exhibition",
+      "errors": {
+        "loadFailed": "Failed to load enterprises"
+      },
       "table": {
         "company": "Company",
         "industry": "Industry",
@@ -1983,8 +1996,9 @@
         "markAsPaid": "Mark as Paid",
         "noAction": "No action",
         "noTransactions": "No transactions found for the selected filters."
-      },
-      "payouts": {
+      }
+    },
+    "payouts": {
         "title": "Payout History",
         "receiver": "Receiver",
         "amount": "Amount",
@@ -2009,8 +2023,7 @@
         "statusLabel": "Status",
         "completed": "Completed",
         "pending": "Pending"
-      }
-    },
+      },
     "subscriptions": {
       "title": "Subscriptions",
       "description": "View and override billing plans for any organization",
@@ -2176,10 +2189,19 @@
       "disabledMessage": "This page is temporarily disabled while the payment moderation flow is being stabilized."
     },
     "sessions": {
+      "title": "Conference Sessions",
       "managementTitle": "Session Management",
       "description": "Import from your event schedule or create manually — then hit Start on any scheduled session to go live.",
       "importFromSchedule": "Import from Schedule",
       "newSession": "New Session",
+      "count": "{count} sessions",
+      "liveCount": "{count} live",
+      "loading": "Loading sessions…",
+      "emptyHelp": "Create a session manually or use Import from Schedule to auto-import conference slots.",
+      "timelineTitle": "Timeline",
+      "liveNow": "Live Now ({count})",
+      "scheduledCount": "Scheduled ({count})",
+      "endedCount": "Ended ({count})",
       "form": {
         "titleLabel": "Title",
         "titlePlaceholder": "Opening Keynote",
@@ -2228,6 +2250,8 @@
         "endSuccess": "Session \"{name}\" ended",
         "startFailed": "Failed to start session",
         "endFailed": "Failed to end session",
+        "created": "Session \"{name}\" created",
+        "noNewSessions": "No new conference sessions found in schedule",
         "syncSuccess": "{count} session(s) imported from schedule",
         "syncFailed": "No schedule found for this event. Please add conference slots in the event schedule builder first."
       },
@@ -2282,6 +2306,9 @@
         "exporting": "Exporting…",
         "retry": "Retry",
         "exportFailed": "PDF export failed."
+      },
+      "errors": {
+        "loadFailed": "Failed to load organizer report."
       }
     },
     "eventLiveMonitoring": {

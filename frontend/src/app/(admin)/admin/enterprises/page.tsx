@@ -11,13 +11,15 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { formatInUserTZ } from '@/lib/timezone';
+import { useTranslation } from 'react-i18next';
 
 function StatusBadges({ org }: { org: AdminOrganization | PartnerDashboardRead }) {
+    const { t } = useTranslation();
     const badges = [];
-    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Verified</span>);
-    if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Flagged</span>);
-    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Suspended</span>);
-    return badges.length ? <div className="flex flex-wrap gap-1.5">{badges}</div> : <span className="text-xs text-zinc-400">—</span>;
+    if (org.is_verified) badges.push(<span key="v" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{t('admin.enterprises.detail.verified')}</span>);
+    if (org.is_flagged) badges.push(<span key="f" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{t('admin.enterprises.detail.flagged')}</span>);
+    if (org.is_suspended) badges.push(<span key="s" className="inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">{t('admin.enterprises.detail.suspended')}</span>);
+    return badges.length ? <div className="flex flex-wrap gap-1.5">{badges}</div> : <span className="text-xs text-zinc-400">{t('admin.common.ui.emptyValue')}</span>;
 }
 
 function Section({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
@@ -64,7 +66,8 @@ function EnterprisePanel({
     onSuspend: (id: string) => Promise<void>;
     busy: boolean;
 }) {
-    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : '—';
+    const { t } = useTranslation();
+    const fmt = (d?: string) => d ? formatInUserTZ(d, { day: 'numeric', month: 'short', year: 'numeric' }, 'en-GB') : t('admin.common.ui.emptyValue');
 
     return (
         <>
@@ -78,7 +81,7 @@ function EnterprisePanel({
                             <div className="flex items-center flex-wrap gap-2">
                                 <StatusBadges org={org} />
                                 <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-50 text-amber-700">
-                                    Enterprise Partner
+                                    {t('admin.enterprises.detail.enterprisePartner')}
                                 </span>
                             </div>
                         </div>
@@ -91,56 +94,56 @@ function EnterprisePanel({
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7">
                     {/* Performance Stats */}
-                    <Section icon={TrendingUp} title="Engagement Overview">
+                    <Section icon={TrendingUp} title={t('admin.enterprises.detail.engagementOverview')}>
                         <div className="grid grid-cols-3 gap-3">
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <Building2 className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">{org.stats?.total_stands || 0}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Stands</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">{t('admin.enterprises.detail.stands')}</div>
                             </div>
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <MousePointer2 className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">{org.stats?.total_leads || 0}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Leads</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">{t('admin.enterprises.detail.leads')}</div>
                             </div>
                             <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-center">
                                 <MessageSquare className="w-4 h-4 text-zinc-400 mx-auto mb-1.5" />
                                 <div className="text-lg font-bold text-zinc-900">{org.stats?.total_meetings || 0}</div>
-                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Meetings</div>
+                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">{t('admin.enterprises.detail.meetings')}</div>
                             </div>
                         </div>
                     </Section>
 
-                    <Section icon={Briefcase} title="Exhibitor Profile">
+                    <Section icon={Briefcase} title={t('admin.enterprises.detail.exhibitorProfile')}>
                         <div className="grid grid-cols-1 gap-y-3">
-                            <InfoRow label="Company Name" value={org.name} />
-                            <InfoRow label="Join Date" value={fmt(org.created_at)} />
-                            <InfoRow label="Industry" value={org.industry} />
-                            <InfoRow label="Brand Website" value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
-                            <InfoRow label="Business Email" value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
+                            <InfoRow label={t('admin.enterprises.detail.companyName')} value={org.name} />
+                            <InfoRow label={t('admin.enterprises.detail.joinDate')} value={fmt(org.created_at)} />
+                            <InfoRow label={t('admin.enterprises.table.industry')} value={org.industry} />
+                            <InfoRow label={t('admin.enterprises.detail.brandWebsite')} value={org.website} href={org.website && !org.website.startsWith('http') ? `https://${org.website}` : org.website} />
+                            <InfoRow label={t('admin.enterprises.detail.businessEmail')} value={org.contact_email} href={org.contact_email ? `mailto:${org.contact_email}` : undefined} />
                         </div>
                     </Section>
 
-                    <Section icon={User} title="Authorized Representative">
+                    <Section icon={User} title={t('admin.enterprises.detail.authorizedRepresentative')}>
                         <div className="grid grid-cols-1 gap-y-3">
-                            <InfoRow label="Full Name" value={org.owner_name} />
-                            <InfoRow label="Direct Email" value={org.owner_email} href={org.owner_email ? `mailto:${org.owner_email}` : undefined} />
+                            <InfoRow label={t('admin.enterprises.detail.fullName')} value={org.owner_name} />
+                            <InfoRow label={t('admin.enterprises.detail.directEmail')} value={org.owner_email} href={org.owner_email ? `mailto:${org.owner_email}` : undefined} />
                         </div>
                     </Section>
 
                     {org.description && (
-                        <Section icon={Hash} title="About Enterprise">
+                        <Section icon={Hash} title={t('admin.enterprises.detail.aboutEnterprise')}>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{org.description}</p>
                         </Section>
                     )}
 
                     {/* Moderation status */}
-                    <Section icon={ShieldCheck} title="Administrative Governance">
+                    <Section icon={ShieldCheck} title={t('admin.enterprises.detail.administrativeGovernance')}>
                         <div className="bg-zinc-50 rounded-xl overflow-hidden border border-zinc-100">
                             {[
-                                { label: 'Verification Status', value: org.is_verified, on: 'Verified partner', off: 'Pending Review', onCls: 'text-emerald-600', offCls: 'text-zinc-500' },
-                                { label: 'Flagged Content', value: org.is_flagged, on: 'Restricted', off: 'Clear', onCls: 'text-amber-600', offCls: 'text-emerald-600' },
-                                { label: 'Operational Status', value: org.is_suspended, on: 'Suspended', off: 'Active', onCls: 'text-rose-600', offCls: 'text-emerald-600' },
+                                { label: t('admin.enterprises.detail.verificationStatus'), value: org.is_verified, on: t('admin.enterprises.detail.verifiedPartner'), off: t('admin.enterprises.detail.pendingReview'), onCls: 'text-emerald-600', offCls: 'text-zinc-500' },
+                                { label: t('admin.enterprises.detail.flaggedContent'), value: org.is_flagged, on: t('admin.enterprises.detail.restricted'), off: t('admin.enterprises.detail.clear'), onCls: 'text-amber-600', offCls: 'text-emerald-600' },
+                                { label: t('admin.enterprises.detail.operationalStatus'), value: org.is_suspended, on: t('admin.enterprises.detail.suspended'), off: t('admin.enterprises.detail.active'), onCls: 'text-rose-600', offCls: 'text-emerald-600' },
                             ].map(({ label, value, on, off, onCls, offCls }) => (
                                 <div key={label} className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-100 last:border-0 bg-white">
                                     <span className="text-xs font-medium text-zinc-500">{label}</span>
@@ -159,7 +162,7 @@ function EnterprisePanel({
                             disabled={busy}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                         >
-                            <ShieldCheck className="w-4 h-4" /> Verify Enterprise Account
+                            <ShieldCheck className="w-4 h-4" /> {t('admin.enterprises.detail.verifyAccount')}
                         </button>
                     )}
                     <div className="flex gap-3">
@@ -171,7 +174,7 @@ function EnterprisePanel({
                                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                                 }`}
                         >
-                            <Flag className="w-4 h-4" /> {org.is_flagged ? 'Unflag' : 'Flag'}
+                            <Flag className="w-4 h-4" /> {org.is_flagged ? t('admin.enterprises.detail.unflag') : t('admin.enterprises.detail.flag')}
                         </button>
                         <button
                             onClick={() => onSuspend(org._id || org.owner_id)}
@@ -181,7 +184,7 @@ function EnterprisePanel({
                                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200'
                                 }`}
                         >
-                            <Ban className="w-4 h-4" /> {org.is_suspended ? 'Unsuspend' : 'Suspend'}
+                            <Ban className="w-4 h-4" /> {org.is_suspended ? t('admin.enterprises.detail.unsuspend') : t('admin.enterprises.detail.suspend')}
                         </button>
                     </div>
                 </div>
@@ -192,6 +195,7 @@ function EnterprisePanel({
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function AdminEnterprisesPage() {
+    const { t } = useTranslation();
     const [enterprises, setEnterprises] = useState<PartnerDashboardRead[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState<string | null>(null);
@@ -209,9 +213,9 @@ export default function AdminEnterprisesPage() {
     const fetchEnterprises = useCallback(async () => {
         setLoading(true); setError(null);
         try { setEnterprises(await adminService.getDetailedEnterprises()); }
-        catch (e: any) { setError(e.message ?? 'Failed to load enterprises'); }
+        catch (e: any) { setError(e.message ?? t('admin.enterprises.errors.loadFailed')); }
         finally { setLoading(false); }
-    }, []);
+    }, [t]);
 
     useEffect(() => { fetchEnterprises(); }, [fetchEnterprises]);
 
@@ -220,7 +224,7 @@ export default function AdminEnterprisesPage() {
     const act = async (id: string, fn: () => Promise<any>, label: string) => {
         setActionId(id);
         try { await fn(); showSuccess(label); setSelected(null); fetchEnterprises(); }
-        catch (e: any) { setError(e.message ?? 'Action failed'); }
+        catch (e: any) { setError(e.message ?? t('common.errors.actionFailed')); }
         finally { setActionId(null); }
     };
 
@@ -235,8 +239,8 @@ export default function AdminEnterprisesPage() {
                         <Briefcase className="w-4 h-4 text-amber-600" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Enterprise Registry</h1>
-                        <p className="text-xs text-zinc-500">Exhibitors and corporate participants</p>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.enterprises.title')}</h1>
+                        <p className="text-xs text-zinc-500">{t('admin.enterprises.description')}</p>
                     </div>
                 </div>
                 <button
@@ -264,20 +268,20 @@ export default function AdminEnterprisesPage() {
             <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
                 {loading ? (
                     <div className="p-12 text-center text-zinc-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> Loading registry…
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-3 text-indigo-400" /> {t('admin.enterprises.loadingRegistry')}
                     </div>
                 ) : enterprises.length === 0 ? (
                     <div className="p-12 text-center">
                         <Briefcase className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                        <p className="text-zinc-500 font-medium">No enterprises found</p>
+                        <p className="text-zinc-500 font-medium">{t('admin.enterprises.noEnterprises')}</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-zinc-100">
-                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Company</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">Industry</th>
-                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">Status</th>
+                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.enterprises.table.company')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide hidden lg:table-cell">{t('admin.enterprises.table.industry')}</th>
+                                <th className="text-left px-4 py-3.5 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{t('admin.enterprises.table.status')}</th>
                                 <th className="px-4 py-3.5" />
                             </tr>
                         </thead>
@@ -296,7 +300,7 @@ export default function AdminEnterprisesPage() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-4 hidden lg:table-cell text-xs text-zinc-500">
-                                        {ent.industry || 'Exhibition'}
+                                        {ent.industry || t('admin.enterprises.exhibition')}
                                     </td>
                                     <td className="px-4 py-4"><StatusBadges org={ent} /></td>
                                     <td className="px-6 py-4 text-right">
@@ -310,7 +314,12 @@ export default function AdminEnterprisesPage() {
                 {!loading && enterprises.length > 0 && (
                     <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-white">
                         <span className="text-xs text-zinc-500">
-                            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, enterprises.length)} of {enterprises.length} enterprise{enterprises.length !== 1 ? 's' : ''}
+                            {t('common.ui.pagination.showingRange', {
+                                from: (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                                to: Math.min(currentPage * ITEMS_PER_PAGE, enterprises.length),
+                                total: enterprises.length,
+                                entity: t('common.ui.pagination.entities.enterprises'),
+                            })}
                         </span>
                         {totalPages > 1 && (
                             <div className="flex items-center gap-2">
@@ -319,17 +328,17 @@ export default function AdminEnterprisesPage() {
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Previous
+                                    {t('common.ui.pagination.previous')}
                                 </button>
                                 <span className="text-xs font-medium text-zinc-600">
-                                    Page {currentPage} of {totalPages}
+                                    {t('common.ui.pagination.pageInfo', { current: currentPage, total: totalPages })}
                                 </span>
                                 <button
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     className="px-3 py-1.5 text-xs font-medium border border-zinc-200 rounded-lg disabled:opacity-50 hover:bg-zinc-50 transition-colors"
                                 >
-                                    Next
+                                    {t('common.ui.pagination.next')}
                                 </button>
                             </div>
                         )}
@@ -341,9 +350,9 @@ export default function AdminEnterprisesPage() {
                 <EnterprisePanel
                     org={selected}
                     onClose={() => setSelected(null)}
-                    onVerify={id => act(id, () => adminService.verifyOrganization(id), `${selected.name} verified.`)}
-                    onFlag={id => act(id, () => adminService.flagOrganization(id), `${selected.name} flag toggled.`)}
-                    onSuspend={id => act(id, () => adminService.suspendOrganization(id), `${selected.name} suspension toggled.`)}
+                    onVerify={id => act(id, () => adminService.verifyOrganization(id), t('admin.enterprises.toast.verified', { name: selected.name }))}
+                    onFlag={id => act(id, () => adminService.flagOrganization(id), t('admin.enterprises.toast.flagToggled', { name: selected.name }))}
+                    onSuspend={id => act(id, () => adminService.suspendOrganization(id), t('admin.enterprises.toast.suspensionToggled', { name: selected.name }))}
                     busy={!!actionId}
                 />
             )}

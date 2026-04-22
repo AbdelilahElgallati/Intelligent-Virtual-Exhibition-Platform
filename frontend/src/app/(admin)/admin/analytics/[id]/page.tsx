@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { adminService } from '@/services/admin.service';
 import { DashboardData } from '@/types/analytics';
+import { useTranslation } from 'react-i18next';
 
 const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981'];
 
@@ -32,6 +33,7 @@ function MetricCard({ label, value, icon: Icon, accent }: {
 }
 
 export default function EventAnalyticsPage() {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -44,11 +46,11 @@ export default function EventAnalyticsPage() {
             const result = await adminService.getEventAnalytics(id);
             setData(result);
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Failed to load event analytics');
+            setError(e instanceof Error ? e.message : t('admin.analytics.deepMetrics.errors.failedToLoad'));
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, t]);
 
     useEffect(() => { if (id) load(); }, [id, load]);
 
@@ -78,21 +80,21 @@ export default function EventAnalyticsPage() {
                         href="/admin/analytics"
                         className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
                     >
-                        <ArrowLeft className="w-4 h-4" /> Analytics
+                        <ArrowLeft className="w-4 h-4" /> {t('admin.analytics.deepMetrics.breadcrumb')}
                     </Link>
                     <div className="w-px h-4 bg-zinc-200" />
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
                             <BarChart3 className="w-4 h-4 text-indigo-600" />
                         </div>
-                        <h1 className="text-xl font-bold text-zinc-900">Event Deep Metrics</h1>
+                        <h1 className="text-xl font-bold text-zinc-900">{t('admin.analytics.deepMetrics.title')}</h1>
                     </div>
                 </div>
                 <button
                     onClick={load}
                     className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
                 >
-                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                    <RefreshCw className="w-3.5 h-3.5" /> {t('admin.analytics.refresh')}
                 </button>
             </div>
 
@@ -102,31 +104,31 @@ export default function EventAnalyticsPage() {
 
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <MetricCard label="Event Views" value={kpi('Event Views')} icon={Eye} accent="bg-indigo-50 text-indigo-600" />
-                <MetricCard label="Stand Visits" value={kpi('Stand Visits')} icon={Store} accent="bg-violet-50 text-violet-600" />
-                <MetricCard label="Chats Opened" value={kpi('Chats Opened')} icon={MessageSquare} accent="bg-sky-50 text-sky-600" />
-                <MetricCard label="Leads Generated" value={kpi('Leads Generated')} icon={Users} accent="bg-emerald-50 text-emerald-600" />
-                <MetricCard label="Participants" value={kpi('Participants')} icon={Users} accent="bg-amber-50 text-amber-600" />
-                <MetricCard label="Active Stands" value={kpi('Active Stands')} icon={Store} accent="bg-rose-50 text-rose-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.eventViews')} value={kpi('Event Views')} icon={Eye} accent="bg-indigo-50 text-indigo-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.standVisits')} value={kpi('Stand Visits')} icon={Store} accent="bg-violet-50 text-violet-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.chatsOpened')} value={kpi('Chats Opened')} icon={MessageSquare} accent="bg-sky-50 text-sky-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.leadsGenerated')} value={kpi('Leads Generated')} icon={Users} accent="bg-emerald-50 text-emerald-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.participants')} value={kpi('Participants')} icon={Users} accent="bg-amber-50 text-amber-600" />
+                <MetricCard label={t('admin.analytics.deepMetrics.kpi.activeStands')} value={kpi('Active Stands')} icon={Store} accent="bg-rose-50 text-rose-600" />
             </div>
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">14-Day Activity Trend</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t('admin.analytics.deepMetrics.charts.activityTrend')}</h2>
                     <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                             <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} />
                             <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} width={28} />
                             <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                            <Bar dataKey="events" fill="#6366f1" radius={[4, 4, 0, 0]} name="Activity" />
+                            <Bar dataKey="events" fill="#6366f1" radius={[4, 4, 0, 0]} name={t('admin.analytics.deepMetrics.charts.activity')} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
                 <div className="bg-white border border-zinc-200 rounded-2xl p-5">
-                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">Interaction Breakdown</h2>
+                    <h2 className="text-sm font-semibold text-zinc-700 mb-4">{t('admin.analytics.deepMetrics.charts.interactionBreakdown')}</h2>
                     <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                             <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
