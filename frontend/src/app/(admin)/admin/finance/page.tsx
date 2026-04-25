@@ -185,7 +185,7 @@ export default function AdminFinancePage() {
         if (!editingPayout) return;
         const payoutId = getPayoutId(editingPayout);
         if (!payoutId) {
-            addToast(t('admin.finance.payouts.invalidId'), 'error');
+            addToast(t('admin.payouts.invalidId'), 'error');
             return;
         }
 
@@ -197,9 +197,9 @@ export default function AdminFinancePage() {
             });
             closeEditPayoutModal();
             await fetchAll();
-            addToast(t('admin.finance.payouts.editSuccess'), 'success');
+            addToast(t('admin.payouts.editSuccess'), 'success');
         } catch (err: unknown) {
-            addToast(getErrorMessage(err, t('admin.finance.payouts.editFailed')), 'error');
+            addToast(getErrorMessage(err, t('admin.payouts.editFailed')), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
@@ -208,20 +208,20 @@ export default function AdminFinancePage() {
     async function handleDeletePayout(payout: PayoutRecord) {
         const payoutId = getPayoutId(payout);
         if (!payoutId) {
-            addToast(t('admin.finance.payouts.invalidId'), 'error');
+            addToast(t('admin.payouts.invalidId'), 'error');
             return;
         }
 
-        const ok = window.confirm(t('admin.finance.payouts.deleteConfirm'));
+        const ok = window.confirm(t('admin.payouts.deleteConfirm'));
         if (!ok) return;
 
         try {
             setPayoutActionLoadingId(payoutId);
             await adminService.deleteFinancePayout(payoutId);
             await fetchAll();
-            addToast(t('admin.finance.payouts.deleteSuccess'), 'success');
+            addToast(t('admin.payouts.deleteSuccess'), 'success');
         } catch (err: unknown) {
-            addToast(getErrorMessage(err, t('admin.finance.payouts.deleteFailed')), 'error');
+            addToast(getErrorMessage(err, t('admin.payouts.deleteFailed')), 'error');
         } finally {
             setPayoutActionLoadingId(null);
         }
@@ -300,7 +300,7 @@ export default function AdminFinancePage() {
             <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
                 {loading ? (
                     <div className="p-6">
-                        <LoadingState message={t('admin.finance.loadingTransactions')} />
+                        <LoadingState message={t('admin.common.loading')} />
                     </div>
                 ) : error ? (
                     <div className="p-6 text-sm text-red-600">{error}</div>
@@ -368,21 +368,21 @@ export default function AdminFinancePage() {
 
             <div className="rounded-xl border border-zinc-200 bg-white">
                 <div className="border-b border-zinc-100 px-4 py-3">
-                    <h2 className="text-sm font-semibold text-zinc-900">{t('admin.finance.payouts.title')}</h2>
+                    <h2 className="text-sm font-semibold text-zinc-900">{t('admin.payouts.title')}</h2>
                 </div>
                 {payouts.length === 0 ? (
-                    <div className="px-4 py-4 text-sm text-zinc-500">{t('admin.finance.payouts.noRecords')}</div>
+                    <div className="px-4 py-4 text-sm text-zinc-500">{t('admin.payouts.noRecords')}</div>
                 ) : (
                     <div className="max-h-[22rem] overflow-auto">
                         <table className="min-w-full text-sm">
                             <thead className="bg-zinc-50 text-zinc-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.receiver')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.amount')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.admin')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.date')}</th>
-                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.finance.payouts.note')}</th>
-                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.finance.payouts.actions')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.payouts.receiver')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.payouts.amount')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.payouts.admin')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.payouts.date')}</th>
+                                    <th className="px-4 py-3 text-left font-semibold">{t('admin.payouts.note')}</th>
+                                    <th className="px-4 py-3 text-right font-semibold">{t('admin.payouts.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -406,14 +406,14 @@ export default function AdminFinancePage() {
                                                     disabled={payoutActionLoadingId === getPayoutId(p)}
                                                     className="rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                                                 >
-                                                    {t('admin.finance.payouts.edit')}
+                                                    {t('admin.payouts.edit')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeletePayout(p)}
                                                     disabled={payoutActionLoadingId === getPayoutId(p)}
                                                     className="rounded-lg border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
                                                 >
-                                                    {t('admin.finance.payouts.delete')}
+                                                    {t('admin.payouts.delete')}
                                                 </button>
                                             </div>
                                         </td>
@@ -428,17 +428,17 @@ export default function AdminFinancePage() {
             {isModalOpen && selectedTx && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
                     <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.finance.payouts.confirmTitle')}</h3>
+                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.payouts.confirmTitle')}</h3>
                         <p className="mt-2 text-sm text-zinc-600">
-                            {t('admin.finance.payouts.confirmDescription', { source: sourceLabel(selectedTx.source_type), amount: formatAmount(selectedTx.amount, selectedTx.currency) })}
+                            {t('admin.payouts.confirmDescription', { source: sourceLabel(selectedTx.source_type), amount: formatAmount(selectedTx.amount, selectedTx.currency) })}
                         </p>
                         <label className="mt-4 block text-sm text-zinc-700">
-                            {t('admin.finance.payouts.optionalNote')}
+                            {t('admin.payouts.optionalNote')}
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 className="mt-1 h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                                placeholder={t('admin.finance.payouts.notePlaceholder')}
+                                placeholder={t('admin.payouts.notePlaceholder')}
                             />
                         </label>
 
@@ -464,28 +464,28 @@ export default function AdminFinancePage() {
             {editingPayout && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
                     <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
-                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.finance.payouts.editTitle')}</h3>
+                        <h3 className="text-lg font-semibold text-zinc-900">{t('admin.payouts.editTitle')}</h3>
                         <p className="mt-1 text-xs text-zinc-500 font-mono">{getPayoutId(editingPayout)}</p>
 
                         <label className="mt-4 block text-sm text-zinc-700">
-                            {t('admin.finance.payouts.statusLabel')}
+                            {t('admin.payouts.statusLabel')}
                             <select
                                 value={editStatus}
                                 onChange={(e) => setEditStatus(e.target.value as PayoutRecordStatus)}
                                 className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                             >
-                                <option value="completed">{t('admin.finance.payouts.completed')}</option>
-                                <option value="pending">{t('admin.finance.payouts.pending')}</option>
+                                <option value="completed">{t('admin.payouts.completed')}</option>
+                                <option value="pending">{t('admin.payouts.pending')}</option>
                             </select>
                         </label>
 
                         <label className="mt-3 block text-sm text-zinc-700">
-                            {t('admin.finance.payouts.note')}
+                            {t('admin.payouts.note')}
                             <textarea
                                 value={editNote}
                                 onChange={(e) => setEditNote(e.target.value)}
                                 className="mt-1 h-24 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                                placeholder={t('admin.finance.payouts.editNotePlaceholder')}
+                                placeholder={t('admin.payouts.notePlaceholder')}
                             />
                         </label>
 
